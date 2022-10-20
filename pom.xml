@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.haruhi</groupId>
-    <artifactId>haruhi-bot-server</artifactId>
+    <artifactId>haruhibot-server</artifactId>
     <version>1.0-SNAPSHOT</version>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -22,6 +22,17 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- undertow -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-undertow</artifactId>
         </dependency>
         <!-- lombok -->
         <dependency>
@@ -56,6 +67,51 @@
             <groupId>com.baomidou</groupId>
             <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
             <version>2.2.2</version>
+        </dependency>
+        <!--cqUtil文档 https://www.kancloud.cn/forte-scarlet/simple-coolq-doc/1934839 -->
+        <dependency>
+            <groupId>io.github.ForteScarlet.simple-robot-module</groupId>
+            <artifactId>mod-cqcodeutils</artifactId>
+            <version>1.5.0-1.15</version>
+        </dependency>
+        <!-- caffeine 缓存 -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>2.8.6</version>
+        </dependency>
+        <!--  定时任务 job  -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-quartz</artifactId>
+        </dependency>
+        <!-- 词云图 https://blog.csdn.net/Fourier_1024/article/details/118356962 -->
+        <dependency>
+            <groupId>com.kennycason</groupId>
+            <artifactId>kumo-core</artifactId>
+            <version>1.28</version>
+        </dependency>
+        <!-- 词云图 -->
+        <dependency>
+            <groupId>com.kennycason</groupId>
+            <artifactId>kumo-tokenizers</artifactId>
+            <version>1.28</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+        <!-- java操作html document-->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.11.3</version>
+        </dependency>
+        <!-- 中文分词 -->
+        <dependency>
+            <groupId>com.chenlb.mmseg4j</groupId>
+            <artifactId>mmseg4j-core</artifactId>
+            <version>1.10.0</version>
         </dependency>
     </dependencies>
 </project>

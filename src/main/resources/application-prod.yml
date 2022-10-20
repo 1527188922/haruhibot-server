@@ -1,0 +1,45 @@
+bot:
+  name: 春日酱
+  port: 8090
+  search-image-key:
+  access-token: haruhi123
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  dbName: haruhibot_server
+  username: root
+  password: 123456
+  monitor:
+    username: haruhi
+    password: 123456
+
+server:
+  port: ${bot.port}
+  servlet:
+    context-path: /haruhi
+
+mybatis-plus:
+  type-aliases-package: com.haruhi.server.entity
+  mapper-locations: classpath:/mapper/**/*.xml
+spring:
+  datasource:
+    druid:
+      web-stat-filter:
+        exclusions: '*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*'
+      stat-view-servlet:
+        login-username: ${mysql.monitor.username}
+        login-password: ${mysql.monitor.password}
+    dynamic:
+      datasource:
+        master:
+          username: ${mysql.username}
+          password: ${mysql.password}
+          url: jdbc:mysql://${mysql.host}:${mysql.port}/${mysql.dbName}?useUnicode=true&characterEncoding=utf-8&useSSL=false
+          driver-class-name: com.mysql.cj.jdbc.Driver
+        system:
+          username: root
+          password: 123456
+          url: jdbc:mysql://${mysql.host}:${mysql.port}/mysql?useUnicode=true&characterEncoding=utf-8&useSSL=false
+          driver-class-name: com.mysql.cj.jdbc.Driver
+

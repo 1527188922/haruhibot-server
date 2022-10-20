@@ -1,4 +1,6 @@
 # Build and Release Folders
+*.iml
+.idea
 bin-debug/
 bin-release/
 [Oo]bj/
@@ -6,7 +8,13 @@ bin-release/
 
 # Other files and folders
 .settings/
-
+*.project
+*.classpath
+*.class
+*.log
+target
+logs
+test
 # Executables
 *.swf
 *.air

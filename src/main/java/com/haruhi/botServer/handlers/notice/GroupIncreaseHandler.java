@@ -1,0 +1,34 @@
+package com.haruhi.botServer.handlers.notice;
+
+import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.event.notice.IGroupIncreaseEvent;
+import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.ws.ServerEndpoint;
+import com.simplerobot.modules.utils.KQCodeUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.WebSocketSession;
+
+import java.text.MessageFormat;
+
+@Slf4j
+@Component
+public class GroupIncreaseHandler implements IGroupIncreaseEvent {
+
+
+    @Override
+    public void onGroupIncrease(final WebSocketSession session,final Message message) {
+        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+
+            KQCodeUtils instance = KQCodeUtils.getInstance();
+            String at = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getUser_id());
+            String faces = "";
+            String face = instance.toCq(CqCodeTypeEnum.face.getType(), "id=" + 144);
+            for (int i = 0; i < 3; i++) {
+                faces += face;
+            }
+            ServerEndpoint.sendGroupMessage(session,message.getGroup_id(), MessageFormat.format("{0} 欢迎新人~{1}",at,faces),false);
+        });
+    }
+}
