@@ -19,13 +19,13 @@ public class CommonUtil {
         return random.nextInt(end - start + 1) + start;
     }
 
-    public static boolean isAt(String userId,final String context) {
+    public static boolean isAt(Long userId,final String context) {
         List<String> qqs = getCqParams(context, CqCodeTypeEnum.at, "qq");
         if(CollectionUtils.isEmpty(qqs)){
             return false;
         }
         for (String qq : qqs) {
-            if(userId.equals(qq)){
+            if(String.valueOf(userId).equals(qq)){
                 return true;
             }
         }
