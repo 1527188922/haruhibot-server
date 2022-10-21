@@ -10,7 +10,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.factory.ThreadPoolFactory;
 import com.haruhi.botServer.utils.HttpClientUtil;
-import com.haruhi.botServer.ws.ServerEndpoint;
+import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
@@ -76,12 +76,12 @@ public class NewAnimationTodayHandler implements IMessageEvent {
                                 sendGroup(session,data,message);
                             }
                         }else{
-                            ServerEndpoint.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), "今日还没有新番更新",true);
+                            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), "今日还没有新番更新",true);
                         }
                     }
                 }
             }catch (Exception e){
-                ServerEndpoint.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), MessageFormat.format("今日新番异常",e.getMessage()),true);
+                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), MessageFormat.format("今日新番异常",e.getMessage()),true);
             }
 
         }
@@ -92,12 +92,12 @@ public class NewAnimationTodayHandler implements IMessageEvent {
         for (NewAnimationTodayResp datum : data) {
             param.add(splicingParam(datum));
         }
-        ServerEndpoint.sendGroupMessage(session,message.getGroup_id(),message.getSelf_id(),BotConfig.NAME,param);
+        Server.sendGroupMessage(session,message.getGroup_id(),message.getSelf_id(),BotConfig.NAME,param);
 
     }
     private void sendPrivate(WebSocketSession session,List<NewAnimationTodayResp> data,Message message){
         for (NewAnimationTodayResp datum : data) {
-            ServerEndpoint.sendPrivateMessage(session,message.getUser_id(), splicingParam(datum),true);
+            Server.sendPrivateMessage(session,message.getUser_id(), splicingParam(datum),true);
         }
     }
     private String splicingParam(NewAnimationTodayResp datum){

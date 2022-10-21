@@ -14,8 +14,12 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -38,40 +42,7 @@ public class MessageDispenser {
     }
     private static List<IMessageEventType> container = new CopyOnWriteArrayList<>();
 
-    /**
-     * 群禁用的功能
-     * key:群号
-     * value:禁用的消息处理类的类名集合
-     * element:类名(全路径)
-     */
-    private static Map<String,List<String>> groupBanFunction = new ConcurrentHashMap<>(0);
-    public static <T extends IMessageEventType> void setGroupBanFunction(String groupId,Class<T> tClass){
-        setGroupBanFunction(groupId,tClass.getName());
-    }
-    private static void setGroupBanFunction(String groupId,String className){
-        if(groupBanFunction.containsKey(groupId)){
-            List<String> classNames = groupBanFunction.get(groupId);
-            classNames.add(className);
-        }else{
-            List<String> classNames = new ArrayList<>(1);
-            classNames.add(className);
-            groupBanFunction.put(groupId,classNames);
-        }
-    }
-    public static void setGroupBanFunction(Map<String,List<String>> var){
-        groupBanFunction = var;
-    }
-    public static <T extends IMessageEventType> void groupUnbanFunction(String groupId,Class<T> tClass){
-        groupUnbanFunction(groupId,tClass.getName());
-    }
-    private static void groupUnbanFunction(String groupId,String className){
-        if(groupBanFunction.containsKey(groupId)){
-            List<String> classNames = groupBanFunction.get(groupId);
-            if(!CollectionUtils.isEmpty(classNames)){
-                classNames.remove(className);
-            }
-        }
-    }
+
     /**
      * 虽没被引用
      * 但不可删除
@@ -145,17 +116,11 @@ public class MessageDispenser {
                 for (IMessageEventType element : container){
                     if(element instanceof IMessageEvent){
                         IMessageEvent event = (IMessageEvent) element;
-                        if(isBanFunctionByGroup(event,message.getGroup_id())){
-                            continue;
-                        }
                         if(event.onMessage(session,message,command)){
                             break;
                         }
                     }else if(element instanceof IGroupMessageEvent){
                         IGroupMessageEvent event = (IGroupMessageEvent) element;
-                        if(isBanFunctionByGroup(event,message.getGroup_id())){
-                            continue;
-                        }
                         if(event.onGroup(session,message,command)){
                             break;
                         }
@@ -180,36 +145,6 @@ public class MessageDispenser {
 
     }
 
-    /**
-     * 群功能是否被禁用
-     * @param event
-     * @param groupId
-     * @return
-     */
-    private static boolean isBanFunctionByGroup(IMessageEventType event,Long groupId){
-        return isBanFunctionByGroup(event.getClass(),groupId);
-    }
-
-    /**
-     * 公开方法
-     * @param tClass 对外提供的isBanFunctionByGroup方法,不能直接传IMessageEventType对象 必须为Class对象
-     * @param groupId
-     * @param <T>
-     * @return
-     */
-    public static <T extends IMessageEventType> boolean isBanFunctionByGroup(Class<T> tClass,Long groupId){
-        if(groupBanFunction.size() == 0){
-            return false;
-        }
-        if (!groupBanFunction.containsKey(groupId)) {
-            return false;
-        }
-        List<String> classPaths = groupBanFunction.get(groupId);
-        if(CollectionUtils.isEmpty(classPaths)){
-            return false;
-        }
-        return classPaths.contains(tClass.getName());
-    }
     /**
      * 查找处理类
      * @param fun 可以是name也可以是id(weight)

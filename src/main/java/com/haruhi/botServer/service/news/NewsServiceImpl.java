@@ -10,7 +10,7 @@ import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.RestUtil;
-import com.haruhi.botServer.ws.ServerEndpoint;
+import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -59,7 +59,7 @@ public class NewsServiceImpl implements NewsService {
         if(groupIds != null){
             List<String> newsGroupMessage = createNewsGroupMessage(list);
             for (Long groupId : groupIds) {
-                ServerEndpoint.sendGroupMessage(session,groupId,BotConfig.NAME,newsGroupMessage);
+                Server.sendGroupMessage(session,groupId,BotConfig.NAME,newsGroupMessage);
             }
         }
     }
@@ -115,7 +115,7 @@ public class NewsServiceImpl implements NewsService {
             List<List<NewsBy163Resp>> lists = CommonUtil.averageAssignList(list, 10);
             for (Long userId : userIds) {
                 for (List<NewsBy163Resp> newsBy163Resps : lists) {
-                    ServerEndpoint.sendPrivateMessage(session,userId,createNewsPrivateMessage(newsBy163Resps),false);
+                    Server.sendPrivateMessage(session,userId,createNewsPrivateMessage(newsBy163Resps),false);
                 }
             }
         }

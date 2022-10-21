@@ -6,7 +6,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.notice.IPokeEvent;
 import com.haruhi.botServer.factory.ThreadPoolFactory;
 import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.ws.ServerEndpoint;
+import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -40,16 +40,16 @@ public class PokeHandler implements IPokeEvent {
                         if("".equals(reply)){
                             KQCodeUtils instance = KQCodeUtils.getInstance();
                             String s = instance.toCq(CqCodeTypeEnum.poke.getType(), "qq=" + message.getUser_id());
-                            ServerEndpoint.sendGroupMessage(session,message.getGroup_id(), s, false);
+                            Server.sendGroupMessage(session,message.getGroup_id(), s, false);
                         }else{
-                            ServerEndpoint.sendGroupMessage(session,message.getGroup_id(),reply, true);
+                            Server.sendGroupMessage(session,message.getGroup_id(),reply, true);
                         }
                     }else if(MessageEventEnum.privat.getType().equals(message.getMessage_type())){
                         // gocq私聊不能发送给戳一戳 所以这里只回复文字
                         while (Strings.isBlank(reply)){
                             reply = cache.get(CommonUtil.randomInt(0, size - 1));
                         }
-                        ServerEndpoint.sendPrivateMessage(session,message.getUser_id(),reply, true);
+                        Server.sendPrivateMessage(session,message.getUser_id(),reply, true);
                     }
                 }
             }catch (Exception e){

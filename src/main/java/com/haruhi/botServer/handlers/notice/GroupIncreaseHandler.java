@@ -4,7 +4,7 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.notice.IGroupIncreaseEvent;
 import com.haruhi.botServer.factory.ThreadPoolFactory;
-import com.haruhi.botServer.ws.ServerEndpoint;
+import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -28,7 +28,7 @@ public class GroupIncreaseHandler implements IGroupIncreaseEvent {
             for (int i = 0; i < 3; i++) {
                 faces += face;
             }
-            ServerEndpoint.sendGroupMessage(session,message.getGroup_id(), MessageFormat.format("{0} 欢迎小可爱~{1}",at,faces),false);
+            Server.sendGroupMessage(session,message.getGroup_id(), MessageFormat.format("{0} 欢迎小可爱~{1}",at,faces),false);
         });
     }
 }

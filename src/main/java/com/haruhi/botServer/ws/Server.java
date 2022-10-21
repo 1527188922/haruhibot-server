@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * gocq使用反向ws连接
  */
 @Slf4j
-public class ServerEndpoint implements WebSocketHandler {
+public class Server implements WebSocketHandler {
 
     private static Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
     private static Map<String,Long> userIdMap = new ConcurrentHashMap<>();
