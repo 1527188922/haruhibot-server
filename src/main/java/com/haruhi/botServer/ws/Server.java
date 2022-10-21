@@ -173,6 +173,19 @@ public class Server implements WebSocketHandler {
         }
     }
 
+    public static void sendGroupMessage(WebSocketSession session, Long groupId,List<ForwardMsg> messages){
+        if (!CollectionUtils.isEmpty(messages)) {
+            RequestBox<Params> paramsRequestBox = new RequestBox<>();
+            paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
+            Params params = new Params();
+            params.setMessages(messages);
+            params.setMessage_type(MessageEventEnum.group.getType());
+            params.setGroup_id(groupId);
+            paramsRequestBox.setParams(params);
+            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+        }
+    }
+
     private static ForwardMsg createForwardMsg(Long uin,String name,String context){
         ForwardMsg item = new ForwardMsg();
         ForwardMsg.Data data = new ForwardMsg.Data();

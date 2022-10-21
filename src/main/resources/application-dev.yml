@@ -13,9 +13,6 @@ mysql:
   dbName: haruhibot_server
   username: root
   password: 123456
-  monitor:
-    username: haruhi
-    password: 123456
 
 server:
   port: ${bot.port}
@@ -36,23 +33,11 @@ log:
 
 spring:
   datasource:
-    druid:
-      web-stat-filter:
-        exclusions: '*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*'
-      stat-view-servlet:
-        login-username: ${mysql.monitor.username}
-        login-password: ${mysql.monitor.password}
     dynamic:
       datasource:
         master:
+          dbName: mysql
           username: ${mysql.username}
           password: ${mysql.password}
-          url: jdbc:mysql://${mysql.host}:${mysql.port}/${mysql.dbName}?useUnicode=true&characterEncoding=utf-8&useSSL=false
+          url: jdbc:mysql://${mysql.host}:${mysql.port}/${spring.datasource.dynamic.datasource.master.dbName}?useUnicode=true&characterEncoding=utf-8&useSSL=false
           driver-class-name: com.mysql.cj.jdbc.Driver
-        system:
-          username: ${mysql.username}
-          password: ${mysql.password}
-          url: jdbc:mysql://${mysql.host}:${mysql.port}/mysql?useUnicode=true&characterEncoding=utf-8&useSSL=false
-          driver-class-name: com.mysql.cj.jdbc.Driver
-
-

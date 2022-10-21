@@ -109,15 +109,18 @@ public class BulletChatWordCloudHandler implements IMessageEvent {
                     cq = instance.toCq(CqCodeTypeEnum.image.getType(), "url=" + playerInfoResp.getFirst_frame(),"file="+CommonUtil.uuid()+".jpg");
                     cq = "\n"+cq;
                 }
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),MessageFormat.format("获取弹幕成功，数量：{0}\n开始生成...\n标题：{1}{2}",chatList.size(),playerInfoResp.getPart(),cq),true);
+                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),MessageFormat.format("获取弹幕成功，数量：{0}\n开始生成...\n标题：{1}{2}",chatList.size(),playerInfoResp.getPart(),cq),false);
                 List<String> list = WordSlicesTask.execute(chatList);
                 Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(list));
                 if(CollectionUtils.isEmpty(map)){
                     Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"有效词料为0，不生成",true);
                     return;
                 }
-                String fileName = bv + "-" + CommonUtil.uuid() + ".png";
+                String fileName = bv + "-" + message.getUser_id() + ".png";
                 outPutPath = basePath + File.separator + fileName;
+
+                FileUtil.deleteFile(outPutPath);
+
                 WordCloudUtil.generateWordCloudImage(map,outPutPath);
 
                 String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=file:///" + outPutPath);
