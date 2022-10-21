@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haruhi.botServer.mapper.TableInitMapper">
+    <update id="createGroupChatHistory">
+        CREATE TABLE `${tableName}` (
+            `id` INT auto_increment NOT NULL,
+            `card` varchar(30) COMMENT '群昵称',
+            `nickname` varchar(30) COMMENT 'qq昵称',
+            `message_id` varchar(30) NOT NULL,
+            `group_id` BIGINT NOT NULL,
+            `user_id` BIGINT NOT NULL,
+            `self_id` BIGINT NOT NULL,
+            `content` TEXT COLLATE utf8mb4_unicode_ci,
+            create_time BIGINT NOT NULL,
+            PRIMARY KEY (`id`),
+            KEY `index_content` (`content`(767))
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群聊历史聊天表';
+    </update>
+</mapper>
