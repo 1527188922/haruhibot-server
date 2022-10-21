@@ -31,7 +31,7 @@ public class SeeNewsHandler implements IMessageEvent {
     private NewsService NewsService;
 
     @Override
-    public boolean onMessage(WebSocketSession session,final Message message, final String command) {
+    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
         if(!command.matches(RegexEnum.SEE_TODAY_NEWS.getValue())){
             return false;
         }
