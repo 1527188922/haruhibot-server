@@ -28,7 +28,7 @@ public class GroupIncreaseHandler implements IGroupIncreaseEvent {
             for (int i = 0; i < 3; i++) {
                 faces += face;
             }
-            ServerEndpoint.sendGroupMessage(session,message.getGroup_id(), MessageFormat.format("{0} 欢迎新人~{1}",at,faces),false);
+            ServerEndpoint.sendGroupMessage(session,message.getGroup_id(), MessageFormat.format("{0} 欢迎小可爱~{1}",at,faces),false);
         });
     }
 }
