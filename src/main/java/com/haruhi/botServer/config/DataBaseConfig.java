@@ -38,6 +38,10 @@ public class DataBaseConfig {
 
     // 群聊天历史
     public final static String T_GROUP_CHAT_HISTORY = "t_group_chat_history";
+    // 话术
+    public final static String T_VERBAL_TRICKS = "t_verbal_tricks";
+    // 戳一戳回复表
+    public final static String T_POKE_REPLY = "t_poke_reply";
 
     @Autowired
     public void setBotDbname(@Value("${mysql.dbName}") String dbName) {

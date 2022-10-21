@@ -19,7 +19,7 @@ public class FirstTask implements Runnable{
     @Override
     public void run() {
         try {
-//            systemService.loadCache();
+            systemService.loadCache();
             // 创建stop脚本
             systemService.writeStopScript();
         }catch (Exception e){

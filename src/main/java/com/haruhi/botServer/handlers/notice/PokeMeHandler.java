@@ -21,13 +21,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 @Slf4j
 @Component
-public class PokeHandler implements IPokeEvent {
+public class PokeMeHandler implements IPokeEvent {
 
     public volatile static List<String> cache = new CopyOnWriteArrayList<>();
 
     @Override
     public void onPoke(final WebSocketSession session,final Message message) {
-        if(!message.getSelf_id().equals(message.getTarget_id()) || message.getSelf_id().equals(message.getUser_id()) || cache.size() == 0){
+        if(!String.valueOf(message.getSelf_id()).equals(String.valueOf(message.getTarget_id())) || String.valueOf(message.getSelf_id()).equals(String.valueOf(message.getUser_id())) || cache.size() == 0){
+            // 只对戳了机器人生效
             return;
         }
 

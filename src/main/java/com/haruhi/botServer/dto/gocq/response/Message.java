@@ -19,7 +19,7 @@ public class Message implements Serializable {
     private Long user_id;
     private Long sender_id;
     private Long group_id;
-    private String target_id;
+    private Long target_id;
     private String message;
     private String raw_message;
     private Integer font;

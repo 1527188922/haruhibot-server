@@ -41,6 +41,13 @@ public class DataBaseService {
                 tableInitMapper.createGroupChatHistory(DataBaseConfig.T_GROUP_CHAT_HISTORY);
             }
 
+            if (dataBaseInitMapper.tableIsExist(DataBaseConfig.DATA_BASE_BOT,DataBaseConfig.T_VERBAL_TRICKS) == 0) {
+                tableInitMapper.createVerbalTricks(DataBaseConfig.T_VERBAL_TRICKS);
+            }
+            if (dataBaseInitMapper.tableIsExist(DataBaseConfig.DATA_BASE_BOT,DataBaseConfig.T_POKE_REPLY) == 0) {
+                tableInitMapper.createPokeReply(DataBaseConfig.T_POKE_REPLY);
+            }
+
             log.info("初始化数据库完成");
         }catch (Exception e){
             log.error("初始化数据库异常",e);

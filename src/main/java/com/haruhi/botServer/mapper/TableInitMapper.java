@@ -12,4 +12,18 @@ public interface TableInitMapper {
      * @return
      */
     int createGroupChatHistory(@Param("tableName") String tableName);
+
+    /**
+     * 戳一戳回复表
+     * @param tableName
+     * @return
+     */
+    int createPokeReply(@Param("tableName") String tableName);
+
+    /**
+     * 话术表
+     * @param tableName
+     * @return
+     */
+    int createVerbalTricks(@Param("tableName") String tableName);
 }

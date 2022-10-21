@@ -1,6 +1,8 @@
 package com.haruhi.botServer.service;
 
 import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.service.pokeReply.PokeReplyService;
+import com.haruhi.botServer.service.verbalTricks.VerbalTricksService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.utils.system.SystemUtil;
@@ -19,6 +21,10 @@ public class SystemService {
 
     @Autowired
     private AbstractPathConfig envConfig;
+    @Autowired
+    private PokeReplyService pokeReplyService;
+    @Autowired
+    private VerbalTricksService verbalTricksService;
 
     public void writeStopScript(){
         if(SystemUtil.PROFILE_RPOD.equals(SystemInfo.PROFILE)){
@@ -44,7 +50,8 @@ public class SystemService {
 
     public synchronized void loadCache(){
        try {
-
+           pokeReplyService.loadPokeReply();
+           verbalTricksService.loadVerbalTricks();
            log.info("加载缓存完成");
        }catch (Exception e){
            log.error("加载缓存异常",e);
