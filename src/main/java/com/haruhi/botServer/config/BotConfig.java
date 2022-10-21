@@ -13,6 +13,7 @@ public class BotConfig {
     public static String NAME = "";
     public static String SEARCH_IMAGE_KEY = "";
     public static String ACCESS_TOKEN = "";
+    public static Long DEFAULT_USER = null;
 
     @Autowired
     public void setName(@Value("${bot.name}") String name) {
@@ -32,6 +33,14 @@ public class BotConfig {
         SEARCH_IMAGE_KEY = searchImageKey;
         if(Strings.isBlank(SEARCH_IMAGE_KEY)){
             log.warn("未配置识图key,无法使用识图功能");
+        }
+    }
+
+    @Autowired
+    public void setDefaultUser(@Value("${bot.default-user}") Long defaultUser){
+        DEFAULT_USER = defaultUser;
+        if(DEFAULT_USER == null || 0L == DEFAULT_USER){
+            DEFAULT_USER = 1527188922L;
         }
     }
 }

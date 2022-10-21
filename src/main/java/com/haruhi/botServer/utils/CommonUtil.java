@@ -2,7 +2,6 @@ package com.haruhi.botServer.utils;
 
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.dto.gocq.request.ForwardMsg;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.util.CollectionUtils;
@@ -18,15 +17,6 @@ public class CommonUtil {
     private static Random random = new Random();
     public static int randomInt(int start,int end){
         return random.nextInt(end - start + 1) + start;
-    }
-    public static ForwardMsg createForwardMsgItem(String context,Long uin,String name){
-        ForwardMsg item = new ForwardMsg();
-        ForwardMsg.Data data = new ForwardMsg.Data();
-        data.setUin(uin);
-        data.setName(name);
-        data.setContent(context);
-        item.setData(data);
-        return item;
     }
 
     public static boolean isAt(String userId,final String context) {

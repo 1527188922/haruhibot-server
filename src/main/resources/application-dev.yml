@@ -5,6 +5,7 @@ bot:
   port: 8090
   search-image-key:
   access-token: haruhi123
+  default-user: 1234567890
 
 mysql:
   host: 127.0.0.1
@@ -24,12 +25,15 @@ server:
 mybatis-plus:
   type-aliases-package: com.haruhi.server.entity
   mapper-locations: classpath:/mapper/**/*.xml
+
 logging:
   level:
     com.haruhi.bot.mapper: debug
+
 log:
   level: info
   path: ./logs
+
 spring:
   datasource:
     druid:

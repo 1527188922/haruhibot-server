@@ -1,6 +1,7 @@
 package com.haruhi.botServer.ws;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.constant.event.MessageEventEnum;
 import com.haruhi.botServer.constant.event.MetaEventEnum;
@@ -44,7 +45,6 @@ public class ServerEndpoint implements WebSocketHandler {
     @Override
     public void handleMessage(WebSocketSession session, final WebSocketMessage<?> message) throws Exception {
         final String s = String.valueOf(message.getPayload());
-        log.info("handler收到消息,session:{},message:{}",session.getId(),s);
         Message bean = JSONObject.parseObject(s, Message.class);
         if(PostTypeEnum.meta_event.toString().equals(bean.getPost_type()) && MetaEventEnum.heartbeat.toString().equals(bean.getMeta_event_type())){
             // 心跳包
@@ -72,13 +72,13 @@ public class ServerEndpoint implements WebSocketHandler {
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error("handle异常,sessionId:{}",session.getId(),exception);
+        log.error("连接异常,sessionId:{},exception:{}",session.getId(),exception.getMessage());
         removeClient(session);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
-        log.info("连接断开,sessionId:{}",session.getId());
+        log.info("连接断开,sessionId:{},{}",session.getId(),closeStatus.toString());
         removeClient(session);
     }
 
@@ -87,7 +87,7 @@ public class ServerEndpoint implements WebSocketHandler {
         Long userId = userIdMap.get(id);
         if (userId != null) {
             userIdMap.remove(id);
-            log.info("用户：{}断开",userId);
+            log.info("用户断开：{}",userId);
         }
         if (sessionMap.containsKey(id)) {
             sessionMap.remove(id);
@@ -121,7 +121,6 @@ public class ServerEndpoint implements WebSocketHandler {
         sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
     }
 
-
     /**
      * 发送合并消息 （只能发群，默认解析cq码）
      * @param session 客户端（gocq）session
@@ -137,15 +136,35 @@ public class ServerEndpoint implements WebSocketHandler {
             Params params = new Params();
             params.setMessage_type(MessageEventEnum.group.getType());
             params.setGroup_id(groupId);
-            ArrayList<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+            List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
             for (String s : messages) {
-                ForwardMsg item = new ForwardMsg();
-                ForwardMsg.Data data = new ForwardMsg.Data();
-                data.setUin(uin);
-                data.setName(name);
-                data.setContent(s);
-                item.setData(data);
-                forwardMsgs.add(item);
+                forwardMsgs.add(createForwardMsg(uin,name,s));
+            }
+
+            params.setMessages(forwardMsgs);
+            paramsRequestBox.setParams(params);
+            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+        }
+    }
+    /**
+     * 发送合并消息 （只能发群，默认解析cq码）
+     * @param session 客户端（gocq）session
+     * @param groupId 群号
+     * @param name 合并卡片内的消息发送人名称
+     * @param messages 消息集合
+     */
+    public static void sendGroupMessage(WebSocketSession session, Long groupId,String name, List<String> messages){
+        if (!CollectionUtils.isEmpty(messages)) {
+            RequestBox<Params> paramsRequestBox = new RequestBox<>();
+            Long uin = getUserBySession(session);
+            paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
+            Params params = new Params();
+            params.setMessage_type(MessageEventEnum.group.getType());
+            params.setGroup_id(groupId);
+            List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+
+            for (String s : messages) {
+                forwardMsgs.add(createForwardMsg(uin,name,s));
             }
 
             params.setMessages(forwardMsgs);
@@ -154,6 +173,15 @@ public class ServerEndpoint implements WebSocketHandler {
         }
     }
 
+    private static ForwardMsg createForwardMsg(Long uin,String name,String context){
+        ForwardMsg item = new ForwardMsg();
+        ForwardMsg.Data data = new ForwardMsg.Data();
+        data.setUin(uin);
+        data.setName(name);
+        data.setContent(context);
+        item.setData(data);
+        return item;
+    }
     /**
      * 发送私聊消息
      * @param session 客户端（gocq）session
@@ -209,6 +237,14 @@ public class ServerEndpoint implements WebSocketHandler {
         } catch (Exception e) {
             log.error("发送消息发生异常,消息：{}",text,e);
         }
+    }
+
+    public static Long getUserBySession(WebSocketSession session){
+        Long userId = userIdMap.get(session.getId());
+        if(userId != null){
+            return userId;
+        }
+        return BotConfig.DEFAULT_USER;
     }
 
 }
