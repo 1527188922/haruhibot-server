@@ -1,0 +1,1 @@
+java -jar -Xms1024m -Xmx1024m haruhibotServer.jar

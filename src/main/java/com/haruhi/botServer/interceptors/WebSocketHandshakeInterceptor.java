@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 只能拦截ws握手时的http请求
+ * 拦截握手
  */
 @Slf4j
-public class WebSocketServerInterceptor implements HandshakeInterceptor {
+public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
@@ -32,7 +32,8 @@ public class WebSocketServerInterceptor implements HandshakeInterceptor {
             HttpHeaders headers = request.getHeaders();
             List<String> authorization = headers.get("Authorization");
             if (CollectionUtils.isEmpty(authorization)) {
-                forbidden(response);
+                doForbidden(request,response);
+                return;
             }
             boolean hasToken = false;
             for (String s : authorization) {
@@ -43,13 +44,13 @@ public class WebSocketServerInterceptor implements HandshakeInterceptor {
             }
 
             if (!hasToken) {
-                forbidden(response);
+                doForbidden(request,response);
             }
         }
     }
 
-    private void forbidden(ServerHttpResponse response){
+    private void doForbidden(ServerHttpRequest request,ServerHttpResponse response){
         response.setStatusCode(HttpStatus.FORBIDDEN);
-        log.error("无token，禁止握手！");
+        log.error("无token或token错误，禁止握手！ {}:{}",request.getRemoteAddress().getHostString(),request.getRemoteAddress().getPort());
     }
 }

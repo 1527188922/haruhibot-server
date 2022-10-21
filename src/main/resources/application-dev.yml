@@ -1,3 +1,5 @@
+env:
+  active: dev
 bot:
   name: 春日酱
   port: 8090
@@ -22,6 +24,12 @@ server:
 mybatis-plus:
   type-aliases-package: com.haruhi.server.entity
   mapper-locations: classpath:/mapper/**/*.xml
+logging:
+  level:
+    com.haruhi.bot.mapper: debug
+log:
+  level: info
+  path: ./logs
 spring:
   datasource:
     druid:
@@ -42,4 +50,5 @@ spring:
           password: 123456
           url: jdbc:mysql://${mysql.host}:${mysql.port}/mysql?useUnicode=true&characterEncoding=utf-8&useSSL=false
           driver-class-name: com.mysql.cj.jdbc.Driver
+
 

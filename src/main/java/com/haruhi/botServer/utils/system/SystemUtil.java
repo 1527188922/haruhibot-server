@@ -10,7 +10,7 @@ import java.lang.management.ManagementFactory;
 public class SystemUtil extends SystemUtils {
     private SystemUtil(){}
     public static final String PROFILE_DEV = "dev";
-    public static final String PROFILE_RPO = "pro";
+    public static final String PROFILE_RPOD = "prod";
 
     public static final String PROPERTY_SPECIFICATION_NAME = "java.specification.name";
     public static final String PROPERTY_VERSION = "java.version";

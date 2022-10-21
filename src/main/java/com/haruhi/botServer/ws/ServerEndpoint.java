@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-
 /**
  * 机器人是服务端
  * gocq使用反向ws连接
@@ -73,24 +72,27 @@ public class ServerEndpoint implements WebSocketHandler {
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error("异常:session:{}",session.getId(),exception);
+        log.error("handle异常,sessionId:{}",session.getId(),exception);
         removeClient(session);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
-        log.info("连接断开:session:{}",session.getId());
+        log.info("连接断开,sessionId:{}",session.getId());
         removeClient(session);
     }
 
     private void removeClient(WebSocketSession session){
         String id = session.getId();
-        sessionMap.remove(id);
         Long userId = userIdMap.get(id);
         if (userId != null) {
             userIdMap.remove(id);
+            log.info("用户：{}断开",userId);
         }
-        log.info("用户：{}断开，客户端数量：{}",userId,sessionMap.size());
+        if (sessionMap.containsKey(id)) {
+            sessionMap.remove(id);
+            log.info("客户端数量：{}",sessionMap.size());
+        }
     }
 
     @Override

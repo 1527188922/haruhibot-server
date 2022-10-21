@@ -34,9 +34,4 @@ public class BotConfig {
             log.warn("未配置识图key,无法使用识图功能");
         }
     }
-
-
-
-
-
 }

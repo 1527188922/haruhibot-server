@@ -11,7 +11,7 @@ import java.io.File;
 
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "env.active",havingValue = SystemUtil.PROFILE_RPO)
+@ConditionalOnProperty(name = "env.active",havingValue = SystemUtil.PROFILE_RPOD)
 public class ProPathConfig extends AbstractPathConfig {
 
     public ProPathConfig(){

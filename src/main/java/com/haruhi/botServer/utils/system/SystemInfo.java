@@ -1,6 +1,5 @@
 package com.haruhi.botServer.utils.system;
 
-import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.factory.ThreadPoolFactory;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +36,7 @@ public class SystemInfo {
         init();
     }
     private static void init(){
-        PROFILE = SystemUtil.PROFILE_RPO;
+        PROFILE = SystemUtil.PROFILE_RPOD;
         getPID();
         getOsName();
         getOsVersion();
