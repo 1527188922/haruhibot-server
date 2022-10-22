@@ -44,8 +44,8 @@ public class SearchImageHandler implements IMessageEvent {
 
     private static CacheSet<String> cache = new CacheSet<>(30,TimeUnit.SECONDS,size);
 
-    private String getKey(String userId,String groupId){
-        return userId + "-" + groupId;
+    private String getKey(String selfId,String userId,String groupId){
+        return  selfId + "-" + userId + "-" + groupId;
     }
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
@@ -58,7 +58,7 @@ public class SearchImageHandler implements IMessageEvent {
         }else{
             KQCodeUtils utils = KQCodeUtils.getInstance();
             cq = utils.getCq(command, CqCodeTypeEnum.image.getType(), 0);
-            key = getKey(String.valueOf(message.getUser_id()), String.valueOf(message.getGroup_id()));
+            key = getKey(String.valueOf(message.getSelf_id()), String.valueOf(message.getUser_id()), String.valueOf(message.getGroup_id()));
             boolean matches = false;
             if(cache.contains(key) && cq != null){
                 // 存在缓存 并且 图片cq码不为空

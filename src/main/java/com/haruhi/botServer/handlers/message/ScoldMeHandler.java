@@ -32,13 +32,13 @@ public class ScoldMeHandler implements IMessageEvent {
     }
 
     @Autowired
-    private AbstractPathConfig envConfig;
+    private AbstractPathConfig abstractPathConfig;
     private static File[] fileList;
 
     @PostConstruct
     private void loadAudioFileList(){
         // 初始化类时加载文件
-        fileList = FileUtil.getFileList(envConfig.resourcesAudioPath() + File.separator + "dg");
+        fileList = FileUtil.getFileList(abstractPathConfig.resourcesAudioPath() + File.separator + "dg");
     }
 
 
@@ -57,12 +57,12 @@ public class ScoldMeHandler implements IMessageEvent {
             int i = CommonUtil.randomInt(0, fileList.length - 1);
             File file = fileList[i];
             KQCodeUtils instance = KQCodeUtils.getInstance();
-            String cq = instance.toCq(CqCodeTypeEnum.record.getType(), "file=file:///" + file.toString());
+            String s = abstractPathConfig.webResourcesAudioPath() + "/dg/" + file.getName();
+            log.info("骂我音频地址：{}",s);
+            String cq = instance.toCq(CqCodeTypeEnum.record.getType(), "file=" + s);
             Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),cq,false);
         });
 
         return true;
     }
-
-
 }

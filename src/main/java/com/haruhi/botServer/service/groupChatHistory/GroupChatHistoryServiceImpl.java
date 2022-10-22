@@ -48,7 +48,8 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
     private GroupChatHistoryMapper groupChatHistoryMapper;
 
     @Autowired
-    private AbstractPathConfig envConfig;
+    private AbstractPathConfig abstractPathConfig;
+    private static String path = "wordCloud";
 
     private static String basePath;
     public static int poolSize = SystemInfo.AVAILABLE_PROCESSORS + 1;
@@ -56,7 +57,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
 
     @PostConstruct
     private void mkdirs(){
-        basePath = envConfig.resourcesImagePath() + File.separator + "wordCloud";
+        basePath = abstractPathConfig.resourcesImagePath() + File.separator + path;
         File file = new File(basePath);
         if (!file.exists()) {
             file.mkdirs();
@@ -171,7 +172,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
         List<GroupChatHistory> corpus = groupChatHistoryMapper.selectList(queryWrapper);
         if (CollectionUtils.isEmpty(corpus)) {
             Server.sendGroupMessage(session,message.getGroup_id(),"该条件下没有聊天记录",true);
-            generateComplete(message,null);
+            generateComplete(message);
             return;
         }
 
@@ -185,7 +186,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
             Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(strings));
             if(CollectionUtils.isEmpty(map)){
                 Server.sendGroupMessage(session,message.getGroup_id(),"分词为0，本次不生成词云图",true);
-                generateComplete(message,null);
+                generateComplete(message);
                 return;
             }
             long l1 = System.currentTimeMillis();
@@ -195,25 +196,27 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
             outPutPath = basePath + File.separator + fileName;
 
             // 先删掉旧图片
-            FileUtil.deleteFile(outPutPath);
+            File file = new File(outPutPath);
+            FileUtil.deleteFile(file);
 
             WordCloudUtil.generateWordCloudImage(map,outPutPath);
             log.info("生成词云图完成,耗时:{}",System.currentTimeMillis() - l1);
             // 生成图片完成,发送图片
             KQCodeUtils instance = KQCodeUtils.getInstance();
-            String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=file:///" + outPutPath);
+            String s = abstractPathConfig.webResourcesImagePath() + "/" + path + "/" + fileName + "?t=" + new Date().getTime();
+            log.info("群词云图片地址：{}",s);
+            String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
             //
             Server.sendGroupMessage(session,message.getGroup_id(),imageCq,false);
         }catch (Exception e){
             Server.sendGroupMessage(session,message.getGroup_id(),MessageFormat.format("生成词云图片异常：{0}",e.getMessage()),true);
             log.error("生成词云图片异常",e);
         }finally {
-            generateComplete(message,outPutPath);
+            generateComplete(message);
         }
     }
-    private void generateComplete(Message message,String path){
-        GroupWordCloudHandler.lock.remove(String.valueOf(message.getGroup_id()));
-        FileUtil.deleteFile(path);
+    private void generateComplete(Message message){
+        GroupWordCloudHandler.lock.remove(String.valueOf(message.getGroup_id()) + String.valueOf(message.getSelf_id()));
     }
 
     private Date limitDate(GroupWordCloudHandler.RegexEnum regexEnum){

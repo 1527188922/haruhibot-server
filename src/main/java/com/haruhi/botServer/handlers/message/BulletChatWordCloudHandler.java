@@ -23,6 +23,7 @@ import org.springframework.web.socket.WebSocketSession;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -40,12 +41,13 @@ public class BulletChatWordCloudHandler implements IMessageEvent {
         return "弹幕词云";
     }
 
+    private static String path = "bulletWordCloud";
     @Autowired
-    private AbstractPathConfig envConfig;
+    private AbstractPathConfig abstractPathConfig;
     private static String basePath;
     @PostConstruct
     private void mkdirs(){
-        basePath = envConfig.resourcesImagePath() + File.separator + "bulletWordCloud";
+        basePath = abstractPathConfig.resourcesImagePath() + File.separator + path;
         File file = new File(basePath);
         if (!file.exists()) {
             file.mkdirs();
@@ -118,19 +120,18 @@ public class BulletChatWordCloudHandler implements IMessageEvent {
                 }
                 String fileName = bv + "-" + message.getUser_id() + ".png";
                 outPutPath = basePath + File.separator + fileName;
-
-                FileUtil.deleteFile(outPutPath);
+                File file = new File(outPutPath);
+                FileUtil.deleteFile(file);
 
                 WordCloudUtil.generateWordCloudImage(map,outPutPath);
-
-                String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=file:///" + outPutPath);
+                String s = abstractPathConfig.webResourcesImagePath() + "/" + path + "/" + fileName + "?t=" + new Date().getTime();
+                log.info("弹幕词云地址：{}",s);
+                String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
 
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),imageCq,false);
             }catch (Exception e){
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),MessageFormat.format("弹幕词云生成异常:{0}",e.getMessage()),true);
                 log.error("弹幕词云异常",e);
-            }finally {
-                FileUtil.deleteFile(outPutPath);
             }
         }
     }

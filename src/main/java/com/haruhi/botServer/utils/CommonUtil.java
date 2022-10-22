@@ -6,6 +6,10 @@ import com.simplerobot.modules.utils.KQCodeUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.util.CollectionUtils;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -103,5 +107,54 @@ public class CommonUtil {
         }else{
             return num / divisor + 1;
         }
+    }
+
+
+    // 方法2
+    public static String getNowIP2() throws IOException {
+        String ip = null;
+        BufferedReader br = null;
+        try {
+            URL url = new URL("https://v6r.ipip.net/?format=callback");
+            br = new BufferedReader(new InputStreamReader(url.openStream()));
+            String s = "";
+            StringBuffer sb = new StringBuffer("");
+            String webContent = "";
+            while ((s = br.readLine()) != null) {
+                sb.append(s + "\r\n");
+            }
+            webContent = sb.toString();
+            int start = webContent.indexOf("(") + 2;
+            int end = webContent.indexOf(")") - 1;
+            webContent = webContent.substring(start, end);
+            ip = webContent;
+        } finally {
+            if (br != null)
+                br.close();
+        }
+        return ip;
+    }
+
+    // 方法4
+    public static String getNowIP4() throws IOException {
+        String ip = null;
+        String objWebURL = "https://bajiu.cn/ip/";
+        BufferedReader br = null;
+        try {
+            URL url = new URL(objWebURL);
+            br = new BufferedReader(new InputStreamReader(url.openStream()));
+            String s = "";
+            String webContent = "";
+            while ((s = br.readLine()) != null) {
+                if (s.indexOf("互联网IP") != -1) {
+                    ip = s.substring(s.indexOf("'") + 1, s.lastIndexOf("'"));
+                    break;
+                }
+            }
+        } finally {
+            if (br != null)
+                br.close();
+        }
+        return ip;
     }
 }

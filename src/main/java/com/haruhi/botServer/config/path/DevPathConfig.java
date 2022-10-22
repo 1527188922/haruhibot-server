@@ -1,14 +1,19 @@
 package com.haruhi.botServer.config.path;
 
+import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.system.ApplicationHome;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 @Slf4j
 @Component
@@ -23,11 +28,20 @@ public class DevPathConfig extends AbstractPathConfig {
     private static String homePath;
     private static String imagePath;
     private static String audioPath;
+    private static String resourceHomePath;
 
     static {
+        setResourceHomePath();
         setHomePath();
         setImagePath();
         setAudioPath();
+    }
+    private static void setResourceHomePath(){
+        try {
+            resourceHomePath = directory.getCanonicalPath();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void setHomePath(){
@@ -35,24 +49,37 @@ public class DevPathConfig extends AbstractPathConfig {
         homePath = ah.getSource().getParentFile().toString();
     }
     private static void setImagePath(){
-        try {
-            imagePath = directory.getCanonicalPath() + File.separator + "build\\image";
-            File file = new File(imagePath);
-            if(!file.exists()){
-                file.mkdirs();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        imagePath = resourceHomePath + File.separator + "build\\image";
+        File file = new File(imagePath);
+        if(!file.exists()){
+            file.mkdirs();
         }
     }
     private static void setAudioPath(){
+        // 这个目录是一定存在的 不用创建
+        audioPath = resourceHomePath + File.separator + "build\\audio";
+    }
+
+    @Override
+    public String webHomePath() {
         try {
-            // 这个目录是一定存在的 不用创建
-            audioPath = directory.getCanonicalPath() + File.separator + "build\\audio";
-        } catch (IOException e) {
+            if(Strings.isBlank(WEB_HOME_PATH)){
+                InetAddress localHost = Inet4Address.getLocalHost();
+                WEB_HOME_PATH = "http://" + localHost.getHostAddress() + ":" + BotConfig.PORT + contextPath;
+                log.info("home path:{}",WEB_HOME_PATH);
+            }
+            return WEB_HOME_PATH;
+        } catch (UnknownHostException e) {
             e.printStackTrace();
+            return "http://127.0.0.1:" + BotConfig.PORT + contextPath;
         }
     }
+
+    @Override
+    public String resourceHomePath() {
+        return resourceHomePath;
+    }
+
     @Override
     public String applicationHomePath() {
         return homePath;
@@ -63,7 +90,16 @@ public class DevPathConfig extends AbstractPathConfig {
     }
 
     @Override
+    public String webResourcesImagePath() {
+        return webHomePath() + "/build/image";
+    }
+
+    @Override
     public String resourcesAudioPath() {
         return audioPath;
+    }
+    @Override
+    public String webResourcesAudioPath() {
+        return webHomePath() + "/build/audio";
     }
 }
