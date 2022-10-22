@@ -14,10 +14,9 @@ import java.util.concurrent.TimeUnit;
 public class ThreadPoolFactory {
     private ThreadPoolFactory(){}
     private final static ThreadPoolExecutor commandHandlerThreadPool = new ThreadPoolExecutor(5,20,36, TimeUnit.HOURS,new ArrayBlockingQueue(120),new CustomizableThreadFactory("pool-handler-"),new ThreadPoolExecutor.CallerRunsPolicy());
-//    private static ScheduledThreadPoolExecutor scheduledThreadPool = null;
     private static Executor downloadThreadPool = null;
     private final static ThreadPoolExecutor chatHistoryThreadPool = new ThreadPoolExecutor(2,10,42, TimeUnit.HOURS,new ArrayBlockingQueue(150),new CustomizableThreadFactory("pool-insertChar-"),new ThreadPoolExecutor.CallerRunsPolicy());
-
+    private final static ThreadPoolExecutor eventThreadPool = new ThreadPoolExecutor(5,16,48, TimeUnit.HOURS,new ArrayBlockingQueue(140),new CustomizableThreadFactory("pool-event-"),new ThreadPoolExecutor.CallerRunsPolicy());
 
     public static void resetThreadPoolSize(){
         int availableProcessors = SystemInfo.AVAILABLE_PROCESSORS;
@@ -28,6 +27,8 @@ public class ThreadPoolFactory {
             chatHistoryThreadPool.setCorePoolSize(availableProcessors + 1);
             chatHistoryThreadPool.setMaximumPoolSize(availableProcessors * 4);
 
+            eventThreadPool.setCorePoolSize(availableProcessors + 1);
+            eventThreadPool.setMaximumPoolSize(availableProcessors * 4);
             log.info("根据cpu线程数重置线程池容量完成");
         }
     }
@@ -35,14 +36,6 @@ public class ThreadPoolFactory {
     public static Executor getCommandHandlerThreadPool(){
         return commandHandlerThreadPool;
     }
-
-
-//    public static ScheduledThreadPoolExecutor getScheduledThreadPool(){
-//        if(scheduledThreadPool == null){
-//            scheduledThreadPool =  new ScheduledThreadPoolExecutor(2, new CustomizableThreadFactory("scheduled"));
-//        }
-//        return scheduledThreadPool;
-//    }
 
     public synchronized static Executor getDownloadThreadPool(){
         if(downloadThreadPool == null){
@@ -52,5 +45,8 @@ public class ThreadPoolFactory {
     }
     public static Executor getChatHistoryThreadPool(){
         return chatHistoryThreadPool;
+    }
+    public static Executor getEventThreadPool(){
+        return eventThreadPool;
     }
 }

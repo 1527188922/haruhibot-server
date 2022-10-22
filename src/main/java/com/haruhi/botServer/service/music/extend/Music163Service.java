@@ -17,7 +17,11 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -37,7 +41,7 @@ public class Music163Service extends AbstractMusicService {
         if(CollectionUtils.isEmpty(searchResps)){
             return null;
         }
-        ArrayList<Song> result = new ArrayList<>(searchResps.size());
+        List<Song> result = new ArrayList<>(searchResps.size());
         for (SearchResp searchResp : searchResps) {
             Song song = new Song();
             // set 歌曲id
@@ -100,7 +104,7 @@ public class Music163Service extends AbstractMusicService {
      * @return
      */
     public static String search(String keyWord) {
-        HashMap<String, Object> map = new HashMap<>(6);
+        Map<String, Object> map = new HashMap<>(6);
         map.put("s", keyWord);
         map.put("type", 1);
         map.put("limit", 20);

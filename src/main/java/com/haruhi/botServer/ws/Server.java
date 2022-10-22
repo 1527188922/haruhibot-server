@@ -6,13 +6,14 @@ import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.constant.event.MessageEventEnum;
 import com.haruhi.botServer.constant.event.MetaEventEnum;
 import com.haruhi.botServer.constant.event.PostTypeEnum;
-import com.haruhi.botServer.constant.event.SubTypeEnum;
-import com.haruhi.botServer.dispenser.MessageDispenser;
-import com.haruhi.botServer.dispenser.NoticeDispenser;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsg;
 import com.haruhi.botServer.dto.gocq.request.Params;
 import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.gocq.response.SyncResponse;
+import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.thread.ProcessMessageTask;
+import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.CloseStatus;
@@ -35,6 +36,9 @@ public class Server implements WebSocketHandler {
 
     private static Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
     private static Map<String,Long> userIdMap = new ConcurrentHashMap<>();
+    public static void putUserIdMap(String key,Long val){
+        userIdMap.put(key,val);
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -50,24 +54,7 @@ public class Server implements WebSocketHandler {
             // 心跳包
             return;
         }
-
-        if(PostTypeEnum.message.toString().equals(bean.getPost_type())){
-            // 普通消息
-            final String command = bean.getMessage();
-            log.info("[{}]收到来自用户[{}]的消息:{}",bean.getMessage_type(),bean.getUser_id(),command);
-            if(command != null){
-                MessageDispenser.onEvent(session,bean,command);
-            }
-        }else if(PostTypeEnum.notice.toString().equals(bean.getPost_type())){
-            // bot通知
-            NoticeDispenser.onEvent(session,bean);
-        } else if(PostTypeEnum.meta_event.toString().equals(bean.getPost_type())){
-            // 系统消息
-            if(MetaEventEnum.lifecycle.toString().equals(bean.getMeta_event_type()) && SubTypeEnum.connect.toString().equals(bean.getSub_type())){
-                // 刚连接成功时，gocq会发一条消息给bot
-                userIdMap.put(session.getId(),bean.getSelf_id());
-            }
-        }
+        ThreadPoolFactory.getEventThreadPool().execute(new ProcessMessageTask(session,bean,s));
     }
 
     @Override
@@ -171,6 +158,33 @@ public class Server implements WebSocketHandler {
             paramsRequestBox.setParams(params);
             sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
         }
+    }
+
+    /**
+     * 发送群同步消息
+     * 群合并
+     * @param session
+     * @param groupId
+     * @param name
+     * @param messages
+     * @param timeout
+     * @return
+     */
+    public static SyncResponse sendSyncGroupMessage(WebSocketSession session, Long groupId, Long uin, String name, List<String> messages, long timeout){
+        Params params = new Params();
+        params.setMessage_type(MessageEventEnum.group.getType());
+        params.setGroup_id(groupId);
+        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+
+        for (String s : messages) {
+            forwardMsgs.add(createForwardMsg(uin,name,s));
+        }
+        params.setMessages(forwardMsgs);
+        JSONObject jsonObject = GocqSyncRequestUtil.sendSyncRequest(session, GocqActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout);
+        if (jsonObject != null) {
+            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
+        }
+        return null;
     }
 
     public static void sendGroupMessage(WebSocketSession session, Long groupId,List<ForwardMsg> messages){
