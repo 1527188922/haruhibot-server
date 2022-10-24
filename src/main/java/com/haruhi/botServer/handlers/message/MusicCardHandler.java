@@ -42,12 +42,12 @@ public class MusicCardHandler implements IMessageEvent {
     }
 
     private String getKey(final Message message){
-        return getKey(message.getUser_id(),message.getGroup_id());
+        return getKey(message.getSelf_id(),message.getUser_id(),message.getGroup_id());
     }
 
-    private String getKey(Long userId, Long groupId){
+    private String getKey(Long selfId,Long userId, Long groupId){
         String gid = groupId == null ? String.valueOf(groupId) : "";
-        return userId + "-" + gid;
+        return String.valueOf(selfId) + userId + "-" + gid;
     }
 
     @Override
