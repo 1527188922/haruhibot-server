@@ -5,7 +5,10 @@ import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SelfInfo;
+import com.haruhi.botServer.utils.system.SystemInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -15,7 +18,10 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -26,6 +32,10 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 public class GocqSyncRequestUtil {
     private GocqSyncRequestUtil(){}
+
+    public static int poolSize = SystemInfo.AVAILABLE_PROCESSORS + 1;
+    public static long sleep = 1L;
+    public static final ExecutorService pool = new ThreadPoolExecutor(poolSize, Integer.MAX_VALUE, 24L, TimeUnit.HOURS, new SynchronousQueue<Runnable>(),new CustomizableThreadFactory("pool-sendSyncMessage-"));
 
     private static Map<String,JSONObject> resultMap = new ConcurrentHashMap<>();
     public static void putEchoResult(String key, JSONObject val){
@@ -80,8 +90,13 @@ public class GocqSyncRequestUtil {
         try {
             session.sendMessage(new TextMessage(JSONObject.toJSONString(requestBox)));
             FutureTask<JSONObject> futureTask = new FutureTask<>(new GocqSyncRequestUtil.Task(echo));
-            new Thread(futureTask).start();
-            JSONObject res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
+            pool.submit(futureTask);
+            JSONObject res;
+            if(timeout <= sleep){
+                res = futureTask.get();
+            }else{
+                res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
+            }
             return res;
         }catch (InterruptedException e){
             log.error("发送同步消息线程中断异常,echo:{}",echo,e);
@@ -100,13 +115,23 @@ public class GocqSyncRequestUtil {
     private static class Task implements Callable<JSONObject> {
         private String echo;
         Task(String echo){
+            if (Strings.isBlank(echo)) {
+                throw new IllegalArgumentException("echo is blank");
+            }
             this.echo = echo;
         }
         @Override
-        public JSONObject call() throws Exception {
+        public JSONObject call() throws Exception{
             JSONObject res = null;
-            while (res == null){
+            while (true){
                 res = resultMap.get(echo);
+                if(res == null){
+                    try {
+                        Thread.sleep(sleep);
+                    } catch (InterruptedException e) { }
+                }else {
+                    break;
+                }
             }
             return res;
         }
