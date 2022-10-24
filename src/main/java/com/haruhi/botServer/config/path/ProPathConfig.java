@@ -26,7 +26,7 @@ public class ProPathConfig extends AbstractPathConfig {
     private static String imagePath;
     private static String audioPath;
     private static String host;
-    private static final Object OBJECT = new Object();
+
 
     static {
         // 加载根目录路径
@@ -61,8 +61,8 @@ public class ProPathConfig extends AbstractPathConfig {
                     }
 
                     if(Strings.isBlank(host)){
-                        if(Strings.isNotBlank(BotConfig.AUTO_HOST)){
-                            host = BotConfig.AUTO_HOST;
+                        if(Strings.isNotBlank(BotConfig.INTERNET_HOST)){
+                            host = BotConfig.INTERNET_HOST;
                         }else {
                             throw new IllegalArgumentException("prod环境获取外网ip失败！请手动配置外网ip");
                         }

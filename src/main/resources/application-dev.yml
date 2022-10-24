@@ -3,7 +3,7 @@ env:
 bot:
   name: 春日酱
   port: 8090
-  host:
+  internet-host:
   search-image-key:
   access-token: haruhi123
   default-user: 1234567890

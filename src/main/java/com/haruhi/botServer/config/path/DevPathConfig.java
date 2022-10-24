@@ -62,17 +62,23 @@ public class DevPathConfig extends AbstractPathConfig {
 
     @Override
     public String webHomePath() {
-        try {
-            if(Strings.isBlank(WEB_HOME_PATH)){
-                InetAddress localHost = Inet4Address.getLocalHost();
-                WEB_HOME_PATH = "http://" + localHost.getHostAddress() + ":" + BotConfig.PORT + contextPath;
-                log.info("home path:{}",WEB_HOME_PATH);
+        if (Strings.isBlank(WEB_HOME_PATH)) {
+            synchronized (OBJECT){
+                if(Strings.isBlank(WEB_HOME_PATH)){
+                    try {
+                        InetAddress localHost = Inet4Address.getLocalHost();
+                        WEB_HOME_PATH = "http://" + localHost.getHostAddress() + ":" + BotConfig.PORT + contextPath;
+                        log.info("home path:{}",WEB_HOME_PATH);
+                        return WEB_HOME_PATH;
+                    } catch (UnknownHostException e) {
+                        log.error("获取ip异常,ip将使用localhost",e);
+                        WEB_HOME_PATH = "http://127.0.0.1:" + BotConfig.PORT + contextPath;
+                        return WEB_HOME_PATH;
+                    }
+                }
             }
-            return WEB_HOME_PATH;
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-            return "http://127.0.0.1:" + BotConfig.PORT + contextPath;
         }
+        return WEB_HOME_PATH;
     }
 
     @Override

@@ -14,7 +14,7 @@ public class BotConfig {
     public static String SEARCH_IMAGE_KEY = "";
     public static String ACCESS_TOKEN = "";
     public static Long DEFAULT_USER = null;
-    public static String AUTO_HOST;
+    public static String INTERNET_HOST;
     public static int PORT;
 
     @Autowired
@@ -55,8 +55,8 @@ public class BotConfig {
     }
 
     @Autowired
-    public void setAutoHost(@Value("${bot.host}") String autoHost) {
-        AUTO_HOST = autoHost;
+    public void setInternetHost(@Value("${bot.internet-host}") String internetHost) {
+        INTERNET_HOST = internetHost;
     }
 }
 

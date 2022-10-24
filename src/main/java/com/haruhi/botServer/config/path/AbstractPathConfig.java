@@ -6,10 +6,12 @@ import org.springframework.beans.factory.annotation.Value;
 @Slf4j
 public abstract class AbstractPathConfig {
 
+    protected static final Object OBJECT = new Object();
+
     @Value("${server.servlet.context-path}")
     public String contextPath;
 
-    public static String WEB_HOME_PATH;
+    protected static String WEB_HOME_PATH;
 
     public abstract String webHomePath();
 
