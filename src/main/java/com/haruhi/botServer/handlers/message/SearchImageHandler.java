@@ -175,26 +175,17 @@ public class SearchImageHandler implements IMessageEvent {
     }
 
     private void sendResult(WebSocketSession session,List<Results> resultList,String cq,Message message){
-        ArrayList<String> forwardMsgs = new ArrayList<>(resultList.size() + 1);
+        List<String> forwardMsgs = new ArrayList<>(resultList.size() + 1);
         forwardMsgs.add(cq);
         for (Results results : resultList) {
             forwardMsgs.add(getItemMsg(results));
         }
 
-        if(MessageEventEnum.group.getType().equals(message.getMessage_type())){
-            // 使用合并消息
-            SyncResponse synResponse = Server.sendSyncGroupMessage(session, message.getGroup_id(), message.getSelf_id(), BotConfig.NAME, forwardMsgs, 2 * 1000);
-            if(synResponse.getRetcode() != 0){
-                System.out.println("同步发送失败，使用异步");
-                forwardMsgs.remove(0);
-                Server.sendGroupMessage(session,message.getGroup_id(),message.getSelf_id(),BotConfig.NAME,forwardMsgs);
-            }
-
-        }else if(MessageEventEnum.privat.getType().equals(message.getMessage_type())){
-            // 私聊
-            for (int i = 1; i < forwardMsgs.size(); i++) {
-                Server.sendPrivateMessage(session,message.getUser_id(), forwardMsgs.get(i),true);
-            }
+        SyncResponse syncResponse = Server.sendSyncMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(), message.getSelf_id(), BotConfig.NAME, forwardMsgs, 2 * 1000);
+        if(syncResponse.getRetcode() != 0){
+            log.info("识图结果同步发送失败，删除图片后使用异步发送");
+            forwardMsgs.remove(0);
+            Server.sendMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(), message.getSelf_id(), BotConfig.NAME, forwardMsgs);
         }
     }
     private String getItemMsg(Results results){

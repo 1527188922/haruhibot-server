@@ -29,16 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 机器人是服务端
- * gocq使用反向ws连接
+ * gocq（客户端）使用反向ws连接
  */
 @Slf4j
 public class Server implements WebSocketHandler {
 
     private static Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
     private static Map<String,Long> userIdMap = new ConcurrentHashMap<>();
-    public static void putUserIdMap(String key,Long val){
-        userIdMap.put(key,val);
-    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -69,6 +66,15 @@ public class Server implements WebSocketHandler {
         removeClient(session);
     }
 
+    @Override
+    public boolean supportsPartialMessages() {
+        return false;
+    }
+
+    public static void putUserIdMap(String key,Long val){
+        userIdMap.put(key,val);
+    }
+
     private void removeClient(WebSocketSession session){
         String id = session.getId();
         Long userId = userIdMap.get(id);
@@ -81,15 +87,9 @@ public class Server implements WebSocketHandler {
             log.info("客户端数量：{}",sessionMap.size());
         }
     }
-
-    @Override
-    public boolean supportsPartialMessages() {
-        return false;
-    }
-
     /**
      * 发送群消息
-     * @param session 客户端（gocq）session
+     * @param session 客户端session
      * @param groupId 群号
      * @param message 消息
      * @param autoEscape 是否以纯文本发送 true:以纯文本发送，不解析cq码
@@ -109,84 +109,12 @@ public class Server implements WebSocketHandler {
     }
 
     /**
-     * 发送合并消息 （只能发群，默认解析cq码）
-     * @param session 客户端（gocq）session
-     * @param groupId 群号
-     * @param uin 合并卡片内的消息发送人qq
-     * @param name 合并卡片内的消息发送人名称
-     * @param messages 消息集合
-     */
-    public static void sendGroupMessage(WebSocketSession session, Long groupId,Long uin,String name, List<String> messages){
-        if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> paramsRequestBox = new RequestBox<>();
-            paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
-            Params params = new Params();
-            params.setMessage_type(MessageEventEnum.group.getType());
-            params.setGroup_id(groupId);
-            List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
-            for (String s : messages) {
-                forwardMsgs.add(createForwardMsg(uin,name,s));
-            }
-
-            params.setMessages(forwardMsgs);
-            paramsRequestBox.setParams(params);
-            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
-        }
-    }
-    /**
-     * 发送合并消息 （只能发群，默认解析cq码）
-     * @param session 客户端（gocq）session
-     * @param groupId 群号
-     * @param name 合并卡片内的消息发送人名称
-     * @param messages 消息集合
-     */
-    public static void sendGroupMessage(WebSocketSession session, Long groupId,String name, List<String> messages){
-        if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> paramsRequestBox = new RequestBox<>();
-            Long uin = getUserBySession(session);
-            paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
-            Params params = new Params();
-            params.setMessage_type(MessageEventEnum.group.getType());
-            params.setGroup_id(groupId);
-            List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
-
-            for (String s : messages) {
-                forwardMsgs.add(createForwardMsg(uin,name,s));
-            }
-
-            params.setMessages(forwardMsgs);
-            paramsRequestBox.setParams(params);
-            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
-        }
-    }
-
-    /**
-     * 发送群同步消息
-     * 群合并
+     * 发送群聊合并消息
+     * 自定义单条消息的uin和name
      * @param session
      * @param groupId
-     * @param name
      * @param messages
-     * @param timeout
-     * @return
      */
-    public static SyncResponse sendSyncGroupMessage(WebSocketSession session, Long groupId, Long uin, String name, List<String> messages, long timeout){
-        Params params = new Params();
-        params.setMessage_type(MessageEventEnum.group.getType());
-        params.setGroup_id(groupId);
-        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
-
-        for (String s : messages) {
-            forwardMsgs.add(createForwardMsg(uin,name,s));
-        }
-        params.setMessages(forwardMsgs);
-        JSONObject jsonObject = GocqSyncRequestUtil.sendSyncRequest(session, GocqActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout);
-        if (jsonObject != null) {
-            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
-        }
-        return null;
-    }
-
     public static void sendGroupMessage(WebSocketSession session, Long groupId,List<ForwardMsg> messages){
         if (!CollectionUtils.isEmpty(messages)) {
             RequestBox<Params> paramsRequestBox = new RequestBox<>();
@@ -200,18 +128,60 @@ public class Server implements WebSocketHandler {
         }
     }
 
-    private static ForwardMsg createForwardMsg(Long uin,String name,String context){
-        ForwardMsg item = new ForwardMsg();
-        ForwardMsg.Data data = new ForwardMsg.Data();
-        data.setUin(uin);
-        data.setName(name);
-        data.setContent(context);
-        item.setData(data);
-        return item;
+    /**
+     * 发送群合并消息
+     * @param session 客户端session
+     * @param groupId 群号
+     * @param uin 合并卡片内的消息发送人qq
+     * @param name 合并卡片内的消息发送人名称
+     * @param messages 消息集合
+     */
+    public static void sendGroupMessage(WebSocketSession session, Long groupId,Long uin,String name, List<String> messages){
+        if (!CollectionUtils.isEmpty(messages)) {
+            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageEventEnum.group,groupId,uin,name,messages);
+            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+        }
     }
+
+    /**
+     * 发送群合并消息
+     * 自动获取uin
+     * @param session 客户端session
+     * @param groupId 群号
+     * @param name 合并卡片内的消息发送人名称
+     * @param messages 消息集合
+     */
+    public static void sendGroupMessage(WebSocketSession session, Long groupId,String name, List<String> messages){
+        if (!CollectionUtils.isEmpty(messages)) {
+            Long uin = getUserBySession(session);
+            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageEventEnum.group,groupId,uin,name,messages);
+            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+        }
+    }
+
+    /**
+     * 发送群同步合并消息
+     * @param session
+     * @param groupId
+     * @param uin
+     * @param name
+     * @param messages
+     * @param timeout
+     * @return
+     */
+    public static SyncResponse sendSyncGroupMessage(WebSocketSession session, Long groupId, Long uin, String name, List<String> messages, long timeout){
+        Params params = createForwardMessageParams(MessageEventEnum.group,groupId,uin,name,messages);
+        JSONObject jsonObject = GocqSyncRequestUtil.sendSyncRequest(session, GocqActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout);
+        if (jsonObject != null) {
+            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
+        }
+        return null;
+    }
+
+
     /**
      * 发送私聊消息
-     * @param session 客户端（gocq）session
+     * @param session 客户端session
      * @param userId 对方qq
      * @param message 消息
      * @param autoEscape 是否以纯文本发送 true:以纯文本发送，不解析cq码
@@ -231,9 +201,80 @@ public class Server implements WebSocketHandler {
         sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
     }
 
+    /**
+     * 发送私聊合并消息
+     * 自定义单条消息的uin和name
+     * @param session
+     * @param userId
+     * @param messages
+     */
+    public static void sendPrivateMessage(WebSocketSession session, Long userId,List<ForwardMsg> messages){
+        if (!CollectionUtils.isEmpty(messages)) {
+            RequestBox<Params> paramsRequestBox = new RequestBox<>();
+            paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
+            Params params = new Params();
+            params.setMessages(messages);
+            params.setMessage_type(MessageEventEnum.privat.getType());
+            params.setUser_id(userId);
+            paramsRequestBox.setParams(params);
+            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+        }
+    }
+
+    /**
+     * 发送私聊合并消息
+     * @param session 客户端session
+     * @param userId 对方qq
+     * @param uin
+     * @param name
+     * @param messages
+     */
+    public static void sendPrivateMessage(WebSocketSession session, Long userId,Long uin,String name, List<String> messages){
+        if (!CollectionUtils.isEmpty(messages)) {
+            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageEventEnum.privat,userId,uin,name,messages);
+            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+        }
+    }
+
+    /**
+     * 发送私聊合并消息
+     * 自动获取uin
+     * @param session 客户端session
+     * @param userId 对方qq
+     * @param name
+     * @param messages
+     */
+    public static void sendPrivateMessage(WebSocketSession session, Long userId,String name, List<String> messages){
+        if (!CollectionUtils.isEmpty(messages)) {
+            Long uin = getUserBySession(session);
+            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageEventEnum.privat,userId,uin,name,messages);
+            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+        }
+    }
+
+    /**
+     * 发送私聊同步合并消息
+     * @param session
+     * @param userId
+     * @param uin
+     * @param name
+     * @param messages
+     * @param timeout
+     * @return
+     */
+    public static SyncResponse sendSyncPrivateMessage(WebSocketSession session, Long userId, Long uin, String name, List<String> messages, long timeout){
+        Params params = createForwardMessageParams(MessageEventEnum.privat,userId,uin,name,messages);
+        JSONObject jsonObject = GocqSyncRequestUtil.sendSyncRequest(session, GocqActionEnum.SEND_PRIVATE_FORWARD_MSG, params, timeout);
+        if (jsonObject != null) {
+            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
+        }
+        return null;
+    }
+
 
     /**
      * 发送消息
+     * 根据messageType来发送群还是私聊
      * @param session 客户端（gocq）session
      * @param userId 对方qq
      * @param groupId 群号
@@ -257,6 +298,75 @@ public class Server implements WebSocketHandler {
         sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
     }
 
+    /**
+     * 合并发送消息
+     * 根据messageType发送群还是私聊
+     * @param session
+     * @param userId
+     * @param groupId
+     * @param messageType
+     * @param uin
+     * @param name
+     * @param messages
+     */
+    public static void sendMessage(WebSocketSession session, Long userId,Long groupId,String messageType,Long uin,String name, List<String> messages){
+        RequestBox<Params> paramsRequestBox = new RequestBox<>();
+        Params params = new Params();
+        if (MessageEventEnum.privat.getType().equals(messageType)) {
+            paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
+            params.setUser_id(userId);
+        }else if (MessageEventEnum.group.getType().equals(messageType)) {
+            paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
+            params.setGroup_id(groupId);
+        }
+        params.setMessage_type(messageType);
+        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+        for (String s : messages) {
+            forwardMsgs.add(createForwardMsgItem(uin,name,s));
+        }
+        params.setMessages(forwardMsgs);
+        paramsRequestBox.setParams(params);
+
+        sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+    }
+
+    /**
+     * 合并同步发送消息
+     * 根据messageType发送群还是私聊
+     * @param session
+     * @param userId
+     * @param groupId
+     * @param messageType
+     * @param uin
+     * @param name
+     * @param messages
+     * @param timeout
+     * @return
+     */
+    public static SyncResponse sendSyncMessage(WebSocketSession session, Long userId,Long groupId,String messageType,Long uin,String name, List<String> messages,long timeout){
+        Params params = new Params();
+        GocqActionEnum actionEnum = null;
+        if (MessageEventEnum.privat.getType().equals(messageType)) {
+            actionEnum = GocqActionEnum.SEND_PRIVATE_FORWARD_MSG;
+            params.setUser_id(userId);
+        }else if (MessageEventEnum.group.getType().equals(messageType)) {
+            actionEnum = GocqActionEnum.SEND_GROUP_FORWARD_MSG;
+            params.setGroup_id(groupId);
+        }
+        params.setMessage_type(messageType);
+
+        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+        for (String s : messages) {
+            forwardMsgs.add(createForwardMsgItem(uin,name,s));
+        }
+        params.setMessages(forwardMsgs);
+        JSONObject jsonObject = GocqSyncRequestUtil.sendSyncRequest(session,actionEnum, params, timeout);
+        if (jsonObject != null) {
+            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
+        }
+        return null;
+    }
+
 
     private static void sendMessage(WebSocketSession session, String text){
         try {
@@ -272,6 +382,52 @@ public class Server implements WebSocketHandler {
             return userId;
         }
         return BotConfig.DEFAULT_USER;
+    }
+
+    private static RequestBox<Params> createForwardMessageRequestBox(MessageEventEnum messageType, Long id, Long uin, String name, List<String> messages){
+        RequestBox<Params> paramsRequestBox = new RequestBox<>();
+        Params params = new Params();
+        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+        for (String message : messages) {
+            forwardMsgs.add(createForwardMsgItem(uin,name,message));
+        }
+        params.setMessages(forwardMsgs);
+        params.setMessage_type(messageType.getType());
+        if (MessageEventEnum.group.getType().equals(messageType.getType())) {
+            paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
+            params.setGroup_id(id);
+        }else if(MessageEventEnum.privat.getType().equals(messageType.getType())){
+            paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
+            params.setUser_id(id);
+        }
+        paramsRequestBox.setParams(params);
+        return paramsRequestBox;
+    }
+
+    private static Params createForwardMessageParams(MessageEventEnum messageType,Long id, Long uin, String name, List<String> messages){
+        Params params = new Params();
+        if (MessageEventEnum.privat.getType().equals(messageType.getType())) {
+            params.setUser_id(id);
+        }else if(MessageEventEnum.group.getType().equals(messageType.getType())){
+            params.setGroup_id(id);
+        }
+        params.setMessage_type(messageType.getType());
+        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+        for (String s : messages) {
+            forwardMsgs.add(createForwardMsgItem(uin,name,s));
+        }
+        params.setMessages(forwardMsgs);
+        return params;
+    }
+
+    private static ForwardMsg createForwardMsgItem(Long uin, String name, String context){
+        ForwardMsg item = new ForwardMsg();
+        ForwardMsg.Data data = new ForwardMsg.Data();
+        data.setUin(uin);
+        data.setName(name);
+        data.setContent(context);
+        item.setData(data);
+        return item;
     }
 
 }

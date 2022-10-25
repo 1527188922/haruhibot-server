@@ -116,11 +116,9 @@ public class BtSearchHandler implements IMessageEvent {
                     return;
                 }
                 if(MessageEventEnum.group.getType().equals(message.getMessage_type())){
-                    Server.sendGroupMessage(session,message.getGroup_id(),message.getUser_id(),BotConfig.NAME,res);
+                    Server.sendGroupMessage(session,message.getGroup_id(),message.getSelf_id(),BotConfig.NAME,res);
                 }else if(MessageEventEnum.privat.getType().equals(message.getMessage_type())){
-                    for (String re : res) {
-                        Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),re,true);
-                    }
+                    Server.sendPrivateMessage(session,message.getUser_id(),message.getSelf_id(),BotConfig.NAME,res);
                 }
             }catch (Exception e){
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),MessageFormat.format("bt搜索异常:{0}",e.getMessage()),true);

@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.constant.event.MessageEventEnum;
 import com.haruhi.botServer.dto.agefans.response.NewAnimationTodayResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
@@ -70,11 +69,11 @@ public class NewAnimationTodayHandler implements IMessageEvent {
                         }
                         data = data.stream().filter(e -> e.getIsnew()).collect(Collectors.toList());
                         if(data.size() > 0){
-                            if(MessageEventEnum.privat.getType().equals(message.getMessage_type())){
-                                sendPrivate(session,data,message);
-                            }else if(MessageEventEnum.group.getType().equals(message.getMessage_type())){
-                                sendGroup(session,data,message);
+                            List<String> param = new ArrayList<>(data.size());
+                            for (NewAnimationTodayResp datum : data) {
+                                param.add(splicingParam(datum));
                             }
+                            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),message.getSelf_id(),BotConfig.NAME,param);
                         }else{
                             Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), "今日还没有新番更新",true);
                         }
@@ -87,19 +86,6 @@ public class NewAnimationTodayHandler implements IMessageEvent {
         }
     }
 
-    private void sendGroup(WebSocketSession session,List<NewAnimationTodayResp> data,Message message){
-        List<String> param = new ArrayList<>(data.size());
-        for (NewAnimationTodayResp datum : data) {
-            param.add(splicingParam(datum));
-        }
-        Server.sendGroupMessage(session,message.getGroup_id(),message.getSelf_id(),BotConfig.NAME,param);
-
-    }
-    private void sendPrivate(WebSocketSession session,List<NewAnimationTodayResp> data,Message message){
-        for (NewAnimationTodayResp datum : data) {
-            Server.sendPrivateMessage(session,message.getUser_id(), splicingParam(datum),true);
-        }
-    }
     private String splicingParam(NewAnimationTodayResp datum){
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(datum.getName()).append("\n");

@@ -7,7 +7,6 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
-import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Server;
@@ -57,14 +56,14 @@ public class NewsServiceImpl implements NewsService {
     @Override
     public void sendGroup(WebSocketSession session, List<NewsBy163Resp> list, Long... groupIds) {
         if(groupIds != null){
-            List<String> newsGroupMessage = createNewsGroupMessage(list);
+            List<String> newsGroupMessage = createNewsMessage(list);
             for (Long groupId : groupIds) {
                 Server.sendGroupMessage(session,groupId,BotConfig.NAME,newsGroupMessage);
             }
         }
     }
 
-    private List<String> createNewsGroupMessage(List<NewsBy163Resp> list){
+    private List<String> createNewsMessage(List<NewsBy163Resp> list){
         List<String> forwardMsgs = new ArrayList<>(list.size() + 1);
         KQCodeUtils instance = KQCodeUtils.getInstance();
         forwardMsgs.add("今日新闻");
@@ -100,23 +99,13 @@ public class NewsServiceImpl implements NewsService {
         }
         return stringBuilder.toString();
     }
-    private String createNewsPrivateMessage(List<NewsBy163Resp> list){
-        StringBuilder stringBuilder = new StringBuilder();
-        KQCodeUtils instance = KQCodeUtils.getInstance();
-        for (NewsBy163Resp e : list) {
-            stringBuilder.append(createNewsItemMessage(e,instance)).append("\n");
-        }
-        return stringBuilder.toString();
-    }
 
     @Override
     public void sendPrivate(WebSocketSession session,List<NewsBy163Resp> list,Long... userIds) {
         if(userIds != null){
-            List<List<NewsBy163Resp>> lists = CommonUtil.averageAssignList(list, 10);
+            List<String> newsMessage = createNewsMessage(list);
             for (Long userId : userIds) {
-                for (List<NewsBy163Resp> newsBy163Resps : lists) {
-                    Server.sendPrivateMessage(session,userId,createNewsPrivateMessage(newsBy163Resps),false);
-                }
+                Server.sendPrivateMessage(session,userId,BotConfig.NAME,newsMessage);
             }
         }
 

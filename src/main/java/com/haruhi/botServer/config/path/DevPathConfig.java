@@ -4,9 +4,9 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.system.ApplicationHome;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -18,6 +18,7 @@ import java.net.UnknownHostException;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "env.active",havingValue = SystemUtil.PROFILE_DEV)
+@DependsOn("botConfig")
 public class DevPathConfig extends AbstractPathConfig {
     public DevPathConfig(){
         SystemInfo.PROFILE = SystemUtil.PROFILE_DEV;
@@ -35,6 +36,7 @@ public class DevPathConfig extends AbstractPathConfig {
         setHomePath();
         setImagePath();
         setAudioPath();
+        setWebHomePath();
     }
     private static void setResourceHomePath(){
         try {
@@ -60,24 +62,19 @@ public class DevPathConfig extends AbstractPathConfig {
         audioPath = resourceHomePath + File.separator + "build\\audio";
     }
 
+    public static void setWebHomePath(){
+        try {
+            InetAddress localHost = Inet4Address.getLocalHost();
+            WEB_HOME_PATH = "http://" + localHost.getHostAddress() + ":" + BotConfig.PORT + BotConfig.CONTEXT_PATH;
+            log.info("home path:{}",WEB_HOME_PATH);
+        } catch (UnknownHostException e) {
+            log.error("获取ip异常,ip将使用localhost",e);
+            WEB_HOME_PATH = "http://127.0.0.1:" + BotConfig.PORT + BotConfig.CONTEXT_PATH;
+        }
+    }
+
     @Override
     public String webHomePath() {
-        if (Strings.isBlank(WEB_HOME_PATH)) {
-            synchronized (OBJECT){
-                if(Strings.isBlank(WEB_HOME_PATH)){
-                    try {
-                        InetAddress localHost = Inet4Address.getLocalHost();
-                        WEB_HOME_PATH = "http://" + localHost.getHostAddress() + ":" + BotConfig.PORT + contextPath;
-                        log.info("home path:{}",WEB_HOME_PATH);
-                        return WEB_HOME_PATH;
-                    } catch (UnknownHostException e) {
-                        log.error("获取ip异常,ip将使用localhost",e);
-                        WEB_HOME_PATH = "http://127.0.0.1:" + BotConfig.PORT + contextPath;
-                        return WEB_HOME_PATH;
-                    }
-                }
-            }
-        }
         return WEB_HOME_PATH;
     }
 

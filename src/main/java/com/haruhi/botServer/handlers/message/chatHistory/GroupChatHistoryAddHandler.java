@@ -51,7 +51,6 @@ public class GroupChatHistoryAddHandler implements IGroupMessageEvent {
         public void run() {
             try {
                 GroupChatHistory param = new GroupChatHistory();
-                param.setId(null);
                 param.setCard(message.getSender().getCard());
                 param.setNickname(message.getSender().getNickname());
                 param.setGroupId(message.getGroup_id());

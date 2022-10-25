@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.system.ApplicationHome;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -16,6 +17,7 @@ import java.io.IOException;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "env.active",havingValue = SystemUtil.PROFILE_RPOD)
+@DependsOn("botConfig")
 public class ProPathConfig extends AbstractPathConfig {
 
     public ProPathConfig(){
@@ -43,36 +45,34 @@ public class ProPathConfig extends AbstractPathConfig {
 
         // 音频资源路径 必存在 不用创建
         audioPath = homePath + File.separator + "audio";
+
+        setWebHomePath();
+    }
+
+    private static void setWebHomePath(){
+        try {
+            host = CommonUtil.getNowIP4();
+        } catch (IOException e) { }
+
+        if(Strings.isBlank(host)){
+            try {
+                host = CommonUtil.getNowIP2();
+            } catch (IOException e) {}
+        }
+
+        if(Strings.isBlank(host)){
+            if(Strings.isNotBlank(BotConfig.INTERNET_HOST)){
+                host = BotConfig.INTERNET_HOST;
+            }else {
+                throw new IllegalArgumentException("prod环境获取外网ip失败！请手动配置外网ip");
+            }
+        }
+        WEB_HOME_PATH = "http://" + host + ":" + BotConfig.PORT + BotConfig.CONTEXT_PATH;
+        log.info("home path:{}",WEB_HOME_PATH);
     }
 
     @Override
     public String webHomePath() {
-        if(Strings.isBlank(host)){
-            synchronized (OBJECT){
-                if(Strings.isBlank(host)){
-                    try {
-                        host = CommonUtil.getNowIP4();
-                    } catch (IOException e) { }
-
-                    if(Strings.isBlank(host)){
-                        try {
-                            host = CommonUtil.getNowIP2();
-                        } catch (IOException e) {}
-                    }
-
-                    if(Strings.isBlank(host)){
-                        if(Strings.isNotBlank(BotConfig.INTERNET_HOST)){
-                            host = BotConfig.INTERNET_HOST;
-                        }else {
-                            throw new IllegalArgumentException("prod环境获取外网ip失败！请手动配置外网ip");
-                        }
-                    }
-                    log.info("获取到外网ip：{}",host);
-                    WEB_HOME_PATH = "http://" + host + ":" + BotConfig.PORT + contextPath;
-                }
-            }
-        }
-
         return WEB_HOME_PATH;
 
     }

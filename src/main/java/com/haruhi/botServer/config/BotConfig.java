@@ -16,6 +16,7 @@ public class BotConfig {
     public static Long DEFAULT_USER = null;
     public static String INTERNET_HOST;
     public static int PORT;
+    public static String CONTEXT_PATH;
 
     @Autowired
     public void setName(@Value("${bot.name}") String name) {
@@ -57,6 +58,11 @@ public class BotConfig {
     @Autowired
     public void setInternetHost(@Value("${bot.internet-host}") String internetHost) {
         INTERNET_HOST = internetHost;
+    }
+
+    @Autowired
+    public void setContextPath(@Value("${server.servlet.context-path}") String contextPath){
+        CONTEXT_PATH = contextPath;
     }
 }
 
