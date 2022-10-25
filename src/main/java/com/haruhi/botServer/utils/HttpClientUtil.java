@@ -11,6 +11,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -70,7 +71,7 @@ public class HttpClientUtil {
 
     private static String getUrl(String s,Map<String,Object> urlParams){
         String url = "";
-        if(urlParams != null){
+        if(!CollectionUtils.isEmpty(urlParams)){
             url = RestUtil.urlSplicing(s,urlParams);
         }else{
             url = s;

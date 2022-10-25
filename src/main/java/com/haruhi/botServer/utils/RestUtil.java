@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
@@ -36,7 +37,7 @@ public class RestUtil {
             HttpEntity<O> entity = new HttpEntity<>(msgBody, httpHeaders);
             ResponseEntity<String> response = null;
             log.info("发起rest请求：{}，payload:{}，urlParam:{}",url,JSONObject.toJSONString(msgBody),JSONObject.toJSONString(urlRequestParam));
-            if(urlRequestParam != null){
+            if(!CollectionUtils.isEmpty(urlRequestParam)){
                 response = restTemplate.exchange(urlSplicing(url,urlRequestParam), method, entity, new ParameterizedTypeReference<String>() {
                 });
             }else{
