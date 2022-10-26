@@ -6,7 +6,7 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.constant.event.MessageEventEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.dto.searchImage.response.Results;
@@ -93,7 +93,7 @@ public class SearchImageHandler implements IMessageEvent {
     }
 
     private String replySearch(final WebSocketSession session,final Message message){
-        if (MessageEventEnum.group.getType().equals(message.getMessage_type())) {
+        if (MessageTypeEnum.group.getType().equals(message.getMessage_type())) {
             KQCodeUtils instance = KQCodeUtils.getInstance();
             String s = message.getMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
             if (s.matches(RegexEnum.SEARCH_IMAGE.getValue())) {

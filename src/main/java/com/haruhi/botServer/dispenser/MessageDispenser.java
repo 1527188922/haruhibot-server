@@ -1,6 +1,6 @@
 package com.haruhi.botServer.dispenser;
 
-import com.haruhi.botServer.constant.event.MessageEventEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.event.message.IMessageEvent;
@@ -112,7 +112,7 @@ public class MessageDispenser {
         if (!CollectionUtils.isEmpty(container)) {
             String messageType = message.getMessage_type();
 
-            if(MessageEventEnum.group.getType().equals(messageType)){
+            if(MessageTypeEnum.group.getType().equals(messageType)){
                 for (IMessageEventType element : container){
                     if(element instanceof IMessageEvent){
                         IMessageEvent event = (IMessageEvent) element;
@@ -126,7 +126,7 @@ public class MessageDispenser {
                         }
                     }
                 }
-            }else if(MessageEventEnum.privat.getType().equals(messageType)){
+            }else if(MessageTypeEnum.privat.getType().equals(messageType)){
                 for (IMessageEventType element : container){
                     if(element instanceof IMessageEvent){
                         IMessageEvent event = (IMessageEvent) element;

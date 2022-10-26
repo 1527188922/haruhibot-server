@@ -3,7 +3,7 @@ package com.haruhi.botServer.handlers.message;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.constant.event.MessageEventEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.factory.ThreadPoolFactory;
@@ -115,9 +115,9 @@ public class BtSearchHandler implements IMessageEvent {
                     noData(session,message,keyword);
                     return;
                 }
-                if(MessageEventEnum.group.getType().equals(message.getMessage_type())){
+                if(MessageTypeEnum.group.getType().equals(message.getMessage_type())){
                     Server.sendGroupMessage(session,message.getGroup_id(),message.getSelf_id(),BotConfig.NAME,res);
-                }else if(MessageEventEnum.privat.getType().equals(message.getMessage_type())){
+                }else if(MessageTypeEnum.privat.getType().equals(message.getMessage_type())){
                     Server.sendPrivateMessage(session,message.getUser_id(),message.getSelf_id(),BotConfig.NAME,res);
                 }
             }catch (Exception e){

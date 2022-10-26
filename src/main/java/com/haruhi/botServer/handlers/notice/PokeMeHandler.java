@@ -1,7 +1,7 @@
 package com.haruhi.botServer.handlers.notice;
 
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
-import com.haruhi.botServer.constant.event.MessageEventEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.notice.IPokeEvent;
 import com.haruhi.botServer.factory.ThreadPoolFactory;
@@ -37,7 +37,7 @@ public class PokeMeHandler implements IPokeEvent {
                 int size = cache.size();
                 if(size > 0){
                     String reply = cache.get(CommonUtil.randomInt(0, size - 1));
-                    if(MessageEventEnum.group.getType().equals(message.getMessage_type())){
+                    if(MessageTypeEnum.group.getType().equals(message.getMessage_type())){
                         if("".equals(reply)){
                             KQCodeUtils instance = KQCodeUtils.getInstance();
                             String s = instance.toCq(CqCodeTypeEnum.poke.getType(), "qq=" + message.getUser_id());
@@ -45,7 +45,7 @@ public class PokeMeHandler implements IPokeEvent {
                         }else{
                             Server.sendGroupMessage(session,message.getGroup_id(),reply, true);
                         }
-                    }else if(MessageEventEnum.privat.getType().equals(message.getMessage_type())){
+                    }else if(MessageTypeEnum.privat.getType().equals(message.getMessage_type())){
                         // gocq私聊不能发送给戳一戳 所以这里只回复文字
                         while (Strings.isBlank(reply)){
                             reply = cache.get(CommonUtil.randomInt(0, size - 1));

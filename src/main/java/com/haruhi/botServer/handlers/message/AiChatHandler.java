@@ -4,7 +4,7 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.constant.event.MessageEventEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.aiChat.response.ChatResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
@@ -46,7 +46,7 @@ public class AiChatHandler implements IMessageEvent {
     private String[] cqs;
 
     public boolean matching(final Message message, final String command) {
-        if(MessageEventEnum.privat.getType().equals(message.getMessage_type())){
+        if(MessageTypeEnum.privat.getType().equals(message.getMessage_type())){
             // 私聊了机器人
             if(command.matches(RegexEnum.CQ_CODE.getValue())){
                 return false;
@@ -54,7 +54,7 @@ public class AiChatHandler implements IMessageEvent {
             this.cqs = null;
             return true;
         }
-        if(MessageEventEnum.group.getType().equals(message.getMessage_type())){
+        if(MessageTypeEnum.group.getType().equals(message.getMessage_type())){
             KQCodeUtils utils = KQCodeUtils.getInstance();
             String[] cqs = utils.getCqs(command, CqCodeTypeEnum.at.getType());
             if(cqs == null || cqs.length == 0){

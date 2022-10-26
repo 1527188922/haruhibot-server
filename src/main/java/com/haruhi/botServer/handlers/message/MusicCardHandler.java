@@ -3,7 +3,7 @@ package com.haruhi.botServer.handlers.message;
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.constant.event.MessageEventEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.music.response.Song;
 import com.haruhi.botServer.event.message.IMessageEvent;
@@ -126,9 +126,9 @@ public class MusicCardHandler implements IMessageEvent {
                 }
                 // 将搜索结果保存到缓存
                 cache.put(getKey(message),res);
-                if(MessageEventEnum.group.getType().equals(message.getMessage_type())){
+                if(MessageTypeEnum.group.getType().equals(message.getMessage_type())){
                     sendGroup(session,message,res,musicName);
-                }else if(MessageEventEnum.privat.getType().equals(message.getMessage_type())){
+                }else if(MessageTypeEnum.privat.getType().equals(message.getMessage_type())){
                     sendPrivate(session,message,res,musicName);
                 }
             } catch (Exception e) {

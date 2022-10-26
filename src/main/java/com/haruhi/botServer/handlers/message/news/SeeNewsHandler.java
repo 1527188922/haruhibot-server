@@ -1,7 +1,7 @@
 package com.haruhi.botServer.handlers.message.news;
 
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.constant.event.MessageEventEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
 import com.haruhi.botServer.event.message.IMessageEvent;
@@ -38,9 +38,9 @@ public class SeeNewsHandler implements IMessageEvent {
         ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
             try {
                 List<NewsBy163Resp> newsBy163Resps = NewsService.requestNewsBy163();
-                if (MessageEventEnum.group.getType().equals(message.getMessage_type())) {
+                if (MessageTypeEnum.group.getType().equals(message.getMessage_type())) {
                     NewsService.sendGroup(session,newsBy163Resps,message.getGroup_id());
-                }else if (MessageEventEnum.privat.getType().equals(message.getMessage_type())){
+                }else if (MessageTypeEnum.privat.getType().equals(message.getMessage_type())){
                     NewsService.sendPrivate(session,newsBy163Resps,message.getUser_id());
                 }
             }catch (Exception e){

@@ -1,6 +1,6 @@
 package com.haruhi.botServer.dispenser;
 
-import com.haruhi.botServer.constant.event.MessageEventEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.constant.event.NoticeTypeEnum;
 import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -86,9 +86,9 @@ public class NoticeDispenser {
     private static void setMessageType(final Message message){
         if(Strings.isBlank(message.getMessage_type())){
             if(message.getGroup_id() != null){
-                message.setMessage_type(MessageEventEnum.group.getType());
+                message.setMessage_type(MessageTypeEnum.group.getType());
             }else if(message.getUser_id() != null){
-                message.setMessage_type(MessageEventEnum.privat.getType());
+                message.setMessage_type(MessageTypeEnum.privat.getType());
             }
         }
     }
