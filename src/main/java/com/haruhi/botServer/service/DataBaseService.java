@@ -47,6 +47,9 @@ public class DataBaseService {
             if (dataBaseInitMapper.tableIsExist(DataBaseConfig.DATA_BASE_BOT,DataBaseConfig.T_POKE_REPLY) == 0) {
                 tableInitMapper.createPokeReply(DataBaseConfig.T_POKE_REPLY);
             }
+            if(dataBaseInitMapper.tableIsExist(DataBaseConfig.DATA_BASE_BOT,DataBaseConfig.T_WORD_STRIP) == 0){
+                tableInitMapper.createWordStrip(DataBaseConfig.T_WORD_STRIP);
+            }
 
             log.info("初始化数据库完成");
         }catch (Exception e){

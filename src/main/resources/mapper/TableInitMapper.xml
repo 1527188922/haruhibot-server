@@ -31,6 +31,18 @@
             `regex` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
             `answer` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
             PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='话术表';
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='话术表(全局自定的回复)';
+    </update>
+
+    <update id="createWordStrip">
+        CREATE TABLE `${tableName}` (
+            `id` INT auto_increment NOT NULL,
+            `user_id` BIGINT NOT NULL,
+            `group_id` BIGINT NOT NULL,
+            `self_id` BIGINT NOT NULL,
+            `key_word` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+            `answer` text COLLATE utf8mb4_unicode_ci NOT NULL,
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='词条表(群自定义回复)';
     </update>
 </mapper>

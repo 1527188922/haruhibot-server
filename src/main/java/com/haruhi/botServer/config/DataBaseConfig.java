@@ -42,6 +42,8 @@ public class DataBaseConfig {
     public final static String T_VERBAL_TRICKS = "t_verbal_tricks";
     // 戳一戳回复表
     public final static String T_POKE_REPLY = "t_poke_reply";
+    // 词条
+    public final static String T_WORD_STRIP = "t_word_strip";
 
     @Autowired
     public void setBotDbname(@Value("${mysql.dbName}") String dbName) {
