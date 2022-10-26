@@ -1,19 +1,28 @@
 # haruhibot-server
 
 #### 介绍
-{**以下是 Gitee 平台说明，您可以替换此简介**
-Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN）。专为开发者提供稳定、高效、安全的云端软件开发协作平台
-无论是个人、团队、或是企业，都能够用 Gitee 实现代码托管、项目管理、协作开发。企业项目请看 [https://gitee.com/enterprises](https://gitee.com/enterprises)}
+1:java(springboot)基于gocqhttp,websocket反向实现的qq机器人(机器人:ws服务端,gocq:ws客户端);  
+2:支持被多个gocqhttp连接;  
+3:该机器人部署可与gocqhttp不在同一台服务器上,前提是gocq可以访问程序所在的主机(比如机器人部署在具有公网ip的服务器;或机器人部署在与gocq同一个局域网下的电脑上)  
+
 
 #### 软件架构
-软件架构说明
+SSM  
+go-cqhttp  
+websocket  
+mybatis-plus  
+dynamic-datasource  
+maven  
+mysql  
 
 
-#### 安装教程
+#### 安装/启动 教程
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+1.  安装:mysql5.7,java1.8(需要配置环境变量),maven3.8(需要配置环境变量)
+2.  下载源码,双击`build.bat`(linux执行`build.sh`)
+3.  解压 `target/haruhibotServer.zip`,双击`startup.bat`(linux执行`startup.sh`)
+4.  gocqhttp配置好反向ws配置 `ws://ip:port/haruhi/ws`;配置`access-token`与机器人中的`access-token`一致(可不配置)
+5.  只要配置对应ws地址和access-token的gocq都能连接,这样一个机器人后端可服务多个gocqhttp
 
 #### 使用说明
 
@@ -23,17 +32,8 @@ Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN�
 
 #### 参与贡献
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
 
 
 #### 特技
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+
