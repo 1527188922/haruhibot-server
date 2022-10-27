@@ -4,10 +4,11 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class CacheMap<K,V> {
+public class CacheMap<K,V> implements Serializable {
 
     private transient Cache<K,V> cache;
 

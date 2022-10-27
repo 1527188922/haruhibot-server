@@ -2,9 +2,10 @@ package com.haruhi.botServer.cache;
 
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
-public class CacheSet<E> {
+public class CacheSet<E> implements Serializable {
 
     private transient CacheMap<E,Object> cacheMap;
     private final static Object PRESENT = new Object();
