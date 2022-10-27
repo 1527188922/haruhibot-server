@@ -43,12 +43,6 @@ public class MessageDispenser {
     private static List<IMessageEventType> container = new CopyOnWriteArrayList<>();
 
 
-    /**
-     * 虽没被引用
-     * 但不可删除
-     */
-    @Autowired
-    private ApplicationContextProvider applicationContextProvider;
     @PostConstruct
     private void loadEvent(){
         if (!CollectionUtils.isEmpty(messageEventTypeMap)) {
