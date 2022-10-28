@@ -50,6 +50,9 @@ public class DataBaseService {
             if(dataBaseInitMapper.tableIsExist(DataBaseConfig.DATA_BASE_BOT,DataBaseConfig.T_WORD_STRIP) == 0){
                 tableInitMapper.createWordStrip(DataBaseConfig.T_WORD_STRIP);
             }
+            if(dataBaseInitMapper.tableIsExist(DataBaseConfig.DATA_BASE_BOT,DataBaseConfig.T_PIXIV) == 0){
+                tableInitMapper.createPixiv(DataBaseConfig.T_PIXIV);
+            }
 
             log.info("初始化数据库完成");
         }catch (Exception e){

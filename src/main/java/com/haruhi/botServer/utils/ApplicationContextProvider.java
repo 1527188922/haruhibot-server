@@ -7,13 +7,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class ApplicationContextProvider implements ApplicationContextAware {
 
-    private static ApplicationContext applicationContextSpring;
+    private static ApplicationContext applicationContext;
     @Override
     public synchronized void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        applicationContextSpring = applicationContext;
+        if (ApplicationContextProvider.applicationContext == null) {
+            ApplicationContextProvider.applicationContext = applicationContext;
+        }
     }
+
+    public static ApplicationContext getApplicationContext(){
+        return applicationContext;
+    }
+
     public static <T> T getBean(Class<T> clazz) {
-        return applicationContextSpring.getBean(clazz);
+        return applicationContext.getBean(clazz);
     }
 
     /**
@@ -24,7 +31,7 @@ public class ApplicationContextProvider implements ApplicationContextAware {
      */
     public static <T> T getBean(String className) throws ClassNotFoundException {
         Class<T> aClass = (Class<T>) Class.forName(className);
-        return applicationContextSpring.getBean(aClass);
+        return applicationContext.getBean(aClass);
     }
 
 }

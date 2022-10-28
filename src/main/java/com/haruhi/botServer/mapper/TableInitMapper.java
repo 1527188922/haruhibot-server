@@ -33,4 +33,10 @@ public interface TableInitMapper {
      * @return
      */
     int createWordStrip(@Param("tableName") String tableName);
+    /**
+     * pixiv图库表
+     * @param tableName
+     * @return
+     */
+    int createPixiv(@Param("tableName") String tableName);
 }

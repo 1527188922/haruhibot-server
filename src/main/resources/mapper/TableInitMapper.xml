@@ -45,4 +45,24 @@
             PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='词条表(群自定义回复)';
     </update>
+
+    <update id="createPixiv">
+        CREATE TABLE `${tableName}` (
+            `id` INT auto_increment NOT NULL,
+            `pid` varchar(30) NOT NULL,
+            `title` varchar(100) NOT NULL,
+            `width` INT NULL,
+            `height` INT NULL,
+            `view` INT NULL,
+            `bookmarks` INT NULL,
+            `img_url` varchar(255) NOT NULL,
+            `img_p` varchar(100) NULL,
+            `uid` varchar(30) NULL,
+            `author` varchar(100) NULL,
+            `is_r18` bit NOT NULL,
+            `tags` text NOT NULL,
+            PRIMARY KEY (`id`),
+            KEY `index_tags` (`tags`(767))
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='pixiv图库（定时爬虫下载,需要在配置文件开启该爬虫）';
+    </update>
 </mapper>

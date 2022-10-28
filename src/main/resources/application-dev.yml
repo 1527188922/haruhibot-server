@@ -15,6 +15,11 @@ mysql:
   username: root
   password: 123456
 
+job:
+  downloadPixiv:
+    cron: 0/15 * 0-7 * * ? *
+    enable: 1
+
 server:
   port: ${bot.port}
   servlet:

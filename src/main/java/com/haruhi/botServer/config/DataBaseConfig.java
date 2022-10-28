@@ -44,6 +44,8 @@ public class DataBaseConfig {
     public final static String T_POKE_REPLY = "t_poke_reply";
     // 词条
     public final static String T_WORD_STRIP = "t_word_strip";
+    // pixiv 图库表
+    public final static String T_PIXIV = "t_pixiv";
 
     @Autowired
     public void setBotDbname(@Value("${mysql.dbName}") String dbName) {
