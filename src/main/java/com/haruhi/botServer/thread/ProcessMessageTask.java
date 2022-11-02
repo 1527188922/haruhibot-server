@@ -7,7 +7,7 @@ import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dispenser.MessageDispenser;
 import com.haruhi.botServer.dispenser.NoticeDispenser;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.thread.pool.policy.ShareRunsPolicy;
 import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,6 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -24,13 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class ProcessMessageTask implements Runnable{
 
     private final static ThreadPoolExecutor threadPool = new ThreadPoolExecutor(16, 31, 10L * 60L, TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(160), new CustomizableThreadFactory("pool-processMessage-"), new RejectedExecutionHandler() {
-        @Override
-        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-            ThreadPoolUtil.getSharePool().execute(r);
-            log.error("线程池：pool-processMessage任务队列已满，本次消息处理由公共线程池执行");
-        }
-    });
+            new ArrayBlockingQueue<>(160), new CustomizableThreadFactory("pool-processMessage-"), new ShareRunsPolicy("pool-processMessage"));
 
     private WebSocketSession session;
     private Message bean;

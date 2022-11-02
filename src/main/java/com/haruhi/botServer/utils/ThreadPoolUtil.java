@@ -1,6 +1,8 @@
 package com.haruhi.botServer.utils;
 
 
+import com.haruhi.botServer.thread.pool.HandleCommandThreadPoolExecutor;
+import com.haruhi.botServer.thread.pool.policy.ShareRunsPolicy;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -9,21 +11,15 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ThreadPoolUtil {
     private ThreadPoolUtil(){}
-    private final static ThreadPoolExecutor handleCommandPool = new ThreadPoolExecutor(5, 10, 1, TimeUnit.HOURS,
-            new ArrayBlockingQueue(20), new CustomizableThreadFactory("pool-handleCommand-"), new RejectedExecutionHandler() {
-        @Override
-        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-            ThreadPoolUtil.getSharePool().execute(r);
-            log.info("线程池：pool-handler任务队列已满，本次命令由公共线程池执行");
-        }
-    });
+    private final static ThreadPoolExecutor handleCommandPool = new HandleCommandThreadPoolExecutor(5, 10, 1, TimeUnit.HOURS,
+            new ArrayBlockingQueue(20), new CustomizableThreadFactory("pool-handleCommand-"), new ShareRunsPolicy("pool-handleCommand"));
+
     private final static ExecutorService sharePool = new ThreadPoolExecutor(1, 1,3L * 1000L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<Runnable>(),new CustomizableThreadFactory("pool-share-"));
 
