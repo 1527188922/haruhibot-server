@@ -3,12 +3,17 @@ package com.haruhi.botServer.handlers.message.chatHistory;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.GroupChatHistory;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
 import com.haruhi.botServer.service.groupChatHistory.GroupChatHistoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -26,6 +31,14 @@ public class GroupChatHistoryAddHandler implements IGroupMessageEvent {
     @Autowired
     private GroupChatHistoryService groupChatHistoryService;
 
+    private static ExecutorService threadPool;
+    public GroupChatHistoryAddHandler(){
+        if (threadPool == null) {
+            threadPool = new ThreadPoolExecutor(1, 1,15L * 60L, TimeUnit.SECONDS,
+                    new LinkedBlockingQueue<Runnable>(),new CustomizableThreadFactory("pool-insertRecord-"));
+        }
+    }
+
     /**
      * 群聊历史聊天入库
      * 不参与命令处理,最终返回false
@@ -35,7 +48,7 @@ public class GroupChatHistoryAddHandler implements IGroupMessageEvent {
      */
     @Override
     public boolean onGroup(final WebSocketSession session,final Message message, final String command) {
-        ThreadPoolFactory.getChatHistoryThreadPool().execute(new Task(groupChatHistoryService,message));
+        threadPool.execute(new Task(groupChatHistoryService,message));
         return false;
     }
 
@@ -61,7 +74,7 @@ public class GroupChatHistoryAddHandler implements IGroupMessageEvent {
                 param.setMessageId(message.getMessage_id());
                 service.save(param);
             }catch (Exception e){
-                log.error("群聊天历史入库异常",e);
+                log.error("群聊天记录入库异常",e);
             }
         }
     }

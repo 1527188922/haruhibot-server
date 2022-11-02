@@ -7,19 +7,35 @@ import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dispenser.MessageDispenser;
 import com.haruhi.botServer.dispenser.NoticeDispenser;
 import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.web.socket.WebSocketSession;
+
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ProcessMessageTask implements Runnable{
 
+    private final static ThreadPoolExecutor threadPool = new ThreadPoolExecutor(16, 31, 10L * 60L, TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(160), new CustomizableThreadFactory("pool-processMessage-"), new RejectedExecutionHandler() {
+        @Override
+        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+            ThreadPoolUtil.getSharePool().execute(r);
+            log.error("线程池：pool-processMessage任务队列已满，本次消息处理由公共线程池执行");
+        }
+    });
+
     private WebSocketSession session;
     private Message bean;
     private String original;
-    public ProcessMessageTask(WebSocketSession session,Message bean,String original){
+    private ProcessMessageTask(WebSocketSession session,Message bean,String original){
         this.session = session;
         this.bean = bean;
         this.original = original;
@@ -55,5 +71,9 @@ public class ProcessMessageTask implements Runnable{
             log.error("处理消息时异常",e);
         }
 
+    }
+
+    public static void execute(WebSocketSession session,Message bean,String original){
+        threadPool.execute(new ProcessMessageTask(session,bean,original));
     }
 }

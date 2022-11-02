@@ -11,7 +11,6 @@ import com.haruhi.botServer.dto.gocq.request.Params;
 import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
 import com.haruhi.botServer.thread.ProcessMessageTask;
 import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -45,18 +44,24 @@ public class Server implements WebSocketHandler {
 
     @Override
     public void handleMessage(WebSocketSession session, final WebSocketMessage<?> message) throws Exception {
-        final String s = String.valueOf(message.getPayload());
-        Message bean = JSONObject.parseObject(s, Message.class);
-        if(PostTypeEnum.meta_event.toString().equals(bean.getPost_type()) && MetaEventEnum.heartbeat.toString().equals(bean.getMeta_event_type())){
-            // 心跳包
-            return;
+        Object payload = message.getPayload();
+        try {
+            final String s = String.valueOf(payload);
+            Message bean = JSONObject.parseObject(s, Message.class);
+            if(PostTypeEnum.meta_event.toString().equals(bean.getPost_type()) && MetaEventEnum.heartbeat.toString().equals(bean.getMeta_event_type())){
+                // 心跳包
+                return;
+            }
+            ProcessMessageTask.execute(session,bean,s);
+        }catch (Exception e){
+            log.error("解析payload异常:{}",payload);
+            throw e;
         }
-        ThreadPoolFactory.getEventThreadPool().execute(new ProcessMessageTask(session,bean,s));
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error("连接异常,sessionId:{},exception:{}",session.getId(),exception.getMessage());
+        log.error("连接异常,sessionId:{}",session.getId(),exception);
         removeClient(session);
     }
 

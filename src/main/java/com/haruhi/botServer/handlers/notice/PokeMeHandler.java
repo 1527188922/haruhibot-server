@@ -4,7 +4,7 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.notice.IPokeEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
@@ -32,7 +32,7 @@ public class PokeMeHandler implements IPokeEvent {
             return;
         }
 
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
                 int size = cache.size();
                 if(size > 0){

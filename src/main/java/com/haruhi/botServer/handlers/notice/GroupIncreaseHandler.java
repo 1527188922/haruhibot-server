@@ -3,7 +3,7 @@ package com.haruhi.botServer.handlers.notice;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.notice.IGroupIncreaseEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ public class GroupIncreaseHandler implements IGroupIncreaseEvent {
 
     @Override
     public void onGroupIncrease(final WebSocketSession session,final Message message) {
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
 
             KQCodeUtils instance = KQCodeUtils.getInstance();
             String at = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getUser_id());

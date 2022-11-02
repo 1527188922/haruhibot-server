@@ -8,7 +8,7 @@ import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.aiChat.response.ChatResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
@@ -80,7 +80,7 @@ public class AiChatHandler implements IMessageEvent {
         if(!matching(message,command)){
             return false;
         }
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             String s = command;
             if(this.cqs != null){
                 for (String cq : this.cqs) {

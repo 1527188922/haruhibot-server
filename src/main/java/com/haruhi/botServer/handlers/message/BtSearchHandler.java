@@ -6,7 +6,7 @@ import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.HttpClientUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +61,7 @@ public class BtSearchHandler implements IMessageEvent {
         }
 
         Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"开始搜索...",true);
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(new Task(session,message,keyword,page));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message,keyword,page));
         return true;
     }
 

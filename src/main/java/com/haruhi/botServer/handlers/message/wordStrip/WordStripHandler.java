@@ -2,7 +2,7 @@ package com.haruhi.botServer.handlers.message.wordStrip;
 
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -43,7 +43,7 @@ public class WordStripHandler implements IGroupMessageEvent {
         if(answer == null){
             return false;
         }
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             Server.sendGroupMessage(session,message.getGroup_id(),answer,false);
         });
         return true;

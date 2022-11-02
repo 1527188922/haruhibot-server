@@ -6,7 +6,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.xml.bilibili.PlayerInfoResp;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.thread.WordSlicesTask;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
@@ -63,7 +63,7 @@ public class BulletChatWordCloudHandler implements IMessageEvent {
             return false;
         }
 
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(new Task(session,message,param));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message,param));
         return true;
     }
     private String getBv(String param){

@@ -3,7 +3,7 @@ package com.haruhi.botServer.handlers.message.chatHistory;
 import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.groupChatHistory.GroupChatHistoryService;
 import com.haruhi.botServer.ws.Server;
 import lombok.AllArgsConstructor;
@@ -41,7 +41,7 @@ public class FindChatMessageHandler implements IGroupMessageEvent {
             return false;
         }
 
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(new Task(session,groupChatHistoryService,message,param));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,groupChatHistoryService,message,param));
         return true;
     }
 

@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.ws.Server;
@@ -53,7 +53,7 @@ public class ScoldMeHandler implements IMessageEvent {
         if (!cmd.trim().matches(RegexEnum.SCOLD_ME_DG.getValue())){
             return false;
         }
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             int i = CommonUtil.randomInt(0, fileList.length - 1);
             File file = fileList[i];
             KQCodeUtils instance = KQCodeUtils.getInstance();

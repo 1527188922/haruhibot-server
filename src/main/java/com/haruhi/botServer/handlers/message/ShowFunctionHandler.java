@@ -5,7 +5,7 @@ import com.haruhi.botServer.dispenser.MessageDispenser;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.event.message.IMessageEventType;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -33,7 +33,7 @@ public class ShowFunctionHandler implements IMessageEvent {
         if (!command.matches(RegexEnum.SHOW_ALL_FUNCTION.getValue())) {
             return false;
         }
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(new Task(session,message));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message));
         return true;
     }
 

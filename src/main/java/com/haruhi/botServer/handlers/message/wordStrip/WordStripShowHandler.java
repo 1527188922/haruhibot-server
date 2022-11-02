@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.WordStrip;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,7 @@ public class WordStripShowHandler implements IGroupMessageEvent {
         if (!command.matches(RegexEnum.WORD_STRIP_SHOW.getValue())) {
             return false;
         }
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             LambdaQueryWrapper<WordStrip> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(WordStrip::getGroupId,message.getGroup_id()).eq(WordStrip::getSelfId,message.getSelf_id());
             List<WordStrip> list = wordStripService.list(queryWrapper);

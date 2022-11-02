@@ -11,7 +11,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.dto.searchImage.response.Results;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Server;
@@ -86,7 +86,7 @@ public class SearchImageHandler implements IMessageEvent {
 
     private void startSearch(WebSocketSession session,Message message, String cq, String key){
         Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"开始搜图...",true);
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(new SearchImageTask(session,message,cq));
+        ThreadPoolUtil.getHandleCommandPool().execute(new SearchImageTask(session,message,cq));
         if(key != null){
             cache.remove(key);
         }

@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.news.NewsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ public class SeeNewsHandler implements IMessageEvent {
         if(!command.matches(RegexEnum.SEE_TODAY_NEWS.getValue())){
             return false;
         }
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
                 List<NewsBy163Resp> newsBy163Resps = NewsService.requestNewsBy163();
                 if (MessageTypeEnum.group.getType().equals(message.getMessage_type())) {

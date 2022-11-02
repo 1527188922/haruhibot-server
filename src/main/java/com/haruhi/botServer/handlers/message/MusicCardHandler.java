@@ -7,7 +7,7 @@ import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.music.response.Song;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.music.AbstractMusicService;
 import com.haruhi.botServer.factory.MusicServiceFactory;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -77,7 +77,7 @@ public class MusicCardHandler implements IMessageEvent {
             // 若这里删除缓存，那么一次搜索只能点一次歌
             // 若不删除，那么在缓存 存在期间，都可以通过输入纯数字持续点歌
             // cache.remove(key);
-            ThreadPoolFactory.getCommandHandlerThreadPool().execute(new SendMusicCardTask(session,songs,index,message));
+            ThreadPoolUtil.getHandleCommandPool().execute(new SendMusicCardTask(session,songs,index,message));
             return true;
         }else{
             // 不存在缓存
@@ -92,7 +92,7 @@ public class MusicCardHandler implements IMessageEvent {
     }
     private void search(WebSocketSession session,Message message,String songName){
         Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"开始搜索歌曲：" + songName,true);
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(new SearchMusicTask(session,message,songName));
+        ThreadPoolUtil.getHandleCommandPool().execute(new SearchMusicTask(session,message,songName));
     }
 
     private String getSongName(final String command){

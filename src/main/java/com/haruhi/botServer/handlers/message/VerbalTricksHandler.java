@@ -4,7 +4,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.VerbalTricks;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +57,7 @@ public class VerbalTricksHandler implements IMessageEvent {
         if(answerObj == null){
             return false;
         }
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(new Task(session,message,answerObj));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message,answerObj));
         return true;
     }
 

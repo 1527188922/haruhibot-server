@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.Pixiv;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.pixiv.PixivService;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class PixivCountHandler implements IMessageEvent {
         if(!command.matches(RegexEnum.PIXIV_COUNT.getValue())){
             return false;
         }
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             QueryWrapper<Pixiv> queryWrapper = new QueryWrapper<>();
             queryWrapper.lambda().eq(Pixiv::getIsR18,false);
             QueryWrapper<Pixiv> queryWrapperR18 = new QueryWrapper<>();

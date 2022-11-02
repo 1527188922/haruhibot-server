@@ -3,7 +3,7 @@ package com.haruhi.botServer.handlers.message.pixiv;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.pixiv.PixivService;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -61,7 +61,7 @@ public class PixivHandler implements IMessageEvent {
         }
 
 
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(new PixivTask(session,pixivService,tags,message,tag));
+        ThreadPoolUtil.getHandleCommandPool().execute(new PixivTask(session,pixivService,tags,message,tag));
         return true;
     }
 

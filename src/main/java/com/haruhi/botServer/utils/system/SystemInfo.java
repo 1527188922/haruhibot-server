@@ -1,6 +1,6 @@
 package com.haruhi.botServer.utils.system;
 
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -41,7 +41,7 @@ public class SystemInfo {
         getOsName();
         getOsVersion();
         getAvailableProcessors();
-        ThreadPoolFactory.resetThreadPoolSize();
+        ThreadPoolUtil.resetThreadPoolSize();
         getDisk();
         getTotalSpace();
         getTotalPhysicalMemorySize();

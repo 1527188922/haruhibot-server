@@ -3,7 +3,7 @@ package com.haruhi.botServer.job;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.entity.Pixiv;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.job.schedule.AbstractJob;
 import com.haruhi.botServer.service.pixiv.PixivService;
 import com.haruhi.botServer.utils.RestUtil;
@@ -14,6 +14,7 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -21,6 +22,10 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -33,6 +38,13 @@ public class DownloadPixivJob extends AbstractJob {
     @Override
     public String cronExpression() {
         return cron;
+    }
+    private static Executor threadPool = null;
+    public DownloadPixivJob(){
+        if (threadPool == null) {
+            threadPool = new ThreadPoolExecutor(4,8,60, TimeUnit.SECONDS,new ArrayBlockingQueue(30),
+                    new CustomizableThreadFactory("pool-downloadPixivJob-"),new ThreadPoolExecutor.DiscardPolicy());
+        }
     }
 
     @Autowired
@@ -52,9 +64,9 @@ public class DownloadPixivJob extends AbstractJob {
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         for (int i = 0; i < 2; i++) {
-            ThreadPoolFactory.getDownloadThreadPool().execute(new DownloadTask(pixivService,param));
+            threadPool.execute(new DownloadTask(pixivService,param));
         }
-        ThreadPoolFactory.getDownloadThreadPool().execute(new DownloadTask(pixivService,paramR18));
+        threadPool.execute(new DownloadTask(pixivService,paramR18));
     }
 
     private class DownloadTask implements Runnable{

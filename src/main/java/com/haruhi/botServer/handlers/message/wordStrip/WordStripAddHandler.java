@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.WordStrip;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.factory.ThreadPoolFactory;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +54,7 @@ public class WordStripAddHandler implements IGroupMessageEvent {
 
         final String finalKeyWord = keyWord;
         final String finalAnswer = answer;
-        ThreadPoolFactory.getCommandHandlerThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
 
                 LambdaQueryWrapper<WordStrip> queryWrapper = new LambdaQueryWrapper<>();
