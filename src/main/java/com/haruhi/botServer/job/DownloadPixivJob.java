@@ -3,7 +3,6 @@ package com.haruhi.botServer.job;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.entity.Pixiv;
-import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.job.schedule.AbstractJob;
 import com.haruhi.botServer.service.pixiv.PixivService;
 import com.haruhi.botServer.utils.RestUtil;
