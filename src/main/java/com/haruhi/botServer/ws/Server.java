@@ -24,7 +24,9 @@ import org.springframework.web.socket.WebSocketSession;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * 机器人是服务端
@@ -32,6 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class Server implements WebSocketHandler {
+
+    private final static Object OBJECT = new Object();
 
     private static Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
     private static Map<String,Long> userIdMap = new ConcurrentHashMap<>();
@@ -373,11 +377,11 @@ public class Server implements WebSocketHandler {
     }
 
 
-    private static void sendMessage(WebSocketSession session, String text){
+    private synchronized static void sendMessage(WebSocketSession session, String text){
         try {
             session.sendMessage(new TextMessage(text));
         } catch (Exception e) {
-            log.error("发送消息发生异常,消息：{}",text,e);
+            log.error("发送消息发生异常,session:{},消息：{}",session,text,e);
         }
     }
 
