@@ -70,7 +70,8 @@ public abstract class RunnableNode<T>{
     }
 
     /**
-     *
+     * 检查将要设置的父节点是否在当前节点的子节点中
+     * 不存在则表示验证通过
      * @param parentNode
      * @param nodes
      * @return
@@ -106,6 +107,9 @@ public abstract class RunnableNode<T>{
         return parentNode;
     }
 
+    public void setData(T data){
+        this.data = data;
+    }
     public T getData(){
         return data;
     }
@@ -118,11 +122,13 @@ public abstract class RunnableNode<T>{
     public boolean execute(final WebSocketSession session,final Message message){
         boolean matches = false;
         try {
+            // 调用自定义的匹配方法
             matches = matches(session, message);
         } catch (Exception e) {
             log.error("节点匹配异常",e);
         }
         if (matches) {
+            // 若匹配成功 将run()提交到线程池执行
             ThreadPoolUtil.getHandleCommandPool().execute(()->{
                 try {
                     run(session,message);

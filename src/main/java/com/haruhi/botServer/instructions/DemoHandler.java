@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
  * 比如这个DemoHandler，我使用nodeCache保存/记录执行节点，这是个有过期时间的cache
  * 过期则回到根节点开始
  *
+ * 如果当前进度中的节点一个都没有匹配上，那么onMessage方法返回false，继续向下匹配其他handler
+ *
  */
 @Component
 @Slf4j
@@ -62,11 +64,15 @@ public class DemoHandler implements IMessageEvent {
 
     public DemoHandler(){
         bootstraps = createNodes();
-
-        System.out.println("");
     }
 
 
+    /**
+     * 这个方法用来自定义指令树
+     * 树的结构和每个节点的匹配规则以及每个节点要做的事情都可以自定义
+     * 这是我创建的demo 结果看流程图 https://www.processon.com/view/link/6365e141e401fd612f4b167c
+     * @return
+     */
     private List<RunnableNode> createNodes(){
         List<RunnableNode> bootstrap = new ArrayList<>();
 
@@ -95,7 +101,7 @@ public class DemoHandler implements IMessageEvent {
                         "我是a1",true);
             }
         };
-        bootstrap.add(nodeA1);
+        bootstrap.add(nodeA1); // 将定义的根节点添加到根节点集合中
 
         // 第2个根节点
         String nodeA2CustomData = "a2";
