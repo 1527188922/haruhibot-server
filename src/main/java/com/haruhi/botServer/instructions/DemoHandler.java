@@ -85,20 +85,26 @@ public class DemoHandler implements IMessageEvent {
         // 第1个根节点
         String nodeA1CustomData = "a1";
         RunnableNode<String> nodeA1 = new RunnableNode<String>(nodeA1CustomData){
-            @Override
-            protected boolean matches(WebSocketSession session, Message message)throws Exception {
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}",data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}",data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(WebSocketSession session, Message message) throws Exception{
+                // matches()和run() 用同一个方法更好,这样有更大的自定义空间 而且 有些参数从匹配过程中就能拿到 没必要把matches()和run()分开
+                // 至于匹配成功之后的执行 是由当前线程执行还是提交线程池 自行发挥 不在强行提交线程池
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}",d);
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
                         "我是a1",true);
+                return true;
             }
         };
         bootstrap.add(nodeA1); // 将定义的根节点添加到根节点集合中
@@ -106,20 +112,24 @@ public class DemoHandler implements IMessageEvent {
         // 第2个根节点
         String nodeA2CustomData = "a2";
         RunnableNode<String> nodeA2 = new RunnableNode<String>(nodeA2CustomData){
-            @Override
-            protected boolean matches(WebSocketSession session, Message message) throws Exception{
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}",data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}",data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message)throws Exception {
+            protected boolean run(WebSocketSession session, Message message)throws Exception {
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}",d);
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
                         "我是a2",true);
+                return true;
             }
         };
         bootstrap.add(nodeA2);
@@ -127,20 +137,24 @@ public class DemoHandler implements IMessageEvent {
         // 第3个根节点
         String nodeA3CustomData = "a3";
         RunnableNode<String> nodeA3 = new RunnableNode<String>(nodeA3CustomData){
-            @Override
-            protected boolean matches(WebSocketSession session, Message message)throws Exception {
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}",data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}",data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(WebSocketSession session, Message message) throws Exception{
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}",d);
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
                         "我是a3",true);
+                return true;
             }
         };
         bootstrap.add(nodeA3);
@@ -150,20 +164,24 @@ public class DemoHandler implements IMessageEvent {
         String nodeB1CustomData = "b1";
         // b1是a1的一个子节点
         RunnableNode<String> nodeB1 = new RunnableNode<String>(nodeA1, nodeB1CustomData) {
-            @Override
-            protected boolean matches(WebSocketSession session, Message message) throws Exception{
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}", data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}", data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(WebSocketSession session, Message message) throws Exception{
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}", d);
                 Server.sendMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(),
                         "我是b1", true);
+                return true;
             }
         };
 
@@ -171,40 +189,48 @@ public class DemoHandler implements IMessageEvent {
         // b2是a1的一个子节点
         String nodeB2CustomData = "b2";
         RunnableNode<String> nodeB2 = new RunnableNode<String>(nodeA1, nodeB2CustomData) {
-            @Override
-            protected boolean matches(WebSocketSession session, Message message)throws Exception {
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}", data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}", data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message)throws Exception {
+            protected boolean run(WebSocketSession session, Message message)throws Exception {
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}", d);
                 Server.sendMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(),
                         "我是b2", true);
+                return true;
             }
         };
 
         // b3是a1的一个子节点
         String nodeB3CustomData = "b3";
         new RunnableNode<String>(nodeA1,nodeB3CustomData){ //终结点new出来可以不定义变量
-            @Override
-            protected boolean matches(WebSocketSession session, Message message)throws Exception {
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}",data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}",data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(WebSocketSession session, Message message) throws Exception{
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}",d);
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
                         "我是b3",true);
+                return true;
             }
         };
 
@@ -212,120 +238,144 @@ public class DemoHandler implements IMessageEvent {
         // b4是a2的一个子节点
         String nodeB4CustomData = "b4";
         new RunnableNode<String>(nodeA2,nodeB4CustomData){
-            @Override
-            protected boolean matches(WebSocketSession session, Message message) throws Exception{
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}",data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}",data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(WebSocketSession session, Message message) throws Exception{
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}",d);
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
                         "我是b4",true);
+                return true;
             }
         };
 
         // b5是a2的一个子节点
         String nodeB5CustomData = "b5";
         new RunnableNode<String>(nodeA2,nodeB5CustomData){
-            @Override
-            protected boolean matches(WebSocketSession session, Message message)throws Exception {
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}",data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}",data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message) throws Exception {
+            protected boolean run(WebSocketSession session, Message message) throws Exception {
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}",d);
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
                         "我是b5",true);
+                return true;
             }
         };
 
         // c1是b1的一个子节点
         String nodeC1CustomData = "c1";
         RunnableNode<String> nodeC1 = new RunnableNode<String>(nodeB1, nodeC1CustomData) {
-            @Override
-            protected boolean matches(WebSocketSession session, Message message) throws Exception{
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}", data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}", data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message)throws Exception {
+            protected boolean run(WebSocketSession session, Message message)throws Exception {
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}", d);
                 Server.sendMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(),
                         "我是c1", true);
+                return true;
             }
         };
 
         // c2是b1的一个子节点
         String nodeC2CustomData = "c2";
         new RunnableNode<String>(nodeB1,nodeC2CustomData){
-            @Override
-            protected boolean matches(WebSocketSession session, Message message)throws Exception {
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}",data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}",data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(WebSocketSession session, Message message) throws Exception{
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}",d);
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
                         "我是c2",true);
+                return true;
             }
         };
 
         // c3是b2的一个子节点
         String nodeC3CustomData = "c3";
         new RunnableNode<String>(nodeB2,nodeC3CustomData){
-            @Override
-            protected boolean matches(WebSocketSession session, Message message)throws Exception {
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}",data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}",data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(WebSocketSession session, Message message) throws Exception{
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}",d);
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
                         "我是c3",true);
+                return true;
             }
         };
 
         // d1是c1的一个子节点
         String nodeD1CustomData = "d1";
         new RunnableNode<String>(nodeC1,nodeD1CustomData){
-            @Override
-            protected boolean matches(WebSocketSession session, Message message) throws Exception{
-                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
-                String data = getData();
-                log.info("这是当前节点自定的数据：{}",data);
-                return data.equals(message.getMessage());
-            }
+//            @Override
+//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
+//                String data = getData();
+//                log.info("这是当前节点自定的数据：{}",data);
+//                return data.equals(message.getMessage());
+//            }
 
             @Override
-            protected void run(WebSocketSession session, Message message) throws Exception {
+            protected boolean run(WebSocketSession session, Message message) throws Exception {
                 String d = getData();
+                if (!d.equals(message.getMessage())) {
+                    return false;
+                }
                 log.info("这是当前节点自定的数据：{}",d);
                 Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
                         "我是d1",true);
+                return true;
             }
         };
 
@@ -357,7 +407,8 @@ public class DemoHandler implements IMessageEvent {
     // ------------ ---------------    ------------------- --------------------
 
     /**
-     * 开始遍历查找节点 并循环调用execute()
+     * 判断从缓存节点的子节点集合从执行
+     * 还是从根节点集合执行
      * @param session
      * @param message
      * @return
@@ -365,25 +416,25 @@ public class DemoHandler implements IMessageEvent {
     private boolean ergodicNodes(WebSocketSession session ,Message message){
         // 先查找缓存是否存在该用户的执行记录 实际就是查一个node对象
         RunnableNode currentNode = getNode(message);
+        List<RunnableNode> nodes = null;
         if (currentNode != null) {
-            List<RunnableNode> childNodes = currentNode.getChildNodes();
-            boolean execute = execute(session, message, childNodes);
-            if (execute) {
-                return true;
-            }
+            // 存在执行记录 从记录的子节点集合匹配
+            nodes = currentNode.getChildNodes();
         }else{
             // 缓存中不存在该用户的执行节点记录 从根节点集合匹配命令
-            boolean execute = execute(session, message, bootstraps);
-            if (execute) {
-                return true;
-            }
+            nodes = bootstraps;
+        }
+
+        boolean execute = execute(session, message, nodes);
+        if (execute) {
+            return true;
         }
 
         return false;
     }
 
     /**
-     * 循环匹配执行同一层级的节点
+     * 循环匹配执行同一层级的节点(循环调用run())
      * @param session
      * @param message
      * @param nodes 同一层级的节点集合
@@ -391,7 +442,12 @@ public class DemoHandler implements IMessageEvent {
      */
     private boolean execute(WebSocketSession session ,Message message,List<RunnableNode> nodes){
         for (RunnableNode node: nodes) {
-            boolean execute = node.execute(session, message);
+            boolean execute = false;
+            try {
+                execute = node.run(session, message);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             if (execute) {
                 // execute==true 表示该节点的matches方法返回true 说明匹配成功 将任务提交到了线程池执行
                 missionAccomplished(session,message,node);

@@ -115,30 +115,30 @@ public abstract class RunnableNode<T>{
     }
 
 
-    protected abstract boolean matches(final WebSocketSession session,final Message message) throws Exception;
+//    protected abstract boolean matches(final WebSocketSession session,final Message message) throws Exception;
 
-    protected abstract void run(final WebSocketSession session,final Message message) throws Exception;
+    protected abstract boolean run(final WebSocketSession session,final Message message) throws Exception;
 
-    public boolean execute(final WebSocketSession session,final Message message){
-        boolean matches = false;
-        try {
-            // 调用自定义的匹配方法
-            matches = matches(session, message);
-        } catch (Exception e) {
-            log.error("节点匹配异常",e);
-        }
-        if (matches) {
-            // 若匹配成功 将run()提交到线程池执行
-            ThreadPoolUtil.getHandleCommandPool().execute(()->{
-                try {
-                    run(session,message);
-                }catch (Exception e){
-                    log.error("节点任务执行异常");
-                }
-            });
-        }
-        return matches;
-    }
+//    public boolean execute(final WebSocketSession session,final Message message){
+//        boolean matches = false;
+//        try {
+//            // 调用自定义的匹配方法
+//            matches = matches(session, message);
+//        } catch (Exception e) {
+//            log.error("节点匹配异常",e);
+//        }
+//        if (matches) {
+//            // 若匹配成功 将run()提交到线程池执行
+//            ThreadPoolUtil.getHandleCommandPool().execute(()->{
+//                try {
+//                    run(session,message);
+//                }catch (Exception e){
+//                    log.error("节点任务执行异常");
+//                }
+//            });
+//        }
+//        return matches;
+//    }
 
 
 }
