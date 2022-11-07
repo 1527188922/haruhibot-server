@@ -60,10 +60,10 @@ public class DemoHandler implements IMessageEvent {
     /**
      * 只用来存放根节点
      */
-    private static List<RunnableNode> bootstraps;
+    private static List<RunnableNode> roots;
 
     public DemoHandler(){
-        bootstraps = createNodes();
+        roots = createNodes();
     }
 
 
@@ -86,7 +86,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeA1CustomData = "a1";
         RunnableNode<String> nodeA1 = new RunnableNode<String>(nodeA1CustomData){
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//            protected boolean matches(final WebSocketSession session,final Message message)throws Exception {
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}",data);
@@ -94,7 +94,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 // matches()和run() 用同一个方法更好,这样有更大的自定义空间 而且 有些参数从匹配过程中就能拿到 没必要把matches()和run()分开
                 // 至于匹配成功之后的执行 是由当前线程执行还是提交线程池 自行发挥 不在强行提交线程池
                 String d = getData();
@@ -113,7 +113,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeA2CustomData = "a2";
         RunnableNode<String> nodeA2 = new RunnableNode<String>(nodeA2CustomData){
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//            protected boolean matches(final WebSocketSession session,final Message message) throws Exception{
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}",data);
@@ -121,7 +121,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message)throws Exception {
+            protected boolean run(final WebSocketSession session,final Message message)throws Exception {
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -138,7 +138,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeA3CustomData = "a3";
         RunnableNode<String> nodeA3 = new RunnableNode<String>(nodeA3CustomData){
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//            protected boolean matches(final WebSocketSession session,final Message message)throws Exception {
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}",data);
@@ -146,7 +146,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -165,7 +165,7 @@ public class DemoHandler implements IMessageEvent {
         // b1是a1的一个子节点
         RunnableNode<String> nodeB1 = new RunnableNode<String>(nodeA1, nodeB1CustomData) {
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//            protected boolean matches(final WebSocketSession session,final Message message) throws Exception{
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}", data);
@@ -173,7 +173,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -190,7 +190,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeB2CustomData = "b2";
         RunnableNode<String> nodeB2 = new RunnableNode<String>(nodeA1, nodeB2CustomData) {
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//            protected boolean matches(final WebSocketSession session,final Message message)throws Exception {
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}", data);
@@ -198,7 +198,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message)throws Exception {
+            protected boolean run(final WebSocketSession session,final Message message)throws Exception {
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -214,7 +214,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeB3CustomData = "b3";
         new RunnableNode<String>(nodeA1,nodeB3CustomData){ //终结点new出来可以不定义变量
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//            protected boolean matches(final WebSocketSession session,final Message message)throws Exception {
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}",data);
@@ -222,7 +222,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -239,7 +239,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeB4CustomData = "b4";
         new RunnableNode<String>(nodeA2,nodeB4CustomData){
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//            protected boolean matches(final WebSocketSession session,final Message message) throws Exception{
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}",data);
@@ -247,7 +247,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -263,7 +263,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeB5CustomData = "b5";
         new RunnableNode<String>(nodeA2,nodeB5CustomData){
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//            protected boolean matches(final WebSocketSession session,final Message message)throws Exception {
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}",data);
@@ -271,7 +271,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message) throws Exception {
+            protected boolean run(final WebSocketSession session,final Message message) throws Exception {
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -287,7 +287,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeC1CustomData = "c1";
         RunnableNode<String> nodeC1 = new RunnableNode<String>(nodeB1, nodeC1CustomData) {
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//            protected boolean matches(final WebSocketSession session,final Message message) throws Exception{
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}", data);
@@ -295,7 +295,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message)throws Exception {
+            protected boolean run(final WebSocketSession session,final Message message)throws Exception {
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -311,7 +311,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeC2CustomData = "c2";
         new RunnableNode<String>(nodeB1,nodeC2CustomData){
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//            protected boolean matches(final WebSocketSession session,final Message message)throws Exception {
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}",data);
@@ -319,7 +319,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -335,7 +335,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeC3CustomData = "c3";
         new RunnableNode<String>(nodeB2,nodeC3CustomData){
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message)throws Exception {
+//            protected boolean matches(final WebSocketSession session,final Message message)throws Exception {
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}",data);
@@ -343,7 +343,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message) throws Exception{
+            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -359,7 +359,7 @@ public class DemoHandler implements IMessageEvent {
         String nodeD1CustomData = "d1";
         new RunnableNode<String>(nodeC1,nodeD1CustomData){
 //            @Override
-//            protected boolean matches(WebSocketSession session, Message message) throws Exception{
+//            protected boolean matches(final WebSocketSession session,final Message message) throws Exception{
 //                // 在这个方法里，你可以随便定义当前节点的匹配规则 最终返回true就表示匹配成功，将执行run方法
 //                String data = getData();
 //                log.info("这是当前节点自定的数据：{}",data);
@@ -367,7 +367,7 @@ public class DemoHandler implements IMessageEvent {
 //            }
 
             @Override
-            protected boolean run(WebSocketSession session, Message message) throws Exception {
+            protected boolean run(final WebSocketSession session,final Message message) throws Exception {
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
@@ -397,7 +397,7 @@ public class DemoHandler implements IMessageEvent {
 
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message,final String command) {
-        if(CollectionUtils.isEmpty(bootstraps)){
+        if(CollectionUtils.isEmpty(roots)){
             return false;
         }
 
@@ -413,7 +413,7 @@ public class DemoHandler implements IMessageEvent {
      * @param message
      * @return
      */
-    private boolean ergodicNodes(WebSocketSession session ,Message message){
+    private boolean ergodicNodes(final WebSocketSession session,final Message message){
         // 先查找缓存是否存在该用户的执行记录 实际就是查一个node对象
         RunnableNode currentNode = getNode(message);
         List<RunnableNode> nodes = null;
@@ -422,7 +422,7 @@ public class DemoHandler implements IMessageEvent {
             nodes = currentNode.getChildNodes();
         }else{
             // 缓存中不存在该用户的执行节点记录 从根节点集合匹配命令
-            nodes = bootstraps;
+            nodes = roots;
         }
 
         boolean execute = execute(session, message, nodes);
@@ -440,7 +440,7 @@ public class DemoHandler implements IMessageEvent {
      * @param nodes 同一层级的节点集合
      * @return
      */
-    private boolean execute(WebSocketSession session ,Message message,List<RunnableNode> nodes){
+    private boolean execute(final WebSocketSession session,final Message message,final List<RunnableNode> nodes){
         for (RunnableNode node: nodes) {
             boolean execute = false;
             try {
@@ -463,7 +463,7 @@ public class DemoHandler implements IMessageEvent {
      * @param message
      * @param currentNode 被执行的节点
      */
-    private void missionAccomplished(WebSocketSession session, Message message, RunnableNode currentNode){
+    private void missionAccomplished(final WebSocketSession session,final Message message,final RunnableNode currentNode){
         List childNodes = currentNode.getChildNodes();
         if(!CollectionUtils.isEmpty(childNodes)){
             // 当前执行的节点还存在子节点 将当前执行的节点存到缓存
