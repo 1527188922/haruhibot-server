@@ -54,7 +54,7 @@ public class WordStripDeleteHandler implements IGroupMessageEvent {
             }
             if(!one.getUserId().equals(message.getUser_id())){
                 Server.sendGroupMessage(sessions,message.getGroup_id(),
-                        MessageFormat.format("你不是该词条的创建人，不可删除：{0}\n创建人:{1}",finalKeyWord,one.getUserId()),false);
+                        MessageFormat.format("你不是该词条的创建人，不可删除：{0}\n创建人:{1}",finalKeyWord,String.valueOf(one.getUserId())),false);
                 return;
             }
             try {

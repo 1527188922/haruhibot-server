@@ -54,7 +54,7 @@ public class WordStripShowHandler implements IGroupMessageEvent {
     private String processWordStrip(List<WordStrip> list){
         StringBuilder stringBuilder = new StringBuilder("本群词条：\n");
         for (WordStrip wordStrip : list) {
-            stringBuilder.append(MessageFormat.format("[{0}]-[{1}] 创建人：{2}\n",wordStrip.getKeyWord(),wordStrip.getAnswer(),wordStrip.getUserId()));
+            stringBuilder.append(MessageFormat.format("[{0}]-[{1}] 创建人：{2}\n",wordStrip.getKeyWord(),wordStrip.getAnswer(),String.valueOf(wordStrip.getUserId())));
         }
         return stringBuilder.toString();
     }

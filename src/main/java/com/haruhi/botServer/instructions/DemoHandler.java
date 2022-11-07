@@ -5,7 +5,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+//import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * 如果当前进度中的节点一个都没有匹配上，那么onMessage方法返回false，继续向下匹配其他handler
  *
  */
-@Component
+//@Component // 若放开注释 则启用该功能
 @Slf4j
 public class DemoHandler implements IMessageEvent {
 
@@ -68,7 +68,7 @@ public class DemoHandler implements IMessageEvent {
 
 
     /**
-     * 这个方法用来自定义指令树
+     * 这个方法用来自定义指令树 一个root表示一棵树,根据业务需求 可以存在多个根节点 也就是多棵树
      * 树的结构和每个节点的匹配规则以及每个节点要做的事情都可以自定义
      * 这是我创建的demo 结果看流程图 https://www.processon.com/view/link/6365e141e401fd612f4b167c
      * @return
@@ -95,8 +95,6 @@ public class DemoHandler implements IMessageEvent {
 
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception{
-                // matches()和run() 用同一个方法更好,这样有更大的自定义空间 而且 有些参数从匹配过程中就能拿到 没必要把matches()和run()分开
-                // 至于匹配成功之后的执行 是由当前线程执行还是提交线程池 自行发挥 不在强行提交线程池
                 String d = getData();
                 if (!d.equals(message.getMessage())) {
                     return false;
