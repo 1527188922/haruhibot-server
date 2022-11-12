@@ -3,9 +3,10 @@ package com.haruhi.botServer.instructions;
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
-//import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -150,8 +151,16 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
-                        "我是a3",true);
+                for (int i = 0; i < 2; i++) {
+                    // 测试同一个session并发同步发送消息
+                    // 不同session之间异步发送
+                    final int j = i;
+                    ThreadPoolUtil.getHandleCommandPool().execute(()->{
+                        Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                                "我是a3-" + j,true);
+                    });
+                }
+
                 return true;
             }
         };

@@ -33,8 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class Server implements WebSocketHandler {
 
-    private final static Object OBJECT = new Object();
-
     private static Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
     private static Map<String,Long> userIdMap = new ConcurrentHashMap<>();
 
@@ -374,8 +372,7 @@ public class Server implements WebSocketHandler {
         return null;
     }
 
-
-    public synchronized static void sendMessage(WebSocketSession session, String text){
+    public static void sendMessage(WebSocketSession session, String text){
         try {
             session.sendMessage(new TextMessage(text));
         } catch (Exception e) {
