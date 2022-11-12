@@ -6,13 +6,12 @@ import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SelfInfo;
 import com.haruhi.botServer.utils.system.SystemInfo;
+import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
-import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -88,7 +87,8 @@ public class GocqSyncRequestUtil {
         String echo = Thread.currentThread().getName() + "_" + session.getId() + "_" + action.getAction() + "_" + CommonUtil.uuid();
         requestBox.setEcho(echo);
         try {
-            session.sendMessage(new TextMessage(JSONObject.toJSONString(requestBox)));
+            Server.sendMessage(session,JSONObject.toJSONString(requestBox));
+            log.info("echo: {}",echo);
             FutureTask<JSONObject> futureTask = new FutureTask<>(new GocqSyncRequestUtil.Task(echo));
             pool.submit(futureTask);
             JSONObject res;
@@ -97,6 +97,7 @@ public class GocqSyncRequestUtil {
             }else{
                 res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
             }
+            log.info("echo: {},result: {}",echo,res);
             return res;
         }catch (InterruptedException e){
             log.error("发送同步消息线程中断异常,echo:{}",echo,e);
@@ -104,8 +105,8 @@ public class GocqSyncRequestUtil {
             log.error("发送同步消息执行异常,echo:{}",echo,e);
         } catch (TimeoutException e) {
             log.error("发送同步消息超时,echo:{}",echo,e);
-        } catch (IOException e) {
-            log.error("发送同步消息IO异常,echo:{}",echo,e);
+        } catch (Exception e) {
+            log.error("发送同步消息异常,echo:{}",echo,e);
         }finally {
             resultMap.remove(echo);
         }

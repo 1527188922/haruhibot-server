@@ -61,7 +61,7 @@ public class WordStripAddHandler implements IGroupMessageEvent {
                 queryWrapper.eq(WordStrip::getGroupId,message.getGroup_id()).eq(WordStrip::getSelfId,message.getSelf_id()).eq(WordStrip::getKeyWord, finalKeyWord);
                 WordStrip wordStrip = wordStripService.getOne(queryWrapper);
                 WordStrip param = new WordStrip();
-                Boolean save = false;
+                boolean save = false;
                 if(wordStrip != null){
                     // 词条已存在
                     if(wordStrip.getUserId().equals(message.getUser_id())){
