@@ -175,23 +175,23 @@ public class StandardWebSocketSession extends AbstractWebSocketSession<Session> 
 	}
 
 	@Override
-	protected synchronized void sendTextMessage(TextMessage message) throws IOException {
-		getNativeSession().getBasicRemote().sendText(message.getPayload(), message.isLast());
+	protected void sendTextMessage(TextMessage message) throws IOException {
+		getNativeSession().getAsyncRemote().sendText(message.getPayload());
 	}
 
 	@Override
-	protected synchronized void sendBinaryMessage(BinaryMessage message) throws IOException {
-		getNativeSession().getBasicRemote().sendBinary(message.getPayload(), message.isLast());
+	protected void sendBinaryMessage(BinaryMessage message) throws IOException {
+		getNativeSession().getAsyncRemote().sendBinary(message.getPayload());
 	}
 
 	@Override
-	protected synchronized void sendPingMessage(PingMessage message) throws IOException {
-		getNativeSession().getBasicRemote().sendPing(message.getPayload());
+	protected void sendPingMessage(PingMessage message) throws IOException {
+		getNativeSession().getAsyncRemote().sendPing(message.getPayload());
 	}
 
 	@Override
-	protected synchronized void sendPongMessage(PongMessage message) throws IOException {
-		getNativeSession().getBasicRemote().sendPong(message.getPayload());
+	protected void sendPongMessage(PongMessage message) throws IOException {
+		getNativeSession().getAsyncRemote().sendPong(message.getPayload());
 	}
 
 	@Override
