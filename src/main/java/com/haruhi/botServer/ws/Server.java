@@ -36,10 +36,13 @@ public class Server implements WebSocketHandler {
     private static Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
     private static Map<String,Long> userIdMap = new ConcurrentHashMap<>();
 
+    public static int getConnections(){
+        return sessionMap.size();
+    }
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessionMap.put(session.getId(),session);
-        log.info("客户端连接成功,sessionId:{}，客户端数量：{}", session.getId(),sessionMap.size());
+        log.info("客户端连接成功,sessionId:{}，客户端数量：{}", session.getId(),getConnections());
     }
 
     @Override
@@ -89,7 +92,7 @@ public class Server implements WebSocketHandler {
         }
         if (sessionMap.containsKey(id)) {
             sessionMap.remove(id);
-            log.info("客户端数量：{}",sessionMap.size());
+            log.info("客户端数量：{}",getConnections());
         }
     }
     /**

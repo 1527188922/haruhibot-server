@@ -17,6 +17,7 @@ public class BotConfig {
     public static String INTERNET_HOST;
     public static int PORT;
     public static String CONTEXT_PATH;
+    public static int MAX_CONNECTIONS;
 
     @Autowired
     public void setName(@Value("${bot.name}") String name) {
@@ -63,6 +64,11 @@ public class BotConfig {
     @Autowired
     public void setContextPath(@Value("${server.servlet.context-path}") String contextPath){
         CONTEXT_PATH = contextPath;
+    }
+
+    @Autowired
+    public void setMaxConnections(@Value("${bot.max-connections}") int maxConnections){
+        MAX_CONNECTIONS = maxConnections;
     }
 }
 
