@@ -88,6 +88,10 @@ public class ProPathConfig extends AbstractPathConfig {
         return applicationHomePath();
     }
 
+    /**
+     * 在 prod 环境下,resourceHomePath就是程序根目录路径
+     * @return
+     */
     @Override
     public String applicationHomePath() {
         return homePath;

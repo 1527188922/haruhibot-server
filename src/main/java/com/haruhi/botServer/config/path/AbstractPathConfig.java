@@ -25,7 +25,7 @@ public abstract class AbstractPathConfig {
      * 应用jar所在路径
      * 区分dev和pro环境
      * dev target目录
-     * pro 是程序根目录 与resourceHomePath一直
+     * pro 是程序根目录 与resourceHomePath一致
      * @return
      */
     public abstract String applicationHomePath();

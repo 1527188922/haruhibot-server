@@ -65,11 +65,7 @@ public class DevPathConfig extends AbstractPathConfig {
     }
 
     private static void setTempPath(){
-        String path = DevPathConfig.class.getResource("/").getPath();
-        if (path.startsWith("/")) {
-            path = path.replaceFirst("/","");
-        }
-        tempFile = new File(path + TEMP);
+        tempFile = new File(homePath + File.separator + TEMP);
     }
 
     public static void setWebHomePath(){
@@ -93,6 +89,10 @@ public class DevPathConfig extends AbstractPathConfig {
         return resourceHomePath;
     }
 
+    /**
+     * 在 dev 环境下该路径为target路径
+     * @return
+     */
     @Override
     public String applicationHomePath() {
         return homePath;
