@@ -28,6 +28,7 @@ public class ProPathConfig extends AbstractPathConfig {
     private static String imagePath;
     private static String audioPath;
     private static String host;
+    private static File tempFile;
 
 
     static {
@@ -47,6 +48,7 @@ public class ProPathConfig extends AbstractPathConfig {
         audioPath = homePath + File.separator + "audio";
 
         setWebHomePath();
+        setTempPath();
     }
 
     private static void setWebHomePath(){
@@ -69,6 +71,10 @@ public class ProPathConfig extends AbstractPathConfig {
         }
         WEB_HOME_PATH = "http://" + host + ":" + BotConfig.PORT + BotConfig.CONTEXT_PATH;
         log.info("home path:{}",WEB_HOME_PATH);
+    }
+
+    private static void setTempPath(){
+        tempFile = new File(homePath + File.separator + TEMP);
     }
 
     @Override
@@ -105,5 +111,10 @@ public class ProPathConfig extends AbstractPathConfig {
     @Override
     public String webResourcesAudioPath() {
         return webHomePath() + "/audio";
+    }
+
+    @Override
+    public File tempPath() {
+        return tempFile;
     }
 }

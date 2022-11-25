@@ -30,6 +30,7 @@ public class DevPathConfig extends AbstractPathConfig {
     private static String imagePath;
     private static String audioPath;
     private static String resourceHomePath;
+    private static File tempFile;
 
     static {
         setResourceHomePath();
@@ -37,6 +38,7 @@ public class DevPathConfig extends AbstractPathConfig {
         setImagePath();
         setAudioPath();
         setWebHomePath();
+        setTempPath();
     }
     private static void setResourceHomePath(){
         try {
@@ -60,6 +62,14 @@ public class DevPathConfig extends AbstractPathConfig {
     private static void setAudioPath(){
         // 这个目录是一定存在的 不用创建
         audioPath = resourceHomePath + File.separator + "build\\audio";
+    }
+
+    private static void setTempPath(){
+        String path = DevPathConfig.class.getResource("/").getPath();
+        if (path.startsWith("/")) {
+            path = path.replaceFirst("/","");
+        }
+        tempFile = new File(path + TEMP);
     }
 
     public static void setWebHomePath(){
@@ -104,5 +114,10 @@ public class DevPathConfig extends AbstractPathConfig {
     @Override
     public String webResourcesAudioPath() {
         return webHomePath() + "/build/audio";
+    }
+
+    @Override
+    public File tempPath() {
+        return tempFile;
     }
 }

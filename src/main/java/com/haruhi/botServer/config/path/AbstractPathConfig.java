@@ -2,10 +2,12 @@ package com.haruhi.botServer.config.path;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+
 @Slf4j
 public abstract class AbstractPathConfig {
 
-    protected static final Object OBJECT = new Object();
+    public static final String TEMP = "temp";
 
     protected static String WEB_HOME_PATH;
 
@@ -39,6 +41,7 @@ public abstract class AbstractPathConfig {
     public abstract String resourcesAudioPath();
     public abstract String webResourcesAudioPath();
 
+    public abstract File tempPath();
 
     public String toString(){
         String s = "{\"homePath\":\"" + applicationHomePath() + "\",\"imagePath\":\"" + resourcesImagePath() + "\",\"audioPath\":\"" + resourcesAudioPath() + "\"}";
