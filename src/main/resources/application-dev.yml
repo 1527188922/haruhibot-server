@@ -3,6 +3,7 @@ env:
 bot:
   name: 春日酱
   port: 8090
+  enable-internet-host: 0
   internet-host:
   search-image-key:
   access-token: haruhi123

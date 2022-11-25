@@ -72,7 +72,7 @@ public class DevPathConfig extends AbstractPathConfig {
         try {
             InetAddress localHost = Inet4Address.getLocalHost();
             WEB_HOME_PATH = "http://" + localHost.getHostAddress() + ":" + BotConfig.PORT + BotConfig.CONTEXT_PATH;
-            log.info("home path:{}",WEB_HOME_PATH);
+            log.info("web home path:{}",WEB_HOME_PATH);
         } catch (UnknownHostException e) {
             log.error("获取ip异常,ip将使用localhost",e);
             WEB_HOME_PATH = "http://127.0.0.1:" + BotConfig.PORT + BotConfig.CONTEXT_PATH;

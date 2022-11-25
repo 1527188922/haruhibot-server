@@ -13,6 +13,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 @Slf4j
 @Component
@@ -52,25 +55,36 @@ public class ProPathConfig extends AbstractPathConfig {
     }
 
     private static void setWebHomePath(){
-        try {
-            host = CommonUtil.getNowIP4();
-        } catch (IOException e) { }
-
-        if(Strings.isBlank(host)){
+        if("1".equals(BotConfig.ENABLE_INTERNET_HOST)){
             try {
-                host = CommonUtil.getNowIP2();
-            } catch (IOException e) {}
-        }
+                host = CommonUtil.getNowIP4();
+            } catch (IOException e) { }
 
-        if(Strings.isBlank(host)){
-            if(Strings.isNotBlank(BotConfig.INTERNET_HOST)){
-                host = BotConfig.INTERNET_HOST;
-            }else {
-                throw new IllegalArgumentException("prod环境获取外网ip失败！请手动配置外网ip");
+            if(Strings.isBlank(host)){
+                try {
+                    host = CommonUtil.getNowIP2();
+                } catch (IOException e) {}
+            }
+
+            if(Strings.isBlank(host)){
+                if(Strings.isNotBlank(BotConfig.INTERNET_HOST)){
+                    host = BotConfig.INTERNET_HOST;
+                }else {
+                    throw new IllegalArgumentException("prod环境获取外网ip失败！请手动配置外网ip");
+                }
+            }
+        }else {
+            try {
+                InetAddress localHost = Inet4Address.getLocalHost();
+                host = localHost.getHostAddress();
+            } catch (UnknownHostException e) {
+                host = "127.0.0.1";
+                log.error("获取本机ip异常,ip将使用localhost",e);
             }
         }
+
         WEB_HOME_PATH = "http://" + host + ":" + BotConfig.PORT + BotConfig.CONTEXT_PATH;
-        log.info("home path:{}",WEB_HOME_PATH);
+        log.info("web home path:{}",WEB_HOME_PATH);
     }
 
     private static void setTempPath(){

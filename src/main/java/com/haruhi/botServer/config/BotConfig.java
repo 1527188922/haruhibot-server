@@ -18,6 +18,8 @@ public class BotConfig {
     public static int PORT;
     public static String CONTEXT_PATH;
     public static int MAX_CONNECTIONS;
+    // 是否启用公网ip 0否 1是 若程序和gocq都在同一台主机上 可以不启用
+    public static String ENABLE_INTERNET_HOST;
 
     @Autowired
     public void setName(@Value("${bot.name}") String name) {
@@ -69,6 +71,11 @@ public class BotConfig {
     @Autowired
     public void setMaxConnections(@Value("${bot.max-connections}") int maxConnections){
         MAX_CONNECTIONS = maxConnections;
+    }
+
+    @Autowired
+    public void setEnableInternetHost(@Value("${bot.enable-internet-host}") String enableInternetHost){
+        ENABLE_INTERNET_HOST = enableInternetHost;
     }
 }
 
