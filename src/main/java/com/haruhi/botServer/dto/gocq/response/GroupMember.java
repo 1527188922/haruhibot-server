@@ -1,5 +1,6 @@
 package com.haruhi.botServer.dto.gocq.response;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -12,17 +13,24 @@ public class GroupMember implements Serializable {
     private int age;
     private String area;
     private String card;
-    private boolean card_changeable;
-    private String group_id;
-    private long join_time;
-    private long last_sent_time;
+    @JSONField(name = "card_changeable")
+    private Boolean cardChangeable;
+    @JSONField(name = "group_id")
+    private Long groupId;
+    @JSONField(name = "join_time")
+    private Long joinTime;
+    @JSONField(name = "last_sent_time")
+    private Long lastSentTime;
     private String level;
     private String nickname;
     private String role;
     private String sex;
-    private int shut_up_timestamp;
+    @JSONField(name = "shut_up_timestamp")
+    private Integer shutUpTimestamp;
     private String title;
-    private int title_expire_time;
-    private boolean unfriendly;
-    private String user_id;
+    @JSONField(name = "title_expire_time")
+    private Integer titleExpireTime;
+    private Boolean unfriendly;
+    @JSONField(name = "user_id")
+    private Long userId;
 }

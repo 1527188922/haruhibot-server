@@ -1,5 +1,6 @@
 package com.haruhi.botServer.dto.gocq.response;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 
 /**
@@ -7,11 +8,18 @@ import lombok.Data;
  */
 @Data
 public class GroupInfo {
-    private String group_id;
-    private String group_name;
-    private String group_memo;
-    private Long group_create_time;
-    private Integer group_level;
-    private Integer member_count;
-    private Integer max_member_count;
+    @JSONField(name = "group_id")
+    private String groupId;
+    @JSONField(name = "group_name")
+    private String groupName;
+    @JSONField(name = "group_memo")
+    private String groupMemo;
+    @JSONField(name = "group_create_time")
+    private Long groupCreateTime;
+    @JSONField(name = "group_level")
+    private Integer groupLevel;
+    @JSONField(name = "member_count")
+    private Integer memberCount;
+    @JSONField(name = "max_member_count")
+    private Integer maxMemberCount;
 }

@@ -106,17 +106,17 @@ public class Server implements WebSocketHandler {
      * @param autoEscape 是否以纯文本发送 true:以纯文本发送，不解析cq码
      */
     public static void sendGroupMessage(WebSocketSession session, Long groupId, String message, boolean autoEscape){
-        RequestBox<Params> paramsRequestBox = new RequestBox<>();
-        paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_MSG.getAction());
+        RequestBox<Params> requestBox = new RequestBox<>();
+        requestBox.setAction(GocqActionEnum.SEND_GROUP_MSG.getAction());
 
         Params params = new Params();
-        params.setMessage_type(MessageTypeEnum.group.getType());
-        params.setAuto_escape(autoEscape);
-        params.setGroup_id(groupId);
+        params.setMessageType(MessageTypeEnum.group.getType());
+        params.setAutoEscape(autoEscape);
+        params.setGroupId(groupId);
         params.setMessage(message);
 
-        paramsRequestBox.setParams(params);
-        sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+        requestBox.setParams(params);
+        sendMessage(session,JSONObject.toJSONString(requestBox));
     }
 
     /**
@@ -128,14 +128,14 @@ public class Server implements WebSocketHandler {
      */
     public static void sendGroupMessage(WebSocketSession session, Long groupId,List<ForwardMsg> messages){
         if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> paramsRequestBox = new RequestBox<>();
-            paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
+            RequestBox<Params> requestBox = new RequestBox<>();
+            requestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
             Params params = new Params();
             params.setMessages(messages);
-            params.setMessage_type(MessageTypeEnum.group.getType());
-            params.setGroup_id(groupId);
-            paramsRequestBox.setParams(params);
-            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+            params.setMessageType(MessageTypeEnum.group.getType());
+            params.setGroupId(groupId);
+            requestBox.setParams(params);
+            sendMessage(session,JSONObject.toJSONString(requestBox));
         }
     }
 
@@ -149,8 +149,8 @@ public class Server implements WebSocketHandler {
      */
     public static void sendGroupMessage(WebSocketSession session, Long groupId,Long uin,String name, List<String> messages){
         if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageTypeEnum.group,groupId,uin,name,messages);
-            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+            RequestBox<Params> requestBox = createForwardMessageRequestBox(MessageTypeEnum.group,groupId,uin,name,messages);
+            sendMessage(session,JSONObject.toJSONString(requestBox));
         }
     }
 
@@ -165,8 +165,8 @@ public class Server implements WebSocketHandler {
     public static void sendGroupMessage(WebSocketSession session, Long groupId,String name, List<String> messages){
         if (!CollectionUtils.isEmpty(messages)) {
             Long uin = getUserBySession(session);
-            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageTypeEnum.group,groupId,uin,name,messages);
-            sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
+            RequestBox<Params> requestBox = createForwardMessageRequestBox(MessageTypeEnum.group,groupId,uin,name,messages);
+            sendMessage(session,JSONObject.toJSONString(requestBox));
         }
     }
 
@@ -202,9 +202,9 @@ public class Server implements WebSocketHandler {
         paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_MSG.getAction());
 
         Params params = new Params();
-        params.setMessage_type(MessageTypeEnum.privat.getType());
-        params.setAuto_escape(autoEscape);
-        params.setUser_id(userId);
+        params.setMessageType(MessageTypeEnum.privat.getType());
+        params.setAutoEscape(autoEscape);
+        params.setUserId(userId);
         params.setMessage(message);
 
         paramsRequestBox.setParams(params);
@@ -225,8 +225,8 @@ public class Server implements WebSocketHandler {
             paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
             Params params = new Params();
             params.setMessages(messages);
-            params.setMessage_type(MessageTypeEnum.privat.getType());
-            params.setUser_id(userId);
+            params.setMessageType(MessageTypeEnum.privat.getType());
+            params.setUserId(userId);
             paramsRequestBox.setParams(params);
             sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
         }
@@ -298,10 +298,10 @@ public class Server implements WebSocketHandler {
         paramsRequestBox.setAction(GocqActionEnum.SEND_MSG.getAction());
 
         Params params = new Params();
-        params.setMessage_type(messageType);
-        params.setAuto_escape(autoEscape);
-        params.setUser_id(userId);
-        params.setGroup_id(groupId);
+        params.setMessageType(messageType);
+        params.setAutoEscape(autoEscape);
+        params.setUserId(userId);
+        params.setGroupId(groupId);
         params.setMessage(message);
 
         paramsRequestBox.setParams(params);
@@ -325,12 +325,12 @@ public class Server implements WebSocketHandler {
         Params params = new Params();
         if (MessageTypeEnum.privat.getType().equals(messageType)) {
             paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
-            params.setUser_id(userId);
+            params.setUserId(userId);
         }else if (MessageTypeEnum.group.getType().equals(messageType)) {
             paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
-            params.setGroup_id(groupId);
+            params.setGroupId(groupId);
         }
-        params.setMessage_type(messageType);
+        params.setMessageType(messageType);
         List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
         for (String s : messages) {
             forwardMsgs.add(createForwardMsgItem(uin,name,s));
@@ -359,12 +359,12 @@ public class Server implements WebSocketHandler {
         GocqActionEnum actionEnum = null;
         if (MessageTypeEnum.privat.getType().equals(messageType)) {
             actionEnum = GocqActionEnum.SEND_PRIVATE_FORWARD_MSG;
-            params.setUser_id(userId);
+            params.setUserId(userId);
         }else if (MessageTypeEnum.group.getType().equals(messageType)) {
             actionEnum = GocqActionEnum.SEND_GROUP_FORWARD_MSG;
-            params.setGroup_id(groupId);
+            params.setGroupId(groupId);
         }
-        params.setMessage_type(messageType);
+        params.setMessageType(messageType);
 
         List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
         for (String s : messages) {
@@ -380,6 +380,7 @@ public class Server implements WebSocketHandler {
 
     public static void sendMessage(WebSocketSession session, String text){
         try {
+            log.info("sendMessage : {}",text);
             session.sendMessage(new TextMessage(text));
         } catch (Exception e) {
             log.error("发送消息发生异常,session:{},消息：{}",session,text,e);
@@ -403,13 +404,13 @@ public class Server implements WebSocketHandler {
             forwardMsgs.add(createForwardMsgItem(uin,name,message));
         }
         params.setMessages(forwardMsgs);
-        params.setMessage_type(messageType.getType());
+        params.setMessageType(messageType.getType());
         if (MessageTypeEnum.group.getType().equals(messageType.getType())) {
             paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
-            params.setGroup_id(id);
+            params.setGroupId(id);
         }else if(MessageTypeEnum.privat.getType().equals(messageType.getType())){
             paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
-            params.setUser_id(id);
+            params.setUserId(id);
         }
         paramsRequestBox.setParams(params);
         return paramsRequestBox;
@@ -418,11 +419,11 @@ public class Server implements WebSocketHandler {
     private static Params createForwardMessageParams(MessageTypeEnum messageType, Long id, Long uin, String name, List<String> messages){
         Params params = new Params();
         if (MessageTypeEnum.privat.getType().equals(messageType.getType())) {
-            params.setUser_id(id);
+            params.setUserId(id);
         }else if(MessageTypeEnum.group.getType().equals(messageType.getType())){
-            params.setGroup_id(id);
+            params.setGroupId(id);
         }
-        params.setMessage_type(messageType.getType());
+        params.setMessageType(messageType.getType());
         List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
         for (String s : messages) {
             forwardMsgs.add(createForwardMsgItem(uin,name,s));
