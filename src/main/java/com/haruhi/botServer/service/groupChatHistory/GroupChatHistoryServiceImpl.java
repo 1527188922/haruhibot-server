@@ -74,7 +74,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
     public void sendChatList(WebSocketSession session,Message message, FindChatMessageHandler.Param param) {
         Date date = limitDate(param);
         LambdaQueryWrapper<GroupChatHistory> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(GroupChatHistory::getGroupId,message.getGroup_id()).eq(GroupChatHistory::getSelfId,message.getSelf_id()).gt(GroupChatHistory::getCreateTime,date.getTime());
+        queryWrapper.eq(GroupChatHistory::getGroupId,message.getGroupId()).eq(GroupChatHistory::getSelfId,message.getSelfId()).gt(GroupChatHistory::getCreateTime,date.getTime());
         List<String> userIds = CommonUtil.getCqParams(message.getMessage(), CqCodeTypeEnum.at, "qq");
         if(!CollectionUtils.isEmpty(userIds)){
             queryWrapper.in(GroupChatHistory::getUserId,userIds);
@@ -102,7 +102,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
                 partSend(session,chatList,message);
             }
         }else{
-            Server.sendGroupMessage(session,message.getGroup_id(), "该条件下没有聊天记录。",true);
+            Server.sendGroupMessage(session,message.getGroupId(), "该条件下没有聊天记录。",true);
         }
     }
     private void partSend(WebSocketSession session,List<GroupChatHistory> chatList, Message message){
@@ -110,7 +110,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
         for (GroupChatHistory e : chatList) {
             params.add(new ForwardMsg(new ForwardMsg.Data(getName(e),e.getUserId(),e.getContent())));
         }
-        Server.sendGroupMessage(session,message.getGroup_id(),params);
+        Server.sendGroupMessage(session,message.getGroupId(),params);
 
     }
     private String getName(GroupChatHistory e){
@@ -156,10 +156,10 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
     @Override
     public void sendWordCloudImage(WebSocketSession session, GroupWordCloudHandler.RegexEnum regexEnum, Message message) {
         // 解析查询条件
-        log.info("群[{}]开始生成词云图...",message.getGroup_id());
+        log.info("群[{}]开始生成词云图...",message.getGroupId());
         Date date = limitDate(regexEnum);
         LambdaQueryWrapper<GroupChatHistory> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(GroupChatHistory::getGroupId,message.getGroup_id()).eq(GroupChatHistory::getSelfId,message.getSelf_id()).gt(GroupChatHistory::getCreateTime,date.getTime());
+        queryWrapper.eq(GroupChatHistory::getGroupId,message.getGroupId()).eq(GroupChatHistory::getSelfId,message.getSelfId()).gt(GroupChatHistory::getCreateTime,date.getTime());
         for (GroupWordCloudHandler.RegexEnum value : GroupWordCloudHandler.RegexEnum.values()) {
             queryWrapper.notLike(GroupChatHistory::getContent,value.getRegex());
         }
@@ -171,12 +171,12 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
         // 从数据库查询聊天记录
         List<GroupChatHistory> corpus = groupChatHistoryMapper.selectList(queryWrapper);
         if (CollectionUtils.isEmpty(corpus)) {
-            Server.sendGroupMessage(session,message.getGroup_id(),"该条件下没有聊天记录",true);
+            Server.sendGroupMessage(session,message.getGroupId(),"该条件下没有聊天记录",true);
             generateComplete(message);
             return;
         }
 
-        Server.sendGroupMessage(session,message.getGroup_id(),MessageFormat.format("词云图片将从{0}条聊天记录中生成,开始分词...",corpus.size()),true);
+        Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("词云图片将从{0}条聊天记录中生成,开始分词...",corpus.size()),true);
         try{
             // 开始分词
             long l = System.currentTimeMillis();
@@ -185,14 +185,14 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
             // 设置权重和排除指定词语
             Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(strings));
             if(CollectionUtils.isEmpty(map)){
-                Server.sendGroupMessage(session,message.getGroup_id(),"分词为0，本次不生成词云图",true);
+                Server.sendGroupMessage(session,message.getGroupId(),"分词为0，本次不生成词云图",true);
                 generateComplete(message);
                 return;
             }
             long l1 = System.currentTimeMillis();
-            Server.sendGroupMessage(session,message.getGroup_id(),MessageFormat.format("分词完成:{0}条\n耗时:{1}毫秒\n开始生成图片...",strings.size(),l1 - l),true);
+            Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("分词完成:{0}条\n耗时:{1}毫秒\n开始生成图片...",strings.size(),l1 - l),true);
             // 开始生成图片
-            String fileName = regexEnum.getUnit().toString() + "-" + message.getGroup_id() + ".png";
+            String fileName = regexEnum.getUnit().toString() + "-" + message.getGroupId() + ".png";
             outPutPath = basePath + File.separator + fileName;
 
             // 先删掉旧图片
@@ -207,16 +207,16 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
             log.info("群词云图片地址：{}",s);
             String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
             //
-            Server.sendGroupMessage(session,message.getGroup_id(),imageCq,false);
+            Server.sendGroupMessage(session,message.getGroupId(),imageCq,false);
         }catch (Exception e){
-            Server.sendGroupMessage(session,message.getGroup_id(),MessageFormat.format("生成词云图片异常：{0}",e.getMessage()),true);
+            Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("生成词云图片异常：{0}",e.getMessage()),true);
             log.error("生成词云图片异常",e);
         }finally {
             generateComplete(message);
         }
     }
     private void generateComplete(Message message){
-        GroupWordCloudHandler.lock.remove(String.valueOf(message.getGroup_id()) + String.valueOf(message.getSelf_id()));
+        GroupWordCloudHandler.lock.remove(String.valueOf(message.getGroupId()) + String.valueOf(message.getSelfId()));
     }
 
     private Date limitDate(GroupWordCloudHandler.RegexEnum regexEnum){

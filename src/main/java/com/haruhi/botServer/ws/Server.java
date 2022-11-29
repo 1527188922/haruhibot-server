@@ -40,24 +40,27 @@ public class Server implements WebSocketHandler {
         return sessionMap.size();
     }
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+    public void afterConnectionEstablished(final WebSocketSession session) throws Exception {
         sessionMap.put(session.getId(),session);
         log.info("客户端连接成功,sessionId:{}，客户端数量：{}", session.getId(),getConnections());
     }
 
     @Override
-    public void handleMessage(WebSocketSession session, final WebSocketMessage<?> message) throws Exception {
-        Object payload = message.getPayload();
+    public void handleMessage(final WebSocketSession session, final WebSocketMessage<?> message) throws Exception {
+        if(!(message instanceof TextMessage)){
+            log.warn("消息非String类型:{}",message);
+            return;
+        }
+        final String s = ((TextMessage) message).getPayload();
         try {
-            final String s = String.valueOf(payload);
-            Message bean = JSONObject.parseObject(s, Message.class);
-            if(PostTypeEnum.meta_event.toString().equals(bean.getPost_type()) && MetaEventEnum.heartbeat.toString().equals(bean.getMeta_event_type())){
+            final Message bean = JSONObject.parseObject(s, Message.class);
+            if(PostTypeEnum.meta_event.toString().equals(bean.getPostType()) && MetaEventEnum.heartbeat.toString().equals(bean.getMetaEventType())){
                 // 心跳包
                 return;
             }
             ProcessMessageTask.execute(session,bean,s);
         }catch (Exception e){
-            log.error("解析payload异常:{}",payload);
+            log.error("解析payload异常:{}",s);
             throw e;
         }
     }

@@ -46,24 +46,24 @@ public class WordStripDeleteHandler implements IGroupMessageEvent {
         final String finalKeyWord = keyWord;
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             LambdaQueryWrapper<WordStrip> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(WordStrip::getGroupId,message.getGroup_id()).eq(WordStrip::getSelfId,message.getSelf_id()).eq(WordStrip::getKeyWord, finalKeyWord);
+            queryWrapper.eq(WordStrip::getGroupId,message.getGroupId()).eq(WordStrip::getSelfId,message.getSelfId()).eq(WordStrip::getKeyWord, finalKeyWord);
             WordStrip one = wordStripService.getOne(queryWrapper);
             if(one == null){
-                Server.sendGroupMessage(sessions,message.getGroup_id(),MessageFormat.format("词条不存在：{0}",finalKeyWord),false);
+                Server.sendGroupMessage(sessions,message.getGroupId(),MessageFormat.format("词条不存在：{0}",finalKeyWord),false);
                 return;
             }
-            if(!one.getUserId().equals(message.getUser_id())){
-                Server.sendGroupMessage(sessions,message.getGroup_id(),
+            if(!one.getUserId().equals(message.getUserId())){
+                Server.sendGroupMessage(sessions,message.getGroupId(),
                         MessageFormat.format("你不是该词条的创建人，不可删除：{0}\n创建人:{1}",finalKeyWord,String.valueOf(one.getUserId())),false);
                 return;
             }
             try {
                 if (wordStripService.removeById(one.getId())) {
-                    WordStripHandler.removeCache(message.getSelf_id(),message.getGroup_id(),finalKeyWord);
-                    Server.sendGroupMessage(sessions,message.getGroup_id(),MessageFormat.format("删除词条成功：{0}",finalKeyWord),false);
+                    WordStripHandler.removeCache(message.getSelfId(),message.getGroupId(),finalKeyWord);
+                    Server.sendGroupMessage(sessions,message.getGroupId(),MessageFormat.format("删除词条成功：{0}",finalKeyWord),false);
                 }
             }catch (Exception e){
-                Server.sendGroupMessage(sessions,message.getGroup_id(),MessageFormat.format("删除词条异常：{0}",e.getMessage()),true);
+                Server.sendGroupMessage(sessions,message.getGroupId(),MessageFormat.format("删除词条异常：{0}",e.getMessage()),true);
                 log.error("删除词条异常",e);
             }
 

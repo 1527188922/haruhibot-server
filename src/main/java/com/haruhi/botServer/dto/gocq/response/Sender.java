@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 @Data
 public class Sender implements Serializable {
-    private int age;
+    private Integer age;
     private String area;
     private String card;
     private String level;

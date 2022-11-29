@@ -40,13 +40,13 @@ public class WordStripShowHandler implements IGroupMessageEvent {
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             LambdaQueryWrapper<WordStrip> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(WordStrip::getGroupId,message.getGroup_id()).eq(WordStrip::getSelfId,message.getSelf_id());
+            queryWrapper.eq(WordStrip::getGroupId,message.getGroupId()).eq(WordStrip::getSelfId,message.getSelfId());
             List<WordStrip> list = wordStripService.list(queryWrapper);
             if(CollectionUtils.isEmpty(list)){
-                Server.sendGroupMessage(session,message.getGroup_id(),"本群没有词条",true);
+                Server.sendGroupMessage(session,message.getGroupId(),"本群没有词条",true);
                 return;
             }
-            Server.sendGroupMessage(session,message.getGroup_id(), processWordStrip(list),false);
+            Server.sendGroupMessage(session,message.getGroupId(), processWordStrip(list),false);
         });
         return true;
     }

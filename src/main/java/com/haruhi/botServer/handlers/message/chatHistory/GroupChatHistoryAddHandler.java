@@ -66,12 +66,12 @@ public class GroupChatHistoryAddHandler implements IGroupMessageEvent {
                 GroupChatHistory param = new GroupChatHistory();
                 param.setCard(message.getSender().getCard());
                 param.setNickname(message.getSender().getNickname());
-                param.setGroupId(message.getGroup_id());
-                param.setUserId(message.getUser_id());
+                param.setGroupId(message.getGroupId());
+                param.setUserId(message.getUserId());
                 param.setContent(message.getMessage());
-                param.setSelfId(message.getSelf_id());
+                param.setSelfId(message.getSelfId());
                 param.setCreateTime(message.getTime() * 1000);
-                param.setMessageId(message.getMessage_id());
+                param.setMessageId(message.getMessageId());
                 service.save(param);
             }catch (Exception e){
                 log.error("群聊天记录入库异常",e);

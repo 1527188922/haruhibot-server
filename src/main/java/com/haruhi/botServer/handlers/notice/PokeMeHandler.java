@@ -27,7 +27,7 @@ public class PokeMeHandler implements IPokeEvent {
 
     @Override
     public void onPoke(final WebSocketSession session,final Message message) {
-        if(!String.valueOf(message.getSelf_id()).equals(String.valueOf(message.getTarget_id())) || String.valueOf(message.getSelf_id()).equals(String.valueOf(message.getUser_id())) || cache.size() == 0){
+        if(!String.valueOf(message.getSelfId()).equals(String.valueOf(message.getTargetId())) || String.valueOf(message.getSelfId()).equals(String.valueOf(message.getUserId())) || cache.size() == 0){
             // 只对戳了机器人生效
             return;
         }
@@ -37,20 +37,20 @@ public class PokeMeHandler implements IPokeEvent {
                 int size = cache.size();
                 if(size > 0){
                     String reply = cache.get(CommonUtil.randomInt(0, size - 1));
-                    if(MessageTypeEnum.group.getType().equals(message.getMessage_type())){
+                    if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
                         if("".equals(reply)){
                             KQCodeUtils instance = KQCodeUtils.getInstance();
-                            String s = instance.toCq(CqCodeTypeEnum.poke.getType(), "qq=" + message.getUser_id());
-                            Server.sendGroupMessage(session,message.getGroup_id(), s, false);
+                            String s = instance.toCq(CqCodeTypeEnum.poke.getType(), "qq=" + message.getUserId());
+                            Server.sendGroupMessage(session,message.getGroupId(), s, false);
                         }else{
-                            Server.sendGroupMessage(session,message.getGroup_id(),reply, true);
+                            Server.sendGroupMessage(session,message.getGroupId(),reply, true);
                         }
-                    }else if(MessageTypeEnum.privat.getType().equals(message.getMessage_type())){
+                    }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
                         // gocq私聊不能发送给戳一戳 所以这里只回复文字
                         while (Strings.isBlank(reply)){
                             reply = cache.get(CommonUtil.randomInt(0, size - 1));
                         }
-                        Server.sendPrivateMessage(session,message.getUser_id(),reply, true);
+                        Server.sendPrivateMessage(session,message.getUserId(),reply, true);
                     }
                 }
             }catch (Exception e){

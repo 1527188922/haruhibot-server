@@ -46,7 +46,7 @@ public class AiChatHandler implements IMessageEvent {
     private String[] cqs;
 
     public boolean matching(final Message message, final String command) {
-        if(MessageTypeEnum.privat.getType().equals(message.getMessage_type())){
+        if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
             // 私聊了机器人
             if(command.matches(RegexEnum.CQ_CODE.getValue())){
                 return false;
@@ -54,7 +54,7 @@ public class AiChatHandler implements IMessageEvent {
             this.cqs = null;
             return true;
         }
-        if(MessageTypeEnum.group.getType().equals(message.getMessage_type())){
+        if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
             KQCodeUtils utils = KQCodeUtils.getInstance();
             String[] cqs = utils.getCqs(command, CqCodeTypeEnum.at.getType());
             if(cqs == null || cqs.length == 0){
@@ -64,7 +64,7 @@ public class AiChatHandler implements IMessageEvent {
             }
             for (String cq : cqs) {
                 String qq = utils.getParam(cq, "qq", CqCodeTypeEnum.at.getType());
-                if(qq != null && qq.equals(String.valueOf(message.getSelf_id()))){
+                if(qq != null && qq.equals(String.valueOf(message.getSelfId()))){
                     // 表示at了机器人
                     this.cqs = cqs;
                     return true;
@@ -99,13 +99,13 @@ public class AiChatHandler implements IMessageEvent {
             try {
                 chatResp = RestUtil.sendGetRequest(RestUtil.getRestTemplate(8 * 1000), ThirdPartyURL.AI_CHAT, urlParam, ChatResp.class);
             }catch (Exception e){
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), MessageFormat.format("聊天api请求异常:{0}",e.getMessage()),true);
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("聊天api请求异常:{0}",e.getMessage()),true);
                 log.error("青云客api请求异常",e);
             }
             if(chatResp != null){
                 String content = chatResp.getContent();
                 if(content != null){
-                    Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),processContent(content),false);
+                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),processContent(content),false);
                 }
             }
         });

@@ -22,13 +22,13 @@ public class GroupIncreaseHandler implements IGroupIncreaseEvent {
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
 
             KQCodeUtils instance = KQCodeUtils.getInstance();
-            String at = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getUser_id());
+            String at = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getUserId());
             String faces = "";
             String face = instance.toCq(CqCodeTypeEnum.face.getType(), "id=" + 144);
             for (int i = 0; i < 3; i++) {
                 faces += face;
             }
-            Server.sendGroupMessage(session,message.getGroup_id(), MessageFormat.format("{0} 欢迎小可爱~{1}",at,faces),false);
+            Server.sendGroupMessage(session,message.getGroupId(), MessageFormat.format("{0} 欢迎小可爱~{1}",at,faces),false);
         });
     }
 }

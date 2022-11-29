@@ -60,7 +60,7 @@ public class BtSearchHandler implements IMessageEvent {
             return false;
         }
 
-        Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"开始搜索...",true);
+        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜索...",true);
         ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message,keyword,page));
         return true;
     }
@@ -81,7 +81,7 @@ public class BtSearchHandler implements IMessageEvent {
             try {
                 String htmlStr = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(10 * 1000),MessageFormat.format(ThirdPartyURL.BT_SEARCH + "/s/{0}_rel_{1}.html", keyword, page), null);
                 if(Strings.isBlank(htmlStr)){
-                    Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"bt搜索请求发生异常",true);
+                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"bt搜索请求发生异常",true);
                     return;
                 }
                 Document document = Jsoup.parse(htmlStr);
@@ -115,20 +115,20 @@ public class BtSearchHandler implements IMessageEvent {
                     noData(session,message,keyword);
                     return;
                 }
-                if(MessageTypeEnum.group.getType().equals(message.getMessage_type())){
-                    Server.sendGroupMessage(session,message.getGroup_id(),message.getSelf_id(),BotConfig.NAME,res);
-                }else if(MessageTypeEnum.privat.getType().equals(message.getMessage_type())){
-                    Server.sendPrivateMessage(session,message.getUser_id(),message.getSelf_id(),BotConfig.NAME,res);
+                if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
+                    Server.sendGroupMessage(session,message.getGroupId(),message.getSelfId(),BotConfig.NAME,res);
+                }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+                    Server.sendPrivateMessage(session,message.getUserId(),message.getSelfId(),BotConfig.NAME,res);
                 }
             }catch (Exception e){
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),MessageFormat.format("bt搜索异常:{0}",e.getMessage()),true);
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),MessageFormat.format("bt搜索异常:{0}",e.getMessage()),true);
                 log.error("bt搜图异常",e);
             }
 
         }
     }
     private void noData(WebSocketSession session,Message message,String keyword){
-        Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"没搜到：" + keyword,true);
+        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"没搜到：" + keyword,true);
     }
 
     /**

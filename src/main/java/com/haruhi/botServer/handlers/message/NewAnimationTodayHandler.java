@@ -73,14 +73,14 @@ public class NewAnimationTodayHandler implements IMessageEvent {
                             for (NewAnimationTodayResp datum : data) {
                                 param.add(splicingParam(datum));
                             }
-                            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),message.getSelf_id(),BotConfig.NAME,param);
+                            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),message.getSelfId(),BotConfig.NAME,param);
                         }else{
-                            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), "今日还没有新番更新",true);
+                            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "今日还没有新番更新",true);
                         }
                     }
                 }
             }catch (Exception e){
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), MessageFormat.format("今日新番异常",e.getMessage()),true);
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("今日新番异常",e.getMessage()),true);
             }
 
         }

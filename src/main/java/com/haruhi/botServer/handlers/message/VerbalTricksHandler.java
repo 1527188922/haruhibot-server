@@ -43,7 +43,7 @@ public class VerbalTricksHandler implements IMessageEvent {
             return false;
         }
         String cmd = new String(command);
-        if (CommonUtil.isAt(message.getSelf_id(),command)) {
+        if (CommonUtil.isAt(message.getSelfId(),command)) {
             cmd = cmd.replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").replace(" ","");
         }
 
@@ -76,10 +76,10 @@ public class VerbalTricksHandler implements IMessageEvent {
         @Override
         public void run() {
             if (answerObj.size() == 1) {
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),answerObj.get(0).getAnswer(),true);
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),answerObj.get(0).getAnswer(),true);
             }else{
                 VerbalTricks verbalTricks = answerObj.get(CommonUtil.randomInt(0, answerObj.size() - 1));
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),verbalTricks.getAnswer(),true);
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),verbalTricks.getAnswer(),true);
             }
         }
     }

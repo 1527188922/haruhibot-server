@@ -39,12 +39,12 @@ public class WordStripHandler implements IGroupMessageEvent {
 
     @Override
     public boolean onGroup(final WebSocketSession session,final Message message, final String command) {
-        String answer = cache.get(getKey(message.getSelf_id(),message.getGroup_id(),command));
+        String answer = cache.get(getKey(message.getSelfId(),message.getGroupId(),command));
         if(answer == null){
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            Server.sendGroupMessage(session,message.getGroup_id(),answer,false);
+            Server.sendGroupMessage(session,message.getGroupId(),answer,false);
         });
         return true;
     }

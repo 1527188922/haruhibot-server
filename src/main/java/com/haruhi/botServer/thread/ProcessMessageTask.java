@@ -25,9 +25,9 @@ public class ProcessMessageTask implements Runnable{
     private final static ThreadPoolExecutor threadPool = new ThreadPoolExecutor(16, 31, 10L * 60L, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(160), new CustomizableThreadFactory("pool-processMessage-"), new ShareRunsPolicy("pool-processMessage"));
 
-    private WebSocketSession session;
-    private Message bean;
-    private String original;
+    private final WebSocketSession session;
+    private final Message bean;
+    private final String original;
     private ProcessMessageTask(WebSocketSession session,Message bean,String original){
         this.session = session;
         this.bean = bean;
@@ -37,21 +37,21 @@ public class ProcessMessageTask implements Runnable{
     @Override
     public void run() {
         try {
-            if(PostTypeEnum.message.toString().equals(bean.getPost_type())){
+            if(PostTypeEnum.message.toString().equals(bean.getPostType())){
                 // 普通消息
                 final String command = bean.getMessage();
-                log.info("[{}]收到来自用户[{}]的消息:{}",bean.getMessage_type(),bean.getUser_id(),command);
+                log.info("[{}]收到来自用户[{}]的消息:{}",bean.getMessageType(),bean.getUserId(),command);
                 if(command != null){
                     MessageDispenser.onEvent(session,bean,command);
                 }
-            }else if(PostTypeEnum.notice.toString().equals(bean.getPost_type())){
+            }else if(PostTypeEnum.notice.toString().equals(bean.getPostType())){
                 // bot通知
                 NoticeDispenser.onEvent(session,bean);
-            } else if(PostTypeEnum.meta_event.toString().equals(bean.getPost_type())){
+            } else if(PostTypeEnum.meta_event.toString().equals(bean.getPostType())){
                 // 系统消息
-                if(MetaEventEnum.lifecycle.toString().equals(bean.getMeta_event_type()) && SubTypeEnum.connect.toString().equals(bean.getSub_type())){
+                if(MetaEventEnum.lifecycle.toString().equals(bean.getMetaEventType()) && SubTypeEnum.connect.toString().equals(bean.getSubType())){
                     // 刚连接成功时，gocq会发一条消息给bot
-                    Server.putUserIdMap(session.getId(), bean.getSelf_id());
+                    Server.putUserIdMap(session.getId(), bean.getSelfId());
                 }
             }else {
                 JSONObject jsonObject = JSONObject.parseObject(original);
@@ -66,7 +66,7 @@ public class ProcessMessageTask implements Runnable{
 
     }
 
-    public static void execute(WebSocketSession session,Message bean,String original){
+    public static void execute(final WebSocketSession session,final Message bean,final String original){
         threadPool.execute(new ProcessMessageTask(session,bean,original));
     }
 }

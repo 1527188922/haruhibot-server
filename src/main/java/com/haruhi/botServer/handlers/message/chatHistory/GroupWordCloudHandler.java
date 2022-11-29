@@ -53,11 +53,11 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
         if (matching == null) {
             return false;
         }
-        if(lock.containsKey(String.valueOf(message.getGroup_id()) + String.valueOf(message.getSelf_id()))){
-            Server.sendGroupMessage(session,message.getGroup_id(),"词云正在生成中...莫着急",true);
+        if(lock.containsKey(String.valueOf(message.getGroupId()) + String.valueOf(message.getSelfId()))){
+            Server.sendGroupMessage(session,message.getGroupId(),"词云正在生成中...莫着急",true);
             return true;
         }else{
-            lock.put(String.valueOf(message.getGroup_id()) + String.valueOf(message.getSelf_id()),1);
+            lock.put(String.valueOf(message.getGroupId()) + String.valueOf(message.getSelfId()),1);
         }
         ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,groupChatHistoryService,matching,message));
         return true;

@@ -54,8 +54,8 @@ public class NoticeDispenser {
     public static void onEvent(final WebSocketSession session,final Message message){
         if(!CollectionUtils.isEmpty(container)){
             setMessageType(message);
-            String subType = message.getSub_type();
-            String noticeType = message.getNotice_type();
+            String subType = message.getSubType();
+            String noticeType = message.getNoticeType();
             log.info("收到通知类消息：subType：{}，noticeType：{}",subType,noticeType);
             if(NoticeTypeEnum.notify.toString().equals(noticeType) && SubTypeEnum.poke.toString().equals(subType)){
                 for (INoticeEventType value : container){
@@ -81,11 +81,11 @@ public class NoticeDispenser {
     }
 
     private static void setMessageType(final Message message){
-        if(Strings.isBlank(message.getMessage_type())){
-            if(message.getGroup_id() != null){
-                message.setMessage_type(MessageTypeEnum.group.getType());
-            }else if(message.getUser_id() != null){
-                message.setMessage_type(MessageTypeEnum.privat.getType());
+        if(Strings.isBlank(message.getMessageType())){
+            if(message.getGroupId() != null){
+                message.setMessageType(MessageTypeEnum.group.getType());
+            }else if(message.getUserId() != null){
+                message.setMessageType(MessageTypeEnum.privat.getType());
             }
         }
     }

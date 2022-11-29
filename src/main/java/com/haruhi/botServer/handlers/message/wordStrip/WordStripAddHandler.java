@@ -58,34 +58,34 @@ public class WordStripAddHandler implements IGroupMessageEvent {
             try {
 
                 LambdaQueryWrapper<WordStrip> queryWrapper = new LambdaQueryWrapper<>();
-                queryWrapper.eq(WordStrip::getGroupId,message.getGroup_id()).eq(WordStrip::getSelfId,message.getSelf_id()).eq(WordStrip::getKeyWord, finalKeyWord);
+                queryWrapper.eq(WordStrip::getGroupId,message.getGroupId()).eq(WordStrip::getSelfId,message.getSelfId()).eq(WordStrip::getKeyWord, finalKeyWord);
                 WordStrip wordStrip = wordStripService.getOne(queryWrapper);
                 WordStrip param = new WordStrip();
                 boolean save = false;
                 if(wordStrip != null){
                     // 词条已存在
-                    if(wordStrip.getUserId().equals(message.getUser_id())){
+                    if(wordStrip.getUserId().equals(message.getUserId())){
                         // 修改人为创建人
                         param.setAnswer(finalAnswer);
                         save = wordStripService.update(param,queryWrapper);
                     }else{
-                        Server.sendGroupMessage(session,message.getGroup_id(),MessageFormat.format("已存在词条：{0}",finalKeyWord),false);
+                        Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("已存在词条：{0}",finalKeyWord),false);
                         return;
                     }
                 }else{
                     param.setKeyWord(finalKeyWord);
                     param.setAnswer(finalAnswer);
-                    param.setGroupId(message.getGroup_id());
-                    param.setUserId(message.getUser_id());
-                    param.setSelfId(message.getSelf_id());
+                    param.setGroupId(message.getGroupId());
+                    param.setUserId(message.getUserId());
+                    param.setSelfId(message.getSelfId());
                     save = wordStripService.save(param);
                 }
                 if(save){
-                    WordStripHandler.putCache(message.getSelf_id(),message.getGroup_id(),finalKeyWord,finalAnswer);
-                    Server.sendGroupMessage(session,message.getGroup_id(),MessageFormat.format("词条添加成功：{0}",finalKeyWord),false);
+                    WordStripHandler.putCache(message.getSelfId(),message.getGroupId(),finalKeyWord,finalAnswer);
+                    Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("词条添加成功：{0}",finalKeyWord),false);
                     return;
                 }
-                Server.sendGroupMessage(session,message.getGroup_id(), MessageFormat.format("词条添加失败：{0}-->0",finalKeyWord),false);
+                Server.sendGroupMessage(session,message.getGroupId(), MessageFormat.format("词条添加失败：{0}-->0",finalKeyWord),false);
             }catch (Exception e){
                 log.error("添加词条异常",e);
             }

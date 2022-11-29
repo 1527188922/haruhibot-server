@@ -58,7 +58,7 @@ public class SearchImageHandler implements IMessageEvent {
         }else{
             KQCodeUtils utils = KQCodeUtils.getInstance();
             cq = utils.getCq(command, CqCodeTypeEnum.image.getType(), 0);
-            key = getKey(String.valueOf(message.getSelf_id()), String.valueOf(message.getUser_id()), String.valueOf(message.getGroup_id()));
+            key = getKey(String.valueOf(message.getSelfId()), String.valueOf(message.getUserId()), String.valueOf(message.getGroupId()));
             boolean matches = false;
             if(cache.contains(key) && cq != null){
                 // 存在缓存 并且 图片cq码不为空
@@ -73,7 +73,7 @@ public class SearchImageHandler implements IMessageEvent {
                 }
                 if(matches && cq == null){
                     cache.add(key);
-                    Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"图呢！",true);
+                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
                     return true;
                 }else if(matches){
                     startSearch(session,message,cq,key);
@@ -85,7 +85,7 @@ public class SearchImageHandler implements IMessageEvent {
     }
 
     private void startSearch(WebSocketSession session,Message message, String cq, String key){
-        Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"开始搜图...",true);
+        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜图...",true);
         ThreadPoolUtil.getHandleCommandPool().execute(new SearchImageTask(session,message,cq));
         if(key != null){
             cache.remove(key);
@@ -93,7 +93,7 @@ public class SearchImageHandler implements IMessageEvent {
     }
 
     private String replySearch(final WebSocketSession session,final Message message){
-        if (MessageTypeEnum.group.getType().equals(message.getMessage_type())) {
+        if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
             KQCodeUtils instance = KQCodeUtils.getInstance();
             String s = message.getMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
             if (s.matches(RegexEnum.SEARCH_IMAGE.getValue())) {
@@ -141,7 +141,7 @@ public class SearchImageHandler implements IMessageEvent {
                     JSONObject jsonObject = JSONObject.parseObject(response);
                     String resultsStr = jsonObject.getString("results");
                     if(Strings.isBlank(resultsStr)){
-                        Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), "搜索结果为空",true);
+                        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜索结果为空",true);
                     }else{
                         List<Results> resultList = JSONObject.parseArray(resultsStr, Results.class);
                         sort(resultList);
@@ -149,7 +149,7 @@ public class SearchImageHandler implements IMessageEvent {
                     }
                 }
             }catch (Exception e){
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), "搜图异常："+e.getMessage(),true);
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
                 log.error("搜图异常",e);
             }
 
@@ -181,11 +181,11 @@ public class SearchImageHandler implements IMessageEvent {
             forwardMsgs.add(getItemMsg(results));
         }
 
-        SyncResponse syncResponse = Server.sendSyncMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(), message.getSelf_id(), BotConfig.NAME, forwardMsgs, 2 * 1000);
+        SyncResponse syncResponse = Server.sendSyncMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs, 2 * 1000);
         if(syncResponse.getRetcode() != 0){
             log.info("识图结果同步发送失败，删除图片后使用异步发送");
             forwardMsgs.remove(0);
-            Server.sendMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(), message.getSelf_id(), BotConfig.NAME, forwardMsgs);
+            Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
         }
     }
     private String getItemMsg(Results results){

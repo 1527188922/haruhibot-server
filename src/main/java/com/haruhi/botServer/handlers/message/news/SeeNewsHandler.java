@@ -38,10 +38,10 @@ public class SeeNewsHandler implements IMessageEvent {
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
                 List<NewsBy163Resp> newsBy163Resps = NewsService.requestNewsBy163();
-                if (MessageTypeEnum.group.getType().equals(message.getMessage_type())) {
-                    NewsService.sendGroup(session,newsBy163Resps,message.getGroup_id());
-                }else if (MessageTypeEnum.privat.getType().equals(message.getMessage_type())){
-                    NewsService.sendPrivate(session,newsBy163Resps,message.getUser_id());
+                if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
+                    NewsService.sendGroup(session,newsBy163Resps,message.getGroupId());
+                }else if (MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+                    NewsService.sendPrivate(session,newsBy163Resps,message.getUserId());
                 }
             }catch (Exception e){
                 log.error("查看今日新闻异常",e);

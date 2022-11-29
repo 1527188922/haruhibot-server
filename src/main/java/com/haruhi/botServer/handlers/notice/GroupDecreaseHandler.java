@@ -18,7 +18,7 @@ public class GroupDecreaseHandler implements IGroupDecreaseEvent {
     @Override
     public void onGroupDecrease(final WebSocketSession session,final Message message) {
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            Server.sendGroupMessage(session, message.getGroup_id(), MessageFormat.format("{0} 离开了本群。",String.valueOf(message.getUser_id())), true);
+            Server.sendGroupMessage(session, message.getGroupId(), MessageFormat.format("{0} 离开了本群。",String.valueOf(message.getUserId())), true);
         });
     }
 }

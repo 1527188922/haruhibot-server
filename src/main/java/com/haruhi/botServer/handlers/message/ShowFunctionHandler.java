@@ -52,7 +52,7 @@ public class ShowFunctionHandler implements IMessageEvent {
                 stringBuilder.append("id：").append(eventType.weight()).append("\n");
                 stringBuilder.append("名称：").append(eventType.funName()).append("\n");
             }
-            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),stringBuilder.toString(),true);
+            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),stringBuilder.toString(),true);
         }
     }
 

@@ -45,7 +45,7 @@ public class ScoldMeHandler implements IMessageEvent {
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
         String cmd;
-        if(CommonUtil.isAt(message.getSelf_id(),command)){
+        if(CommonUtil.isAt(message.getSelfId(),command)){
             cmd = command.replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(),"");
         }else{
             cmd = command;
@@ -60,7 +60,7 @@ public class ScoldMeHandler implements IMessageEvent {
             String s = abstractPathConfig.webResourcesAudioPath() + "/dg/" + file.getName();
             log.info("骂我音频地址：{}",s);
             String cq = instance.toCq(CqCodeTypeEnum.record.getType(), "file=" + s);
-            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),cq,false);
+            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);
         });
 
         return true;

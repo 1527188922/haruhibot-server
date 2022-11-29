@@ -6,7 +6,6 @@ import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -43,7 +42,7 @@ public class DemoHandler implements IMessageEvent {
     }
 
     private String key(final Message message){
-        return key(message.getSelf_id(),message.getGroup_id(),message.getUser_id());
+        return key(message.getSelfId(),message.getGroupId(),message.getUserId());
     }
 
     /**
@@ -101,7 +100,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是a1",true);
                 return true;
             }
@@ -126,7 +125,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是a2",true);
                 return true;
             }
@@ -156,7 +155,7 @@ public class DemoHandler implements IMessageEvent {
                     // 不同session之间异步发送
                     final int j = i;
                     ThreadPoolUtil.getHandleCommandPool().execute(()->{
-                        Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                                 "我是a3-" + j,true);
                     });
                 }
@@ -186,7 +185,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}", d);
-                Server.sendMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(),
+                Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(),
                         "我是b1", true);
                 return true;
             }
@@ -211,7 +210,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}", d);
-                Server.sendMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(),
+                Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(),
                         "我是b2", true);
                 return true;
             }
@@ -235,7 +234,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是b3",true);
                 return true;
             }
@@ -260,7 +259,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是b4",true);
                 return true;
             }
@@ -284,7 +283,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是b5",true);
                 return true;
             }
@@ -308,7 +307,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}", d);
-                Server.sendMessage(session, message.getUser_id(), message.getGroup_id(), message.getMessage_type(),
+                Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(),
                         "我是c1", true);
                 return true;
             }
@@ -332,7 +331,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是c2",true);
                 return true;
             }
@@ -356,7 +355,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是c3",true);
                 return true;
             }
@@ -380,7 +379,7 @@ public class DemoHandler implements IMessageEvent {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是d1",true);
                 return true;
             }
@@ -482,7 +481,7 @@ public class DemoHandler implements IMessageEvent {
 //                // 节点没有父节点 表示当前节点为根节点
 //                tip = "你所完成的根节点指令之下没有其他指令了，接下来将重新回根节点";
 //            }
-            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),
+            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                     "终节点执行完成",true);
             log.info("终节点执行完成");
             removeCache(message);

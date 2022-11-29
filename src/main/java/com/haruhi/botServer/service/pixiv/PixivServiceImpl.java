@@ -56,14 +56,14 @@ public class PixivServiceImpl extends ServiceImpl<PixivMapper, Pixiv> implements
             forwardMessage = createForwardMessage(pixivs);
         }
         if (!CollectionUtils.isEmpty(forwardMessage)) {
-            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),message.getSelf_id(),BotConfig.NAME,forwardMessage);
+            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),message.getSelfId(),BotConfig.NAME,forwardMessage);
         }
     }
     private void empty(WebSocketSession session,boolean noTag, String tag, Message message){
         if(noTag){
-            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(),"pix图库还没有图片~",true);
+            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"pix图库还没有图片~",true);
         }else{
-            Server.sendMessage(session,message.getUser_id(),message.getGroup_id(),message.getMessage_type(), MessageFormat.format("没有[{0}]的图片，换一个tag试试吧~", tag),true);
+            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("没有[{0}]的图片，换一个tag试试吧~", tag),true);
         }
     }
     private List<String> createForwardMessage(Collection<Pixiv> pixivs){

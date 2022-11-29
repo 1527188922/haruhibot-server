@@ -104,7 +104,7 @@ public class MessageDispenser {
 
     public static void onEvent(final WebSocketSession session,final Message message, final String command){
         if (!CollectionUtils.isEmpty(container)) {
-            String messageType = message.getMessage_type();
+            String messageType = message.getMessageType();
 
             if(MessageTypeEnum.group.getType().equals(messageType)){
                 for (IMessageEventType element : container){
