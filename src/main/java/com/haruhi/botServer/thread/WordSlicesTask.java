@@ -44,6 +44,14 @@ public class WordSlicesTask implements Callable<List<String>> {
         return res;
     }
 
+    /**
+     * 执行分词方法
+     * 先根据线程池大小分组
+     * 每个句子根据正则去除字符串
+     * 再分词
+     * @param corpus 未做任何处理的原句子
+     * @return
+     */
     public static List<String> execute(List<String> corpus){
         List<String> strings = new ArrayList<>(corpus.size() * 3);
         // 根据线程池大小，计算每个线程需要跑几个词语 确保不会有线程空闲

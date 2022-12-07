@@ -59,7 +59,11 @@ public class WordCloudUtil {
 
 
     private static String replace(String s){
-        return s.trim().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").replace(noSupport,"").replaceAll("&#93;|&#91;","").replaceAll("\\s*|\r|\n|\t","");
+        return removeUrl(s.replace(noSupport,"").replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), ""))
+                .trim().replace(" ","")
+                .replaceAll("&#93;|&#91;","")
+                .replaceAll("[\\pP\\p{Punct}]","")
+                .replaceAll("\\s*|\r|\n|\t","");
     }
 
 
@@ -87,7 +91,7 @@ public class WordCloudUtil {
         if (CollectionUtils.isEmpty(corpus)) {
             return null;
         }
-        corpus = corpus.entrySet().stream().filter(e -> exclusionsWord(e.getKey())).collect(Collectors.toMap(e -> e.getKey(),e -> e.getValue()));
+        corpus = corpus.entrySet().stream().filter(e -> exclusionsWord(e.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return corpus;
     }
     private static boolean exclusionsWord(String word){
@@ -237,5 +241,28 @@ public class WordCloudUtil {
                 input.close();
             }
         }
+    }
+
+    private static String removeUrl(String commentStr) {
+        if (Strings.isBlank(commentStr)) {
+            return "";
+        }
+        String urlPattern = "((https?|ftp|gopher|telnet|file|Unsure|http):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)";
+        Pattern p = Pattern.compile(urlPattern,Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(commentStr);
+        int i = 0;
+        while (m.find()) {
+            String group = m.group(i);
+            if(Strings.isBlank(group)){
+                return "";
+            }
+            String s = commentStr.replaceAll(group, "");
+            if (Strings.isBlank(s)) {
+                return "";
+            }
+            commentStr = s.trim();
+            i++;
+        }
+        return commentStr;
     }
 }
