@@ -4,6 +4,7 @@ import com.github.plexpt.chatgpt.Chatbot;
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.config.ChatgptConfig;
 import com.haruhi.botServer.constant.RegexEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -32,10 +34,22 @@ public class ChatpgtHandler implements IMessageEvent {
         return "ChatGPT";
     }
 
-    private static final CacheMap<String,StateChatbot> CHATBOT_CACHE = new CacheMap<>(20, TimeUnit.HOURS,50);
+//    private static final CacheMap<String,StateChatbot> CHATBOT_CACHE = new CacheMap<>(20, TimeUnit.HOURS,50);
 
-    private String key(Long selfId,Long userId){
-        return String.valueOf(selfId) + userId;
+    private static final Map<String,StateChatbot> CHATBOT_CACHE = new ConcurrentHashMap<>();
+
+    private String key(Long selfId,Long id){
+        return String.valueOf(selfId) + id;
+    }
+
+    private Long getId(final Message message){
+        Long id = 0L;
+        if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
+            id = message.getGroupId();
+        }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+            id = message.getUserId();
+        }
+        return id;
     }
 
     @Override
@@ -52,14 +66,14 @@ public class ChatpgtHandler implements IMessageEvent {
         }
         // 先暂时只处理有session-token的情况
 
-        String key = key(message.getSelfId(), message.getUserId());
+        String key = key(message.getSelfId(), getId(message));
         StateChatbot item = CHATBOT_CACHE.get(key);
         if(item == null){
-            StateChatbot chatbot = new StateChatbot(ChatgptConfig.SESSION_TOKEN);
+            StateChatbot chatbot = new StateChatbot(message,ChatgptConfig.SESSION_TOKEN);
             CHATBOT_CACHE.put(key,chatbot);
             item = chatbot;
         }else{
-            if(item.getSending()){
+            if(item.getSending(message)){
                 Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "您的ChatGPT正在处理中。。",true);
 
@@ -82,7 +96,7 @@ public class ChatpgtHandler implements IMessageEvent {
             this.session = session;
             this.message = message;
             this.text = text;
-            chatbot.setSending(true);
+            chatbot.setSending(message,true);
             this.chatbot = chatbot;
         }
 
@@ -99,7 +113,7 @@ public class ChatpgtHandler implements IMessageEvent {
             }catch (Exception e){
                 log.error("获取chatgpt异常",e);
             }finally {
-                chatbot.setSending(false);
+                chatbot.setSending(message,false);
             }
         }
     }
@@ -107,21 +121,56 @@ public class ChatpgtHandler implements IMessageEvent {
 
 }
 
+@Slf4j
 class StateChatbot extends Chatbot{
 
-    private AtomicBoolean sending;
+    // 私聊使用
+    private AtomicBoolean privateSending;
+    // 群聊用
+    private Map<String,AtomicBoolean> groupSending;
 
-    public StateChatbot(String sessionToken) {
+
+    public StateChatbot(final Message message,String sessionToken) {
         super(sessionToken);
-        this.sending = new AtomicBoolean(false);
+        initSending(message,false);
+        log.info("开启新的会话，userId：{}，groupId：{}",message.getUserId(),message.getGroupId());
     }
 
-    public boolean getSending(){
-        return sending.get();
+    public boolean getSending(final Message message){
+        if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
+            AtomicBoolean atomicBoolean = groupSending.get(key(message));
+            if(atomicBoolean != null){
+                return atomicBoolean.get();
+            }
+        }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+            return privateSending.get();
+        }
+        return false;
     }
 
-    public void setSending(boolean sending){
-        this.sending.set(sending);
+    private void initSending(final Message message, boolean sending){
+        if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
+            groupSending = new ConcurrentHashMap<>();
+            groupSending.put(key(message),new AtomicBoolean(sending));
+        }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+            privateSending = new AtomicBoolean(sending);
+        }
     }
+
+    public void setSending(final Message message,boolean sending){
+        if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
+            AtomicBoolean atomicBoolean = groupSending.get(key(message));
+            if(atomicBoolean != null){
+                atomicBoolean.set(sending);
+            }
+        }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+            this.privateSending.set(sending);
+        }
+    }
+
+    private String key(final Message message){
+        return message.getSelfId() + String.valueOf(message.getGroupId()) + message.getUserId();
+    }
+
 
 }
