@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 public class CacheMap<K,V> implements Serializable {
 
-    private transient Cache<K,V> cache;
+    private final transient Cache<K,V> cache;
 
     /**
      * 有参构造

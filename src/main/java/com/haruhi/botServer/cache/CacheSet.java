@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CacheSet<E> implements Serializable {
 
-    private transient CacheMap<E,Object> cacheMap;
+    private final transient CacheMap<E,Object> cacheMap;
     private final static Object PRESENT = new Object();
 
     /**

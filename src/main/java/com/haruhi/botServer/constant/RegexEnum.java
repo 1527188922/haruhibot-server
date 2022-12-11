@@ -33,7 +33,8 @@ public enum RegexEnum {
     SUBSCRIBE_NEWS("订阅新闻"),
     UN_SUBSCRIBE_NEWS("取消订阅新闻"),
     MUSIC_CARD("点歌 "),
-    FLUSH_CACHE("#刷新缓存");
+    FLUSH_CACHE("#刷新缓存"),
+    CHATGPT("gpt ");
 
 
     private String value;

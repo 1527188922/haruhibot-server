@@ -10,6 +10,11 @@ bot:
   default-user: 1234567890
   max-connections: 5
 
+chatgpt:
+  email:
+  password:
+  session-token:
+
 mysql:
   host: 127.0.0.1
   port: 3306
