@@ -11,6 +11,8 @@ public class ChatgptConfig {
     public static String EMAIL;
     public static String PASSWORD;
     public static String SESSION_TOKEN;
+    public static String CF_CLEARANCE;
+    public static String USER_AGENT;
 
 
     @Autowired
@@ -25,9 +27,17 @@ public class ChatgptConfig {
     public void setSessionToken(@Value("${chatgpt.session-token}") String sessionToken){
         SESSION_TOKEN = sessionToken;
     }
+    @Autowired
+    public void setCfClearance(@Value("${chatgpt.cf-clearance}") String cfClearance){
+        CF_CLEARANCE = cfClearance;
+    }
+    @Autowired
+    public void setUserAgent(@Value("${chatgpt.user-agent}") String userAgent){
+        USER_AGENT = userAgent;
+    }
 
     public static boolean support(){
-        if(Strings.isNotBlank(SESSION_TOKEN) || (Strings.isNotBlank(EMAIL) && Strings.isNotBlank(PASSWORD))){
+        if((Strings.isNotBlank(SESSION_TOKEN) && Strings.isNotBlank(CF_CLEARANCE) && Strings.isNotBlank(USER_AGENT)) || (Strings.isNotBlank(EMAIL) && Strings.isNotBlank(PASSWORD))){
             return true;
         }
         return false;

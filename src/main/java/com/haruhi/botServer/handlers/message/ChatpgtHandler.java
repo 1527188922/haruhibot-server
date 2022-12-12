@@ -15,6 +15,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.text.MessageFormat;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -38,8 +39,8 @@ public class ChatpgtHandler implements IMessageEvent {
 
     private static final Map<String,StateChatbot> CHATBOT_CACHE = new ConcurrentHashMap<>();
 
-    private String key(Long selfId,Long id){
-        return String.valueOf(selfId) + id;
+    private String key(final Message message){
+        return String.valueOf(message.getSelfId()) + getId(message);
     }
 
     private Long getId(final Message message){
@@ -61,17 +62,24 @@ public class ChatpgtHandler implements IMessageEvent {
 
         if(!ChatgptConfig.support()){
             Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
-                    "请联系bot管理员qq配置ChatGPT session-token 或 邮箱和密码！",true);
+                    "请联系bot管理员qq配置ChatGPT session-token cf ua 或 邮箱和密码！",true);
             return true;
         }
         // 先暂时只处理有session-token的情况
 
-        String key = key(message.getSelfId(), getId(message));
+        String key = key(message);
         StateChatbot item = CHATBOT_CACHE.get(key);
         if(item == null){
-            StateChatbot chatbot = new StateChatbot(message,ChatgptConfig.SESSION_TOKEN);
-            CHATBOT_CACHE.put(key,chatbot);
-            item = chatbot;
+            try {
+                StateChatbot chatbot = new StateChatbot(message,ChatgptConfig.SESSION_TOKEN,ChatgptConfig.CF_CLEARANCE,ChatgptConfig.USER_AGENT);
+                CHATBOT_CACHE.put(key,chatbot);
+                item = chatbot;
+            }catch (Exception e){
+                log.error("创建会话异常",e);
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        "创建会话异常："+e.getMessage(),true);
+                return true;
+            }
         }else{
             if(item.getSending(message)){
                 Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
@@ -111,9 +119,15 @@ public class ChatpgtHandler implements IMessageEvent {
                     log.error("reply非string类型,reply：{}",reply);
                 }
             }catch (Exception e){
-                log.error("获取chatgpt异常",e);
+                log.error("ChatGPT异常",e);
+                CHATBOT_CACHE.remove(key(message));
+                chatbot = null;
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        MessageFormat.format("ChatGPT异常,清空会话\n{0}",e.getMessage()),true);
             }finally {
-                chatbot.setSending(message,false);
+                if(chatbot != null){
+                    chatbot.setSending(message,false);
+                }
             }
         }
     }
@@ -130,8 +144,8 @@ class StateChatbot extends Chatbot{
     private Map<String,AtomicBoolean> groupSending;
 
 
-    public StateChatbot(final Message message,String sessionToken) {
-        super(sessionToken);
+    public StateChatbot(final Message message,String sessionToken,String cfClearance,String userAgent) throws Exception{
+        super(sessionToken,cfClearance,userAgent);
         initSending(message,false);
         log.info("开启新的会话，userId：{}，groupId：{}",message.getUserId(),message.getGroupId());
     }
