@@ -19,6 +19,9 @@ public class GroupIncreaseHandler implements IGroupIncreaseEvent {
 
     @Override
     public void onGroupIncrease(final WebSocketSession session,final Message message) {
+        if(message.getSelfId().longValue() == message.getUserId().longValue()){
+            return;
+        }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
 
             KQCodeUtils instance = KQCodeUtils.getInstance();
