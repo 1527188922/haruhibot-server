@@ -5,11 +5,11 @@ import lombok.NoArgsConstructor;
 
 @lombok.Data
 @NoArgsConstructor
-public class ForwardMsg {
+public class ForwardMsgItem {
     private String type = "node";
-    private ForwardMsg.Data data;
+    private ForwardMsgItem.Data data;
 
-    public ForwardMsg(ForwardMsg.Data data){
+    public ForwardMsgItem(ForwardMsgItem.Data data){
         this.data = data;
     }
 

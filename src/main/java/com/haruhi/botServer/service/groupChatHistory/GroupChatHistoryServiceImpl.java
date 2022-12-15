@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.config.path.AbstractPathConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
-import com.haruhi.botServer.dto.gocq.request.ForwardMsg;
+import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.GroupChatHistory;
 import com.haruhi.botServer.handlers.message.chatHistory.FindChatMessageHandler;
@@ -106,9 +106,9 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
         }
     }
     private void partSend(WebSocketSession session,List<GroupChatHistory> chatList, Message message){
-        List<ForwardMsg> params = new ArrayList<>(chatList.size());
+        List<ForwardMsgItem> params = new ArrayList<>(chatList.size());
         for (GroupChatHistory e : chatList) {
-            params.add(new ForwardMsg(new ForwardMsg.Data(getName(e),e.getUserId(),e.getContent())));
+            params.add(new ForwardMsgItem(new ForwardMsgItem.Data(getName(e),e.getUserId(),e.getContent())));
         }
         Server.sendGroupMessage(session,message.getGroupId(),params);
 

@@ -6,7 +6,7 @@ import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.constant.event.MetaEventEnum;
 import com.haruhi.botServer.constant.event.PostTypeEnum;
-import com.haruhi.botServer.dto.gocq.request.ForwardMsg;
+import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
 import com.haruhi.botServer.dto.gocq.request.Params;
 import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -126,7 +126,7 @@ public class Server implements WebSocketHandler {
      * @param groupId
      * @param messages
      */
-    public static void sendGroupMessage(WebSocketSession session, Long groupId,List<ForwardMsg> messages){
+    public static void sendGroupMessage(WebSocketSession session, Long groupId,List<ForwardMsgItem> messages){
         if (!CollectionUtils.isEmpty(messages)) {
             RequestBox<Params> requestBox = new RequestBox<>();
             requestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
@@ -219,7 +219,7 @@ public class Server implements WebSocketHandler {
      * @param userId
      * @param messages
      */
-    public static void sendPrivateMessage(WebSocketSession session, Long userId,List<ForwardMsg> messages){
+    public static void sendPrivateMessage(WebSocketSession session, Long userId,List<ForwardMsgItem> messages){
         if (!CollectionUtils.isEmpty(messages)) {
             RequestBox<Params> paramsRequestBox = new RequestBox<>();
             paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
@@ -331,7 +331,7 @@ public class Server implements WebSocketHandler {
             params.setGroupId(groupId);
         }
         params.setMessageType(messageType);
-        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+        List<ForwardMsgItem> forwardMsgs = new ArrayList<>(messages.size());
         for (String s : messages) {
             forwardMsgs.add(createForwardMsgItem(uin,name,s));
         }
@@ -366,7 +366,7 @@ public class Server implements WebSocketHandler {
         }
         params.setMessageType(messageType);
 
-        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+        List<ForwardMsgItem> forwardMsgs = new ArrayList<>(messages.size());
         for (String s : messages) {
             forwardMsgs.add(createForwardMsgItem(uin,name,s));
         }
@@ -399,7 +399,7 @@ public class Server implements WebSocketHandler {
     private static RequestBox<Params> createForwardMessageRequestBox(MessageTypeEnum messageType, Long id, Long uin, String name, List<String> messages){
         RequestBox<Params> paramsRequestBox = new RequestBox<>();
         Params params = new Params();
-        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+        List<ForwardMsgItem> forwardMsgs = new ArrayList<>(messages.size());
         for (String message : messages) {
             forwardMsgs.add(createForwardMsgItem(uin,name,message));
         }
@@ -424,7 +424,7 @@ public class Server implements WebSocketHandler {
             params.setGroupId(id);
         }
         params.setMessageType(messageType.getType());
-        List<ForwardMsg> forwardMsgs = new ArrayList<>(messages.size());
+        List<ForwardMsgItem> forwardMsgs = new ArrayList<>(messages.size());
         for (String s : messages) {
             forwardMsgs.add(createForwardMsgItem(uin,name,s));
         }
@@ -432,9 +432,9 @@ public class Server implements WebSocketHandler {
         return params;
     }
 
-    private static ForwardMsg createForwardMsgItem(Long uin, String name, String context){
-        ForwardMsg item = new ForwardMsg();
-        ForwardMsg.Data data = new ForwardMsg.Data();
+    private static ForwardMsgItem createForwardMsgItem(Long uin, String name, String context){
+        ForwardMsgItem item = new ForwardMsgItem();
+        ForwardMsgItem.Data data = new ForwardMsgItem.Data();
         data.setUin(uin);
         data.setName(name);
         data.setContent(context);
