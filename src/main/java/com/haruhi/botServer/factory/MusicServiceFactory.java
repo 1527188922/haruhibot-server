@@ -25,10 +25,10 @@ public class MusicServiceFactory {
         }
     }
 
-    public static AbstractMusicService getMusicService(MusicType MusicType) throws ObjectNotFoundException {
-        AbstractMusicService musicService = MusicServiceFactory.musicServiceContainer.get(MusicType);
+    public static AbstractMusicService getMusicService(MusicType musicType) throws ObjectNotFoundException {
+        AbstractMusicService musicService = MusicServiceFactory.musicServiceContainer.get(musicType);
         if (musicService == null) {
-            throw new ObjectNotFoundException("没有type为:" + MusicType.getType() + "的bean！");
+            throw new ObjectNotFoundException("没有type为:" + musicType.getType() + "的bean！");
         }
         return musicService;
     }
