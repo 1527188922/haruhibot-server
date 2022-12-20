@@ -95,9 +95,9 @@ public class SearchImageHandler implements IMessageEvent {
     private String replySearch(final WebSocketSession session,final Message message){
         if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
             KQCodeUtils instance = KQCodeUtils.getInstance();
-            String s = message.getMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
+            String s = message.getRawMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
             if (s.matches(RegexEnum.SEARCH_IMAGE.getValue())) {
-                String cq = instance.getCq(message.getMessage(), CqCodeTypeEnum.reply.getType());
+                String cq = instance.getCq(message.getRawMessage(), CqCodeTypeEnum.reply.getType());
                 if(Strings.isNotBlank(cq)){
                     String messageId = instance.getParam(cq, "id");
                     Message msg = GocqSyncRequestUtil.getMsg(session,messageId,2 * 1000);

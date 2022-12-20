@@ -39,7 +39,7 @@ public class ProcessMessageTask implements Runnable{
         try {
             if(PostTypeEnum.message.toString().equals(bean.getPostType())){
                 // 普通消息
-                final String command = bean.getMessage();
+                final String command = bean.getRawMessage();
                 log.info("[{}]收到来自用户[{}]的消息:{}",bean.getMessageType(),bean.getUserId(),command);
                 if(command != null){
                     MessageDispenser.onEvent(session,bean,command);

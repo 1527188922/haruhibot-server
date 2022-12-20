@@ -75,7 +75,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
         Date date = limitDate(param);
         LambdaQueryWrapper<GroupChatHistory> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(GroupChatHistory::getGroupId,message.getGroupId()).eq(GroupChatHistory::getSelfId,message.getSelfId()).gt(GroupChatHistory::getCreateTime,date.getTime());
-        List<String> userIds = CommonUtil.getCqParams(message.getMessage(), CqCodeTypeEnum.at, "qq");
+        List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
         if(!CollectionUtils.isEmpty(userIds)){
             queryWrapper.in(GroupChatHistory::getUserId,userIds);
         }
@@ -164,7 +164,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
             queryWrapper.notLike(GroupChatHistory::getContent,value.getRegex());
         }
         String outPutPath = null;
-        List<String> userIds = CommonUtil.getCqParams(message.getMessage(), CqCodeTypeEnum.at, "qq");
+        List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
         if (!CollectionUtils.isEmpty(userIds)) {
             queryWrapper.in(GroupChatHistory::getUserId,userIds);
         }
