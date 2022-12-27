@@ -7,8 +7,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 
-@Component
-@Aspect
+//@Component
+//@Aspect
 @Slf4j
 public class MapperExceptionAspect {
     @Pointcut(value = "execution(public * com.haruhi.botServer.mapper..*.*(..))")
