@@ -2,6 +2,7 @@ package com.haruhi.botServer;
 
 import com.haruhi.botServer.job.schedule.JobManage;
 import com.haruhi.botServer.service.DataBaseService;
+import com.haruhi.botServer.test.TestSubject;
 import com.haruhi.botServer.thread.FirstTask;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -22,5 +23,6 @@ public class SystemCommandLineRunner implements CommandLineRunner {
         dataBaseService.initDataBase();
         firstTask.execute(firstTask);
         jobManage.startAllJob();
+        TestSubject.startTest();
     }
 }

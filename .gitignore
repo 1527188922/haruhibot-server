@@ -14,7 +14,6 @@ bin-release/
 *.log
 target
 logs
-test
 # Executables
 *.swf
 *.air
