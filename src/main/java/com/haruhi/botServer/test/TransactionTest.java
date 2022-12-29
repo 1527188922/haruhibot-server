@@ -29,6 +29,9 @@ public class TransactionTest implements ISpringTester {
     @Autowired
     private PokeReplyMapper pokeReplyMapper;
 
+    @Autowired
+    private DataBaseConfig dataBaseConfig;
+
     @Override
     public void test() {
 //        test1();
@@ -74,9 +77,9 @@ public class TransactionTest implements ISpringTester {
             jdbcTransactionManager = (JdbcTransactionManager)platformTransactionManager;
         }else{
             HikariDataSource hikariDataSource = new HikariDataSource();
-            hikariDataSource.setJdbcUrl(DataBaseConfig.JDBC_URL);
-            hikariDataSource.setUsername(DataBaseConfig.DATA_BASE_BOT_USERNAME);
-            hikariDataSource.setPassword(DataBaseConfig.DATA_BASE_BOT_PASSWORD);
+            hikariDataSource.setJdbcUrl(dataBaseConfig.getMasterJdbcUrl());
+            hikariDataSource.setUsername(dataBaseConfig.getMasterUsername());
+            hikariDataSource.setPassword(dataBaseConfig.getMasterPassword());
             jdbcTransactionManager = new JdbcTransactionManager(hikariDataSource);
         }
         DataSource dataSource = jdbcTransactionManager.getDataSource();
