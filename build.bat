@@ -1,3 +1,3 @@
 @echo off
-call mvn clean install -U -DskipTests
+call mvn clean package -U -DskipTests
 pause
