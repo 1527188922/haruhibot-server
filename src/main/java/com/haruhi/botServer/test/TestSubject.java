@@ -18,10 +18,10 @@ public class TestSubject {
         testers.addAll(testerMap.values());
     }
 
-    public static void startTest(){
+    public static void startTest(String... args){
         for (ISpringTester tester : testers) {
             if (tester.enable()) {
-                tester.test();
+                tester.test(args);
             }
         }
     }

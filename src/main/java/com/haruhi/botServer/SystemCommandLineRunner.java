@@ -19,6 +19,6 @@ public class SystemCommandLineRunner implements CommandLineRunner {
     public void run(String... args) throws Exception {
         firstTask.execute(firstTask);
         jobManage.startAllJob();
-        TestSubject.startTest();
+        TestSubject.startTest(args);
     }
 }

@@ -5,7 +5,7 @@ public interface ISpringTester {
     /**
      * 测试代码执行入口方法
      */
-    void test();
+    void test(String... args);
 
     /**
      *

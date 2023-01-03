@@ -33,7 +33,7 @@ public class TransactionTest implements ISpringTester {
     private DataBaseConfig dataBaseConfig;
 
     @Override
-    public void test() {
+    public void test(String... args) {
 //        test1();
         test2();
     }
