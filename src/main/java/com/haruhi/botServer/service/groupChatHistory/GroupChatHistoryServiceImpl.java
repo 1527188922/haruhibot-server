@@ -74,7 +74,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
     public void sendChatList(WebSocketSession session,Message message, FindChatMessageHandler.Param param) {
         Date date = limitDate(param);
         LambdaQueryWrapper<GroupChatHistory> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(GroupChatHistory::getGroupId,message.getGroupId()).eq(GroupChatHistory::getSelfId,message.getSelfId()).gt(GroupChatHistory::getCreateTime,date.getTime());
+        queryWrapper.eq(GroupChatHistory::getDeleted,false).eq(GroupChatHistory::getGroupId,message.getGroupId()).eq(GroupChatHistory::getSelfId,message.getSelfId()).gt(GroupChatHistory::getCreateTime,date.getTime());
         List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
         if(!CollectionUtils.isEmpty(userIds)){
             queryWrapper.in(GroupChatHistory::getUserId,userIds);
@@ -159,7 +159,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
         log.info("群[{}]开始生成词云图...",message.getGroupId());
         Date date = limitDate(regexEnum);
         LambdaQueryWrapper<GroupChatHistory> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(GroupChatHistory::getGroupId,message.getGroupId()).eq(GroupChatHistory::getSelfId,message.getSelfId()).gt(GroupChatHistory::getCreateTime,date.getTime());
+        queryWrapper.eq(GroupChatHistory::getDeleted,false).eq(GroupChatHistory::getGroupId,message.getGroupId()).eq(GroupChatHistory::getSelfId,message.getSelfId()).gt(GroupChatHistory::getCreateTime,date.getTime());
         for (GroupWordCloudHandler.RegexEnum value : GroupWordCloudHandler.RegexEnum.values()) {
             queryWrapper.notLike(GroupChatHistory::getContent,value.getRegex());
         }

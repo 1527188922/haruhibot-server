@@ -12,6 +12,7 @@
             `self_id` BIGINT NOT NULL,
             `content` TEXT COLLATE utf8mb4_unicode_ci,
             create_time BIGINT NOT NULL,
+            `deleted` tinyint(1) NOT NULL DEFAULT '0',
             PRIMARY KEY (`id`),
             KEY `index_content` (`content`(767))
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群聊历史聊天表';

@@ -20,4 +20,5 @@ public class GroupChatHistory {
     private Long selfId;
     private String content;
     private Long createTime;
+    private Boolean deleted;
 }
