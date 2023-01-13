@@ -1,6 +1,8 @@
 
 package com.kennycason.kumo;
 
+import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.utils.system.SystemInfo;
 import com.kennycason.kumo.bg.Background;
 import com.kennycason.kumo.bg.RectangleBackground;
 import com.kennycason.kumo.collide.RectanglePixelCollidable;
@@ -24,6 +26,8 @@ import com.kennycason.kumo.wordstart.RandomWordStart;
 import com.kennycason.kumo.wordstart.WordStartStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
+import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -38,9 +42,18 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 
 public class WordCloud {
     private static final Logger LOGGER = LoggerFactory.getLogger(WordCloud.class);
+
+    public static int poolSize = SystemInfo.AVAILABLE_PROCESSORS;
+    public static final ExecutorService pool = new ThreadPoolExecutor(poolSize, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),new CustomizableThreadFactory("pool-buildWord-"));
+
     protected final Dimension dimension;
     protected final CollisionMode collisionMode;
     protected final CollisionChecker collisionChecker;
@@ -77,22 +90,87 @@ public class WordCloud {
         this.background = new RectangleBackground(dimension);
     }
 
+//    public void build(List<WordFrequency> wordFrequencies) {
+//        Collections.sort(wordFrequencies);
+//        this.wordPlacer.reset();
+//        this.skipped.clear();
+//        this.background.mask(this.backgroundCollidable);
+//        int currentWord = 1;
+//
+//        for(Iterator var3 = this.buildWords(wordFrequencies, this.colorPalette).iterator(); var3.hasNext(); ++currentWord) {
+//            Word word = (Word)var3.next();
+//            Point point = this.wordStartStrategy.getStartingPoint(this.dimension, word);
+//            boolean placed = this.place(word, point);
+//            if (!placed) {
+//                this.skipped.add(word);
+//            }
+//        }
+//        this.drawForegroundToBackground();
+//    }
+
+
     public void build(List<WordFrequency> wordFrequencies) {
         Collections.sort(wordFrequencies);
         this.wordPlacer.reset();
         this.skipped.clear();
         this.background.mask(this.backgroundCollidable);
-        int currentWord = 1;
 
-        for(Iterator var3 = this.buildWords(wordFrequencies, this.colorPalette).iterator(); var3.hasNext(); ++currentWord) {
-            Word word = (Word)var3.next();
-            Point point = this.wordStartStrategy.getStartingPoint(this.dimension, word);
-            boolean placed = this.place(word, point);
-            if (!placed) {
-                this.skipped.add(word);
+        List<Word> words = this.buildWords(wordFrequencies, this.colorPalette);
+        LOGGER.info("处理总数:{}",words.size());
+        int i = CommonUtil.averageAssignNum(words.size(), poolSize);
+        List<List<Word>> lists = CommonUtil.averageAssignList(words, i);
+        CountDownLatch countDownLatch = new CountDownLatch(lists.size());
+        LOGGER.info("分{}条线程处理",countDownLatch.getCount());
+        for (List<Word> list : lists) {
+            pool.execute(new BuildWordTask(list,countDownLatch));
+        }
+
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            LOGGER.info("countDownLatch.await() exception",e);
+        }
+
+        this.drawForegroundToBackground();
+    }
+
+
+    private class BuildWordTask implements Runnable {
+
+        private List<Word> words;
+        private CountDownLatch latch;
+//        private Set<Word> skipped;
+//        private Dimension dimension;
+//        private WordStartStrategy wordStartStrategy;
+
+//        ,Set<Word> skipped,Dimension dimension,WordStartStrategy wordStartStrategy
+        public BuildWordTask(List<Word> words,CountDownLatch latch){
+            this.words = words;
+            this.latch = latch;
+//            this.skipped = skipped;
+//            this.dimension = dimension;
+//            this.wordStartStrategy = wordStartStrategy;
+        }
+
+        @Override
+        public void run() {
+            try {
+                if (!CollectionUtils.isEmpty(this.words)) {
+                    LOGGER.info("当前线程处理数量:{}",words.size());
+                    for (Word word : this.words) {
+                        Point point = wordStartStrategy.getStartingPoint(dimension, word);
+                        boolean placed = place(word, point);
+                        if (!placed) {
+                            skipped.add(word);
+                        }
+                    }
+                }
+            }catch (Exception e){
+                LOGGER.info("Build word exception",e);
+            }finally {
+                latch.countDown();
             }
         }
-        this.drawForegroundToBackground();
     }
 
     public void writeToFile(String outputFileName) {
