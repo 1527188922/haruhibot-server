@@ -2,7 +2,7 @@ package com.haruhi.botServer.instructions;
 
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  */
 //@Component // 若放开注释 则启用该功能
 @Slf4j
-public class DemoHandler implements IMessageEvent {
+public class DemoHandler implements IAllMessageEvent {
 
     // 一分钟过期
     private final static CacheMap<String, RunnableNode> nodeCache = new CacheMap<String, RunnableNode>(60L, TimeUnit.SECONDS,500);
@@ -96,7 +96,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
@@ -121,7 +121,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message)throws Exception {
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
@@ -146,7 +146,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
@@ -181,7 +181,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}", d);
@@ -206,7 +206,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message)throws Exception {
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}", d);
@@ -230,7 +230,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
@@ -255,7 +255,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
@@ -279,7 +279,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception {
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
@@ -303,7 +303,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message)throws Exception {
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}", d);
@@ -327,7 +327,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
@@ -351,7 +351,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception{
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
@@ -375,7 +375,7 @@ public class DemoHandler implements IMessageEvent {
             @Override
             protected boolean run(final WebSocketSession session,final Message message) throws Exception {
                 String d = getData();
-                if (!d.equals(message.getMessage())) {
+                if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);

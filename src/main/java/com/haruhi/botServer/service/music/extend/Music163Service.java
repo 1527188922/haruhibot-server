@@ -84,7 +84,13 @@ public class Music163Service extends AbstractMusicService {
     private List<SearchResp> parseJavaBean(String s){
         try {
             JSONObject resJsonObj = JSONObject.parseObject(s);
-            String result = resJsonObj.getJSONObject("result").getString("songs");
+
+            JSONObject resultJson = resJsonObj.getJSONObject("result");
+            if(resultJson == null){
+                return null;
+            }
+            String result = resultJson.getString("songs");
+
             List<SearchResp> searchResps = JSONArray.parseArray(result, SearchResp.class);
             return searchResps;
         }catch (Exception e){

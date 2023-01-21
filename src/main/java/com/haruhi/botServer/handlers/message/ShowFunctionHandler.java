@@ -3,8 +3,8 @@ package com.haruhi.botServer.handlers.message;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dispenser.MessageDispenser;
 import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.event.message.IMessageEventType;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class ShowFunctionHandler implements IMessageEvent {
+public class ShowFunctionHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
@@ -46,9 +46,9 @@ public class ShowFunctionHandler implements IMessageEvent {
         }
         @Override
         public void run() {
-            Collection<IMessageEventType> values = MessageDispenser.getMessageEventTypeMap().values().stream().sorted(Comparator.comparing(IMessageEventType::weight)).collect(Collectors.toList());
+            Collection<IMessageEvent> values = MessageDispenser.getMessageEventMap().values().stream().sorted(Comparator.comparing(IMessageEvent::weight)).collect(Collectors.toList());
             StringBuilder stringBuilder = new StringBuilder("所有功能：\n");
-            for (IMessageEventType eventType : values) {
+            for (IMessageEvent eventType : values) {
                 stringBuilder.append("id：").append(eventType.weight()).append("\n");
                 stringBuilder.append("名称：").append(eventType.funName()).append("\n");
             }

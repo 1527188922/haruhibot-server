@@ -6,7 +6,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.music.response.Song;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.music.AbstractMusicService;
 import com.haruhi.botServer.factory.MusicServiceFactory;
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
-public class MusicCardHandler implements IMessageEvent {
+public class MusicCardHandler implements IAllMessageEvent {
 
     private static int expireTime = 60;
     private static CacheMap<String, List<Song>> cache = new CacheMap<>(expireTime, TimeUnit.SECONDS,800);

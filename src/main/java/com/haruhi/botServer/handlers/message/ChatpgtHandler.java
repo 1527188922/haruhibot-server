@@ -1,12 +1,11 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.github.plexpt.chatgpt.Chatbot;
-import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.config.ChatgptConfig;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
@@ -18,12 +17,11 @@ import org.springframework.web.socket.WebSocketSession;
 import java.text.MessageFormat;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
-public class ChatpgtHandler implements IMessageEvent {
+public class ChatpgtHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {

@@ -4,7 +4,7 @@ import com.haruhi.botServer.config.path.AbstractPathConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
@@ -20,7 +20,7 @@ import java.io.File;
 
 @Slf4j
 @Component
-public class ScoldMeHandler implements IMessageEvent {
+public class ScoldMeHandler implements IAllMessageEvent {
     @Override
     public int weight() {
         return 88;

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.Pixiv;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.pixiv.PixivService;
 import com.haruhi.botServer.ws.Server;
@@ -17,7 +17,7 @@ import java.text.MessageFormat;
 
 @Slf4j
 @Component
-public class PixivCountHandler implements IMessageEvent {
+public class PixivCountHandler implements IAllMessageEvent {
     @Override
     public int weight() {
         return 101;

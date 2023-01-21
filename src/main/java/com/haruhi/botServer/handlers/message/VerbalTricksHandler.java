@@ -3,7 +3,7 @@ package com.haruhi.botServer.handlers.message;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.VerbalTricks;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.ws.Server;
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Component
-public class VerbalTricksHandler implements IMessageEvent {
+public class VerbalTricksHandler implements IAllMessageEvent {
     @Override
     public int weight() {
         return 2;

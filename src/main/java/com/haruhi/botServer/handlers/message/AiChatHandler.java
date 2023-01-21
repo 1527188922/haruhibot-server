@@ -7,7 +7,7 @@ import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.aiChat.response.ChatResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Server;
@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 @Component
-public class AiChatHandler implements IMessageEvent {
+public class AiChatHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {

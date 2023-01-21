@@ -10,7 +10,7 @@ import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.dto.searchImage.response.Results;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import com.haruhi.botServer.utils.RestUtil;
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-public class SearchImageHandler implements IMessageEvent {
+public class SearchImageHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
@@ -102,7 +102,7 @@ public class SearchImageHandler implements IMessageEvent {
                     String messageId = instance.getParam(cq, "id");
                     Message msg = GocqSyncRequestUtil.getMsg(session,messageId,2 * 1000);
                     if(msg != null){
-                        String respMessage = msg.getMessage();
+                        String respMessage = msg.getRawMessage();
                         String cq1 = instance.getCq(respMessage, CqCodeTypeEnum.image.getType());
                         return cq1;
                     }
@@ -182,8 +182,8 @@ public class SearchImageHandler implements IMessageEvent {
         }
 
         SyncResponse syncResponse = Server.sendSyncMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs, 2 * 1000);
-        if(syncResponse.getRetcode() != 0){
-            log.info("识图结果同步发送失败，删除图片后使用异步发送");
+        if(syncResponse == null || syncResponse.getRetcode() != 0){
+            log.info("识图结果同步发送失败，使用异步发送");
             forwardMsgs.remove(0);
             Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
         }

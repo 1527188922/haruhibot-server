@@ -2,7 +2,7 @@ package com.haruhi.botServer.handlers.message.pixiv;
 
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.pixiv.PixivService;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class PixivRHandler implements IMessageEvent {
+public class PixivRHandler implements IAllMessageEvent {
 
     @Autowired
     private PixivService pixivService;

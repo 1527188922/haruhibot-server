@@ -3,12 +3,11 @@ package com.haruhi.botServer.dispenser;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.event.message.IMessageEventType;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
@@ -32,23 +31,25 @@ import java.util.stream.Collectors;
 @Component
 public class MessageDispenser {
 
-    private static Map<String, IMessageEventType> messageEventTypeMap;
-    public static Map<String, IMessageEventType> getMessageEventTypeMap(){
-        return messageEventTypeMap;
+    private static Map<String, IMessageEvent> messageEventMap;
+
+    public MessageDispenser(Map<String, IMessageEvent> messageEventTypeMap) {
+        messageEventMap = messageEventTypeMap;
     }
-    @Autowired
-    public void setMessageEventTypeMap(Map<String, IMessageEventType> messageEventTypeMap){
-        MessageDispenser.messageEventTypeMap = messageEventTypeMap;
+
+    public static Map<String, IMessageEvent> getMessageEventMap(){
+        return messageEventMap;
     }
-    private static List<IMessageEventType> container = new CopyOnWriteArrayList<>();
+
+    private static List<IMessageEvent> container = new CopyOnWriteArrayList<>();
 
 
     @PostConstruct
     private void loadEvent(){
-        if (!CollectionUtils.isEmpty(messageEventTypeMap)) {
+        if (!CollectionUtils.isEmpty(messageEventMap)) {
             log.info("加载消息处理类...");
-            for (IMessageEventType value : messageEventTypeMap.values()) {
-                MessageDispenser.attach(value);
+            for (IMessageEvent value : messageEventMap.values()) {
+                attach(value);
             }
             checkWeight();
             int size = sortByWeight();
@@ -57,7 +58,7 @@ public class MessageDispenser {
     }
 
     private void checkWeight(){
-        List<Integer> weights = container.stream().map(IMessageEventType::weight).collect(Collectors.toList());
+        List<Integer> weights = container.stream().map(IMessageEvent::weight).collect(Collectors.toList());
         Set<Integer> weightSet = new HashSet<>(weights);
         if(weightSet.size() != weights.size()){
             throw new RuntimeException("Duplicate weight appear");
@@ -69,12 +70,12 @@ public class MessageDispenser {
      * 降序
      * @return
      */
-    public static int sortByWeight(){
-        container = container.stream().sorted(Comparator.comparing(IMessageEventType::weight).reversed()).collect(Collectors.toList());
+    public int sortByWeight(){
+        container = container.stream().sorted(Comparator.comparing(IMessageEvent::weight).reversed()).collect(Collectors.toList());
         return container.size();
     }
 
-    private static <T extends IMessageEventType> void attach(T event){
+    private <T extends IMessageEvent> void attach(T event){
         container.add(event);
     }
 
@@ -84,7 +85,7 @@ public class MessageDispenser {
      * @param clazz 类模板对象 同一个类的模板对象必为唯一
      * @param <T>
      */
-    public static <T extends IMessageEventType> void attach(Class<T> clazz){
+    public <T extends IMessageEvent> void attach(Class<T> clazz){
         T bean = ApplicationContextProvider.getBean(clazz);
         container.add(bean);
     }
@@ -96,47 +97,46 @@ public class MessageDispenser {
      * @param clazz
      * @param <T>
      */
-    public static <T extends IMessageEventType> void detach(Class<T> clazz){
+    public <T extends IMessageEvent> void detach(Class<T> clazz){
         T bean = ApplicationContextProvider.getBean(clazz);
         container.remove(bean);
     }
 
 
-    public static void onEvent(final WebSocketSession session,final Message message, final String command){
+    public void onEvent(final WebSocketSession session,final Message message, final String command){
         if (!CollectionUtils.isEmpty(container)) {
             String messageType = message.getMessageType();
 
-            if(MessageTypeEnum.group.getType().equals(messageType)){
-                for (IMessageEventType element : container){
-                    if(element instanceof IMessageEvent){
-                        IMessageEvent event = (IMessageEvent) element;
-                        if(event.onMessage(session,message,command)){
+            if (MessageTypeEnum.group.getType().equals(messageType)) {
+                for (IMessageEvent element : container) {
+                    if (element instanceof IAllMessageEvent) {
+                        IAllMessageEvent event = (IAllMessageEvent) element;
+                        if (event.onMessage(session, message, command)) {
                             break;
                         }
-                    }else if(element instanceof IGroupMessageEvent){
+                    } else if (element instanceof IGroupMessageEvent) {
                         IGroupMessageEvent event = (IGroupMessageEvent) element;
-                        if(event.onGroup(session,message,command)){
+                        if (event.onGroup(session, message, command)) {
                             break;
                         }
                     }
                 }
-            }else if(MessageTypeEnum.privat.getType().equals(messageType)){
-                for (IMessageEventType element : container){
-                    if(element instanceof IMessageEvent){
-                        IMessageEvent event = (IMessageEvent) element;
-                        if(event.onMessage(session,message,command)){
+            } else if (MessageTypeEnum.privat.getType().equals(messageType)) {
+                for (IMessageEvent element : container) {
+                    if (element instanceof IAllMessageEvent) {
+                        IAllMessageEvent event = (IAllMessageEvent) element;
+                        if (event.onMessage(session, message, command)) {
                             break;
                         }
-                    }else if(element instanceof IPrivateMessageEvent){
+                    } else if (element instanceof IPrivateMessageEvent) {
                         IPrivateMessageEvent event = (IPrivateMessageEvent) element;
-                        if(event.onPrivate(session,message,command)){
+                        if (event.onPrivate(session, message, command)) {
                             break;
                         }
                     }
                 }
             }
         }
-
     }
 
     /**
@@ -144,9 +144,9 @@ public class MessageDispenser {
      * @param fun 可以是name也可以是id(weight)
      * @return
      */
-    public static IMessageEventType findHandler(String fun){
+    public IMessageEvent findHandler(String fun){
         Integer funId;
-        IMessageEventType messageEventType;
+        IMessageEvent messageEventType;
         try {
             funId = Integer.valueOf(fun);
             messageEventType = findHandlerByWeight(funId);
@@ -155,16 +155,16 @@ public class MessageDispenser {
         }
         return messageEventType;
     }
-    private static IMessageEventType findHandlerByName(String funName){
-        for (Map.Entry<String, IMessageEventType> eventTypeEntry : messageEventTypeMap.entrySet()) {
+    private IMessageEvent findHandlerByName(String funName){
+        for (Map.Entry<String, IMessageEvent> eventTypeEntry : messageEventMap.entrySet()) {
             if(eventTypeEntry.getValue().funName().equals(funName)){
                 return eventTypeEntry.getValue();
             }
         }
         return null;
     }
-    private static IMessageEventType findHandlerByWeight(int weight){
-        for (Map.Entry<String, IMessageEventType> eventTypeEntry : messageEventTypeMap.entrySet()) {
+    private IMessageEvent findHandlerByWeight(int weight){
+        for (Map.Entry<String, IMessageEvent> eventTypeEntry : messageEventMap.entrySet()) {
             if(eventTypeEntry.getValue().weight() == weight){
                 return eventTypeEntry.getValue();
             }
@@ -179,7 +179,7 @@ public class MessageDispenser {
      * @param <T>
      * @return
      */
-    public static <T extends IMessageEventType> boolean exist(Class<T> tClass){
+    public <T extends IMessageEvent> boolean exist(Class<T> tClass){
         T bean = ApplicationContextProvider.getBean(tClass);
         return container.contains(bean);
     }

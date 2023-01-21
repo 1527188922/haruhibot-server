@@ -10,7 +10,6 @@ import com.haruhi.botServer.event.notice.INoticeEventType;
 import com.haruhi.botServer.event.notice.IPokeEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
@@ -28,30 +27,31 @@ import java.util.Map;
 @Component
 public class NoticeDispenser {
 
-    private static Map<String, INoticeEventType> noticeEventTypeMap;
-    @Autowired
-    public void setMessageEventTypeMap(Map<String, INoticeEventType> pokeEventMap){
-        NoticeDispenser.noticeEventTypeMap = pokeEventMap;
-    }
+    private final Map<String, INoticeEventType> noticeEventTypeMap;
+
     private static List<INoticeEventType> container = new ArrayList<>();
+
+    public NoticeDispenser(Map<String, INoticeEventType> noticeEventTypeMap) {
+        this.noticeEventTypeMap = noticeEventTypeMap;
+    }
 
     @PostConstruct
     private void loadEvent(){
         log.info("加载通知处理类...");
         if(!CollectionUtils.isEmpty(noticeEventTypeMap)){
             for (INoticeEventType value : noticeEventTypeMap.values()) {
-                NoticeDispenser.attach(value);
+                attach(value);
             }
             log.info("加载了{}个通知处理类",container.size());
         }
 
 
     }
-    public static void attach(INoticeEventType event){
+    public void attach(INoticeEventType event){
         container.add(event);
     }
 
-    public static void onEvent(final WebSocketSession session,final Message message){
+    public void onEvent(final WebSocketSession session,final Message message){
         if(!CollectionUtils.isEmpty(container)){
             setMessageType(message);
             String subType = message.getSubType();
@@ -80,7 +80,7 @@ public class NoticeDispenser {
         }
     }
 
-    private static void setMessageType(final Message message){
+    private void setMessageType(final Message message){
         if(Strings.isBlank(message.getMessageType())){
             if(message.getGroupId() != null){
                 message.setMessageType(MessageTypeEnum.group.getType());

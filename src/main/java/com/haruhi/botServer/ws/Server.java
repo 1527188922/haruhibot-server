@@ -17,9 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketHandler;
-import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * gocq（客户端）使用反向ws连接
  */
 @Slf4j
-public class Server implements WebSocketHandler {
+public class Server extends TextWebSocketHandler {
 
     private static Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
     private static Map<String,Long> userIdMap = new ConcurrentHashMap<>();
@@ -46,12 +45,8 @@ public class Server implements WebSocketHandler {
     }
 
     @Override
-    public void handleMessage(final WebSocketSession session, final WebSocketMessage<?> message) throws Exception {
-        if(!(message instanceof TextMessage)){
-            log.warn("消息非String类型:{}",message);
-            return;
-        }
-        final String s = ((TextMessage) message).getPayload();
+    public void handleTextMessage(final WebSocketSession session, final TextMessage message) throws Exception {
+        final String s = message.getPayload();
         try {
             final Message bean = JSONObject.parseObject(s, Message.class);
             if(PostTypeEnum.meta_event.toString().equals(bean.getPostType()) && MetaEventEnum.heartbeat.toString().equals(bean.getMetaEventType())){
@@ -75,11 +70,6 @@ public class Server implements WebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
         log.info("连接断开,sessionId:{},{}",session.getId(),closeStatus.toString());
         removeClient(session);
-    }
-
-    @Override
-    public boolean supportsPartialMessages() {
-        return false;
     }
 
     public static void putUserIdMap(String key,Long val){

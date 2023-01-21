@@ -8,6 +8,7 @@ import com.haruhi.botServer.dispenser.MessageDispenser;
 import com.haruhi.botServer.dispenser.NoticeDispenser;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.thread.pool.policy.ShareRunsPolicy;
+import com.haruhi.botServer.utils.ApplicationContextProvider;
 import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,9 @@ public class ProcessMessageTask implements Runnable{
         this.original = original;
     }
 
+    private final MessageDispenser messageDispenser = ApplicationContextProvider.getBean(MessageDispenser.class);
+    private final NoticeDispenser noticeDispenser  = ApplicationContextProvider.getBean(NoticeDispenser.class);
+
     @Override
     public void run() {
         try {
@@ -42,11 +46,11 @@ public class ProcessMessageTask implements Runnable{
                 final String command = bean.getRawMessage();
                 log.info("[{}]收到来自用户[{}]的消息:{}",bean.getMessageType(),bean.getUserId(),command);
                 if(command != null){
-                    MessageDispenser.onEvent(session,bean,command);
+                    messageDispenser.onEvent(session,bean,command);
                 }
             }else if(PostTypeEnum.notice.toString().equals(bean.getPostType())){
                 // bot通知
-                NoticeDispenser.onEvent(session,bean);
+                noticeDispenser.onEvent(session,bean);
             } else if(PostTypeEnum.meta_event.toString().equals(bean.getPostType())){
                 // 系统消息
                 if(MetaEventEnum.lifecycle.toString().equals(bean.getMetaEventType()) && SubTypeEnum.connect.toString().equals(bean.getSubType())){

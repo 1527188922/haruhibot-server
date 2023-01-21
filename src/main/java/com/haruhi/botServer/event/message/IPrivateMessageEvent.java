@@ -7,7 +7,7 @@ import org.springframework.web.socket.WebSocketSession;
  * 实现这个接口的类
  * 都能收到私聊消息
  */
-public interface IPrivateMessageEvent extends IMessageEventType {
+public interface IPrivateMessageEvent extends IMessageEvent {
     /**
      * 私聊触发
      * @param message

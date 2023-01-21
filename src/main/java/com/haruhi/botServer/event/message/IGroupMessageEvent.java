@@ -7,7 +7,7 @@ import org.springframework.web.socket.WebSocketSession;
  * 实现这接口的类
  * 都能收到群消息
  */
-public interface IGroupMessageEvent extends IMessageEventType {
+public interface IGroupMessageEvent extends IMessageEvent {
     /**
      * 群聊触发
      * @param message

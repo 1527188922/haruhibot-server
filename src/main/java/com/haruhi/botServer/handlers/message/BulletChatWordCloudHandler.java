@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.xml.bilibili.PlayerInfoResp;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.thread.WordSlicesTask;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -29,7 +29,7 @@ import java.util.Map;
 
 @Slf4j
 @Component
-public class BulletChatWordCloudHandler implements IMessageEvent {
+public class BulletChatWordCloudHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {

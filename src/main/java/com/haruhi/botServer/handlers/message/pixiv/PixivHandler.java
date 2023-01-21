@@ -2,7 +2,7 @@ package com.haruhi.botServer.handlers.message.pixiv;
 
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.pixiv.PixivService;
 import com.simplerobot.modules.utils.KQCodeUtils;
@@ -17,7 +17,7 @@ import java.util.List;
 
 
 @Component
-public class PixivHandler implements IMessageEvent {
+public class PixivHandler implements IAllMessageEvent {
     @Override
     public int weight() {
         return 97;
