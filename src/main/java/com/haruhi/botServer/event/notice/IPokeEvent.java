@@ -6,7 +6,7 @@ import org.springframework.web.socket.WebSocketSession;
 /**
  * 实现这个接口的类,都能收到戳一戳消息
  */
-public interface IPokeEvent extends INoticeEventType{
+public interface IPokeEvent extends INoticeEvent {
 
     void onPoke(WebSocketSession session,Message message);
 }

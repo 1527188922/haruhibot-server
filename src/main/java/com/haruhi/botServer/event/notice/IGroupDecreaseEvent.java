@@ -6,7 +6,7 @@ import org.springframework.web.socket.WebSocketSession;
 /**
  * 群退出成员事件
  */
-public interface IGroupDecreaseEvent extends INoticeEventType{
+public interface IGroupDecreaseEvent extends INoticeEvent {
 
     /**
      * user_id : 退群人qq

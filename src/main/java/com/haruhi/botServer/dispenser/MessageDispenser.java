@@ -33,8 +33,8 @@ public class MessageDispenser {
 
     private static Map<String, IMessageEvent> messageEventMap;
 
-    public MessageDispenser(Map<String, IMessageEvent> messageEventTypeMap) {
-        messageEventMap = messageEventTypeMap;
+    public MessageDispenser(Map<String, IMessageEvent> messageEventMap) {
+        MessageDispenser.messageEventMap = messageEventMap;
     }
 
     public static Map<String, IMessageEvent> getMessageEventMap(){
@@ -102,38 +102,46 @@ public class MessageDispenser {
         container.remove(bean);
     }
 
-
     public void onEvent(final WebSocketSession session,final Message message, final String command){
         if (!CollectionUtils.isEmpty(container)) {
-            String messageType = message.getMessageType();
+            final String messageType = message.getMessageType();
 
             if (MessageTypeEnum.group.getType().equals(messageType)) {
-                for (IMessageEvent element : container) {
-                    if (element instanceof IAllMessageEvent) {
-                        IAllMessageEvent event = (IAllMessageEvent) element;
-                        if (event.onMessage(session, message, command)) {
-                            break;
-                        }
-                    } else if (element instanceof IGroupMessageEvent) {
-                        IGroupMessageEvent event = (IGroupMessageEvent) element;
-                        if (event.onGroup(session, message, command)) {
-                            break;
-                        }
-                    }
-                }
+                executeGroupMessageHandler(container,session,message,command);
             } else if (MessageTypeEnum.privat.getType().equals(messageType)) {
-                for (IMessageEvent element : container) {
-                    if (element instanceof IAllMessageEvent) {
-                        IAllMessageEvent event = (IAllMessageEvent) element;
-                        if (event.onMessage(session, message, command)) {
-                            break;
-                        }
-                    } else if (element instanceof IPrivateMessageEvent) {
-                        IPrivateMessageEvent event = (IPrivateMessageEvent) element;
-                        if (event.onPrivate(session, message, command)) {
-                            break;
-                        }
-                    }
+                executePrivateMessageHandler(container,session,message,command);
+            }
+        }
+    }
+
+    private void executeGroupMessageHandler(final List<IMessageEvent> events,final WebSocketSession session,final Message message, final String command){
+        for (IMessageEvent element : events) {
+            if (element instanceof IAllMessageEvent) {
+                IAllMessageEvent event = (IAllMessageEvent) element;
+                if (event.onMessage(session, message, command)) {
+                    break;
+                }
+            } else if(element instanceof IGroupMessageEvent){
+                IGroupMessageEvent event = (IGroupMessageEvent) element;
+                if (event.onGroup(session, message, command)) {
+                    break;
+                }
+            }
+        }
+    }
+
+
+    private void executePrivateMessageHandler(final List<IMessageEvent> events,final WebSocketSession session,final Message message, final String command){
+        for (IMessageEvent element : events) {
+            if (element instanceof IAllMessageEvent) {
+                IAllMessageEvent event = (IAllMessageEvent) element;
+                if (event.onMessage(session, message, command)) {
+                    break;
+                }
+            } else if (element instanceof IPrivateMessageEvent) {
+                IPrivateMessageEvent event = (IPrivateMessageEvent) element;
+                if (event.onPrivate(session, message, command)) {
+                    break;
                 }
             }
         }

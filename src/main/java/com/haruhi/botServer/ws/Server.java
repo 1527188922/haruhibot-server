@@ -370,7 +370,7 @@ public class Server extends TextWebSocketHandler {
 
     public static void sendMessage(WebSocketSession session, String text){
         try {
-            log.info("sendMessage : {}",text);
+//            log.info("sendMessage : {}",text);
             session.sendMessage(new TextMessage(text));
         } catch (Exception e) {
             log.error("发送消息发生异常,session:{},消息：{}",session,text,e);

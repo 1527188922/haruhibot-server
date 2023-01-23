@@ -7,6 +7,7 @@ import java.io.File;
 @Slf4j
 public abstract class AbstractPathConfig {
 
+    public static final String TARGET = "target";
     public static final String TEMP = "temp";
 
     protected static String WEB_HOME_PATH;

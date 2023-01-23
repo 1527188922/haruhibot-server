@@ -7,7 +7,7 @@ import org.springframework.web.socket.WebSocketSession;
 /**
  * 群加入成员事件
  */
-public interface IGroupIncreaseEvent extends INoticeEventType{
+public interface IGroupIncreaseEvent extends INoticeEvent {
 
     /**
      * user_id : 进群人的qq

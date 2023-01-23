@@ -34,10 +34,12 @@ public enum RegexEnum {
     UN_SUBSCRIBE_NEWS("取消订阅新闻"),
     MUSIC_CARD("点歌 "),
     FLUSH_CACHE("#刷新缓存"),
-    CHATGPT("gpt ");
+    CHATGPT("gpt "),
+    START_MONITOR_LOG("/startml|/开启监听日志"),
+    STOP_MONITOR_LOG("/stopml|/关闭监听日志");
 
 
-    private String value;
+    private final String value;
     RegexEnum(String value){
         this.value = value;
     }

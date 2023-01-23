@@ -45,7 +45,11 @@ logging:
 
 log:
   level: info
-  path: ./logs
+  path: logs
+  prefix: haruhibot_
+  separator: .
+  suffix: log
+  keep: now
 
 spring:
   datasource:

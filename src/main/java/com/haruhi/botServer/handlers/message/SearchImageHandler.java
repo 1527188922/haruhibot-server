@@ -102,9 +102,9 @@ public class SearchImageHandler implements IAllMessageEvent {
                     String messageId = instance.getParam(cq, "id");
                     Message msg = GocqSyncRequestUtil.getMsg(session,messageId,2 * 1000);
                     if(msg != null){
+                        // msg对象是通过消息id获得 没有raw_message属性
                         String respMessage = msg.getMessage();
-                        String cq1 = instance.getCq(respMessage, CqCodeTypeEnum.image.getType());
-                        return cq1;
+                        return instance.getCq(respMessage, CqCodeTypeEnum.image.getType());
                     }
                 }
             }

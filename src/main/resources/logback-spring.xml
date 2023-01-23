@@ -3,6 +3,10 @@
 	<!-- 引用的application.yml的配置 -->
 	<springProperty scope="context" name="logLevel" source="log.level"/>
 	<springProperty scope="context" name="logPath" source="log.path"/>
+	<springProperty scope="context" name="logPrefix" source="log.prefix"/>
+	<springProperty scope="context" name="logKeep" source="log.keep"/>
+	<springProperty scope="context" name="logSeparator" source="log.separator"/>
+	<springProperty scope="context" name="logSuffix" source="log.suffix"/>
 
 	<!-- 输出到控制台的日志配置 -->
 	<appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
@@ -14,11 +18,10 @@
 
 	<!-- 所有日志 -->
 	<appender name="rollingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<file>${logPath}/haruhibotServer_now.log</file>
+		<file>${logPath}/${logPrefix}${logKeep}${logSeparator}${logSuffix}</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
 			<!-- 日志文件备份的文件名 -->
-			<FileNamePattern>${logPath}/haruhibotServer_%d{yyyy-MM-dd}_%i.log
-			</FileNamePattern>
+			<FileNamePattern>${logPath}/${logPrefix}%d{yyyy-MM-dd}_%i${logSeparator}${logSuffix}</FileNamePattern>
             <maxFileSize>10MB</maxFileSize>
             <maxHistory>10</maxHistory>
 		</rollingPolicy>

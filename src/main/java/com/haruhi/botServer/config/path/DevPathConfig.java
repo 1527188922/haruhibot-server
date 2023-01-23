@@ -51,7 +51,20 @@ public class DevPathConfig extends AbstractPathConfig {
     private static void setHomePath(){
         ApplicationHome ah = new ApplicationHome(DevPathConfig.class);
         homePath = ah.getSource().getParentFile().toString();
+        if (homePath.endsWith(File.separator+TARGET)) {
+            homePath = homePath.replace(File.separator+TARGET,"");
+        }
+
+        if (homePath.endsWith("/"+TARGET)) {
+            homePath = homePath.replace("/"+TARGET,"");
+        }
+
+        if (homePath.endsWith("\\"+TARGET)) {
+            homePath = homePath.replace("\\"+TARGET,"");
+        }
+
     }
+
     private static void setImagePath(){
         imagePath = resourceHomePath + File.separator + "build\\image";
         File file = new File(imagePath);
@@ -65,7 +78,10 @@ public class DevPathConfig extends AbstractPathConfig {
     }
 
     private static void setTempPath(){
-        tempFile = new File(homePath + File.separator + TEMP);
+
+        ApplicationHome ah = new ApplicationHome(DevPathConfig.class);
+
+        tempFile = new File( ah.getSource().getParentFile().toString() + File.separator + TEMP);
     }
 
     public static void setWebHomePath(){
