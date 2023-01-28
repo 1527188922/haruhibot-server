@@ -160,7 +160,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.haruhi.botServer.ApplicationRun</mainClass>
+                            <mainClass>com.haruhi.botServer.HaruhiBotServer</mainClass>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>

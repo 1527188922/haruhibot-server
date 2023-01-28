@@ -4,8 +4,6 @@ import com.haruhi.botServer.utils.ThreadPoolUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 
 /**
  * 系统信息以及程序信息
@@ -48,8 +46,7 @@ public class SystemInfo {
     }
 
     private static void getPID(){
-        RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
-        PID = bean.getName().split("@")[0];
+        PID = SystemUtil.getPID();
         log.info("haruhi-bot pid : {}",PID);
     }
 
@@ -63,30 +60,22 @@ public class SystemInfo {
     }
 
     private static void getAvailableProcessors(){
-        AVAILABLE_PROCESSORS = Runtime.getRuntime().availableProcessors();
+        AVAILABLE_PROCESSORS = SystemUtil.getAvailableProcessors();
         log.info("cpu线程数 : {}",AVAILABLE_PROCESSORS);
     }
 
     private static void getDisk(){
-        for (File file : File.listRoots()) {
-            if (SystemUtil.USER_DIR.startsWith(file.toString())) {
-                DISK = file;
-                break;
-            }
-        }
+        DISK = SystemUtil.getDisk();
         log.info("disk : {}",DISK);
     }
     private static void getTotalSpace(){
-        if(DISK != null){
-            TOTAL_SPACE = (double) DISK.getTotalSpace();
-            TOTAL_SPACE_GB = TOTAL_SPACE / 1024 / 1024 / 1024;
-            log.info("total space : {}GB",TOTAL_SPACE_GB);
-        }
+        TOTAL_SPACE = SystemUtil.getTotalSpace();
+        TOTAL_SPACE_GB = TOTAL_SPACE / 1024 / 1024 / 1024;
+        log.info("total space : {}GB",TOTAL_SPACE_GB);
     }
 
     private static void getTotalPhysicalMemorySize(){
-        TOTAL_PHYSICAL_MEMORY_SIZE = SystemUtil.osmxb.getTotalPhysicalMemorySize();
-        TOTAL_PHYSICAL_MEMORY_SIZE_GB = TOTAL_PHYSICAL_MEMORY_SIZE / 1024 / 1024 / 1024;
+        TOTAL_PHYSICAL_MEMORY_SIZE = SystemUtil.getTotalPhysicalMemorySize();
     }
 
 
@@ -94,16 +83,16 @@ public class SystemInfo {
     public static String toJson(){
         String s = "{\"PROFILE\":\"" + PROFILE + "\",\"PID\":\"" + PID + "\",\"OS_NAME\":\"" + OS_NAME + "\",\"OS_VERSION\":\"" + OS_VERSION
                 + "\",\"AVAILABLE_PROCESSORS\":" + AVAILABLE_PROCESSORS
-                + ",\"DISK\":\"" + DISK.toString()
+                + ",\"DISK\":\"" + DISK
                 + "\",\"TOTAL_SPACE\":" + TOTAL_SPACE
-                + ",\"TOTAL_SPACE_GB\":" + TOTAL_SPACE_GB
+                + ",\"TOTAL_SPACE_GB\":" + (TOTAL_SPACE_GB = Double.parseDouble(String.format("%.2f",TOTAL_SPACE_GB)))
                 + ",\"FREE_SPACE\":" + (FREE_SPACE = SystemUtil.getFreeSpace())
-                + ",\"FREE_SPACE_GB\":" + FREE_SPACE_GB
+                + ",\"FREE_SPACE_GB\":" + (FREE_SPACE_GB = Double.parseDouble(String.format("%.2f",FREE_SPACE / 1024 / 1024 / 1024)))
                 + ",\"TOTAL_PHYSICAL_MEMORY_SIZE\":" + TOTAL_PHYSICAL_MEMORY_SIZE
-                + ",\"TOTAL_PHYSICAL_MEMORY_SIZE_GB\":" + TOTAL_PHYSICAL_MEMORY_SIZE_GB
+                + ",\"TOTAL_PHYSICAL_MEMORY_SIZE_GB\":" + (TOTAL_PHYSICAL_MEMORY_SIZE_GB = Double.parseDouble(String.format("%.2f",TOTAL_PHYSICAL_MEMORY_SIZE / 1024 / 1024 / 1024)))
                 + ",\"FREE_PHYSICAL_MEMORY_SIZE\":" + (FREE_PHYSICAL_MEMORY_SIZE = SystemUtil.getFreePhysicalMemorySize())
-                + ",\"FREE_PHYSICAL_MEMORY_SIZE_GB\":" + FREE_PHYSICAL_MEMORY_SIZE_GB
-                + ",\"CPU_LOAD\":" + (CPU_LOAD = SystemUtil.getOperatingSystemMXBeanJson().getDoubleValue(SystemUtil.OSXMB_KEY_SYSTEM_LOAD) * 100.00d)
+                + ",\"FREE_PHYSICAL_MEMORY_SIZE_GB\":" + (FREE_PHYSICAL_MEMORY_SIZE_GB = Double.parseDouble((String.format("%.2f",FREE_PHYSICAL_MEMORY_SIZE / 1024 / 1024 / 1024))))
+                + ",\"CPU_LOAD\":" + (CPU_LOAD = (Double.parseDouble(String.format("%.2f",SystemUtil.getOperatingSystemMXBeanJson().getDoubleValue(SystemUtil.OSXMB_KEY_SYSTEM_LOAD)))))
                 + "}";
         return s.replace("\\","/");
     }

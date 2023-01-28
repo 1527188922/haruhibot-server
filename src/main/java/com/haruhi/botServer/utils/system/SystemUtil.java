@@ -5,7 +5,9 @@ import com.alibaba.fastjson.JSONObject;
 import com.sun.management.OperatingSystemMXBean;
 import org.apache.commons.lang3.SystemUtils;
 
+import java.io.File;
 import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 
 public class SystemUtil extends SystemUtils {
     private SystemUtil(){}
@@ -45,18 +47,47 @@ public class SystemUtil extends SystemUtils {
 
     public synchronized static double getFreeSpace(){
         SystemInfo.FREE_SPACE = (double) SystemInfo.DISK.getFreeSpace();
-        SystemInfo.FREE_SPACE_GB = SystemInfo.FREE_SPACE / 1024 / 1024 / 1024;
+//        SystemInfo.FREE_SPACE_GB = SystemInfo.FREE_SPACE / 1024 / 1024 / 1024;
         return SystemInfo.FREE_SPACE;
     }
 
     public static double getFreePhysicalMemorySize(){
         SystemInfo.FREE_PHYSICAL_MEMORY_SIZE = osmxb.getFreePhysicalMemorySize();
-        SystemInfo.FREE_PHYSICAL_MEMORY_SIZE_GB = SystemInfo.FREE_PHYSICAL_MEMORY_SIZE / 1024 / 1024 / 1024;
+//        SystemInfo.FREE_PHYSICAL_MEMORY_SIZE_GB = SystemInfo.FREE_PHYSICAL_MEMORY_SIZE / 1024 / 1024 / 1024;
         return SystemInfo.FREE_PHYSICAL_MEMORY_SIZE;
     }
 
     public static JSONObject getOperatingSystemMXBeanJson(){
         return JSON.parseObject(JSONObject.toJSONString(osmxb));
+    }
+
+    public static String getPID(){
+        RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
+        return bean.getName().split("@")[0];
+    }
+
+    public static int getAvailableProcessors(){
+        return Runtime.getRuntime().availableProcessors();
+    }
+
+    public static File getDisk(){
+        for (File file : File.listRoots()) {
+            if (SystemUtil.USER_DIR.startsWith(file.toString())) {
+                return file;
+            }
+        }
+        return null;
+    }
+
+    public static double getTotalSpace(){
+        if(SystemInfo.DISK != null){
+            return (double) SystemInfo.DISK.getTotalSpace();
+        }
+        return 0.0;
+    }
+
+    public static double getTotalPhysicalMemorySize(){
+        return osmxb.getTotalPhysicalMemorySize();
     }
 
 }

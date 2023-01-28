@@ -4,9 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ApplicationRun {
+public class HaruhiBotServer {
 
     public static void main(String[] args) {
-        SpringApplication.run(ApplicationRun.class,args);
+        SpringApplication.run(HaruhiBotServer.class,args);
     }
 }
