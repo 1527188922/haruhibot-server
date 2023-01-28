@@ -3,16 +3,21 @@ package com.haruhi.botServer.utils;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.dto.gocq.request.RequestBox;
+import com.haruhi.botServer.dto.gocq.response.DownloadFileResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SelfInfo;
+import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,6 +69,62 @@ public class GocqSyncRequestUtil {
         if (responseStr != null) {
             SelfInfo data = JSONObject.parseObject(responseStr.getString("data"), SelfInfo.class);
             return data;
+        }
+        return null;
+    }
+
+    /**
+     * 发送私聊文件
+     * @param session
+     * @param userId
+     * @param filePath 该文件必须与gocqhttp在同一主机上
+     * @param fileName
+     * @param timeout
+     * @return
+     */
+    public static SyncResponse uploadPrivateFile(WebSocketSession session, Long userId, String filePath, String fileName, long timeout){
+        Map<String, Object> param = new HashMap<>(3);
+        param.put("user_id",userId);
+        param.put("file",filePath);
+        param.put("name",fileName);
+        JSONObject responseStr = sendSyncRequest(session, GocqActionEnum.UPLOAD_PRIVATE_FILE,param,timeout);
+        if (responseStr != null) {
+            SyncResponse response = JSONObject.parseObject(responseStr.toJSONString(), SyncResponse.class);
+            return response;
+        }
+        return null;
+    }
+
+    /**
+     * 用gocq去下载文件
+     * @param session
+     * @param url
+     * @param threadCount
+     * @param httpHeaders
+     * @param timeout
+     * @return 返回gocq下载到的文件绝对路径
+     */
+    public static DownloadFileResp downloadFile(WebSocketSession session, String url, int threadCount, HttpHeaders httpHeaders, long timeout){
+
+        Map<String, Object> param = new HashMap<>(3);
+        param.put("url",url);
+        param.put("thread_count",threadCount);
+
+        if(httpHeaders != null && !httpHeaders.isEmpty()){
+            List<String> headStrs = new ArrayList<>();
+            for (Map.Entry<String, List<String>> entry : httpHeaders.entrySet()) {
+                StringBuilder item = new StringBuilder(entry.getKey() + "=");
+                for (String s : entry.getValue()) {
+                    item.append(s).append(";");
+                }
+                headStrs.add(item.toString());
+            }
+            param.put("headers",JSONObject.toJSONString(headStrs));
+
+        }
+        JSONObject jsonObject = sendSyncRequest(session, GocqActionEnum.DOWNLOAD_FILE, param, timeout);
+        if(jsonObject != null){
+            return jsonObject.getObject("data",DownloadFileResp.class);
         }
         return null;
     }

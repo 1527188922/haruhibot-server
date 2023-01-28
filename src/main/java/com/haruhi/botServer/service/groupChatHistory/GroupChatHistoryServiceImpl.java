@@ -203,7 +203,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
             log.info("生成词云图完成,耗时:{}",System.currentTimeMillis() - l1);
             // 生成图片完成,发送图片
             KQCodeUtils instance = KQCodeUtils.getInstance();
-            String s = abstractPathConfig.webResourcesImagePath() + "/" + path + "/" + fileName + "?t=" + new Date().getTime();
+            String s = abstractPathConfig.webResourcesImagePath() + "/" + path + "/" + fileName + "?t=" + System.currentTimeMillis();
             log.info("群词云图片地址：{}",s);
             String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
             //

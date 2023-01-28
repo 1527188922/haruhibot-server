@@ -3,7 +3,9 @@ env:
 bot:
   name: 春日酱
   port: 8090
+  # 机器人所在主机是否在公网 1是 0否 (若不在公网主机 一定要设置为0)
   enable-internet-host: 1
+  # 公网ip(程序自动获取公网ip失败情况下将采用该配置) enable-internet-host为1情况下 尽量配置该项
   internet-host:
   search-image-key:
   access-token: haruhi123

@@ -8,6 +8,7 @@ import com.haruhi.botServer.config.path.AbstractPathConfig;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
-public class LogWatchHandler implements IPrivateMessageEvent {
+public class LogMonitorHandler implements IPrivateMessageEvent {
 
 	@Value("${log.path}")
 	private String logPath;
@@ -68,24 +69,27 @@ public class LogWatchHandler implements IPrivateMessageEvent {
 	public boolean onPrivate(final WebSocketSession session,final Message message,final String command) {
 
 		if (command.matches(RegexEnum.START_MONITOR_LOG.getValue())) {
-			synchronized (LogWatchHandler.class){
+
+			ThreadPoolUtil.getHandleCommandPool().execute(()->{
 				if(tailer == null){
 					startTailer(true,StandardCharsets.UTF_8, new LogFileLineHandler(session));
 					Server.sendPrivateMessage(session,message.getUserId(),"已开启\n日志将实时发送给第一个超级用户",true);
 				}else {
 					Server.sendPrivateMessage(session,message.getUserId(),"已处于开启状态",true);
 				}
-			}
+
+			});
+
 			return true;
 		}else if(command.matches(RegexEnum.STOP_MONITOR_LOG.getValue())){
-			synchronized (LogWatchHandler.class){
+			ThreadPoolUtil.getHandleCommandPool().execute(()->{
 				if(tailer != null){
 					stopTailer();
 					Server.sendPrivateMessage(session,message.getUserId(),"已关闭",true);
 				}else {
 					Server.sendPrivateMessage(session,message.getUserId(),"已处于关闭状态",true);
 				}
-			}
+			});
 			return true;
 		}
 
@@ -94,7 +98,7 @@ public class LogWatchHandler implements IPrivateMessageEvent {
 
 
 	private void startTailer(boolean async, Charset charset,LogFileLineHandler handler){
-		synchronized (LogWatchHandler.class){
+		synchronized (LogMonitorHandler.class){
 			if(tailer == null && BotConfig.SUPERUSERS.size() > 0){
 				tailer = new Tailer(LOG_FILE, charset, handler);
 				tailer.start(async);
@@ -103,7 +107,7 @@ public class LogWatchHandler implements IPrivateMessageEvent {
 	}
 
 	private void stopTailer(){
-		synchronized (LogWatchHandler.class){
+		synchronized (LogMonitorHandler.class){
 			if(tailer != null){
 				tailer.stop();
 				tailer = null;

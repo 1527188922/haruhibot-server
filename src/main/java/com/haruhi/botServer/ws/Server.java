@@ -374,7 +374,6 @@ public class Server extends TextWebSocketHandler {
             session.sendMessage(new TextMessage(text));
         } catch (Exception e) {
             log.error("发送消息发生异常,session:{},消息：{}",session,text,e);
-            throw new RuntimeException("Sending message exception");
         }
     }
 

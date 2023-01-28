@@ -182,7 +182,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         }
 
         SyncResponse syncResponse = Server.sendSyncMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs, 2 * 1000);
-        if(syncResponse == null || syncResponse.getRetcode() != 0){
+        if(syncResponse == null || (syncResponse.getRetcode() != null && syncResponse.getRetcode() != 0)){
             log.info("识图结果同步发送失败，使用异步发送");
             forwardMsgs.remove(0);
             Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);

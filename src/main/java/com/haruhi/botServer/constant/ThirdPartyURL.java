@@ -14,8 +14,8 @@ public class ThirdPartyURL {
     public static final String PLAYER_CID = "https://api.bilibili.com/x/player/pagelist";
     // lolicon
     public static final String LOLICON = "https://api.lolicon.app/setu/v2";
-    // bt 搜索 http://www.eclzz.art http://www.eclzz.win http://www.eclzz.love
-    public static final String BT_SEARCH = "http://www.eclzz.city";
+    // bt 搜索 http://www.eclzz.art http://www.eclzz.win http://www.eclzz.love http://www.eclzz.guru http://www.eclzz.city
+    public static final String BT_SEARCH = "http://www.eclzz.guru";
     // agefans.tv 今日新番使用 备用：www.age.tv
 //    public static final String AGEFANSTV = "https://www.agemys.cc";
     public static final String AGEFANSTV = "https://www.agemys.net";

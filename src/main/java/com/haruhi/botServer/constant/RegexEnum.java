@@ -36,7 +36,9 @@ public enum RegexEnum {
     FLUSH_CACHE("#刷新缓存"),
     CHATGPT("gpt "),
     START_MONITOR_LOG("/startml|/开启监听日志"),
-    STOP_MONITOR_LOG("/stopml|/关闭监听日志");
+    STOP_MONITOR_LOG("/stopml|/关闭监听日志"),
+    SEND_LOG("/sendlog|/发送日志"),
+    STATUS("/status|/状态");
 
 
     private final String value;

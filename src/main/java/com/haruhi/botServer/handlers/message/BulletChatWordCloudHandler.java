@@ -124,7 +124,7 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
                 FileUtil.deleteFile(file);
 
                 WordCloudUtil.generateWordCloudImage(map,outPutPath);
-                String s = abstractPathConfig.webResourcesImagePath() + "/" + path + "/" + fileName + "?t=" + new Date().getTime();
+                String s = abstractPathConfig.webResourcesImagePath() + "/" + path + "/" + fileName + "?t=" + System.currentTimeMillis();
                 log.info("弹幕词云地址：{}",s);
                 String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
 
