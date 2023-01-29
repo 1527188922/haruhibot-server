@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-public class GroupChatHistoryAddHandler implements IGroupMessageEvent {
+public class SavaGroupChatRecordHandler implements IGroupMessageEvent {
     @Override
     public int weight() {
         return 997;
@@ -32,7 +32,7 @@ public class GroupChatHistoryAddHandler implements IGroupMessageEvent {
     private GroupChatHistoryService groupChatHistoryService;
 
     private static ExecutorService threadPool;
-    public GroupChatHistoryAddHandler(){
+    public SavaGroupChatRecordHandler(){
         if (threadPool == null) {
             threadPool = new ThreadPoolExecutor(1, 1,15L * 60L, TimeUnit.SECONDS,
                     new LinkedBlockingQueue<Runnable>(),new CustomizableThreadFactory("pool-insertRecord-"));
