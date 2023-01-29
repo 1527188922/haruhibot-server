@@ -66,7 +66,7 @@ public class StatusHandler implements IAllMessageEvent {
         sysPropStr.append("CPU核心数："+ SystemInfo.AVAILABLE_PROCESSORS);
 
         if(MessageTypeEnum.privat.getType().equals(messageType)){
-            sysPropStr.append("PID："+ SystemInfo.PID).append("\n");
+            sysPropStr.append("\nPID："+ SystemInfo.PID).append("\n");
             sysPropStr.append("profile："+ SystemInfo.PROFILE).append("\n");
             sysPropStr.append("WEB Path："+ pathConfig.webHomePath()).append("\n");
             sysPropStr.append("ContextPath：" + BotConfig.CONTEXT_PATH).append("\n");
@@ -78,7 +78,7 @@ public class StatusHandler implements IAllMessageEvent {
             sysPropStr.append("数据库名称：" + dataBaseConfig.getMasterDBName()).append("\n");
             sysPropStr.append("IP:PORT：" + dataBaseConfig.getMasterHost() + ":" + dataBaseConfig.getMasterPort()).append("\n");
             sysPropStr.append("username：" + dataBaseConfig.getMasterUsername()).append("\n");
-            sysPropStr.append("password：" + dataBaseConfig.getMasterPassword()).append("\n");
+            sysPropStr.append("password：" + dataBaseConfig.getMasterPassword());
         }
 
         return sysPropStr.toString();
