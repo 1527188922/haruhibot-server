@@ -56,7 +56,6 @@ public class Server extends TextWebSocketHandler {
             ProcessMessageTask.execute(session,bean,s);
         }catch (Exception e){
             log.error("解析payload异常:{}",s);
-            throw e;
         }
     }
 
