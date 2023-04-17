@@ -65,7 +65,10 @@ public class FindChatMessageHandler implements IGroupMessageEvent {
 
     private Param matching(final WebSocketSession session,final Message message,final String command){
         for (Regex item : Regex.values()) {
-            Pattern compile = Pattern.compile(item.value);
+            if(!command.startsWith(item.prefix)){
+                continue;
+            }
+            Pattern compile = Pattern.compile(item.getValue());
             Matcher matcher = compile.matcher(command);
             if(matcher.find()){
                 Integer num = null;
@@ -92,23 +95,25 @@ public class FindChatMessageHandler implements IGroupMessageEvent {
         private MessageType messageType;
     }
 
+    @AllArgsConstructor
     public enum Regex{
 
-        DAY_ALL("聊天记录(.*?)天",TimeUnitEnum.DAY, MessageType.ALL),
-        HOUR_ALL("聊天记录(.*?)时",TimeUnitEnum.HOUR, MessageType.ALL),
-        DAY_IMAGE("聊天图片(.*?)天",TimeUnitEnum.DAY, MessageType.IMAGE),
-        HOUR_IMAGE("聊天图片(.*?)时",TimeUnitEnum.HOUR, MessageType.IMAGE),
-        DAY_TXT("聊天文字(.*?)天",TimeUnitEnum.DAY, MessageType.TXT),
-        HOUR_TXT("聊天文字(.*?)时",TimeUnitEnum.HOUR, MessageType.TXT);
+        DAY_ALL("(.*?)天","聊天记录",TimeUnitEnum.DAY, MessageType.ALL),
+        HOUR_ALL("(.*?)时","聊天记录",TimeUnitEnum.HOUR, MessageType.ALL),
+        DAY_IMAGE("(.*?)天","聊天图片",TimeUnitEnum.DAY, MessageType.IMAGE),
+        HOUR_IMAGE("(.*?)时","聊天图片",TimeUnitEnum.HOUR, MessageType.IMAGE),
+        DAY_TXT("(.*?)天","聊天文字",TimeUnitEnum.DAY, MessageType.TXT),
+        HOUR_TXT("(.*?)时","聊天文字",TimeUnitEnum.HOUR, MessageType.TXT);
 
         private String value;
+        private String prefix;
         private TimeUnitEnum timeUnit;
         private MessageType messageType;
-        Regex(String value,TimeUnitEnum timeUnit, MessageType messageType){
-            this.value = value;
-            this.timeUnit = timeUnit;
-            this.messageType = messageType;
+
+        public String getValue(){
+            return prefix + value;
         }
+
     }
 
     public enum MessageType{
