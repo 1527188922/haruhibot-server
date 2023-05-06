@@ -59,3 +59,11 @@ spring:
           password: ${mysql.password}
           url: jdbc:mysql://${mysql.host}:${mysql.port}/${spring.datasource.dynamic.datasource.master.dbName}?useUnicode=true&characterEncoding=utf-8&useSSL=false
           driver-class-name: com.mysql.cj.jdbc.Driver
+  application:
+    name: haruhi-bot-service
+  cloud:
+    nacos:
+      discovery:
+        username: nacos
+        password: nacos
+        server-addr: 127.0.0.1:8848
