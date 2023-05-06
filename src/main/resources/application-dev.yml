@@ -29,6 +29,11 @@ job:
   downloadPixiv:
     cron: 0/15 * 0-7 * * ? *
     enable: 1
+    
+url-conf:
+  agefans: https://www.agemys.vip
+  bt-search: http://www.eclzz.guru
+    
 
 server:
   port: ${bot.port}
@@ -67,5 +72,5 @@ spring:
     nacos:
       discovery:
         username: nacos
-        password: nacos
-        server-addr: 127.0.0.1:8848
+        password: haruhi@1527188922
+        server-addr: 182.61.2.190:8848
