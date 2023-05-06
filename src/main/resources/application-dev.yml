@@ -72,5 +72,5 @@ spring:
     nacos:
       discovery:
         username: nacos
-        password: haruhi@1527188922
-        server-addr: 182.61.2.190:8848
+        password: nacos
+        server-addr: 127.0.0.1:8848
