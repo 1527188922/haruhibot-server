@@ -135,7 +135,7 @@ public class GocqSyncRequestUtil {
      * @param session 客户端session
      * @param action 终结点
      * @param params 参数
-     * @param timeout 超时
+     * @param timeout 超时 ms
      * @param <T>
      * @return
      */
@@ -147,11 +147,11 @@ public class GocqSyncRequestUtil {
         requestBox.setAction(action.getAction());
         String echo = Thread.currentThread().getName() + "_" + session.getId() + "_" + action.getAction() + "_" + CommonUtil.uuid();
         requestBox.setEcho(echo);
+        Server.sendMessage(session,JSONObject.toJSONString(requestBox));
+        log.info("echo: {}",echo);
+        FutureTask<JSONObject> futureTask = new FutureTask<>(new GocqSyncRequestUtil.Task(echo));
+        pool.submit(futureTask);
         try {
-            Server.sendMessage(session,JSONObject.toJSONString(requestBox));
-            log.info("echo: {}",echo);
-            FutureTask<JSONObject> futureTask = new FutureTask<>(new GocqSyncRequestUtil.Task(echo));
-            pool.submit(futureTask);
             JSONObject res;
             if(timeout <= sleep){
                 res = futureTask.get();
@@ -169,6 +169,7 @@ public class GocqSyncRequestUtil {
         } catch (Exception e) {
             log.error("发送同步消息异常,echo:{}",echo,e);
         }finally {
+            futureTask.cancel(true);
             resultMap.remove(echo);
         }
         return null;
@@ -185,14 +186,12 @@ public class GocqSyncRequestUtil {
         @Override
         public JSONObject call() throws Exception{
             JSONObject res = null;
-            while (true){
+            while (!Thread.currentThread().isInterrupted()){
                 res = resultMap.get(echo);
-                if(res == null){
-                    try {
-                        Thread.sleep(sleep);
-                    } catch (InterruptedException e) { }
-                }else {
+                if(res != null){
                     break;
+                }else {
+                    Thread.sleep(GocqSyncRequestUtil.sleep);
                 }
             }
             return res;
