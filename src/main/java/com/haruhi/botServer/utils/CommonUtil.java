@@ -18,7 +18,7 @@ import java.util.UUID;
 public class CommonUtil {
     private CommonUtil(){}
 
-    private static Random random = new Random();
+    private static final Random random = new Random();
     public static int randomInt(int start,int end){
         return random.nextInt(end - start + 1) + start;
     }
@@ -43,6 +43,16 @@ public class CommonUtil {
             }
         }
         return null;
+    }
+
+    public static boolean commandStartsWith(final String command, RegexEnum regexEnum){
+        String[] split = regexEnum.getValue().split("\\|");
+        for (String s : split) {
+            if (command.startsWith(s)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

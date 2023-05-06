@@ -19,8 +19,18 @@ public class ThirdPartyURL {
     public static String PLAYER_CID = "https://api.bilibili.com/x/player/pagelist";
     // lolicon
     public static String LOLICON = "https://api.lolicon.app/setu/v2";
-    // bt 搜索 http://www.eclzz.art http://www.eclzz.win http://www.eclzz.love http://www.eclzz.guru http://www.eclzz.city
-    public static String BT_SEARCH = "http://www.eclzz.guru";
+    /**
+     * bt搜索备用域名
+     * http://www.eclzz.art
+     * http://www.eclzz.win
+     * http://www.eclzz.love
+     * http://www.eclzz.guru
+     * http://www.eclzz.city
+     * http://www.eclzz.me
+     * http://www.eclzz.ink
+     * http://www.eclzz.mobi
+     */
+    public static String BT_SEARCH = "http://www.eclzz.me";
     // agefans.tv 今日新番使用 备用：www.age.tv
 //    public static final String AGEFANSTV = "https://www.agemys.cc";
     public static String AGEFANSTV = "https://www.agemys.net";

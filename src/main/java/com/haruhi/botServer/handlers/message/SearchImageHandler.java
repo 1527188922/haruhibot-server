@@ -100,7 +100,7 @@ public class SearchImageHandler implements IAllMessageEvent {
                 String cq = instance.getCq(message.getRawMessage(), CqCodeTypeEnum.reply.getType());
                 if(Strings.isNotBlank(cq)){
                     String messageId = instance.getParam(cq, "id");
-                    Message msg = GocqSyncRequestUtil.getMsg(session,messageId,2 * 1000);
+                    Message msg = GocqSyncRequestUtil.getMsg(session,messageId,2L * 1000L);
                     if(msg != null){
                         // msg对象是通过消息id获得 没有raw_message属性
                         String respMessage = msg.getMessage();

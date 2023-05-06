@@ -1,9 +1,11 @@
 package com.haruhi.botServer.utils;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.DownloadFileResp;
+import com.haruhi.botServer.dto.gocq.response.GroupMember;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SelfInfo;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
@@ -13,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.ArrayList;
@@ -71,6 +74,30 @@ public class GocqSyncRequestUtil {
             return data;
         }
         return null;
+    }
+
+    /**
+     * 获取群成员
+     * @param groupId 群号
+     * @param exclude 需要排除的成员qq号
+     * @return
+     */
+    public static List<GroupMember> getGroupMemberList(WebSocketSession session,Long groupId, List<Long> exclude,long timeout){
+        Map<String, Object> params = new HashMap<>(1);
+        params.put("group_id",groupId);
+        JSONObject jsonObject = sendSyncRequest(session, GocqActionEnum.GET_GROUP_MEMBER_LIST, params, timeout);
+        if (jsonObject == null) {
+            return null;
+        }
+        String dataStr = jsonObject.getString("data");
+        if(Strings.isBlank(dataStr)){
+            return null;
+        }
+        List<GroupMember> data = JSONArray.parseArray(dataStr, GroupMember.class);
+        if(!CollectionUtils.isEmpty(exclude) && !CollectionUtils.isEmpty(data)){
+            data.removeIf(next -> exclude.contains(next.getUserId()));
+        }
+        return data;
     }
 
     /**

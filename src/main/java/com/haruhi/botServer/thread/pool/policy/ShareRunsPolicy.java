@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 public class ShareRunsPolicy implements RejectedExecutionHandler {
-    private String poolName;
+    private final String poolName;
     public ShareRunsPolicy(String poolName){
         this.poolName = poolName;
     }
