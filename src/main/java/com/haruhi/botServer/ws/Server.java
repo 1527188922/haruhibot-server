@@ -32,8 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class Server extends TextWebSocketHandler {
 
-    private static Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
-    private static Map<String,Long> userIdMap = new ConcurrentHashMap<>();
+    private static final Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
+    private static final Map<String,Long> userIdMap = new ConcurrentHashMap<>();
 
     public static int getConnections(){
         return sessionMap.size();

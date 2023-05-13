@@ -23,9 +23,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class ProcessMessageTask implements Runnable{
 
-    private final static ThreadPoolExecutor threadPool = new ThreadPoolExecutor(16, 31, 10L * 60L, TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(160), new CustomizableThreadFactory("pool-processMessage-"), new ShareRunsPolicy("pool-processMessage"));
-
     private final WebSocketSession session;
     private final Message bean;
     private final String original;
@@ -35,8 +32,16 @@ public class ProcessMessageTask implements Runnable{
         this.original = original;
     }
 
-    private final MessageDispenser messageDispenser = ApplicationContextProvider.getBean(MessageDispenser.class);
-    private final NoticeDispenser noticeDispenser  = ApplicationContextProvider.getBean(NoticeDispenser.class);
+    private final static ThreadPoolExecutor threadPool;
+
+    private static final MessageDispenser messageDispenser;
+    private static final NoticeDispenser noticeDispenser;
+    static {
+        messageDispenser = ApplicationContextProvider.getBean(MessageDispenser.class);
+        noticeDispenser = ApplicationContextProvider.getBean(NoticeDispenser.class);
+        threadPool = new ThreadPoolExecutor(16, 31, 10L * 60L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(160), new CustomizableThreadFactory("pool-processMessage-"), new ShareRunsPolicy("pool-processMessage"));
+    }
 
     @Override
     public void run() {
