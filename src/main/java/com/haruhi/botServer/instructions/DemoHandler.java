@@ -431,12 +431,7 @@ public class DemoHandler implements IAllMessageEvent {
             nodes = roots;
         }
 
-        boolean execute = execute(session, message, nodes);
-        if (execute) {
-            return true;
-        }
-
-        return false;
+        return execute(session, message, nodes);
     }
 
     /**
