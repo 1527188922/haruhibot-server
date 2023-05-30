@@ -70,7 +70,15 @@ public class PixivServiceImpl extends ServiceImpl<PixivMapper, Pixiv> implements
         List<String> strings = new ArrayList<>(pixivs.size());
 
         for (Pixiv pixiv : pixivs) {
-            strings.add(MessageFormat.format("标题：{0}\n作者：{1}\nuid：{2}\npid：{3}\nr18：{4}\n原图：{5}", pixiv.getTitle(), pixiv.getAuthor(),pixiv.getUid(), pixiv.getPid(), pixiv.getIsR18() ? "是" : "否", pixiv.getImgUrl()));
+            strings.add(MessageFormat.format(
+                    "标题：{0}\n作者：{1}\nuid：{2}\npid：{3}\nr18：{4}\n1原图：{5}\n2原图：{6}",
+                    pixiv.getTitle(),
+                    pixiv.getAuthor(),
+                    pixiv.getUid(), 
+                    pixiv.getPid(), 
+                    pixiv.getIsR18() ? "是" : "否", pixiv.getImgUrl(),
+                    MessageFormat.format("https://pixiv.re/{0}-1.jpg",pixiv.getPid())
+            ));
         }
         return strings;
     }
