@@ -34,7 +34,7 @@ job:
     
 url-conf:
   agefans: https://www.agemys.vip
-  bt-search: http://www.eclzz.ink
+  bt-search: http://www.eclzz.wiki
 
 server:
   port: ${bot.port}

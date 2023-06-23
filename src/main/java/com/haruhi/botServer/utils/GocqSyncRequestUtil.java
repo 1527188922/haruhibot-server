@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * 用于请求gocq的数据
- * 并不用来做发送消息
+ * 向gocq发送同步websocket消息工具类
  */
 @Slf4j
 public class GocqSyncRequestUtil {
@@ -203,7 +203,7 @@ public class GocqSyncRequestUtil {
     }
 
     private static class Task implements Callable<JSONObject> {
-        private String echo;
+        private final String echo;
         Task(String echo){
             if (Strings.isBlank(echo)) {
                 throw new IllegalArgumentException("echo is blank");
@@ -211,17 +211,54 @@ public class GocqSyncRequestUtil {
             this.echo = echo;
         }
         @Override
-        public JSONObject call() throws Exception{
+        public JSONObject call() {
             JSONObject res = null;
             while (!Thread.currentThread().isInterrupted()){
                 res = resultMap.get(echo);
                 if(res != null){
                     break;
                 }else {
-                    Thread.sleep(GocqSyncRequestUtil.sleep);
+                    try {
+                        Thread.sleep(GocqSyncRequestUtil.sleep);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
                 }
             }
             return res;
         }
+    }
+
+    public static void main(String[] args) {
+        FutureTask<JSONObject> futureTask = new FutureTask<>(new GocqSyncRequestUtil.Task("echo"));
+        pool.submit(futureTask);
+//        new Thread(()->{
+//            try {
+//                Thread.sleep(600);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            final JSONObject jsonObject = new JSONObject();
+//            jsonObject.put("ss","11");
+//            resultMap.put("echo",jsonObject);
+//        }).start();
+        JSONObject res;
+        try {
+
+            if(1000 <= sleep){
+                res = futureTask.get();
+            }else{
+                res = futureTask.get(1000, TimeUnit.MILLISECONDS);
+            }
+            System.out.println(res);
+        }catch (Exception e){
+            System.out.println("异常");
+        }finally {
+            futureTask.cancel(true);
+        }
+        
+
+        System.out.println();
+        
     }
 }

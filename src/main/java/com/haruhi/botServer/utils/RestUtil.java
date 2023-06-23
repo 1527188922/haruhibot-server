@@ -1,8 +1,10 @@
 package com.haruhi.botServer.utils;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.config.BotConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -13,7 +15,9 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,6 +77,43 @@ public class RestUtil {
     public static <T> T sendPostForm(RestTemplate restTemplate, String url, LinkedMultiValueMap<String,Object> param,Class<T> type){
         ResponseEntity<String> response = restTemplate.postForEntity(url, param, String.class, (Object) null);
         return processResponse(response,type);
+    }
+
+    public static <T> ResponseEntity<T> postForm(RestTemplate restTemplate, String url, LinkedMultiValueMap<String, Object> formData, ParameterizedTypeReference<T> responseType, Map<String, String> urlRequestParam, Map<String, String> headerParam){
+
+        if(urlRequestParam != null){
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
+            for(Map.Entry<String,String> e:urlRequestParam.entrySet()){
+                builder.queryParam(e.getKey(),e.getValue());
+            }
+            url = builder.toUriString();
+        }
+        
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
+        if(headerParam != null){
+            for(Map.Entry<String,String> e : headerParam.entrySet()){
+                httpHeaders.add(e.getKey(),e.getValue());
+            }
+        }
+        HttpEntity<LinkedMultiValueMap<String, Object>> httpEntity = new HttpEntity<>(formData, httpHeaders);
+        return restTemplate.exchange(url, HttpMethod.POST,httpEntity, responseType);
+    }
+
+    public static void main(String[] args) {
+        LinkedMultiValueMap<String,Object> param = new LinkedMultiValueMap<>(6);
+        param.add("output_type",2);
+        param.add("api_key", "");
+        param.add("testmode",1);
+        param.add("numres",6);
+        param.add("db",99);
+        param.add("url","");
+//        param.add("file",new FileSystemResource(new File("")));
+        final ResponseEntity<String> stringResponseEntity = postForm(getRestTemplate(10000), "https://saucenao.com/search.php", param, 
+                new ParameterizedTypeReference<String>() {}, null, null);
+
+        System.out.println(stringResponseEntity);
+        
     }
 
     private static <T> T processResponse(ResponseEntity<String> response,Class<T> tClass){

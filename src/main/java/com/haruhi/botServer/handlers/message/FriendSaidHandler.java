@@ -40,6 +40,7 @@ public class FriendSaidHandler implements IGroupMessageEvent {
         if(Strings.isBlank(say)){
             return false;
         }
+        say = say.replaceFirst("他|她|它","我");
         ThreadPoolUtil.getHandleCommandPool().execute(new FriendSaidHandler.SayTask(session, message, say));
         return true;
     }
