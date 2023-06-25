@@ -22,6 +22,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 俄罗斯轮盘
+ * 过期时间一分钟 每个操作执行后刷新过期时间
+ */
 @Component
 @Slf4j
 public class RussianRouletteHandler implements IGroupMessageEvent {
@@ -34,7 +38,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
     public String funName() {
         return "俄罗斯轮盘";
     }
-    private final CacheMap<String,RussianRouletteGame> cache = new CacheMap<>(3, TimeUnit.MINUTES,100);
+    private final CacheMap<String,RussianRouletteGame> cache = new CacheMap<>(1, TimeUnit.MINUTES,100);
     private String cacheKey(Message message){
         return message.getGroupId() + "-" + message.getSelfId();
     }
@@ -45,8 +49,8 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
         KQCodeUtils instance = KQCodeUtils.getInstance();
         // 对发起游戏的判断
         if(RegexEnum.GAME_RUSSIAN_ROULETTE.getValue().equals(command)){
-            final String s = cacheKey(message);
-            RussianRouletteGame game = cache.get(s);
+            final String cacheKey = cacheKey(message);
+            RussianRouletteGame game = cache.get(cacheKey);
             if (game != null) {
                 int size = game.getPlayers().size();
                 if(size < RussianRouletteGame.maxPlayers){
@@ -61,7 +65,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
             // 发起成功
             RussianRouletteGame russianRouletteGame = new RussianRouletteGame(message.getMessageId());
             russianRouletteGame.addPlayer(message.getGroupId(),message.getUserId());
-            cache.put(s,russianRouletteGame);
+            cache.put(cacheKey,russianRouletteGame);
             String atSender = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getUserId());
             Server.sendGroupMessage(session,message.getGroupId(), 
                     MessageFormat.format("{0} 发起了俄罗斯轮盘\n回复他的发起消息为：参加，即可参加游戏\n玩家轮流发送：`扣动扳机`进行游戏\n弹夹最大容量6颗，随机填充1颗子弹\n最多{1}人，还缺人{2}人",
@@ -73,12 +77,12 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
         // 对参加游戏的判断
         String s = command.replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
         if(s.matches("参加")){
-            
+            String cacheKey = cacheKey(message);
             String cq = instance.getCq(command, CqCodeTypeEnum.reply.getType());
             if (Strings.isBlank(cq)) {
                 return false;
             }
-            RussianRouletteGame game = cache.get(cacheKey(message));
+            RussianRouletteGame game = cache.get(cacheKey);
             if(game == null){
                 return false;
             }
@@ -100,6 +104,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
             // 参加成功
             game.addPlayer(message.getGroupId(),message.getUserId());
             RussianRouletteGame.Player currentPlayer = game.getCurrentPlayer();
+            cache.refreshKey(cacheKey);
             String atSender = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getSender().getUserId());
             String s1 = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + currentPlayer.getUserId());
             Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("{0} 参加了游戏，对局开始\n请{1} 先手",atSender,
@@ -108,7 +113,8 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
         }
         
         if(command.equals("扣动扳机")){
-            RussianRouletteGame game = cache.get(cacheKey(message));
+            String cacheKey = cacheKey(message);
+            RussianRouletteGame game = cache.get(cacheKey);
             if(game == null){
                 return false;
             }
@@ -139,12 +145,13 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
             String s1 = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + player.getUserId());
             
             if (game.getCurrentPosition() == game.getBulletPosition()) {
-                cache.remove(cacheKey(message));
+                cache.remove(cacheKey);
                 Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("当前第{0}次扣动扳机\n嘭！{1} 被击中了！\n{2} 获得胜利！\n本场游戏结束！",
                         game.getCurrentPosition() + 1,atSender,s1),false);
                 
             }else{
                 int i = game.nextPosition();
+                cache.refreshKey(cacheKey);
                 Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("当前第{0}次扣动扳机\n{1} 未被击中\n接下来请{2} 扣动扳机！",
                         i,atSender,s1),false);
             }
