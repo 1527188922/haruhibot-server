@@ -52,4 +52,11 @@ public class CacheMap<K,V> implements Serializable {
     public long size() {
         return cache.estimatedSize();
     }
+    
+    public void refreshKey(K key){
+        V v = get(key);
+        if (v != null){
+            put(key,v);
+        }
+    }
 }
