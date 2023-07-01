@@ -98,7 +98,7 @@ public class WordCloudUtil {
         if(Strings.isBlank(word)){
             return false;
         }
-        if(word.length() <= 1){
+        if(word.length() <= 1 || word.length() > 4){
             return false;
         }
         try {
