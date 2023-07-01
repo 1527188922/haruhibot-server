@@ -136,7 +136,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             param.add("url",imageUrl);
             try {
                 log.info("开始请求搜图接口,图片:{}",imageUrl);
-                String response = RestUtil.sendPostForm(RestUtil.getRestTemplate(25 * 1000), ThirdPartyURL.SEARCH_IMAGE, param, String.class);
+                String response = RestUtil.sendPostForm(RestUtil.getRestTemplate(50 * 1000), ThirdPartyURL.SEARCH_IMAGE, param, String.class);
                 if(response != null){
                     JSONObject jsonObject = JSONObject.parseObject(response);
                     String resultsStr = jsonObject.getString("results");
