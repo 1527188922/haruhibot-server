@@ -1,10 +1,8 @@
 package com.haruhi.botServer.utils;
 
 import com.alibaba.fastjson.JSONObject;
-import com.haruhi.botServer.config.BotConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -14,10 +12,10 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,7 +72,7 @@ public class RestUtil {
      * @param <T>
      * @return
      */
-    public static <T> T sendPostForm(RestTemplate restTemplate, String url, LinkedMultiValueMap<String,Object> param,Class<T> type){
+    public static <T> T sendPostForm(RestTemplate restTemplate, String url, LinkedMultiValueMap<String,Object> param,Class<T> type) throws ResourceAccessException {
         ResponseEntity<String> response = restTemplate.postForEntity(url, param, String.class, (Object) null);
         return processResponse(response,type);
     }

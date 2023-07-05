@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.net.SocketTimeoutException;
@@ -149,15 +150,18 @@ public class SearchImageHandler implements IAllMessageEvent {
                         sendResult(session,resultList,cq,message);
                     }
                 }
-            } catch (Exception e){
-                if(e instanceof SocketTimeoutException){
+            }catch (ResourceAccessException e){
+                Throwable cause = e.getCause();
+                if(cause instanceof SocketTimeoutException){
                     Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图超时",true);
                     log.error("搜图超时",e);
                 }else{
                     Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
                     log.error("搜图异常",e);
                 }
-                
+            }catch (Exception e){
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
+                log.error("搜图异常",e);
             }
 
         }
