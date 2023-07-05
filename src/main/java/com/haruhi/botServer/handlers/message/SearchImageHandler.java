@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.net.SocketTimeoutException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -136,7 +137,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             param.add("url",imageUrl);
             try {
                 log.info("开始请求搜图接口,图片:{}",imageUrl);
-                String response = RestUtil.sendPostForm(RestUtil.getRestTemplate(50 * 1000), ThirdPartyURL.SEARCH_IMAGE, param, String.class);
+                String response = RestUtil.sendPostForm(RestUtil.getRestTemplate(30 * 1000), ThirdPartyURL.SEARCH_IMAGE, param, String.class);
                 if(response != null){
                     JSONObject jsonObject = JSONObject.parseObject(response);
                     String resultsStr = jsonObject.getString("results");
@@ -148,9 +149,15 @@ public class SearchImageHandler implements IAllMessageEvent {
                         sendResult(session,resultList,cq,message);
                     }
                 }
-            }catch (Exception e){
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
-                log.error("搜图异常",e);
+            } catch (Exception e){
+                if(e instanceof SocketTimeoutException){
+                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图超时",true);
+                    log.error("搜图超时",e);
+                }else{
+                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
+                    log.error("搜图异常",e);
+                }
+                
             }
 
         }
