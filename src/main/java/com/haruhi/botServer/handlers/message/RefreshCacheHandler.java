@@ -7,6 +7,7 @@ import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -45,7 +46,7 @@ public class RefreshCacheHandler implements IAllMessageEvent {
             
             systemService.clearCache();
             systemService.loadCache();
-            
+            Server.sendMessage(session,message.getUserId(), message.getGroupId(), message.getMessageType(), "刷新缓存完成", true);
         });
         
         return true;
