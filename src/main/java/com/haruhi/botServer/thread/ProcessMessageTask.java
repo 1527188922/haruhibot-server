@@ -60,7 +60,7 @@ public class ProcessMessageTask implements Runnable{
                 // 系统消息
                 if(MetaEventEnum.lifecycle.toString().equals(bean.getMetaEventType()) && SubTypeEnum.connect.toString().equals(bean.getSubType())){
                     // 刚连接成功时，gocq会发一条消息给bot
-                    Server.putUserIdMap(session.getId(), bean.getSelfId());
+                    Server.setBotIdToCache(session, bean.getSelfId());
                 }
             }else {
                 JSONObject jsonObject = JSONObject.parseObject(original);
