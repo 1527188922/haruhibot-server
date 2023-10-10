@@ -13,6 +13,9 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.thread.ProcessMessageTask;
 import com.haruhi.botServer.utils.GocqSyncRequestUtil;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.CloseStatus;
@@ -31,16 +34,25 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class Server extends TextWebSocketHandler {
+    
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    private static class UserSession {
+        private Long botId;
+        private WebSocketSession session;
+    }
 
-    private static final Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>();
-    private static final Map<String,Long> userIdMap = new ConcurrentHashMap<>();
+    // Map<sessionId,{botId,session}>
+    private static final Map<String,UserSession> sessionCache = new ConcurrentHashMap<>();
 
     public static int getConnections(){
-        return sessionMap.size();
+        return sessionCache.size();
     }
     @Override
     public void afterConnectionEstablished(final WebSocketSession session) throws Exception {
-        sessionMap.put(session.getId(),session);
+        sessionCache.put(session.getId(),new UserSession(null,session));
+        
         log.info("客户端连接成功,sessionId:{}，客户端数量：{}", session.getId(),getConnections());
     }
 
@@ -71,20 +83,23 @@ public class Server extends TextWebSocketHandler {
         removeClient(session);
     }
 
-    public static void putUserIdMap(String key,Long val){
-        userIdMap.put(key,val);
+    public static void setBotIdToCache(WebSocketSession session, Long botId){
+        UserSession userSession = sessionCache.get(session.getId());
+        if(userSession != null){
+            userSession.setBotId(botId);
+            userSession.setSession(session);
+        }else{
+            sessionCache.put(session.getId(),new UserSession(botId,session));
+        }
+        
     }
 
     private void removeClient(WebSocketSession session){
         String id = session.getId();
-        Long userId = userIdMap.get(id);
-        if (userId != null) {
-            userIdMap.remove(id);
-            log.info("用户断开：{}",userId);
-        }
-        if (sessionMap.containsKey(id)) {
-            sessionMap.remove(id);
-            log.info("客户端数量：{}",getConnections());
+        UserSession userSession = sessionCache.get(id);
+        if(userSession != null){
+            sessionCache.remove(id);
+            log.info("客户端断开：{}  当前连接数：{}",userSession.getBotId(),getConnections());
         }
     }
     /**
@@ -377,9 +392,10 @@ public class Server extends TextWebSocketHandler {
     }
 
     public static Long getUserBySession(WebSocketSession session){
-        Long userId = userIdMap.get(session.getId());
-        if(userId != null){
-            return userId;
+        UserSession userSession = sessionCache.get(session.getId());
+        
+        if(userSession != null){
+            return userSession.getBotId() != null ? userSession.getBotId() : BotConfig.DEFAULT_USER;
         }
         return BotConfig.DEFAULT_USER;
     }

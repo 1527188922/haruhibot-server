@@ -39,6 +39,7 @@ server:
   port: ${bot.port}
   servlet:
     context-path: /haruhi
+    ws-path: /ws1222
 
 mybatis-plus:
   type-aliases-package: com.haruhi.botServer.entity
