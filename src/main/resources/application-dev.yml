@@ -32,7 +32,7 @@ job:
     
 url-conf:
   agefans: https://www.agemys.vip
-  bt-search: http://www.eclzz.ink
+  bt-search: http://www.eclzz.bio
     
 
 server:
@@ -69,9 +69,3 @@ spring:
           driver-class-name: com.mysql.cj.jdbc.Driver
   application:
     name: haruhi-bot-service
-  cloud:
-    nacos:
-      discovery:
-        username: nacos
-        password: nacos
-        server-addr: 127.0.0.1:8848

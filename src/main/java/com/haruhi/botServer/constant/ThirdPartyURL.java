@@ -30,6 +30,7 @@ public class ThirdPartyURL {
      * http://www.eclzz.ink
      * http://www.eclzz.mobi
      * http://www.eclzz.wiki
+     * http://www.eclzz.bio
      */
     public static String BT_SEARCH = "http://www.eclzz.me";
     // agefans.tv 今日新番使用 备用：www.age.tv
