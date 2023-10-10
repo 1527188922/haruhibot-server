@@ -6,4 +6,6 @@ import com.haruhi.botServer.entity.PokeReply;
 public interface PokeReplyService extends IService<PokeReply> {
 
     void loadPokeReply();
+    
+    void clearCache();
 }

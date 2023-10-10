@@ -31,4 +31,9 @@ public class WordStripServiceImpl extends ServiceImpl<WordStripMapper, WordStrip
             log.info("加载词条数据到内存完成，数量：{}",wordStrips.size());
         }
     }
+
+    @Override
+    public void clearCache() {
+        WordStripHandler.clearCache();
+    }
 }

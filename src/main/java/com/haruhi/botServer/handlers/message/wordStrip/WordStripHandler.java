@@ -19,6 +19,9 @@ public class WordStripHandler implements IGroupMessageEvent {
     public static void putCache(Long selfId,Long groupId,String keyWord,String answer){
         cache.put(getKey(selfId,groupId,keyWord),answer);
     }
+    public static void clearCache(){
+        cache.clear();
+    }
     public static void removeCache(Long selfId,Long groupId,String keyWord){
         cache.remove(getKey(selfId,groupId,keyWord));
     }

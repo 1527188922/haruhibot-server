@@ -32,9 +32,13 @@ public class VerbalTricksHandler implements IAllMessageEvent {
         return "话术";
     }
 
-    private static Map<String, List<VerbalTricks>> cache = new ConcurrentHashMap<>();
-    public static void setCache(Map<String, List<VerbalTricks>> cache){
-        VerbalTricksHandler.cache = cache;
+    private final static Map<String, List<VerbalTricks>> cache = new ConcurrentHashMap<>();
+    public static void putAllCache(Map<String, List<VerbalTricks>> other){
+        cache.putAll(other);
+    }
+
+    public static void clearCache(){
+        cache.clear();
     }
 
     @Override
@@ -48,7 +52,7 @@ public class VerbalTricksHandler implements IAllMessageEvent {
         }
 
         List<VerbalTricks> answerObj = null;
-        for (Map.Entry<String, List<VerbalTricks>> item : this.cache.entrySet()) {
+        for (Map.Entry<String, List<VerbalTricks>> item : cache.entrySet()) {
             if (cmd.matches(item.getKey())) {
                 answerObj = item.getValue();
                 break;

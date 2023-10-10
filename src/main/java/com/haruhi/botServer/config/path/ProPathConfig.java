@@ -79,7 +79,7 @@ public class ProPathConfig extends AbstractPathConfig {
                 host = localHost.getHostAddress();
             } catch (UnknownHostException e) {
                 host = "127.0.0.1";
-                log.error("获取本机ip异常,ip将使用localhost",e);
+                log.error("获取本机ip异常,ip将使用127.0.0.1",e);
             }
         }
 

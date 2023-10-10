@@ -6,4 +6,6 @@ import com.haruhi.botServer.entity.VerbalTricks;
 public interface VerbalTricksService extends IService<VerbalTricks> {
 
     void loadVerbalTricks();
+    
+    void clearCache();
 }

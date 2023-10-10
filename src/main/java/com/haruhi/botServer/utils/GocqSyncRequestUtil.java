@@ -172,7 +172,7 @@ public class GocqSyncRequestUtil {
             requestBox.setParams(params);
         }
         requestBox.setAction(action.getAction());
-        String echo = Thread.currentThread().getName() + "_" + session.getId() + "_" + action.getAction() + "_" + CommonUtil.uuid();
+        String echo = CommonUtil.uuid();
         requestBox.setEcho(echo);
         Server.sendMessage(session,JSONObject.toJSONString(requestBox));
         log.info("echo: {}",echo);

@@ -40,4 +40,9 @@ public class PokeReplyServiceImpl extends ServiceImpl<PokeReplyMapper, PokeReply
             log.warn("表`{}`中数据为空，不能进行戳一戳回复；可对该表添加数据，自定义戳一戳回复内容", DataBaseConfig.T_POKE_REPLY);
         }
     }
+
+    @Override
+    public void clearCache() {
+        PokeMeHandler.cache.clear();
+    }
 }

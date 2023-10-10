@@ -6,4 +6,6 @@ import com.haruhi.botServer.entity.WordStrip;
 public interface WordStripService extends IService<WordStrip> {
 
     void loadWordStrip();
+    
+    void clearCache();
 }

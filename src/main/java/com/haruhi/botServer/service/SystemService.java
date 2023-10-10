@@ -61,4 +61,11 @@ public class SystemService {
            log.error("加载缓存异常",e);
        }
     }
+    
+    public synchronized void clearCache(){
+        pokeReplyService.clearCache();
+        verbalTricksService.clearCache();
+        wordStripService.clearCache();
+        log.info("清除缓存完成");
+    }
 }

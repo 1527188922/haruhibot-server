@@ -25,9 +25,14 @@ public class VerbalTricksServiceImpl extends ServiceImpl<VerbalTricksMapper, Ver
         List<VerbalTricks> all = verbalTricksMapper.selectList(null);
         if(!CollectionUtils.isEmpty(all)){
             Map<String, List<VerbalTricks>> groupMap = all.stream().collect(Collectors.groupingBy(VerbalTricks::getRegex, Collectors.toList()));
-            VerbalTricksHandler.setCache(groupMap);
+            VerbalTricksHandler.putAllCache(groupMap);
             log.info("加载全局回复数据到内存成功，数据总量：{}，分组后的数量：{}",all.size(),groupMap.size());
         }
 
+    }
+
+    @Override
+    public void clearCache() {
+        VerbalTricksHandler.clearCache();
     }
 }

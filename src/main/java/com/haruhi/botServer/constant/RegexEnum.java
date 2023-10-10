@@ -34,12 +34,14 @@ public enum RegexEnum {
     UN_SUBSCRIBE_NEWS("取消订阅新闻"),
     GAME_RUSSIAN_ROULETTE("发起俄罗斯轮盘"),
     MUSIC_CARD("点歌 "),
-    FLUSH_CACHE("#刷新缓存"),
+    FLUSH_CACHE("刷新缓存"),
     CHATGPT("gpt "),
     START_MONITOR_LOG("/startml|/开启监听日志"),
     STOP_MONITOR_LOG("/stopml|/关闭监听日志"),
     SEND_LOG("/sendlog|/发送日志"),
-    STATUS("/status|/状态");
+    STATUS("/status|/状态"),
+    
+    ;
 
 
     private final String value;
