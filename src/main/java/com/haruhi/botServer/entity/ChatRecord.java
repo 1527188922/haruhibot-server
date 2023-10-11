@@ -7,8 +7,8 @@ import com.haruhi.botServer.config.DataBaseConfig;
 import lombok.Data;
 
 @Data
-@TableName(value = DataBaseConfig.T_GROUP_CHAT_HISTORY)
-public class GroupChatHistory {
+@TableName(value = DataBaseConfig.T_CHAT_RECORD)
+public class ChatRecord {
 
     @TableId(value = "id",type = IdType.AUTO)
     private Integer id;
@@ -21,4 +21,6 @@ public class GroupChatHistory {
     private String content;
     private Long createTime;
     private Boolean deleted;
+    
+    private String messageType;
 }

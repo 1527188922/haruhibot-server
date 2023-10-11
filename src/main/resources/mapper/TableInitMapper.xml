@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.haruhi.botServer.mapper.TableInitMapper">
-    <update id="createGroupChatHistory">
+    <update id="createChatRecord">
         CREATE TABLE `${tableName}` (
             `id` INT auto_increment NOT NULL,
             `card` varchar(30) COMMENT '群昵称',
@@ -12,10 +12,11 @@
             `self_id` BIGINT NOT NULL,
             `content` TEXT COLLATE utf8mb4_unicode_ci,
             create_time BIGINT NOT NULL,
+            message_type varchar(12) COMMENT '消息类型 private group',
             `deleted` tinyint(1) NOT NULL DEFAULT '0',
             PRIMARY KEY (`id`),
             KEY `index_content` (`content`(767))
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群聊历史聊天表';
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天记录';
     </update>
 
     <update id="createPokeReply">

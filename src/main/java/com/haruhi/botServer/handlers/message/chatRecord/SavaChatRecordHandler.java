@@ -1,9 +1,9 @@
-package com.haruhi.botServer.handlers.message.chatHistory;
+package com.haruhi.botServer.handlers.message.chatRecord;
 
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.entity.GroupChatHistory;
-import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.service.groupChatHistory.GroupChatHistoryService;
+import com.haruhi.botServer.entity.ChatRecord;
+import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.service.chatRecord.ChatRecordService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-public class SavaGroupChatRecordHandler implements IGroupMessageEvent {
+public class SavaChatRecordHandler implements IAllMessageEvent {
     @Override
     public int weight() {
         return 997;
@@ -29,10 +29,10 @@ public class SavaGroupChatRecordHandler implements IGroupMessageEvent {
     }
 
     @Autowired
-    private GroupChatHistoryService groupChatHistoryService;
+    private ChatRecordService chatRecordService;
 
     private static ExecutorService threadPool;
-    public SavaGroupChatRecordHandler(){
+    public SavaChatRecordHandler(){
         if (threadPool == null) {
             threadPool = new ThreadPoolExecutor(1, 1,15L * 60L, TimeUnit.SECONDS,
                     new LinkedBlockingQueue<Runnable>(),new CustomizableThreadFactory("pool-insertRecord-"));
@@ -40,22 +40,22 @@ public class SavaGroupChatRecordHandler implements IGroupMessageEvent {
     }
 
     /**
-     * 群聊历史聊天入库
+     * 聊天记录入库
      * 不参与命令处理,最终返回false
      * @param message
      * @param command
      * @return
      */
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message, final String command) {
-        threadPool.execute(new Task(groupChatHistoryService,message));
+    public boolean onMessage(WebSocketSession session, Message message, String command) {
+        threadPool.execute(new Task(chatRecordService, message));
         return false;
     }
 
-    private class Task implements Runnable{
-        private GroupChatHistoryService service;
+    private static class Task implements Runnable{
+        private ChatRecordService service;
         private Message message;
-        public Task(GroupChatHistoryService service,final Message message){
+        public Task(ChatRecordService service, final Message message){
             this.service = service;
             this.message = message;
         }
@@ -63,15 +63,18 @@ public class SavaGroupChatRecordHandler implements IGroupMessageEvent {
         @Override
         public void run() {
             try {
-                GroupChatHistory param = new GroupChatHistory();
-                param.setCard(message.getSender().getCard());
-                param.setNickname(message.getSender().getNickname());
+                ChatRecord param = new ChatRecord();
+                if(message.getSender() != null){
+                    param.setCard(message.getSender().getCard());
+                    param.setNickname(message.getSender().getNickname());
+                }
                 param.setGroupId(message.getGroupId());
                 param.setUserId(message.getUserId());
                 param.setContent(message.getRawMessage());
                 param.setSelfId(message.getSelfId());
                 param.setCreateTime(message.getTime() * 1000);
                 param.setMessageId(message.getMessageId());
+                param.setMessageType(message.getMessageType());
                 service.save(param);
             }catch (Exception e){
                 log.error("群聊天记录入库异常",e);

@@ -11,7 +11,7 @@ public interface TableInitMapper {
      * @param tableName
      * @return
      */
-    int createGroupChatHistory(@Param("tableName") String tableName);
+    int createChatRecord(@Param("tableName") String tableName);
 
     /**
      * 戳一戳回复表

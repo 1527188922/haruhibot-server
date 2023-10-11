@@ -21,7 +21,7 @@ public class DataBaseConfig {
     public final static String DATA_SOURCE_SYSTEM = "system";
 
     // 群聊天历史
-    public final static String T_GROUP_CHAT_HISTORY = "t_group_chat_history";
+    public final static String T_CHAT_RECORD = "t_chat_record";
     // 话术
     public final static String T_VERBAL_TRICKS = "t_verbal_tricks";
     // 戳一戳回复表

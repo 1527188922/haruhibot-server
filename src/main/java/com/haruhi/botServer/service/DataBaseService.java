@@ -48,8 +48,8 @@ public class DataBaseService {
 
             addDataSource();
 
-            if (dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_GROUP_CHAT_HISTORY) == 0) {
-                tableInitMapper.createGroupChatHistory(DataBaseConfig.T_GROUP_CHAT_HISTORY);
+            if (dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_CHAT_RECORD) == 0) {
+                tableInitMapper.createChatRecord(DataBaseConfig.T_CHAT_RECORD);
             }
 
             if (dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_VERBAL_TRICKS) == 0) {

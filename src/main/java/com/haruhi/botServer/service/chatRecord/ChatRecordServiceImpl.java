@@ -1,15 +1,16 @@
-package com.haruhi.botServer.service.groupChatHistory;
+package com.haruhi.botServer.service.chatRecord;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.config.path.AbstractPathConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.entity.GroupChatHistory;
-import com.haruhi.botServer.handlers.message.chatHistory.FindChatMessageHandler;
-import com.haruhi.botServer.handlers.message.chatHistory.GroupWordCloudHandler;
-import com.haruhi.botServer.mapper.GroupChatHistoryMapper;
+import com.haruhi.botServer.entity.ChatRecord;
+import com.haruhi.botServer.handlers.message.chatRecord.FindGroupChatHandler;
+import com.haruhi.botServer.handlers.message.chatRecord.GroupWordCloudHandler;
+import com.haruhi.botServer.mapper.ChatRecordMapper;
 import com.haruhi.botServer.thread.WordSlicesTask;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
@@ -42,10 +43,10 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMapper, GroupChatHistory> implements GroupChatHistoryService{
+public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRecord> implements ChatRecordService {
 
     @Autowired
-    private GroupChatHistoryMapper groupChatHistoryMapper;
+    private ChatRecordMapper chatRecordMapper;
 
     @Autowired
     private AbstractPathConfig abstractPathConfig;
@@ -71,29 +72,33 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
      * @param param
      */
     @Override
-    public void sendChatList(WebSocketSession session,Message message, FindChatMessageHandler.Param param) {
+    public void sendGroupChatList(WebSocketSession session, Message message, FindGroupChatHandler.Param param) {
         Date date = limitDate(param);
-        LambdaQueryWrapper<GroupChatHistory> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(GroupChatHistory::getDeleted,false).eq(GroupChatHistory::getGroupId,message.getGroupId()).eq(GroupChatHistory::getSelfId,message.getSelfId()).gt(GroupChatHistory::getCreateTime,date.getTime());
+        LambdaQueryWrapper<ChatRecord> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ChatRecord::getDeleted,false)
+                .eq(ChatRecord::getGroupId,message.getGroupId())
+                .eq(ChatRecord::getSelfId,message.getSelfId())
+                .gt(ChatRecord::getCreateTime,date.getTime())
+                .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType());
         List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
         if(!CollectionUtils.isEmpty(userIds)){
-            queryWrapper.in(GroupChatHistory::getUserId,userIds);
+            queryWrapper.in(ChatRecord::getUserId,userIds);
         }
-        if(FindChatMessageHandler.MessageType.IMAGE.equals(param.getMessageType())){
+        if(FindGroupChatHandler.MessageType.IMAGE.equals(param.getMessageType())){
             // 仅查询图片类型
-            queryWrapper.like(GroupChatHistory::getContent,"[CQ:image").like(GroupChatHistory::getContent,"subType=0");
-        }else if(FindChatMessageHandler.MessageType.TXT.equals(param.getMessageType())){
-            queryWrapper.notLike(GroupChatHistory::getContent,"[CQ:");
+            queryWrapper.like(ChatRecord::getContent,"[CQ:image").like(ChatRecord::getContent,"subType=0");
+        }else if(FindGroupChatHandler.MessageType.TXT.equals(param.getMessageType())){
+            queryWrapper.notLike(ChatRecord::getContent,"[CQ:");
         }
         // 升序
-        queryWrapper.orderByAsc(GroupChatHistory::getCreateTime);
-        List<GroupChatHistory> chatList = groupChatHistoryMapper.selectList(queryWrapper);
+        queryWrapper.orderByAsc(ChatRecord::getCreateTime);
+        List<ChatRecord> chatList = chatRecordMapper.selectList(queryWrapper);
         if(!CollectionUtils.isEmpty(chatList)){
             int limit = 80;
             if(chatList.size() > limit){
                 // 记录条数多于80张,分开发送
-                List<List<GroupChatHistory>> lists = CommonUtil.averageAssignList(chatList, limit);
-                for (List<GroupChatHistory> list : lists) {
+                List<List<ChatRecord>> lists = CommonUtil.averageAssignList(chatList, limit);
+                for (List<ChatRecord> list : lists) {
                     pool.execute(()->{
                         partSend(session,list,message);
                     });
@@ -105,15 +110,15 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
             Server.sendGroupMessage(session,message.getGroupId(), "该条件下没有聊天记录。",true);
         }
     }
-    private void partSend(WebSocketSession session,List<GroupChatHistory> chatList, Message message){
+    private void partSend(WebSocketSession session, List<ChatRecord> chatList, Message message){
         List<ForwardMsgItem> params = new ArrayList<>(chatList.size());
-        for (GroupChatHistory e : chatList) {
+        for (ChatRecord e : chatList) {
             params.add(new ForwardMsgItem(new ForwardMsgItem.Data(getName(e),e.getUserId(),e.getContent())));
         }
         Server.sendGroupMessage(session,message.getGroupId(),params);
 
     }
-    private String getName(GroupChatHistory e){
+    private String getName(ChatRecord e){
         try {
             if(Strings.isNotBlank(e.getCard().trim())){
                 return e.getCard();
@@ -125,7 +130,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
         }
         return "noname";
     }
-    private Date limitDate(FindChatMessageHandler.Param param){
+    private Date limitDate(FindGroupChatHandler.Param param){
         Date res = null;
         Date current = new Date();
         switch (param.getUnit()){
@@ -158,18 +163,22 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
         // 解析查询条件
         log.info("群[{}]开始生成词云图...",message.getGroupId());
         Date date = limitDate(regexEnum);
-        LambdaQueryWrapper<GroupChatHistory> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(GroupChatHistory::getDeleted,false).eq(GroupChatHistory::getGroupId,message.getGroupId()).eq(GroupChatHistory::getSelfId,message.getSelfId()).gt(GroupChatHistory::getCreateTime,date.getTime());
+        LambdaQueryWrapper<ChatRecord> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ChatRecord::getDeleted,false)
+                .eq(ChatRecord::getGroupId,message.getGroupId())
+                .eq(ChatRecord::getSelfId,message.getSelfId())
+                .gt(ChatRecord::getCreateTime,date.getTime())
+                .eq(ChatRecord::getMessageType,MessageTypeEnum.group.getType());
         for (GroupWordCloudHandler.RegexEnum value : GroupWordCloudHandler.RegexEnum.values()) {
-            queryWrapper.notLike(GroupChatHistory::getContent,value.getRegex());
+            queryWrapper.notLike(ChatRecord::getContent,value.getRegex());
         }
         String outPutPath = null;
         List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
         if (!CollectionUtils.isEmpty(userIds)) {
-            queryWrapper.in(GroupChatHistory::getUserId,userIds);
+            queryWrapper.in(ChatRecord::getUserId,userIds);
         }
         // 从数据库查询聊天记录
-        List<GroupChatHistory> corpus = groupChatHistoryMapper.selectList(queryWrapper);
+        List<ChatRecord> corpus = chatRecordMapper.selectList(queryWrapper);
         if (CollectionUtils.isEmpty(corpus)) {
             Server.sendGroupMessage(session,message.getGroupId(),"该条件下没有聊天记录",true);
             generateComplete(message);
@@ -180,7 +189,7 @@ public class GroupChatHistoryServiceImpl extends ServiceImpl<GroupChatHistoryMap
         try{
             // 开始分词
             long l = System.currentTimeMillis();
-            List<String> collect = corpus.stream().map(GroupChatHistory::getContent).collect(Collectors.toList());
+            List<String> collect = corpus.stream().map(ChatRecord::getContent).collect(Collectors.toList());
             List<String> strings = WordSlicesTask.execute(collect);
             // 设置权重和排除指定词语
             Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(strings));

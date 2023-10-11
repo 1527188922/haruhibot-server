@@ -1,10 +1,10 @@
-package com.haruhi.botServer.handlers.message.chatHistory;
+package com.haruhi.botServer.handlers.message.chatRecord;
 
 import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.service.groupChatHistory.GroupChatHistoryService;
+import com.haruhi.botServer.service.chatRecord.ChatRecordService;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
     public static volatile Map<String, Integer> lock = new ConcurrentHashMap<>();
 
     @Autowired
-    private GroupChatHistoryService groupChatHistoryService;
+    private ChatRecordService groupChatHistoryService;
 
     private RegexEnum matching(final String command){
         String s = command.replaceAll(com.haruhi.botServer.constant.RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
@@ -64,10 +64,10 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
     }
     private class Task implements Runnable{
         private WebSocketSession session;
-        private GroupChatHistoryService groupChatHistoryService;
+        private ChatRecordService groupChatHistoryService;
         private RegexEnum regexEnum;
         private Message message;
-        public Task(WebSocketSession session, GroupChatHistoryService groupChatHistoryService,RegexEnum regexEnum,Message message){
+        public Task(WebSocketSession session, ChatRecordService groupChatHistoryService, RegexEnum regexEnum, Message message){
             this.session = session;
             this.groupChatHistoryService = groupChatHistoryService;
             this.regexEnum = regexEnum;

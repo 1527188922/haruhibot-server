@@ -1,10 +1,10 @@
-package com.haruhi.botServer.handlers.message.chatHistory;
+package com.haruhi.botServer.handlers.message.chatRecord;
 
 import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.service.groupChatHistory.GroupChatHistoryService;
+import com.haruhi.botServer.service.chatRecord.ChatRecordService;
 import com.haruhi.botServer.ws.Server;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 
 @Slf4j
 @Component
-public class FindChatMessageHandler implements IGroupMessageEvent {
+public class FindGroupChatHandler implements IGroupMessageEvent {
     @Override
     public int weight() {
         return 91;
@@ -32,7 +32,7 @@ public class FindChatMessageHandler implements IGroupMessageEvent {
     }
 
     @Autowired
-    private GroupChatHistoryService groupChatHistoryService;
+    private ChatRecordService chatRecordService;
 
     @Override
     public boolean onGroup(final WebSocketSession session,final Message message, final String command) {
@@ -41,17 +41,17 @@ public class FindChatMessageHandler implements IGroupMessageEvent {
             return false;
         }
 
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,groupChatHistoryService,message,param));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session, chatRecordService,message,param));
         return true;
     }
 
     private class Task implements Runnable{
         private WebSocketSession session;
-        private GroupChatHistoryService service;
+        private ChatRecordService service;
         private Message message;
         private Param param;
 
-        public Task(WebSocketSession session,GroupChatHistoryService service, Message message, Param param){
+        public Task(WebSocketSession session, ChatRecordService service, Message message, Param param){
             this.session = session;
             this.service = service;
             this.message = message;
@@ -59,7 +59,7 @@ public class FindChatMessageHandler implements IGroupMessageEvent {
         }
         @Override
         public void run() {
-            service.sendChatList(session,message,param);
+            service.sendGroupChatList(session,message,param);
         }
     }
 
