@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message.chatRecord;
 
+import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
@@ -25,7 +26,7 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
 
     @Override
     public String funName() {
-        return "群聊记录入库";
+        return "保存聊天记录";
     }
 
     @Autowired
@@ -53,8 +54,8 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
     }
 
     private static class Task implements Runnable{
-        private ChatRecordService service;
-        private Message message;
+        private final ChatRecordService service;
+        private final Message message;
         public Task(ChatRecordService service, final Message message){
             this.service = service;
             this.message = message;
@@ -62,8 +63,8 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
 
         @Override
         public void run() {
+            ChatRecord param = new ChatRecord();
             try {
-                ChatRecord param = new ChatRecord();
                 if(message.getSender() != null){
                     param.setCard(message.getSender().getCard());
                     param.setNickname(message.getSender().getNickname());
@@ -77,7 +78,7 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
                 param.setMessageType(message.getMessageType());
                 service.save(param);
             }catch (Exception e){
-                log.error("群聊天记录入库异常",e);
+                log.error("保存聊天记录异常 {}", JSONObject.toJSONString(param),e);
             }
         }
     }

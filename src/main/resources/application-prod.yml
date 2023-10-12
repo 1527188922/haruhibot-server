@@ -45,6 +45,10 @@ server:
 mybatis-plus:
   type-aliases-package: com.haruhi.botServer.entity
   mapper-locations: classpath:/mapper/**/*.xml
+  
+logging:
+  level:
+    com.haruhi.botServer: info
 
 log:
   level: info

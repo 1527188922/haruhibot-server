@@ -59,6 +59,7 @@ public class Server extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(final WebSocketSession session, final TextMessage message) throws Exception {
         final String s = message.getPayload();
+        log.debug("收到gocq消息 {}",s);
         try {
             final Message bean = JSONObject.parseObject(s, Message.class);
             if(PostTypeEnum.meta_event.toString().equals(bean.getPostType()) && MetaEventEnum.heartbeat.toString().equals(bean.getMetaEventType())){
@@ -384,7 +385,7 @@ public class Server extends TextWebSocketHandler {
 
     public static void sendMessage(WebSocketSession session, String text){
         try {
-//            log.info("sendMessage : {}",text);
+            log.debug("发送消息给gocq {}",text);
             session.sendMessage(new TextMessage(text));
         } catch (Exception e) {
             log.error("发送消息发生异常,session:{},消息：{}",session,text,e);

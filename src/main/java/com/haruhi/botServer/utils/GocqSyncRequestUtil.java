@@ -44,8 +44,9 @@ public class GocqSyncRequestUtil {
     public static long sleep = 1L;
     public static final ExecutorService pool = new ThreadPoolExecutor(poolSize, Integer.MAX_VALUE, 24L, TimeUnit.HOURS, new SynchronousQueue<Runnable>(),new CustomizableThreadFactory("pool-sendSyncMessage-"));
 
-    private static Map<String,JSONObject> resultMap = new ConcurrentHashMap<>();
+    private static final Map<String,JSONObject> resultMap = new ConcurrentHashMap<>();
     public static void putEchoResult(String key, JSONObject val){
+        log.debug("echo message {}\n{}",key,val);
         resultMap.put(key,val);
     }
 
@@ -175,7 +176,7 @@ public class GocqSyncRequestUtil {
         String echo = CommonUtil.uuid();
         requestBox.setEcho(echo);
         Server.sendMessage(session,JSONObject.toJSONString(requestBox));
-        log.info("echo: {}",echo);
+        log.debug("echo: {}",echo);
         FutureTask<JSONObject> futureTask = new FutureTask<>(new GocqSyncRequestUtil.Task(echo));
         pool.submit(futureTask);
         try {
@@ -185,7 +186,7 @@ public class GocqSyncRequestUtil {
             }else{
                 res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
             }
-            log.info("echo: {},result: {}",echo,res);
+            log.debug("echo: {},result: {}",echo,res);
             return res;
         }catch (InterruptedException e){
             log.error("发送同步消息线程中断异常,echo:{}",echo,e);

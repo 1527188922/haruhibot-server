@@ -47,7 +47,7 @@ mybatis-plus:
 
 logging:
   level:
-    com.haruhi.botServer.mapper: debug
+    com.haruhi.botServer: debug
 
 log:
   level: info
