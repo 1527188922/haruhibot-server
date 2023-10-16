@@ -127,7 +127,7 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 		@Override
 		public void handle(String s) {
 			// 这里不用抓异常 如果发发生异常就让这个线程中断
-			Server.sendPrivateMessage(session, Long.valueOf(BotConfig.SUPERUSERS.get(0)),s,true);
+			Server.sendPrivateMessage(session, BotConfig.SUPERUSERS.get(0),s,true);
 		}
 	}
 }

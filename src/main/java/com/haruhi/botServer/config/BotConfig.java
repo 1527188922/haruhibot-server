@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -22,7 +21,7 @@ public class BotConfig {
     public static int PORT;
     public static String CONTEXT_PATH;
     public static int MAX_CONNECTIONS;
-    public static List<String> SUPERUSERS;
+    public static List<Long> SUPERUSERS;
     // 是否启用公网ip 0否 1是 若程序和gocq都在同一台主机上 可以不启用
     public static String ENABLE_INTERNET_HOST;
 
@@ -84,12 +83,21 @@ public class BotConfig {
     }
     @Autowired
     public void setSuperusers(@Value("${bot.superusers}") String superusers){
-        if(Strings.isBlank(superusers)){
-            SUPERUSERS = new ArrayList<>(1);
+        SUPERUSERS = new ArrayList<>();
+        if(Strings.isNotBlank(superusers)){
+            String[] split = superusers.split(",");
+            if (split.length > 0) {
+                for (String s : split) {
+                    if (Strings.isNotBlank(s)) {
+                        SUPERUSERS.add(Long.valueOf(s));
+                    }
+                }
+            }
+        }
+        
+        if(SUPERUSERS.size() == 0){
             log.warn("未设置超级用户，某些超级用户命令/功能无法使用");
         }
-        SUPERUSERS = Arrays.asList(superusers.split(","));
-
     }
 }
 

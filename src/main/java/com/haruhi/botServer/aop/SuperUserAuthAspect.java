@@ -13,6 +13,9 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 @Aspect
 @Component
 @Slf4j
@@ -23,36 +26,46 @@ public class SuperUserAuthAspect {
 
 
     @Around(value = "pointcut() && @annotation(annotation)")
-    public boolean doAround(ProceedingJoinPoint joinPoint,SuperuserAuthentication annotation) throws Throwable {
+    public Object doAround(ProceedingJoinPoint joinPoint,SuperuserAuthentication annotation) throws Throwable {
 
         Class clazz = joinPoint.getSignature().getDeclaringType();
         Object bean = ApplicationContextProvider.getBean(clazz);
 
-        if(bean instanceof IMessageEvent){
+        if(!(bean instanceof IMessageEvent)){
+            return joinPoint.proceed();
+        }
 
-            Object[] args = joinPoint.getArgs();
-            WebSocketSession session = null;
-            Message message = null;
-            String command = null;
+        Object[] args = joinPoint.getArgs();
+        WebSocketSession session = null;
+        Message message = null;
+        String command = null;
 
-            if(args != null && args.length > 0){
-                for (Object arg : args) {
-                    if(arg instanceof WebSocketSession){
-                        session = (WebSocketSession) arg;
-                    }else if(arg instanceof Message){
-                        message = (Message) arg;
-                    }else if(arg instanceof String){
-                        command = (String) arg;
-                    }
+        if(args != null && args.length > 0){
+            for (Object arg : args) {
+                if(arg instanceof WebSocketSession){
+                    session = (WebSocketSession) arg;
+                }else if(arg instanceof Message){
+                    message = (Message) arg;
+                }else if(arg instanceof String){
+                    command = (String) arg;
                 }
             }
-
-            if (session != null && message != null && command != null
-                    && annotation.value() && !BotConfig.SUPERUSERS.contains(String.valueOf(message.getUserId()))) {
-                return false;
-            }
         }
-        return (Boolean) joinPoint.proceed();
+
+        if (session == null || message == null || command == null) {
+            return joinPoint.proceed();
+        }
+
+        if(!annotation.value()){
+            return joinPoint.proceed();
+        }
+
+        if (annotation.superUsers() != null && annotation.superUsers().length > 0) {
+            return Arrays.stream(annotation.superUsers()).boxed().collect(Collectors.toList()).contains(message.getUserId()) 
+                    ? joinPoint.proceed() : false;
+        }
+        return BotConfig.SUPERUSERS.contains(message.getUserId()) ?
+                joinPoint.proceed() : false;
     }
 
 }
