@@ -12,6 +12,7 @@ import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
@@ -21,7 +22,7 @@ import java.util.Map;
 
 @Slf4j
 @Component
-public class JobManage implements ApplicationContextAware {
+public class JobManage implements ApplicationContextAware, CommandLineRunner {
 
     @Autowired
     private SchedulerFactoryBean schedulerFactoryBean;
@@ -64,12 +65,16 @@ public class JobManage implements ApplicationContextAware {
             try {
                 scheduler.scheduleJob(detail,build);
                 count++;
-                log.info("定时任务：{}启动成功，cron:{}",name,cronExpression);
+                log.info("定时任务 {} 启动成功 {}",name,cronExpression);
             } catch (SchedulerException e) {
-                log.error("定时任务启动异常{}，cron:{}",name,cronExpression);
-                e.printStackTrace();
+                log.error("定时任务启动异常 {} {}",name,cronExpression,e);
             }
         }
         log.info("开启了{}个定时任务",count);
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        startAllJob();
     }
 }

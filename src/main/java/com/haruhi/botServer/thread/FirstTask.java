@@ -3,6 +3,7 @@ package com.haruhi.botServer.thread;
 import com.haruhi.botServer.service.SystemService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 
@@ -11,23 +12,27 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class FirstTask implements Runnable{
+public class FirstTask implements CommandLineRunner {
 
     @Autowired
     private SystemService systemService;
 
-    @Override
-    public void run() {
-        try {
-            systemService.loadCache();
-            // 创建stop脚本
-            systemService.writeStopScript();
-        }catch (Exception e){
-            log.error("初始任务执行异常",e);
-        }
+    public synchronized void execute(){
+        new Thread(() -> {
+            try {
+                systemService.loadCache();
+                // 创建stop脚本
+                systemService.writeStopScript();
+            }catch (Exception e){
+                log.error("初始任务执行异常",e);
+            }
+        }).start();
     }
 
-    public synchronized void execute(FirstTask self){
-        new Thread(self).start();
+    @Override
+    public void run(String... args) throws Exception {
+        execute();
     }
+    
+    
 }
