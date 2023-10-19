@@ -37,6 +37,15 @@ public class BtSearchHandler implements IAllMessageEvent {
     public String funName() {
         return "bt搜索";
     }
+    
+    private final static String SORT_BY_TIME = "time";
+    private final static String SORT_BY_HITS = "hits";
+    private final static String SORT_BY_SIZE = "size";
+    private final static String SORT_BY_REL = "rel";
+
+    private final static String CMD_SORT_BY_TIME = "t";
+    private final static String CMD_SORT_BY_HITS = "h";
+    private final static String CMD_SORT_BY_SIZE = "s";
 
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
@@ -44,6 +53,8 @@ public class BtSearchHandler implements IAllMessageEvent {
         Matcher matcher = compile.matcher(command);
         Integer page = null;
         String keyword = null;
+        String sort = null;
+        
         if (matcher.find()) {
             try {
                 page = Integer.valueOf(matcher.group(1));
@@ -60,26 +71,79 @@ public class BtSearchHandler implements IAllMessageEvent {
             return false;
         }
 
-        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜索...",true);
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message,keyword,page));
+        if (keyword.contains(" ")) {
+            String[] s = keyword.split(" ");
+            keyword = s[0];
+            for (int i = 1; i < s.length; i++) {
+                if(Strings.isNotBlank(s[i])){
+                    switch (s[i]){
+                        case CMD_SORT_BY_TIME:
+                            sort = SORT_BY_TIME;
+                            break;
+                        case CMD_SORT_BY_HITS:
+                            sort = SORT_BY_HITS;
+                            break;
+                        case CMD_SORT_BY_SIZE:
+                            sort = SORT_BY_SIZE;
+                            break;
+                    }
+                    break;
+                }
+            }
+        }
+        if(Strings.isBlank(sort)){
+            sort = SORT_BY_REL;
+        }
+
+        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),buildMessage(keyword, page, sort),true);
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session, message, keyword, page, sort));
         return true;
     }
+    
+    private String buildMessage(String keyword,Integer page,String sort){
+        String res = "开始搜索 【" + keyword + "】";
+        if(page != null){
+            res += "\n" + "第" + page + "页";
+        }
+     
+        if(Strings.isNotBlank(sort)){
+            switch (sort){
+                case SORT_BY_TIME:
+                    res += "\n" + "搜索结果将按照 收录时间 降序";
+                    break;
+                case SORT_BY_HITS:
+                    res += "\n" + "搜索结果将按照 下载热度 降序";
+                    break;
+                case SORT_BY_SIZE:
+                    res += "\n" + "搜索结果将按照 种子大小 降序";
+                    break;
+                case SORT_BY_REL:
+                    res += "\n" + "搜索结果使用默认排序";
+                    break;
+            }
+            
+        }
+        return res;
+    }
 
-    private class Task implements Runnable{
+    static class Task implements Runnable{
         private WebSocketSession session;
         private Message message;
         private Integer page;
         private String keyword;
-        Task(WebSocketSession session,Message message,String keyword,Integer page){
+        private String sort;
+        
+        Task(WebSocketSession session,Message message,String keyword,Integer page,String sort){
             this.session = session;
             this.message = message;
             this.page = page;
             this.keyword = keyword;
+            this.sort = sort;
         }
         @Override
         public void run() {
             try {
-                String htmlStr = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(10 * 1000),MessageFormat.format(ThirdPartyURL.BT_SEARCH + "/s/{0}_rel_{1}.html", keyword, page), null);
+                String htmlStr = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(10 * 1000),MessageFormat.format(ThirdPartyURL.BT_SEARCH + "/s/{0}_{1}_{2}.html", keyword, sort, page), null);
                 if(Strings.isBlank(htmlStr)){
                     Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"bt搜索请求发生异常",true);
                     return;
@@ -101,6 +165,8 @@ public class BtSearchHandler implements IAllMessageEvent {
                     String detailHref = title.attr("href");
                     // 追加标题
                     strBuilder.append(title.text()).append("\n");
+                    
+                    appendBar(strBuilder,element);
                     String s = ThirdPartyURL.BT_SEARCH + detailHref;
                     try {
                         // 请求详情链接
@@ -122,32 +188,50 @@ public class BtSearchHandler implements IAllMessageEvent {
                 }
             }catch (Exception e){
                 Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),MessageFormat.format("bt搜索异常:{0}",e.getMessage()),true);
-                log.error("bt搜图异常",e);
+                log.error("bt搜索异常",e);
             }
 
         }
-    }
-    private void noData(WebSocketSession session,Message message,String keyword){
-        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"没搜到：" + keyword,true);
-    }
+        
+        private void noData(WebSocketSession session,Message message,String keyword){
+            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"没搜到：" + keyword,true);
+        }
 
-    /**
-     * 获取资源详情
-     * @param strBuilder
-     * @param detailHref
-     * @return
-     */
-    private void requestDetail(StringBuilder strBuilder,String detailHref) throws Exception{
 
-        String html = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(5 * 1000),detailHref, null);
-        Document document = Jsoup.parse(html);
-        Element fileDetail = document.getElementsByClass("fileDetail").get(0);
-        Element size = fileDetail.getElementsByTag("p").get(1);
-        Element time = fileDetail.getElementsByTag("p").get(2);
-        Element magnetLink = fileDetail.getElementById("down-url");
-        strBuilder.append(size.text()).append("\n");
-        strBuilder.append(time.text()).append("\n");
-        strBuilder.append(magnetLink.text()).append("：\n");
-        strBuilder.append(magnetLink.attr("href"));
+        /**
+         * 获取资源详情
+         * @param strBuilder
+         * @param detailHref
+         * @return
+         */
+        private void requestDetail(StringBuilder strBuilder,String detailHref) throws Exception{
+
+            String html = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(5 * 1000),detailHref, null);
+            Document document = Jsoup.parse(html);
+            Element fileDetail = document.getElementsByClass("fileDetail").get(0);
+            Element size = fileDetail.getElementsByTag("p").get(1);
+            Element time = fileDetail.getElementsByTag("p").get(2);
+            Element magnetLink = fileDetail.getElementById("down-url");
+            strBuilder.append(size.text()).append("\n");
+            strBuilder.append(time.text()).append("\n");
+            strBuilder.append(magnetLink.text()).append("：\n");
+            strBuilder.append(magnetLink.attr("href"));
+        }
+        
+        private void appendBar(StringBuilder stringBuilder, Element element){
+            Elements elements = element.getElementsByClass("item-bar");
+            if (CollectionUtils.isEmpty(elements)) {
+                return;
+            }
+
+            Element itemBarEl = elements.get(0);
+            Elements spans = itemBarEl.getElementsByTag("span");
+            if (CollectionUtils.isEmpty(spans) || spans.size() < 4){
+                return;
+            }
+            stringBuilder.append("类型：").append(spans.get(0).text()).append("\n");
+            stringBuilder.append(spans.get(3).text()).append("\n");//下载热度
+        }
+        
     }
 }
