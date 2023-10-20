@@ -1,6 +1,7 @@
 package com.haruhi.botServer.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.config.DataBaseConfig;
@@ -23,4 +24,7 @@ public class ChatRecord {
     private Boolean deleted;
     
     private String messageType;
+    
+    @TableField(exist = false)
+    private Long total;
 }

@@ -40,6 +40,7 @@ public enum RegexEnum {
     STOP_MONITOR_LOG("/stopml|/关闭监听日志"),
     SEND_LOG("/sendlog|/发送日志"),
     STATUS("/status|/状态"),
+    RECORD_STATISTICS("聊天统计|聊天排名"),
     
     ;
 
