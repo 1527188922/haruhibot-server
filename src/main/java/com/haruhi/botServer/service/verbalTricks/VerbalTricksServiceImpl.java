@@ -1,5 +1,6 @@
 package com.haruhi.botServer.service.verbalTricks;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.entity.VerbalTricks;
 import com.haruhi.botServer.handlers.message.VerbalTricksHandler;
@@ -22,7 +23,8 @@ public class VerbalTricksServiceImpl extends ServiceImpl<VerbalTricksMapper, Ver
 
     @Override
     public void loadVerbalTricks() {
-        List<VerbalTricks> all = verbalTricksMapper.selectList(null);
+        List<VerbalTricks> all = verbalTricksMapper.selectList(new LambdaQueryWrapper<VerbalTricks>()
+                .eq(VerbalTricks::getDeleted,false));
         if(!CollectionUtils.isEmpty(all)){
             Map<String, List<VerbalTricks>> groupMap = all.stream().collect(Collectors.groupingBy(VerbalTricks::getRegex, Collectors.toList()));
             VerbalTricksHandler.putAllCache(groupMap);

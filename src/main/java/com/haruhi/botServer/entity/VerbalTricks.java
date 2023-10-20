@@ -14,4 +14,5 @@ public class VerbalTricks {
     private Integer id;
     private String regex;
     private String answer;
+    private Boolean deleted;
 }
