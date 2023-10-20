@@ -57,29 +57,36 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
         @Override
         public void run() {
             try {
-                String responseHtml = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(10 * 1000),ThirdPartyURL.AGEFANSTV, null);
-                if (Strings.isNotBlank(responseHtml)) {
-                    Pattern compile = Pattern.compile("var new_anime_list = (.*?);");
-                    Matcher matcher = compile.matcher(responseHtml);
-                    if (matcher.find()) {
-                        String group = matcher.group(1);
-                        List<NewAnimationTodayResp> data = JSONArray.parseArray(group, NewAnimationTodayResp.class);
-                        if (CollectionUtils.isEmpty(data)) {
-                            return;
-                        }
-                        data = data.stream().filter(e -> e.getIsnew()).collect(Collectors.toList());
-                        if(data.size() > 0){
-                            List<String> param = new ArrayList<>(data.size());
-                            for (NewAnimationTodayResp datum : data) {
-                                param.add(splicingParam(datum));
-                            }
-                            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),message.getSelfId(),BotConfig.NAME,param);
-                        }else{
-                            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "今日还没有新番更新",true);
-                        }
+                String responseHtml = null;
+                try {
+                    responseHtml = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(10 * 1000),ThirdPartyURL.AGEFANSTV, null);
+                }catch (Exception e){
+                    log.error("获取新番请求异常 {}",ThirdPartyURL.AGEFANSTV,e);
+                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "获取新番异常\n"+e.getMessage(),true);
+                    return;
+                }
+                log.debug("age html : {}",responseHtml);
+                Pattern compile = Pattern.compile("var new_anime_list = (.*?);");
+                Matcher matcher = compile.matcher(responseHtml);
+                if (matcher.find()) {
+                    String group = matcher.group(1);
+                    List<NewAnimationTodayResp> data = JSONArray.parseArray(group, NewAnimationTodayResp.class);
+                    if (CollectionUtils.isEmpty(data)) {
+                        return;
                     }
+                    data = data.stream().filter(NewAnimationTodayResp::getIsnew).collect(Collectors.toList());
+                    if(CollectionUtils.isEmpty(data)){
+                        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "今日还没有番剧更新",true);
+                        return;
+                    }
+                    List<String> param = new ArrayList<>(data.size());
+                    for (NewAnimationTodayResp datum : data) {
+                        param.add(splicingParam(datum));
+                    }
+                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),message.getSelfId(),BotConfig.NAME,param);
                 }
             }catch (Exception e){
+                log.error("解析新番数据异常",e);
                 Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("今日新番异常",e.getMessage()),true);
             }
 

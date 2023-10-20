@@ -143,11 +143,16 @@ public class BtSearchHandler implements IAllMessageEvent {
         @Override
         public void run() {
             try {
-                String htmlStr = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(10 * 1000),MessageFormat.format(ThirdPartyURL.BT_SEARCH + "/s/{0}_{1}_{2}.html", keyword, sort, page), null);
-                if(Strings.isBlank(htmlStr)){
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"bt搜索请求发生异常",true);
+                String htmlStr = null;
+                String url = MessageFormat.format(ThirdPartyURL.BT_SEARCH + "/s/{0}_{1}_{2}.html", keyword, sort, page);
+                try {
+                    htmlStr = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(10 * 1000), url, null);
+                }catch (Exception e){
+                    log.error("bt搜索 请求异常 {}", url, e);
+                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"bt搜索发生异常\n"+e.getMessage(),true);
                     return;
                 }
+                
                 Document document = Jsoup.parse(htmlStr);
                 Elements list = document.getElementsByClass("search-item");
                 if (CollectionUtils.isEmpty(list)) {
@@ -206,7 +211,7 @@ public class BtSearchHandler implements IAllMessageEvent {
          */
         private void requestDetail(StringBuilder strBuilder,String detailHref) throws Exception{
 
-            String html = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(5 * 1000),detailHref, null);
+            String html = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(5 * 1000),detailHref, null);
             Document document = Jsoup.parse(html);
             Element fileDetail = document.getElementsByClass("fileDetail").get(0);
             Element size = fileDetail.getElementsByTag("p").get(1);

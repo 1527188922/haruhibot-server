@@ -2,6 +2,8 @@ package com.haruhi.botServer.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
+import org.apache.http.ParseException;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -63,10 +65,16 @@ public class HttpClientUtil {
         HttpGet httpGet = new HttpGet(s);
         try {
             return request(httpClient,httpGet);
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("HttpClient GET请求:{}异常",s,e);
             return null;
         }
+    }
+
+    public static String doGetNoCatch(CloseableHttpClient httpClient,String url, Map<String,Object> urlParams) throws IOException, ClientProtocolException, ParseException{
+        String s = encode(getUrl(url, urlParams));
+        HttpGet httpGet = new HttpGet(s);
+        return request(httpClient,httpGet);
     }
 
     private static String getUrl(String s,Map<String,Object> urlParams){
@@ -79,7 +87,7 @@ public class HttpClientUtil {
         return url;
     }
 
-    private static String request(CloseableHttpClient httpClient, HttpUriRequest httpUriRequest) throws IOException {
+    private static String request(CloseableHttpClient httpClient, HttpUriRequest httpUriRequest) throws IOException, ClientProtocolException, ParseException {
         CloseableHttpResponse response = null;
         response = httpClient.execute(httpUriRequest);
         HttpEntity entity = response.getEntity();
