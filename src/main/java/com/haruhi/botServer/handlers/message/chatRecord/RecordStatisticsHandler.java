@@ -3,6 +3,7 @@ package com.haruhi.botServer.handlers.message.chatRecord;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.RegexEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
 import com.haruhi.botServer.dto.gocq.response.GroupMember;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -65,6 +66,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                         .select(ChatRecord::getCreateTime)
                         .eq(ChatRecord::getGroupId, message.getGroupId())
                         .eq(ChatRecord::getSelfId, message.getSelfId())
+                        .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
                         .eq(ChatRecord::getDeleted, false)
                         .orderByAsc(ChatRecord::getCreateTime)
                         .last("LIMIT 1"));
@@ -111,6 +113,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 .eq(ChatRecord::getGroupId, e.getGroupId())
                 .eq(ChatRecord::getSelfId, selfId)
                 .eq(ChatRecord::getUserId, e.getUserId())
+                .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
                 .eq(ChatRecord::getDeleted,false)
                 .orderByDesc(ChatRecord::getCreateTime)
                 .last("LIMIT 1"));
