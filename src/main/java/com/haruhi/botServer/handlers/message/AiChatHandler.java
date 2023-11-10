@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
@@ -77,7 +78,7 @@ public class AiChatHandler implements IAllMessageEvent {
 
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
-        if(!matching(message,command)){
+        if(!SwitchConfig.ENABLE_AI_CHAT || !matching(message,command)){
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{

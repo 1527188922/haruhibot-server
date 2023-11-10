@@ -3,6 +3,7 @@ package com.haruhi.botServer.handlers.message;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.cache.CacheSet;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
@@ -77,7 +78,7 @@ public class SearchImageHandler implements IAllMessageEvent {
                     }
                 }
                 if(matches && cq == null 
-                        && ((MessageTypeEnum.group.getType().equals(message.getMessageType()) && ALLOW_GROUP)
+                        && ((MessageTypeEnum.group.getType().equals(message.getMessageType()) && SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP)
                         || MessageTypeEnum.privat.getType().equals(message.getMessageType()))){
                     cache.add(key);
                     Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
@@ -92,7 +93,7 @@ public class SearchImageHandler implements IAllMessageEvent {
     }
 
     private void startSearch(WebSocketSession session,Message message, String cq, String key){
-        if(!ALLOW_GROUP && MessageTypeEnum.group.getType().equals(message.getMessageType())){
+        if(!SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP && MessageTypeEnum.group.getType().equals(message.getMessageType())){
             Server.sendMessage(session,message.getUserId(),message.getGroupId(),MessageTypeEnum.group.getType(),"搜图功能请加机器人好友后私聊使用",true);
             return;
         }
