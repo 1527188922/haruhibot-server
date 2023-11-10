@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.notice;
 
+import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.notice.IGroupIncreaseEvent;
@@ -19,7 +20,7 @@ public class GroupIncreaseHandler implements IGroupIncreaseEvent {
 
     @Override
     public void onGroupIncrease(final WebSocketSession session,final Message message) {
-        if(message.getSelfId().longValue() == message.getUserId().longValue()){
+        if(!SwitchConfig.GROUP_INCREASE || message.getSelfId().longValue() == message.getUserId().longValue()){
             return;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
