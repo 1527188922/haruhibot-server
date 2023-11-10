@@ -76,7 +76,9 @@ public class SearchImageHandler implements IAllMessageEvent {
                         break;
                     }
                 }
-                if(matches && cq == null){
+                if(matches && cq == null 
+                        && ((MessageTypeEnum.group.getType().equals(message.getMessageType()) && ALLOW_GROUP)
+                        || MessageTypeEnum.privat.getType().equals(message.getMessageType()))){
                     cache.add(key);
                     Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
                     return true;
