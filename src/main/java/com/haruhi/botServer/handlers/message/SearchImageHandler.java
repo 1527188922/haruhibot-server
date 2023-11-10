@@ -32,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class SearchImageHandler implements IAllMessageEvent {
+    
+    private static final boolean ALLOW_GROUP = false;
+    
 
     @Override
     public int weight() {
@@ -87,6 +90,10 @@ public class SearchImageHandler implements IAllMessageEvent {
     }
 
     private void startSearch(WebSocketSession session,Message message, String cq, String key){
+        if(!ALLOW_GROUP && MessageTypeEnum.group.getType().equals(message.getMessageType())){
+            Server.sendMessage(session,message.getUserId(),message.getGroupId(),MessageTypeEnum.group.getType(),"搜图功能请加机器人好友后私聊使用",true);
+            return;
+        }
         Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜图...",true);
         ThreadPoolUtil.getHandleCommandPool().execute(new SearchImageTask(session,message,cq));
         if(key != null){
