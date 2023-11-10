@@ -94,7 +94,7 @@ public class SearchImageHandler implements IAllMessageEvent {
 
     private void startSearch(WebSocketSession session,Message message, String cq, String key){
         if(!SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP && MessageTypeEnum.group.getType().equals(message.getMessageType())){
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),MessageTypeEnum.group.getType(),"搜图功能请加机器人好友后私聊使用",true);
+//            Server.sendMessage(session,message.getUserId(),message.getGroupId(),MessageTypeEnum.group.getType(),"搜图功能请加机器人好友后私聊使用",true);
             return;
         }
         Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜图...",true);
