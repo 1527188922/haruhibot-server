@@ -39,6 +39,7 @@ switch:
   search-image-allow-group: 1
   group-decrease: 1
   group-increase: 1
+  search-bt-allow-group: 1
     
 
 server:

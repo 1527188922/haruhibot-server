@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -49,6 +50,11 @@ public class BtSearchHandler implements IAllMessageEvent {
 
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
+
+        if (MessageTypeEnum.group.getType().equals(message.getMessageType()) && !SwitchConfig.SEARCH_BT_ALLOW_GROUP){
+            return false;
+        }
+
         Pattern compile = Pattern.compile(RegexEnum.BT_SEARCH_HAS_PAGE.getValue());
         Matcher matcher = compile.matcher(command);
         Integer page = null;
