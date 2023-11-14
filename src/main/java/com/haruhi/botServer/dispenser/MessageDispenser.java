@@ -1,11 +1,13 @@
 package com.haruhi.botServer.dispenser;
 
+import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
+import com.haruhi.botServer.handlers.message.chatRecord.SavaChatRecordHandler;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -116,6 +118,9 @@ public class MessageDispenser {
 
     private void executeGroupMessageHandler(final List<IMessageEvent> events,final WebSocketSession session,final Message message, final String command){
         for (IMessageEvent element : events) {
+            if(SwitchConfig.DISABLE_GROUP && element.getClass() != SavaChatRecordHandler.class){
+                continue;
+            }
             if (element instanceof IAllMessageEvent) {
                 IAllMessageEvent event = (IAllMessageEvent) element;
                 if (event.onMessage(session, message, command)) {

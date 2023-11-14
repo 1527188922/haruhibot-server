@@ -1,5 +1,7 @@
 package com.haruhi.botServer.dispenser;
 
+import com.haruhi.botServer.config.SwitchConfig;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.constant.event.NoticeTypeEnum;
 import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -53,6 +55,9 @@ public class NoticeDispenser {
         if(!CollectionUtils.isEmpty(container)){
             String subType = message.getSubType();
             String noticeType = message.getNoticeType();
+            if(SwitchConfig.DISABLE_GROUP && MessageTypeEnum.group.getType().equals(message.getMessageType())){
+                return;
+            }
             log.info("收到通知类消息：subType：{}，noticeType：{}",subType,noticeType);
             if(NoticeTypeEnum.notify.toString().equals(noticeType) && SubTypeEnum.poke.toString().equals(subType)){
                 for (INoticeEvent value : container){
