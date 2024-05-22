@@ -60,10 +60,7 @@ logging:
 log:
   level: info
   path: logs
-  prefix: haruhibot_
-  separator: .
-  suffix: log
-  keep: now
+  filename: haruhibot
 
 spring:
   datasource:

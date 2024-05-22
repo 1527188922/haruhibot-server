@@ -1,10 +1,14 @@
 package com.haruhi.botServer.dto.gocq.response;
 
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Getter
 public class Message implements Serializable {
@@ -46,7 +50,8 @@ public class Message implements Serializable {
 
     public Message(String postType, String metaEventType, String messageType, String noticeType, Long operatorId,
                    Long time, Long selfId, String subType, Long userId, Long senderId, Long groupId, Long targetId,
-                   String message, String rawMessage, Integer font, Sender sender, String messageId, Integer messageSeq, String anonymous) {
+                   String message, String rawMessage, Integer font, Sender sender, String messageId, Integer messageSeq, String anonymous,
+                   Raw raw) {
         this.postType = postType;
         this.metaEventType = metaEventType;
         this.noticeType = noticeType;
@@ -73,6 +78,7 @@ public class Message implements Serializable {
                 this.messageType = MessageTypeEnum.privat.getType();
             }
         }
+        this.raw = raw;
     }
 
     private final String postType;
@@ -95,4 +101,34 @@ public class Message implements Serializable {
     private final String messageId;
     private final Integer messageSeq;
     private final String anonymous;
+    private final Raw raw;
+    
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Raw{
+        private List<Element> elements;
+    }
+    
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Element{
+        private Integer elementType;
+        private String elementId;
+        private PicElement picElement;
+        
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class PicElement{
+        private String fileName;
+        private String sourcePath;
+        private String fileSize;
+        private Long picWidth;
+        private Long picHeight;
+        
+    }
 }
