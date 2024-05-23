@@ -28,14 +28,8 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 
 	@Value("${log.path}")
 	private String logPath;
-	@Value("${log.prefix}")
+	@Value("${log.filename}")
 	private String logPrefix;
-	@Value("${log.keep}")
-	private String logKeep;
-	@Value("${log.separator}")
-	private String logSeparator;
-	@Value("${log.suffix}")
-	private String logSuffix;
 
 	@Autowired
 	private AbstractPathConfig pathConfig;
@@ -47,7 +41,7 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 	
 	@PostConstruct
 	public void initFile() {
-		String logFileName = logPrefix + logKeep + logSeparator + logSuffix;
+		String logFileName = logPrefix + "" + "." + "log";
 		String filePath = pathConfig.applicationHomePath() + File.separator + logPath;
 		LOG_FILE = new File(filePath + File.separator + logFileName);
 

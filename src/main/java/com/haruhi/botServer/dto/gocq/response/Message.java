@@ -1,14 +1,20 @@
 package com.haruhi.botServer.dto.gocq.response;
 
+import com.haruhi.botServer.constant.event.ElementTypeEnum;
+import com.haruhi.botServer.constant.event.MessageHolderTypeEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 public class Message implements Serializable {
@@ -50,7 +56,7 @@ public class Message implements Serializable {
 
     public Message(String postType, String metaEventType, String messageType, String noticeType, Long operatorId,
                    Long time, Long selfId, String subType, Long userId, Long senderId, Long groupId, Long targetId,
-                   String message, String rawMessage, Integer font, Sender sender, String messageId, Integer messageSeq, String anonymous,
+                   List<MessageHolder> message, String rawMessage, Integer font, Sender sender, String messageId, Integer messageSeq, String anonymous,
                    Raw raw) {
         this.postType = postType;
         this.metaEventType = metaEventType;
@@ -94,7 +100,7 @@ public class Message implements Serializable {
     private final Long senderId;
     private final Long groupId;
     private final Long targetId;
-    private final String message;
+    private final List<MessageHolder> message;
     private final String rawMessage;
     private final Integer font;
     private final Sender sender;
@@ -108,6 +114,44 @@ public class Message implements Serializable {
     @NoArgsConstructor
     public static class Raw{
         private List<Element> elements;
+        private List<Record> records;
+    }
+    
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class MessageHolder{
+        private String type;
+        private MessageData data;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class MessageData{
+        // image
+        private String file; 
+        private String url;
+        private String fileSize;
+        
+        // reply
+        private String id;
+        
+        // text
+        private String text;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Record{
+        private String msgId;
+        private String msgRandom;
+        private Integer chatType;
+        private Integer subMsgType;
+        private String peerUid;
+        private String sendMemberName;
+        private List<Element> elements;
     }
     
     @Data
@@ -117,6 +161,8 @@ public class Message implements Serializable {
         private Integer elementType;
         private String elementId;
         private PicElement picElement;
+        private ReplyElement replyElement;
+        private TextElement textElement;
         
     }
 
@@ -130,5 +176,108 @@ public class Message implements Serializable {
         private Long picWidth;
         private Long picHeight;
         
+    }
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ReplyElement{
+        private String replayMsgId;
+        private String replayMsgSeq;
+        private String replayMsgRootSeq;
+        private String replayMsgRootMsgId;
+        private String sourceMsgIdInRecords;
+        private String senderUid;
+        private String replyMsgTime;
+
+    }
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TextElement{
+        private String content;
+        private String atUid;
+        private String atTinyId;
+        private Integer atType;
+        private String atRoleId;
+        private String atRoleName;
+        private Integer needNotify;
+
+    }
+    
+    public boolean isReplyMsg(){
+        if(!CollectionUtils.isEmpty(this.message)){
+            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.reply.name());
+        }
+        return false;
+    }
+
+    public boolean isPicMsg(){
+        if(!CollectionUtils.isEmpty(this.message)){
+            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.image.name());
+        }
+        return false;
+    }
+
+    public boolean isTextMsg(){
+        if(!CollectionUtils.isEmpty(this.message)){
+            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.text.name());
+        }
+        return false;
+    }
+    
+    public List<String> getPicUrls(){
+        if(isPicMsg()){
+            return this.message.stream().filter(e -> MessageHolderTypeEnum.image.name().equals(e.getType()))
+                    .map(MessageHolder::getData)
+                    .map(MessageData::getUrl)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    public List<MessageData> getPicMessageData(){
+        if(isPicMsg()){
+            return this.message.stream().filter(e -> MessageHolderTypeEnum.image.name().equals(e.getType()))
+                    .map(MessageHolder::getData)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    public List<String> getReplyMsgIds(){
+        if(isReplyMsg()){
+            return this.message.stream().filter(e -> MessageHolderTypeEnum.reply.name().equals(e.getType()))
+                    .map(MessageHolder::getData)
+                    .map(MessageData::getId)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    /**
+     * 获取图片路径
+     * @param from 从哪里获取图片路径
+     * @return
+     */
+    public List<String> getPicSourcePath(ElementTypeEnum from){
+        if(from == ElementTypeEnum.PIC && isPicMsg()){
+            List<PicElement> picElements = raw.getElements().stream().filter(e -> e.getElementType() == ElementTypeEnum.PIC.getType() && e.getPicElement() != null)
+                    .map(Element::getPicElement).collect(Collectors.toList());
+            return picElements.stream().map(PicElement::getSourcePath).collect(Collectors.toList());
+        }
+        if(from == ElementTypeEnum.REPLY && isReplyMsg() && !CollectionUtils.isEmpty(this.raw.getRecords())){
+            List<String> picSourcePathList = new ArrayList<>();
+            for (Record record : this.raw.getRecords()) {
+                if(CollectionUtils.isEmpty(record.getElements())){
+                    continue;
+                }
+                // 从records中获取picElements 把picElements中的sourcePath取出来
+                List<String> collect = record.getElements().stream().filter(e -> e.getElementType() == ElementTypeEnum.PIC.getType() && e.getPicElement() != null)
+                        .map(Element::getPicElement).map(PicElement::getSourcePath).collect(Collectors.toList());
+                picSourcePathList.addAll(collect);
+            }
+            return picSourcePathList;
+        }
+        return Collections.emptyList();
     }
 }

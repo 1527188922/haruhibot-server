@@ -17,9 +17,13 @@ import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.socket.WebSocketSession;
@@ -55,89 +59,81 @@ public class SearchImageHandler implements IAllMessageEvent {
     }
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
-        String cq = replySearch(session,message);
-        String key = null;
-        if(Strings.isNotBlank(cq)){
+        Message replyMessage = replySearch(session, message);
+        if(replyMessage != null){
             // 回复式识图
-            startSearch(session,message,cq,null);
+            startSearch(session,message,replyMessage,replyMessage.getPicUrls().get(0),null);
             return true;
-        }else{
-            KQCodeUtils utils = KQCodeUtils.getInstance();
-            cq = utils.getCq(command, CqCodeTypeEnum.image.getType(), 0);
-            key = getKey(String.valueOf(message.getSelfId()), String.valueOf(message.getUserId()), String.valueOf(message.getGroupId()));
-            boolean matches = false;
-            if(cache.contains(key) && cq != null){
-                // 存在缓存 并且 图片cq码不为空
-                startSearch(session,message,cq,key);
-            }else{
-                String[] split = RegexEnum.SEARCH_IMAGE.getValue().split("\\|");
-                for (String s : split) {
-                    if(command.startsWith(s)){
-                        matches = true;
-                        break;
-                    }
-                }
-                if(matches && cq == null 
-                        && ((MessageTypeEnum.group.getType().equals(message.getMessageType()) && SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP)
-                        || MessageTypeEnum.privat.getType().equals(message.getMessageType()))){
-                    cache.add(key);
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
-                    return true;
-                }else if(matches){
-                    startSearch(session,message,cq,key);
-                    return true;
-                }
+        }
+
+        List<Message.MessageData> picMessageData = message.getPicMessageData();
+        String key = getKey(String.valueOf(message.getSelfId()), String.valueOf(message.getUserId()), String.valueOf(message.getGroupId()));
+        if(cache.contains(key) && !CollectionUtils.isEmpty(picMessageData)){
+            // 存在缓存 并且 图片路径不为空
+            startSearch(session,message,null,picMessageData.get(0).getUrl(),key);
+            return true;
+        }
+
+        boolean matches = false;
+        String[] split = RegexEnum.SEARCH_IMAGE.getValue().split("\\|");
+        for (String s : split) {
+            if(command.startsWith(s)){
+                matches = true;
+                break;
             }
+        }
+        if (matches) {
+            if(CollectionUtils.isEmpty(picMessageData)
+                    && ((MessageTypeEnum.group.getType().equals(message.getMessageType()) && SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP)
+                    || MessageTypeEnum.privat.getType().equals(message.getMessageType()))){
+                cache.add(key);
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
+            }else if(!CollectionUtils.isEmpty(picMessageData)){
+                startSearch(session,message,null,picMessageData.get(0).getUrl(),key);
+            }
+            return true;
         }
         return false;
     }
 
-    private void startSearch(WebSocketSession session,Message message, String cq, String key){
+    private void startSearch(WebSocketSession session,Message message, Message replyMessage,String url, String key){
         if(!SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP && MessageTypeEnum.group.getType().equals(message.getMessageType())){
 //            Server.sendMessage(session,message.getUserId(),message.getGroupId(),MessageTypeEnum.group.getType(),"搜图功能请加机器人好友后私聊使用",true);
             return;
         }
         Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜图...",true);
-        ThreadPoolUtil.getHandleCommandPool().execute(new SearchImageTask(session,message,cq));
+        ThreadPoolUtil.getHandleCommandPool().execute(new SearchImageTask(session,message,replyMessage,url));
         if(key != null){
             cache.remove(key);
         }
     }
-
-    private String replySearch(final WebSocketSession session,final Message message){
-        if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
-            KQCodeUtils instance = KQCodeUtils.getInstance();
+    private Message replySearch(WebSocketSession session, Message message){
+        if (MessageTypeEnum.group.getType().equals(message.getMessageType()) && message.isReplyMsg()) {
             String s = message.getRawMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
             if (s.matches(RegexEnum.SEARCH_IMAGE.getValue())) {
-                String cq = instance.getCq(message.getRawMessage(), CqCodeTypeEnum.reply.getType());
-                if(Strings.isNotBlank(cq)){
-                    String messageId = instance.getParam(cq, "id");
-                    Message msg = GocqSyncRequestUtil.getMsg(session,messageId,2L * 1000L);
-                    if(msg != null){
-                        // msg对象是通过消息id获得 没有raw_message属性
-                        String respMessage = msg.getMessage();
-                        return instance.getCq(respMessage, CqCodeTypeEnum.image.getType());
-                    }
+                List<String> replyMsgIds = message.getReplyMsgIds();
+                Message msg = GocqSyncRequestUtil.getMsg(session,replyMsgIds.get(0),2L * 1000L);
+                log.debug("回复式识图，根据msgId获取消息 {} {}",replyMsgIds.get(0), JSONObject.toJSONString(msg));
+                if(msg != null && msg.isPicMsg()){
+                    return msg;
                 }
             }
         }
         return null;
     }
 
+    @AllArgsConstructor
     private class SearchImageTask implements Runnable{
         private WebSocketSession session;
         private Message message;
-        private String cq;
-
-        SearchImageTask(WebSocketSession session,Message message, String cq){
-            this.session = session;
-            this.message = message;
-            this.cq = cq;
-        }
+        private Message replyMessage;
+        private String url;
+        
+        
         @Override
         public void run() {
-            KQCodeUtils instance = KQCodeUtils.getInstance();
-            String imageUrl = instance.getParam(this.cq, "url",CqCodeTypeEnum.image.getType(),0);
+//            KQCodeUtils instance = KQCodeUtils.getInstance();
+//            String imageUrl = instance.getParam(this.cq, "url",CqCodeTypeEnum.image.getType(),0);
 
             LinkedMultiValueMap<String,Object> param = new LinkedMultiValueMap<>(6);
             param.add("output_type",2);
@@ -145,19 +141,23 @@ public class SearchImageHandler implements IAllMessageEvent {
             param.add("testmode",1);
             param.add("numres",6);
             param.add("db",99);
-            param.add("url",imageUrl);
+            param.add("url", url);
+//            param.add("file",new FileSystemResource(new File(picUrl)));
             try {
-                log.info("开始请求搜图接口,图片:{}",imageUrl);
-                String response = RestUtil.sendPostForm(RestUtil.getRestTemplate(30 * 1000), ThirdPartyURL.SEARCH_IMAGE, param, String.class);
-                if(response != null){
-                    JSONObject jsonObject = JSONObject.parseObject(response);
+                log.info("开始请求搜图接口,图片:{}", url);
+//                String response = RestUtil.sendPostForm(RestUtil.getRestTemplate(30 * 1000), ThirdPartyURL.SEARCH_IMAGE, param, String.class);
+                ResponseEntity<String> response = RestUtil.sendPostForm(RestUtil.getRestTemplate(30 * 1000), ThirdPartyURL.SEARCH_IMAGE, param,
+                        null, null, new ParameterizedTypeReference<String>() {});
+                log.debug("识图接口响应 {}",response);
+                if(response.getBody() != null){
+                    JSONObject jsonObject = JSONObject.parseObject(response.getBody());
                     String resultsStr = jsonObject.getString("results");
                     if(Strings.isBlank(resultsStr)){
                         Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜索结果为空",true);
                     }else{
                         List<Results> resultList = JSONObject.parseArray(resultsStr, Results.class);
                         sort(resultList);
-                        sendResult(session,resultList,cq,message);
+                        sendResult(session,resultList, replyMessage,message);
                     }
                 }
             }catch (ResourceAccessException e){
@@ -195,8 +195,10 @@ public class SearchImageHandler implements IAllMessageEvent {
         }
     }
 
-    private void sendResult(WebSocketSession session,List<Results> resultList,String cq,Message message){
+    private void sendResult(WebSocketSession session, List<Results> resultList, Message replyMessage, Message message){
         List<String> forwardMsgs = new ArrayList<>(resultList.size() + 1);
+        String m = replyMessage != null ? replyMessage.getRawMessage() : message.getRawMessage();
+        String cq = KQCodeUtils.getInstance().getCq(m, CqCodeTypeEnum.image.getType());
         forwardMsgs.add(cq);
         for (Results results : resultList) {
             forwardMsgs.add(getItemMsg(results));
@@ -204,7 +206,7 @@ public class SearchImageHandler implements IAllMessageEvent {
 
         SyncResponse syncResponse = Server.sendSyncMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs, 8 * 1000);
         if(syncResponse == null || (syncResponse.getRetcode() != null && syncResponse.getRetcode() != 0)){
-            log.info("识图结果同步发送失败，使用异步发送");
+            log.error("识图结果同步发送失败，使用异步发送");
             forwardMsgs.remove(0);
             Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
         }

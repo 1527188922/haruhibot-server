@@ -59,7 +59,7 @@ public class GocqSyncRequestUtil {
      */
     public static Message getMsg(WebSocketSession session,String messageId,long timeout){
         Map<String, Object> map = new HashMap<>(1);
-        map.put("message_id",messageId);
+        map.put("message_id",Long.parseLong(messageId));
         JSONObject jsonObject = sendSyncRequest(session, GocqActionEnum.GET_MSG, map, timeout);
         if (jsonObject != null) {
             return JSONObject.parseObject(jsonObject.getString("data"), Message.class);

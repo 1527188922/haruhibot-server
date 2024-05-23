@@ -50,10 +50,8 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
 
     @Value("${log.path}")
     private String logPath;
-    @Value("${log.separator}")
-    private String logSeparator;
-    @Value("${log.suffix}")
-    private String logSuffix;
+    private String logSeparator = ".";
+    private String logSuffix = "log";
 
     @Autowired
     private AbstractPathConfig pathConfig;

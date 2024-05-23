@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class SyncResponse<T> {
 
-    public static transient final String STATUS_OK = "ok";
+    public static final String STATUS_OK = "ok";
 
     private Integer retcode;
     private String status;

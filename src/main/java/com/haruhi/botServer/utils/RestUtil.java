@@ -3,6 +3,7 @@ package com.haruhi.botServer.utils;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -16,6 +17,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,21 +65,18 @@ public class RestUtil {
     }
 
     /**
-     * form提交
-     * 可发送文件
+     * 表单请求
      * @param restTemplate
      * @param url
-     * @param param
-     * @param type
+     * @param formData
+     * @param urlRequestParam
+     * @param headerParam
+     * @param responseType
      * @param <T>
      * @return
      */
-    public static <T> T sendPostForm(RestTemplate restTemplate, String url, LinkedMultiValueMap<String,Object> param,Class<T> type) throws ResourceAccessException {
-        ResponseEntity<String> response = restTemplate.postForEntity(url, param, String.class, (Object) null);
-        return processResponse(response,type);
-    }
-
-    public static <T> ResponseEntity<T> postForm(RestTemplate restTemplate, String url, LinkedMultiValueMap<String, Object> formData, ParameterizedTypeReference<T> responseType, Map<String, String> urlRequestParam, Map<String, String> headerParam){
+    public static <T> ResponseEntity<T> sendPostForm(RestTemplate restTemplate, String url, LinkedMultiValueMap<String, Object> formData,  Map<String, String> urlRequestParam, Map<String, String> headerParam
+    ,ParameterizedTypeReference<T> responseType){
 
         if(urlRequestParam != null){
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
@@ -101,14 +100,15 @@ public class RestUtil {
     public static void main(String[] args) {
         LinkedMultiValueMap<String,Object> param = new LinkedMultiValueMap<>(6);
         param.add("output_type",2);
-        param.add("api_key", "");
+        param.add("api_key", "88b9b924fb764eb9ebe70db30bbd5da4a184b5a4");
         param.add("testmode",1);
         param.add("numres",6);
         param.add("db",99);
-        param.add("url","");
+        param.add("file",new FileSystemResource(new File("D:\\temp\\8eb6-kefmphc8903849.jpg")));
 //        param.add("file",new FileSystemResource(new File("")));
-        final ResponseEntity<String> stringResponseEntity = postForm(getRestTemplate(10000), "https://saucenao.com/search.php", param, 
-                new ParameterizedTypeReference<String>() {}, null, null);
+        ResponseEntity<String> stringResponseEntity = sendPostForm(getRestTemplate(10000), "https://saucenao.com/search.php", param,
+                null, null, new ParameterizedTypeReference<String>() {
+                });
 
         System.out.println(stringResponseEntity);
         

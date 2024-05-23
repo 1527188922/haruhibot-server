@@ -17,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -59,8 +60,20 @@ public class Server extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(final WebSocketSession session, final TextMessage message) throws Exception {
         final String s = message.getPayload();
-        log.debug("收到gocq消息 {}",s);
+        log.debug("[ws server]收到消息 {}",s);
         try {
+            JSONObject jsonObject = JSONObject.parseObject(s);
+            String echo = jsonObject.getString("echo");
+            if (Strings.isNotBlank(echo)) {
+                GocqSyncRequestUtil.putEchoResult(echo,jsonObject);
+                log.debug("echo消息：{}",echo);
+                return;
+            }
+            Object obj = jsonObject.get("message");
+            if(obj != null && obj instanceof String){
+                log.error("message类型为string");
+                return;
+            }
             final Message bean = JSONObject.parseObject(s, Message.class);
             if(PostTypeEnum.meta_event.toString().equals(bean.getPostType()) && MetaEventEnum.heartbeat.toString().equals(bean.getMetaEventType())){
                 // 心跳包
@@ -68,7 +81,7 @@ public class Server extends TextWebSocketHandler {
             }
             ProcessMessageTask.execute(session,bean,s);
         }catch (Exception e){
-            log.error("解析payload异常:{}",s);
+            log.error("解析payload异常:{}",s,e);
         }
     }
 
@@ -445,6 +458,21 @@ public class Server extends TextWebSocketHandler {
         data.setContent(context);
         item.setData(data);
         return item;
+    }
+
+    public static void main(String[] args) {
+        String s = "{\"status\":\"ok\",\"retcode\":0,\"data\":{\"message_id\":-2147482581},\"message\":\"\",\"wording\":\"\"}";
+        try {
+            JSONObject jsonObject = JSONObject.parseObject(s);
+            if(jsonObject.get("message") instanceof String){
+                System.out.println("111");
+            }
+            JSONObject.parseObject(s,Message.class);
+            System.out.println();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        
     }
 
 }

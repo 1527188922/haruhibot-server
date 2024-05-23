@@ -63,11 +63,7 @@ public class ProcessMessageTask implements Runnable{
                     Server.setBotIdToCache(session, bean.getSelfId());
                 }
             }else {
-                JSONObject jsonObject = JSONObject.parseObject(original);
-                String echo = jsonObject.getString("echo");
-                if (Strings.isNotBlank(echo)) {
-                    GocqSyncRequestUtil.putEchoResult(echo,jsonObject);
-                }
+                log.info("未知PostType: {}",bean.getPostType());
             }
         }catch (Exception e){
             log.error("处理消息时异常",e);
