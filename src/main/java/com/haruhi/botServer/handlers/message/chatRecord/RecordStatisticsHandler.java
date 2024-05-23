@@ -115,6 +115,19 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
         if(Strings.isNotBlank(nickName)){
             return nickName;
         }
+
+        ChatRecord chatRecord = chatRecordMapper.selectOne(new LambdaQueryWrapper<ChatRecord>()
+                .select(ChatRecord::getCard,ChatRecord::getNickname)
+                .eq(ChatRecord::getUserId,e.getUserId())
+                .eq(ChatRecord::getGroupId, e.getGroupId())
+                .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
+                .eq(ChatRecord::getDeleted, false)
+                .orderByDesc(ChatRecord::getCreateTime)
+                .last("LIMIT 1"));
+        if(chatRecord != null){
+            return StringUtils.isNotBlank(chatRecord.getCard()) ? chatRecord.getCard()
+                    : StringUtils.isNotBlank(chatRecord.getNickname()) ? chatRecord.getNickname() : "noname";
+        }
         return "noname";
     }
 }
