@@ -79,22 +79,11 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 
                 for (int i = 0; i < chatRecords.size(); i++) {
                     ChatRecord item = chatRecords.get(i);
-
-                    ChatRecord dbChat = chatRecordMapper.selectOne(new LambdaQueryWrapper<ChatRecord>()
-                            .select(ChatRecord::getCard, ChatRecord::getNickname)
-                            .eq(ChatRecord::getUserId, item.getUserId())
-                            .eq(ChatRecord::getGroupId, message.getGroupId())
-                            .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
-                            .eq(ChatRecord::getDeleted, false)
-                            .orderByDesc(ChatRecord::getCreateTime)
-                            .last("LIMIT 1"));
-                    item.setCard(dbChat.getCard());
-                    item.setNickname(dbChat.getNickname());
-
+                    String name = getName(item, groupMemberList);
                     String meg = (i + 1) + "\n" 
-                            + (StringUtils.isNotBlank(item.getCard()) ? item.getCard() : StringUtils.isNotBlank(item.getNickname()) ? item.getNickname() : "noname") + "(" +item.getUserId() + ")"
+                            + name + "(" +item.getUserId() + ")"
                             + "\n发言数：" + item.getTotal();
-                    params.add(new ForwardMsgItem(new ForwardMsgItem.Data(getName(item, groupMemberList,message.getSelfId()),item.getUserId(), meg)));
+                    params.add(new ForwardMsgItem(new ForwardMsgItem.Data(name,item.getUserId(), meg)));
                 }
 
                 Server.sendGroupMessage(session, message.getGroupId(), params);
@@ -107,7 +96,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
         return true;
     }
 
-    private String getName(ChatRecord e, List<GroupMember> groupMemberList,Long selfId){
+    private String getName(ChatRecord e, List<GroupMember> groupMemberList){
         String card = null;
         String nickName = null;
         if(!CollectionUtils.isEmpty(groupMemberList)){
@@ -120,32 +109,12 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
             }    
         }
         
-        String name = getName(card, nickName);
-        if(Strings.isNotBlank(name)){
-            return name;
+        if(Strings.isNotBlank(card)){
+            return card;
         }
-        ChatRecord chatRecord = chatRecordMapper.selectOne(new LambdaQueryWrapper<ChatRecord>()
-                .eq(ChatRecord::getGroupId, e.getGroupId())
-                .eq(ChatRecord::getSelfId, selfId)
-                .eq(ChatRecord::getUserId, e.getUserId())
-                .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
-                .eq(ChatRecord::getDeleted,false)
-                .orderByDesc(ChatRecord::getCreateTime)
-                .last("LIMIT 1"));
-        if(chatRecord != null){
-            return Strings.isNotBlank((name = getName(chatRecord.getCard(), chatRecord.getNickname()))) ? name : "noname";
+        if(Strings.isNotBlank(nickName)){
+            return nickName;
         }
         return "noname";
     }
-    
-    private String getName(String card, String nickName){
-        if(Strings.isNotBlank(card != null ? card.trim() : null)){
-            return card;
-        }
-        if(Strings.isNotBlank(nickName != null ? nickName.trim() : null)){
-            return nickName;
-        }
-        return null;
-    }
-
 }
