@@ -15,6 +15,7 @@ import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -78,8 +79,22 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 
                 for (int i = 0; i < chatRecords.size(); i++) {
                     ChatRecord item = chatRecords.get(i);
-                    params.add(new ForwardMsgItem(new ForwardMsgItem.Data(getName(item, groupMemberList,message.getSelfId()),item.getUserId(),
-                            (i + 1) + "\n发言数：" + item.getTotal())));
+
+                    ChatRecord dbChat = chatRecordMapper.selectOne(new LambdaQueryWrapper<ChatRecord>()
+                            .select(ChatRecord::getCard, ChatRecord::getNickname)
+                            .eq(ChatRecord::getUserId, item.getUserId())
+                            .eq(ChatRecord::getGroupId, message.getGroupId())
+                            .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
+                            .eq(ChatRecord::getDeleted, false)
+                            .orderByDesc(ChatRecord::getCreateTime)
+                            .last("LIMIT 1"));
+                    item.setCard(dbChat.getCard());
+                    item.setNickname(dbChat.getNickname());
+
+                    String meg = (i + 1) + "\n" 
+                            + (StringUtils.isNotBlank(item.getCard()) ? item.getCard() : StringUtils.isNotBlank(item.getNickname()) ? item.getNickname() : "noname") + "(" +item.getUserId() + ")"
+                            + "\n发言数：" + item.getTotal();
+                    params.add(new ForwardMsgItem(new ForwardMsgItem.Data(getName(item, groupMemberList,message.getSelfId()),item.getUserId(), meg)));
                 }
 
                 Server.sendGroupMessage(session, message.getGroupId(), params);
