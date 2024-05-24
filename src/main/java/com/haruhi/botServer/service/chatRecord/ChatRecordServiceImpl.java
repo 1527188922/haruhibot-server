@@ -173,10 +173,9 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
             queryWrapper.notLike(ChatRecord::getContent,value.getRegex());
         }
         String outPutPath = null;
-        List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
-        if (!CollectionUtils.isEmpty(userIds)) {
-            queryWrapper.in(ChatRecord::getUserId,userIds);
-        }
+//        List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
+        List<String> userIds = message.getAtQQs();
+        queryWrapper.in(!CollectionUtils.isEmpty(userIds),ChatRecord::getUserId,userIds);
         // 从数据库查询聊天记录
         List<ChatRecord> corpus = chatRecordMapper.selectList(queryWrapper);
         if (CollectionUtils.isEmpty(corpus)) {

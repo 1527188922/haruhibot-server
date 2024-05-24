@@ -139,6 +139,8 @@ public class Message implements Serializable {
         
         // text
         private String text;
+        // at
+        private String qq;
     }
 
     @Data
@@ -224,6 +226,13 @@ public class Message implements Serializable {
         }
         return false;
     }
+
+    public boolean isAtMsg(){
+        if(!CollectionUtils.isEmpty(this.message)){
+            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.at.name());
+        }
+        return false;
+    }
     
     public List<String> getPicUrls(){
         if(isPicMsg()){
@@ -254,8 +263,19 @@ public class Message implements Serializable {
         return Collections.emptyList();
     }
 
+    public List<String> getAtQQs(){
+        if(isAtMsg()){
+            return this.message.stream().filter(e -> MessageHolderTypeEnum.at.name().equals(e.getType()))
+                    .map(MessageHolder::getData)
+                    .map(MessageData::getQq)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
     /**
      * 获取图片路径
+     * 从raw参数中获取图片本地路径
      * @param from 从哪里获取图片路径
      * @return
      */
