@@ -11,6 +11,7 @@ import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -76,7 +77,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
         
         // 对参加游戏的判断
         String s = message.getText(-1);
-        if(s.matches("参加")){
+        if(StringUtils.isNotBlank(s) && s.trim().matches("参加")){
             if (!message.isReplyMsg()) {
                 return false;
             }
