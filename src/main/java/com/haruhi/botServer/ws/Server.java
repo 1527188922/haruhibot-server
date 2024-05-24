@@ -12,7 +12,7 @@ import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.thread.ProcessMessageTask;
-import com.haruhi.botServer.utils.GocqSyncRequestUtil;
+import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -65,7 +65,7 @@ public class Server extends TextWebSocketHandler {
             JSONObject jsonObject = JSONObject.parseObject(s);
             String echo = jsonObject.getString("echo");
             if (Strings.isNotBlank(echo)) {
-                GocqSyncRequestUtil.putEchoResult(echo,jsonObject);
+                WsSyncRequestUtil.putEchoResult(echo,jsonObject);
                 log.debug("echo消息：{}",echo);
                 return;
             }
@@ -200,7 +200,7 @@ public class Server extends TextWebSocketHandler {
      */
     public static SyncResponse sendSyncGroupMessage(WebSocketSession session, Long groupId, Long uin, String name, List<String> messages, long timeout){
         Params params = createForwardMessageParams(MessageTypeEnum.group,groupId,uin,name,messages);
-        JSONObject jsonObject = GocqSyncRequestUtil.sendSyncRequest(session, GocqActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout);
+        JSONObject jsonObject = WsSyncRequestUtil.sendSyncRequest(session, GocqActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout);
         if (jsonObject != null) {
             return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
         }
@@ -293,7 +293,7 @@ public class Server extends TextWebSocketHandler {
      */
     public static SyncResponse sendSyncPrivateMessage(WebSocketSession session, Long userId, Long uin, String name, List<String> messages, long timeout){
         Params params = createForwardMessageParams(MessageTypeEnum.privat,userId,uin,name,messages);
-        JSONObject jsonObject = GocqSyncRequestUtil.sendSyncRequest(session, GocqActionEnum.SEND_PRIVATE_FORWARD_MSG, params, timeout);
+        JSONObject jsonObject = WsSyncRequestUtil.sendSyncRequest(session, GocqActionEnum.SEND_PRIVATE_FORWARD_MSG, params, timeout);
         if (jsonObject != null) {
             return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
         }
@@ -389,7 +389,7 @@ public class Server extends TextWebSocketHandler {
             forwardMsgs.add(createForwardMsgItem(uin,name,s));
         }
         params.setMessages(forwardMsgs);
-        JSONObject jsonObject = GocqSyncRequestUtil.sendSyncRequest(session,actionEnum, params, timeout);
+        JSONObject jsonObject = WsSyncRequestUtil.sendSyncRequest(session,actionEnum, params, timeout);
         if (jsonObject != null) {
             return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
         }

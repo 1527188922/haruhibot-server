@@ -33,12 +33,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * 用于请求gocq的数据
- * 向gocq发送同步websocket消息工具类
+ * 向野生bot发送同步websocket消息工具类
  */
 @Slf4j
-public class GocqSyncRequestUtil {
-    private GocqSyncRequestUtil(){}
+public class WsSyncRequestUtil {
+    private WsSyncRequestUtil(){}
 
     public static int poolSize = SystemInfo.AVAILABLE_PROCESSORS + 1;
     public static long sleep = 1L;
@@ -177,7 +176,7 @@ public class GocqSyncRequestUtil {
         requestBox.setEcho(echo);
         Server.sendMessage(session,JSONObject.toJSONString(requestBox));
         log.debug("echo: {}",echo);
-        FutureTask<JSONObject> futureTask = new FutureTask<>(new GocqSyncRequestUtil.Task(echo));
+        FutureTask<JSONObject> futureTask = new FutureTask<>(new WsSyncRequestUtil.Task(echo));
         pool.submit(futureTask);
         try {
             JSONObject res;
@@ -220,7 +219,7 @@ public class GocqSyncRequestUtil {
                     break;
                 }else {
                     try {
-                        Thread.sleep(GocqSyncRequestUtil.sleep);
+                        Thread.sleep(WsSyncRequestUtil.sleep);
                     } catch (InterruptedException e) {
                         break;
                     }
@@ -231,7 +230,7 @@ public class GocqSyncRequestUtil {
     }
 
     public static void main(String[] args) {
-        FutureTask<JSONObject> futureTask = new FutureTask<>(new GocqSyncRequestUtil.Task("echo"));
+        FutureTask<JSONObject> futureTask = new FutureTask<>(new WsSyncRequestUtil.Task("echo"));
         pool.submit(futureTask);
 //        new Thread(()->{
 //            try {

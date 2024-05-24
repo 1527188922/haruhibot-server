@@ -11,7 +11,7 @@ import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.mapper.ChatRecordMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
-import com.haruhi.botServer.utils.GocqSyncRequestUtil;
+import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +59,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                     return;
                 }
 
-                List<GroupMember> groupMemberList = GocqSyncRequestUtil.getGroupMemberList(session, message.getGroupId(), Collections.singletonList(message.getSelfId()), 10 * 1000);
+                List<GroupMember> groupMemberList = WsSyncRequestUtil.getGroupMemberList(session, message.getGroupId(), Collections.singletonList(message.getSelfId()), 10 * 1000);
 
                 List<ForwardMsgItem> params = new ArrayList<>(chatRecords.size() + 1);
 

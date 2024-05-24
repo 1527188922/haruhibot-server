@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.utils.GocqSyncRequestUtil;
+import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.AllArgsConstructor;
@@ -92,7 +92,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
             if (Strings.isBlank(messageId) || !messageId.equals(messageId1)) {
                 return false;
             }
-            Message msg = GocqSyncRequestUtil.getMsg(session,messageId,2L * 1000L);
+            Message msg = WsSyncRequestUtil.getMsg(session,messageId,2L * 1000L);
             if(msg == null || msg.getSender() == null || msg.getSender().getUserId() == null 
                     || msg.getSender().getUserId().equals(message.getUserId())){
                 return false;

@@ -5,7 +5,7 @@ import com.haruhi.botServer.dto.gocq.response.GroupMember;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.utils.GocqSyncRequestUtil;
+import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +58,7 @@ public class FriendSaidHandler implements IGroupMessageEvent {
         @Override
         public void run() {
             try {
-                List<GroupMember> groupMemberList = GocqSyncRequestUtil.getGroupMemberList(session,message.getGroupId(), 
+                List<GroupMember> groupMemberList = WsSyncRequestUtil.getGroupMemberList(session,message.getGroupId(), 
                         Arrays.asList(message.getSelfId(),message.getUserId()), 2L * 1000L);
                 if(CollectionUtils.isEmpty(groupMemberList)){
 //                    Server.sendGroupMessage(session,message.getGroupId(),"你哪来的朋友？",true);

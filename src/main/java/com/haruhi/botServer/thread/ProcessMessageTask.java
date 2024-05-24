@@ -1,6 +1,5 @@
 package com.haruhi.botServer.thread;
 
-import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.event.MetaEventEnum;
 import com.haruhi.botServer.constant.event.PostTypeEnum;
 import com.haruhi.botServer.constant.event.SubTypeEnum;
@@ -9,10 +8,8 @@ import com.haruhi.botServer.dispenser.NoticeDispenser;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.thread.pool.policy.ShareRunsPolicy;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
-import com.haruhi.botServer.utils.GocqSyncRequestUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.web.socket.WebSocketSession;
 

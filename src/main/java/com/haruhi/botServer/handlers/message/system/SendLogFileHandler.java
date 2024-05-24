@@ -9,7 +9,7 @@ import com.haruhi.botServer.dto.gocq.response.DownloadFileResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
-import com.haruhi.botServer.utils.GocqSyncRequestUtil;
+import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
@@ -131,14 +131,14 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
                     return;
                 }
                 // 注意该路径可能不存在与bot程序所在的主机上
-                DownloadFileResp downloadFile = GocqSyncRequestUtil.downloadFile(session, logWebDir + "/" +
+                DownloadFileResp downloadFile = WsSyncRequestUtil.downloadFile(session, logWebDir + "/" +
                         file.getName() + "?t=" + System.currentTimeMillis(), 1, null, 30 * 1000);
 
                 if(downloadFile == null || Strings.isBlank(downloadFile.getFile())){
                     Server.sendPrivateMessage(session,message.getUserId(),"上传日志失败，gocq下载文件失败",true);
                     return;
                 }
-                SyncResponse response = GocqSyncRequestUtil.uploadPrivateFile(session, message.getUserId(), downloadFile.getFile(), file.getName(), 60 * 1000);
+                SyncResponse response = WsSyncRequestUtil.uploadPrivateFile(session, message.getUserId(), downloadFile.getFile(), file.getName(), 60 * 1000);
                 if(response == null || response.getRetcode() == null || response.getRetcode() != 0){
                     Server.sendPrivateMessage(session,message.getUserId(),"上传日志失败，gocq上传私聊文件失败",true);
                     return;

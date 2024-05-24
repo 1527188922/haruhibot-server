@@ -13,7 +13,7 @@ import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.dto.searchImage.response.Results;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.utils.GocqSyncRequestUtil;
+import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
@@ -112,7 +112,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             String s = message.getRawMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
             if (s.matches(RegexEnum.SEARCH_IMAGE.getValue())) {
                 List<String> replyMsgIds = message.getReplyMsgIds();
-                Message msg = GocqSyncRequestUtil.getMsg(session,replyMsgIds.get(0),2L * 1000L);
+                Message msg = WsSyncRequestUtil.getMsg(session,replyMsgIds.get(0),2L * 1000L);
                 log.debug("回复式识图，根据msgId获取消息 {} {}",replyMsgIds.get(0), JSONObject.toJSONString(msg));
                 if(msg != null && msg.isPicMsg()){
                     return msg;
