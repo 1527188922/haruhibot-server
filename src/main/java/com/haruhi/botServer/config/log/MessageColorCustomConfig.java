@@ -14,6 +14,8 @@ public class MessageColorCustomConfig extends ForegroundCompositeConverterBase<I
                 return ANSIConstants.RED_FG;
             case Level.WARN_INT:
                 return ANSIConstants.YELLOW_FG;
+            case Level.DEBUG_INT:
+                return ANSIConstants.BLUE_FG;
             default:
                 return ANSIConstants.DEFAULT_FG;
         }

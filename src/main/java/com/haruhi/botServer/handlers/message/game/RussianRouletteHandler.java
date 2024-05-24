@@ -39,7 +39,11 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
     public String funName() {
         return "俄罗斯轮盘";
     }
-    private final CacheMap<String,RussianRouletteGame> cache = new CacheMap<>(1, TimeUnit.MINUTES,100);
+
+    private static final int maxPlayers = 2;
+    private static final int maxBullets = 4; //子弹下标 0-3
+
+    private final CacheMap<String,RussianRouletteGame> cache = new CacheMap<>(10, TimeUnit.MINUTES,999);
     private String cacheKey(Message message){
         return message.getGroupId() + "-" + message.getSelfId();
     }
@@ -54,9 +58,9 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
             RussianRouletteGame game = cache.get(cacheKey);
             if (game != null) {
                 int size = game.getPlayers().size();
-                if(size < RussianRouletteGame.maxPlayers){
+                if(size < maxPlayers){
                     Server.sendGroupMessage(session,message.getGroupId(),"一场游戏正在招募，你可以回复他的发起消息为:'参加' 即可参加",true);
-                }else if(size == RussianRouletteGame.maxPlayers){
+                }else if(size == maxPlayers){
                     Server.sendGroupMessage(session,message.getGroupId(),"一场游戏正在进行，请稍后",true);
                 }else{
                     Server.sendGroupMessage(session,message.getGroupId(),"当前群已发起一场游戏",true);
@@ -69,8 +73,10 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
             cache.put(cacheKey,russianRouletteGame);
             String atSender = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getUserId());
             Server.sendGroupMessage(session,message.getGroupId(), 
-                    MessageFormat.format("{0} 发起了俄罗斯轮盘\n回复他的发起消息为：参加，即可参加游戏\n玩家轮流发送：`扣动扳机`进行游戏\n弹夹最大容量6颗，随机填充1颗子弹\n最多{1}人，还缺人{2}人",
-                            atSender,RussianRouletteGame.maxPlayers,(RussianRouletteGame.maxPlayers - russianRouletteGame.getPlayers().size())),
+                    MessageFormat.format("{0} 发起了俄罗斯轮盘\n回复他的发起消息为：参加，即可参加游戏\n玩家轮流发送：`扣动扳机`进行游戏\n弹夹最大容量"
+                                    + maxBullets
+                                    + "颗，随机填充1颗子弹\n最多{1}人，还缺人{2}人",
+                            atSender,maxPlayers,(maxPlayers - russianRouletteGame.getPlayers().size())),
                     false);
             return true;
         }
@@ -97,7 +103,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
                     || msg.getSender().getUserId().equals(message.getUserId())){
                 return false;
             }
-            if(game.getPlayers().size() == RussianRouletteGame.maxPlayers){
+            if(game.getPlayers().size() == maxPlayers){
                 Server.sendGroupMessage(session,message.getGroupId(),"当前群已开始游戏，无法再参加",true);
                 return true;
             }
@@ -119,7 +125,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
                 return false;
             }
             final List<RussianRouletteGame.Player> players = game.getPlayers();
-            if(CollectionUtils.isEmpty(players) || players.size() < RussianRouletteGame.maxPlayers){
+            if(CollectionUtils.isEmpty(players) || players.size() < maxPlayers){
                 return false;
             }
             boolean f = false;
@@ -144,13 +150,14 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
             String atSender = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getSender().getUserId());
             String s1 = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + player.getUserId());
             
-            if (game.getCurrentPosition() == game.getBulletPosition()) {
+            if (game.isHit()) {
                 cache.remove(cacheKey);
                 Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("当前第{0}次扣动扳机\n嘭！{1} 被击中了！\n{2} 获得胜利！\n本场游戏结束！",
                         game.getCurrentPosition() + 1,atSender,s1),false);
                 
             }else{
                 int i = game.nextPosition();
+                game.randomBulletPosition();// 每次扣完，重新摇一下
                 cache.refreshKey(cacheKey);
                 Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("当前第{0}次扣动扳机\n{1} 未被击中\n接下来请{2} 扣动扳机！",
                         i,atSender,s1),false);
@@ -165,8 +172,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
     @Data
     public static class RussianRouletteGame{
         private static final Random RANDOM = new Random();
-        private static final int maxPlayers = 2;
-        private static final int maxBullets = 6; //子弹下标 0-5
+
 
         // 发起者的消息id
         private String messageId;
@@ -189,18 +195,31 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
             // 随机一位玩家先手
             currentPlayerIndex = RANDOM.nextInt(maxPlayers);
             // 子弹下标随机
-            bulletPosition = RANDOM.nextInt(bullets);
+            randomBulletPosition();
         }
-        
+
+        public int randomBulletPosition(){
+            bulletPosition = RANDOM.nextInt(bullets);
+            log.debug("子弹位置已更新 {}",bulletPosition);
+            return bulletPosition;
+        }
+
+        public boolean isHit(){
+            return (currentPosition % bullets) == bulletPosition;
+        }
+
+        public static void main(String[] args) {
+            System.out.println(8 % 4);
+        }
         
         public Player nextPlayer(){
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
             return getCurrentPlayer();
         }
         public int nextPosition(){
-            if(currentPosition >= bullets){
-                return currentPosition;
-            }
+//            if(currentPosition >= bullets){
+//                return currentPosition;
+//            }
             currentPosition += 1;
             return currentPosition;
         }
