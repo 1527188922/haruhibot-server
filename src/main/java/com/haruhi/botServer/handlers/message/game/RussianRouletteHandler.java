@@ -112,7 +112,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
             return true;
         }
         
-        if(command.equals("扣动扳机")){
+        if(message.isTextMsg() && "扣动扳机".equals(message.getText(0).trim())){
             String cacheKey = cacheKey(message);
             RussianRouletteGame game = cache.get(cacheKey);
             if(game == null){
