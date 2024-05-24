@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.util.CollectionUtils;
 
@@ -232,6 +233,39 @@ public class Message implements Serializable {
             return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.at.name());
         }
         return false;
+    }
+
+    public boolean isAtBot(){
+        return isAtQQ(String.valueOf(this.selfId));
+    }
+
+    public boolean isAtQQ(String qq){
+        return getAtQQs().contains(qq);
+    }
+    
+    public List<String> getTexts(){
+        if (isTextMsg()) {
+            return this.message.stream().filter(e -> MessageHolderTypeEnum.text.name().equals(e.getType()))
+                    .map(MessageHolder::getData)
+                    .map(MessageData::getText)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    public String getText(int index){
+        List<String> texts = getTexts();
+        if(CollectionUtils.isEmpty(texts)){
+            return null;
+        }
+        if(index >= 0){
+            try {
+                return texts.get(index);
+            }catch (IndexOutOfBoundsException e){
+                return null;
+            }
+        }
+        return StringUtils.join(texts,"");
     }
     
     public List<String> getPicUrls(){

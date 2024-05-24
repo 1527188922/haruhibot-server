@@ -9,12 +9,13 @@ import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.aiChat.response.ChatResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -44,58 +45,40 @@ public class AiChatHandler implements IAllMessageEvent {
         return "智障聊天";
     }
 
-    private String[] cqs;
-
-    public boolean matching(final Message message, final String command) {
+    public MatchResult<String> matching(Message message, String command) {
         if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
             // 私聊了机器人
-            if(command.matches(RegexEnum.CQ_CODE.getValue())){
-                return false;
+            if(!message.isTextMsg()){
+                return MatchResult.unmatched();
             }
-            this.cqs = null;
-            return true;
+            return MatchResult.matched(message.getText(-1));
         }
         if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
-            KQCodeUtils utils = KQCodeUtils.getInstance();
-            String[] cqs = utils.getCqs(command, CqCodeTypeEnum.at.getType());
-            if(cqs == null || cqs.length == 0){
+            if(!message.isAtBot()){
                 // 没有at机器人
-                this.cqs = null;
-                return false;
+                return MatchResult.unmatched();
             }
-            for (String cq : cqs) {
-                String qq = utils.getParam(cq, "qq", CqCodeTypeEnum.at.getType());
-                if(qq != null && qq.equals(String.valueOf(message.getSelfId()))){
-                    // 表示at了机器人
-                    this.cqs = cqs;
-                    return true;
-                }
-            }
+            String text = message.getText(-1);
+            return StringUtils.isNotBlank(text) ? MatchResult.matched(text) : MatchResult.unmatched();
         }
-        this.cqs = null;
-        return false;
+        return MatchResult.unmatched();
     }
 
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
-        if(!SwitchConfig.ENABLE_AI_CHAT || !matching(message,command)){
+        if(!SwitchConfig.ENABLE_AI_CHAT){
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            String s = command;
-            if(this.cqs != null){
-                for (String cq : this.cqs) {
-                    s = s.replace(cq,"");
-                }
-            }
-            if(Strings.isBlank(s)){
-                return;
-            }
+        MatchResult<String> matchResult = matching(message, command);
+        if(!matchResult.isMatched()){
+            return false;
+        }
 
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             Map<String, Object> urlParam = new HashMap<>(3);
             urlParam.put("key","free");
             urlParam.put("appid",0);
-            urlParam.put("msg",s);
+            urlParam.put("msg",matchResult.getData());
             ChatResp chatResp = null;
             try {
                 chatResp = RestUtil.sendGetRequest(RestUtil.getRestTemplate(8 * 1000), ThirdPartyURL.AI_CHAT, urlParam, ChatResp.class);

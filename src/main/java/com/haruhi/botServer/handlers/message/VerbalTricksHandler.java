@@ -42,18 +42,17 @@ public class VerbalTricksHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
+    public boolean onMessage(WebSocketSession session,Message message, String command) {
         if(cache.size() == 0){
             return false;
         }
-        String cmd = new String(command);
-        if (CommonUtil.isAt(message.getSelfId(),command)) {
-            cmd = cmd.replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").replace(" ","");
+        if (message.isAtBot()) {
+            command = command.replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").replace(" ","");
         }
 
         List<VerbalTricks> answerObj = null;
         for (Map.Entry<String, List<VerbalTricks>> item : cache.entrySet()) {
-            if (cmd.matches(item.getKey())) {
+            if (command.matches(item.getKey())) {
                 answerObj = item.getValue();
                 break;
             }

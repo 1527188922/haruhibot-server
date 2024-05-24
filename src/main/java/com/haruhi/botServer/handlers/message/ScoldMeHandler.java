@@ -45,8 +45,8 @@ public class ScoldMeHandler implements IAllMessageEvent {
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
         String cmd;
-        if(CommonUtil.isAt(message.getSelfId(),command)){
-            cmd = command.replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(),"");
+        if(message.isAtBot()){
+            cmd = message.getText(-1);
         }else{
             cmd = command;
         }

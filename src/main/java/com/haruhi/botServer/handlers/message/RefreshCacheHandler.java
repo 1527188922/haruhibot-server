@@ -5,13 +5,14 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.SystemService;
-import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
@@ -29,27 +30,39 @@ public class RefreshCacheHandler implements IAllMessageEvent {
     public String funName() {
         return "刷新缓存";
     }
+    
+    private static final AtomicBoolean REFRESH_LOCK = new AtomicBoolean(false);
 
     @Override
     @SuperuserAuthentication
     public boolean onMessage(WebSocketSession session, Message message, String command) {
         String cmd;
-        if(CommonUtil.isAt(message.getSelfId(),command)){
-            cmd = command.replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(),"");
+        if(message.isAtBot()){
+            cmd = message.getText(-1);
         }else{
             cmd = command;
         }
         if (!cmd.trim().matches(RegexEnum.FLUSH_CACHE.getValue())){
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            long l = System.currentTimeMillis();
-            systemService.clearCache();
-            systemService.loadCache();
-            Server.sendMessage(session,message.getUserId(), message.getGroupId(), message.getMessageType(), 
-                    "刷新缓存完成\n耗时：" + (System.currentTimeMillis() - l) + "ms", true);
-        });
+
+        if(!REFRESH_LOCK.compareAndSet(false,true)){
+            Server.sendMessage(session,message.getUserId(), message.getGroupId(), message.getMessageType(),
+                    "正在刷新中...", true);
+            return true;
+        }
         
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
+            try {
+                long l = System.currentTimeMillis();
+                systemService.clearCache();
+                systemService.loadCache();
+                Server.sendMessage(session,message.getUserId(), message.getGroupId(), message.getMessageType(),
+                        "刷新缓存完成\n耗时：" + (System.currentTimeMillis() - l) + "ms", true);
+            }finally {
+                REFRESH_LOCK.set(false);
+            }
+        });
         return true;
     }
 }

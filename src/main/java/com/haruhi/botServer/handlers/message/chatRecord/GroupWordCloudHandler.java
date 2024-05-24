@@ -29,7 +29,7 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
         return "群词云";
     }
 
-    public static volatile Map<String, Integer> lock = new ConcurrentHashMap<>();
+    public static final Map<String, Integer> lock = new ConcurrentHashMap<>();
 
     @Autowired
     private ChatRecordService groupChatHistoryService;
@@ -53,11 +53,11 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
         if (matching == null) {
             return false;
         }
-        if(lock.containsKey(String.valueOf(message.getGroupId()) + String.valueOf(message.getSelfId()))){
+        if(lock.containsKey(String.valueOf(message.getGroupId()) + message.getSelfId())){
             Server.sendGroupMessage(session,message.getGroupId(),"词云正在生成中...莫着急",true);
             return true;
         }else{
-            lock.put(String.valueOf(message.getGroupId()) + String.valueOf(message.getSelfId()),1);
+            lock.put(String.valueOf(message.getGroupId()) + message.getSelfId(),1);
         }
         ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,groupChatHistoryService,matching,message));
         return true;
