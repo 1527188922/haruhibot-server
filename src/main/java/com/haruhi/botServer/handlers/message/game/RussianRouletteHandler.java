@@ -75,19 +75,18 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
         }
         
         // 对参加游戏的判断
-        String s = command.replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
+        String s = message.getText(-1);
         if(s.matches("参加")){
-            String cacheKey = cacheKey(message);
-            String cq = instance.getCq(command, CqCodeTypeEnum.reply.getType());
-            if (Strings.isBlank(cq)) {
+            if (!message.isReplyMsg()) {
                 return false;
             }
+            String cacheKey = cacheKey(message);
             RussianRouletteGame game = cache.get(cacheKey);
             if(game == null){
                 return false;
             }
 
-            String messageId = instance.getParam(cq, "id");
+            String messageId = message.getReplyMsgIds().get(0);
             final String messageId1 = game.getMessageId();
             if (Strings.isBlank(messageId) || !messageId.equals(messageId1)) {
                 return false;
