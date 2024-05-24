@@ -1,8 +1,7 @@
 package com.haruhi.botServer.config;
 
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -11,13 +10,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebResourceConfig implements WebMvcConfigurer {
 
-    @Autowired
-    private AbstractPathConfig abstractPathConfig;
-
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String s = abstractPathConfig.resourceHomePath();
-        registry.addResourceHandler("/**").addResourceLocations("file:"+ s + "/");
-        log.info("映射本地路径：{}",s);
+        registry.addResourceHandler("/**").addResourceLocations("file:"+ FileUtil.getAppDir() + "/");
+        log.info("映射本地路径：{}",FileUtil.getAppDir());
     }
 }

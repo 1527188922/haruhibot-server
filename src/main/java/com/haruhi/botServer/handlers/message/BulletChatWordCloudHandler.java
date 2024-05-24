@@ -1,6 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -20,10 +20,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -41,18 +39,9 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
         return "弹幕词云";
     }
 
-    private static String path = "bulletWordCloud";
     @Autowired
-    private AbstractPathConfig abstractPathConfig;
-    private static String basePath;
-    @PostConstruct
-    private void mkdirs(){
-        basePath = abstractPathConfig.resourcesImagePath() + File.separator + path;
-        File file = new File(basePath);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-    }
+    private AbstractWebResourceConfig abstractPathConfig;
+
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
         if(!command.startsWith(RegexEnum.BULLET_CHAT_WORD_CLOUD.getValue())){
@@ -119,12 +108,12 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
                     return;
                 }
                 String fileName = bv + "-" + message.getUserId() + ".png";
-                outPutPath = basePath + File.separator + fileName;
+                outPutPath = FileUtil.mkdirs(FileUtil.getBulletWordCloudDir()) + File.separator + fileName;
                 File file = new File(outPutPath);
                 FileUtil.deleteFile(file);
 
                 WordCloudUtil.generateWordCloudImage(map,outPutPath);
-                String s = abstractPathConfig.webResourcesImagePath() + "/" + path + "/" + fileName + "?t=" + System.currentTimeMillis();
+                String s = abstractPathConfig.webBulletWordCloudPath() + "/" + fileName + "?t=" + System.currentTimeMillis();
                 log.info("弹幕词云地址：{}",s);
                 String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
 

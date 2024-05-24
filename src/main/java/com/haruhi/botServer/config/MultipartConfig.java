@@ -1,8 +1,7 @@
 package com.haruhi.botServer.config;
 
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,18 +13,12 @@ import java.io.File;
 @Configuration
 public class MultipartConfig {
 
-    @Autowired
-    private AbstractPathConfig abstractPathConfig;
-
     @Bean
     public MultipartConfigElement multipartConfigElement() {
         MultipartConfigFactory factory = new MultipartConfigFactory();
-        File file = abstractPathConfig.tempPath();
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-        factory.setLocation(file.getPath());
-        log.info("自定义临时目录：{}",file.getPath());
+        File tempFile = FileUtil.mkdirs(FileUtil.getAppTempDir());
+        factory.setLocation(tempFile.getPath());
+        log.info("自定义临时目录：{}",tempFile.getPath());
         return factory.createMultipartConfig();
     }
 }

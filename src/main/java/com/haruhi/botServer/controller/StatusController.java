@@ -1,15 +1,15 @@
 package com.haruhi.botServer.controller;
 
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class StatusController {
     
-    private final AbstractPathConfig abstractPathConfig;
+    private final AbstractWebResourceConfig abstractPathConfig;
 
-    public StatusController(AbstractPathConfig abstractPathConfig) {
+    public StatusController(AbstractWebResourceConfig abstractPathConfig) {
         this.abstractPathConfig = abstractPathConfig;
     }
 

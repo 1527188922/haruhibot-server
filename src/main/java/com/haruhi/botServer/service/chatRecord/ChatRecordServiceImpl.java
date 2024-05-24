@@ -2,7 +2,7 @@ package com.haruhi.botServer.service.chatRecord;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
@@ -27,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -49,21 +48,13 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
     private ChatRecordMapper chatRecordMapper;
 
     @Autowired
-    private AbstractPathConfig abstractPathConfig;
-    private static String path = "wordCloud";
+    private AbstractWebResourceConfig abstractPathConfig;
 
-    private static String basePath;
     public static int poolSize = SystemInfo.AVAILABLE_PROCESSORS + 1;
-    private static Executor pool =  new ThreadPoolExecutor(poolSize,poolSize * 2,60L, TimeUnit.SECONDS,new ArrayBlockingQueue(8),new CustomizableThreadFactory("pool-chat-history-"),new ThreadPoolExecutor.CallerRunsPolicy());
-
-    @PostConstruct
-    private void mkdirs(){
-        basePath = abstractPathConfig.resourcesImagePath() + File.separator + path;
-        File file = new File(basePath);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-    }
+    private static final Executor pool =  new ThreadPoolExecutor(poolSize,poolSize * 2,60L,
+            TimeUnit.SECONDS,new ArrayBlockingQueue<>(8),
+            new CustomizableThreadFactory("pool-chat-history-"),
+            new ThreadPoolExecutor.CallerRunsPolicy());
 
     /**
      * 发送聊天历史
@@ -201,7 +192,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
             Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("分词完成:{0}条\n耗时:{1}毫秒\n开始生成图片...",strings.size(),l1 - l),true);
             // 开始生成图片
             String fileName = regexEnum.getUnit().toString() + "-" + message.getGroupId() + ".png";
-            outPutPath = basePath + File.separator + fileName;
+            outPutPath = FileUtil.mkdirs(FileUtil.getWordCloudDir()) + File.separator + fileName;
 
             // 先删掉旧图片
             File file = new File(outPutPath);
@@ -211,7 +202,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
             log.info("生成词云图完成,耗时:{}",System.currentTimeMillis() - l1);
             // 生成图片完成,发送图片
             KQCodeUtils instance = KQCodeUtils.getInstance();
-            String s = abstractPathConfig.webResourcesImagePath() + "/" + path + "/" + fileName + "?t=" + System.currentTimeMillis();
+            String s = abstractPathConfig.webWordCloudPath() + "/" + fileName + "?t=" + System.currentTimeMillis();
             log.info("群词云图片地址：{}",s);
             String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
             //
@@ -224,7 +215,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
         }
     }
     private void generateComplete(Message message){
-        GroupWordCloudHandler.lock.remove(String.valueOf(message.getGroupId()) + String.valueOf(message.getSelfId()));
+        GroupWordCloudHandler.lock.remove(String.valueOf(message.getGroupId()) + message.getSelfId());
     }
 
     private Date limitDate(GroupWordCloudHandler.RegexEnum regexEnum){

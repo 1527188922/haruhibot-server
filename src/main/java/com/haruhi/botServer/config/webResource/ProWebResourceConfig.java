@@ -1,17 +1,16 @@
-package com.haruhi.botServer.config.path;
+package com.haruhi.botServer.config.webResource;
 
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -21,37 +20,17 @@ import java.net.UnknownHostException;
 @Component
 @ConditionalOnProperty(name = "env.active",havingValue = SystemUtil.PROFILE_RPOD)
 @DependsOn("botConfig")
-public class ProPathConfig extends AbstractPathConfig {
+public class ProWebResourceConfig extends AbstractWebResourceConfig {
 
-    public ProPathConfig(){
+    public ProWebResourceConfig(){
         log.info("profile active : {}", SystemInfo.PROFILE);
     }
 
-    private static String homePath;
-    private static String imagePath;
-    private static String audioPath;
     private static String host;
-    private static File tempFile;
 
 
     static {
-        // 加载根目录路径
-        ApplicationHome ah = new ApplicationHome(ProPathConfig.class);
-        homePath = ah.getSource().getParentFile().toString();
-
-        // 创建image路径
-        String path = homePath + File.separator + "image";
-        File file = new File(path);
-        if(!file.exists()){
-            file.mkdirs();
-        }
-        imagePath = path;
-
-        // 音频资源路径 必存在 不用创建
-        audioPath = homePath + File.separator + "audio";
-
         setWebHomePath();
-        setTempPath();
     }
 
     private static void setWebHomePath(){
@@ -87,52 +66,37 @@ public class ProPathConfig extends AbstractPathConfig {
         log.info("web home path:{}",WEB_HOME_PATH);
     }
 
-    private static void setTempPath(){
-        tempFile = new File(homePath + File.separator + TEMP);
-    }
-
     @Override
     public String webHomePath() {
         return WEB_HOME_PATH;
-
     }
 
     @Override
-    public String resourceHomePath() {
-        return applicationHomePath();
+    public String webLogsPath() {
+        return webHomePath() + "/" + FileUtil.DIR_LOGS;
     }
-
-    /**
-     * 在 prod 环境下,resourceHomePath就是程序根目录路径
-     * @return
-     */
-    @Override
-    public String applicationHomePath() {
-        return homePath;
-    }
-
-    @Override
-    public String resourcesImagePath() {
-        return imagePath;
-    }
-
+    
     @Override
     public String webResourcesImagePath() {
-        return webHomePath() + "/image";
+        return webHomePath() + "/" + FileUtil.DIR_IMAGE;
     }
 
     @Override
-    public String resourcesAudioPath() {
-        return audioPath;
+    public String webBulletWordCloudPath() {
+        return webResourcesImagePath() + "/" + FileUtil.DIR_IMAGE_BULLET_WORD_CLOUD;
+    }
+    @Override
+    public String webWordCloudPath() {
+        return webResourcesImagePath() + "/" + FileUtil.DIR_IMAGE_GROUP_WORD_CLOUD;
     }
 
     @Override
     public String webResourcesAudioPath() {
-        return webHomePath() + "/audio";
+        return webHomePath() + "/" + FileUtil.DIR_AUDIO;
     }
 
     @Override
-    public File tempPath() {
-        return tempFile;
+    public String webDgAudioPath() {
+        return webResourcesAudioPath() + "/" + FileUtil.DIR_AUDIO_DG;
     }
 }

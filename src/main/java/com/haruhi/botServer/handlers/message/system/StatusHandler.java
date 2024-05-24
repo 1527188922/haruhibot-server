@@ -3,11 +3,12 @@ package com.haruhi.botServer.handlers.message.system;
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.DataBaseConfig;
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.utils.system.SystemUtil;
@@ -50,7 +51,7 @@ public class StatusHandler implements IAllMessageEvent {
     }
 
     @Autowired
-    private AbstractPathConfig pathConfig;
+    private AbstractWebResourceConfig pathConfig;
     @Autowired
     private DataBaseConfig dataBaseConfig;
 
@@ -73,7 +74,7 @@ public class StatusHandler implements IAllMessageEvent {
             sysPropStr.append("AccessToken：" + BotConfig.ACCESS_TOKEN).append("\n");
             sysPropStr.append("识图key：" + BotConfig.SEARCH_IMAGE_KEY).append("\n");
             sysPropStr.append("超级用户：" + BotConfig.SUPERUSERS).append("\n");
-            sysPropStr.append("程序路径："+ pathConfig.applicationHomePath()).append("\n");
+            sysPropStr.append("程序路径："+ FileUtil.getAppDir()).append("\n");
             sysPropStr.append("------数据库信息------ \n");
             sysPropStr.append("数据库名称：" + dataBaseConfig.getMasterDBName()).append("\n");
             sysPropStr.append("IP:PORT：" + dataBaseConfig.getMasterHost() + ":" + dataBaseConfig.getMasterPort()).append("\n");

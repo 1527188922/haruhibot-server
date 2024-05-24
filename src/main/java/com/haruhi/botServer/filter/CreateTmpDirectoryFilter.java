@@ -1,8 +1,7 @@
 package com.haruhi.botServer.filter;
 
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.Filter;
@@ -19,9 +18,6 @@ import java.io.IOException;
 @Component
 public class CreateTmpDirectoryFilter implements Filter {
 
-    @Autowired
-    private AbstractPathConfig abstractPathConfig;
-
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         Filter.super.init(filterConfig);
@@ -34,11 +30,8 @@ public class CreateTmpDirectoryFilter implements Filter {
             tmp.mkdirs();
             log.info("创建了临时目录：{}",tmp);
         }
-        File multipartFileTemp = abstractPathConfig.tempPath();
-        if (!multipartFileTemp.exists()) {
-            multipartFileTemp.mkdirs();
-            log.info("创建了自定义临时目录：{}",multipartFileTemp);
-        }
+        File file = FileUtil.mkdirs(FileUtil.getAppTempDir());
+        log.info("创建了自定义临时目录：{}",file);
 
         filterChain.doFilter(request,response);
     }

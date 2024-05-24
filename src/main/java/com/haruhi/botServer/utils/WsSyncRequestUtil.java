@@ -116,10 +116,9 @@ public class WsSyncRequestUtil {
         param.put("name",fileName);
         JSONObject responseStr = sendSyncRequest(session, GocqActionEnum.UPLOAD_PRIVATE_FILE,param,timeout);
         if (responseStr != null) {
-            SyncResponse response = JSONObject.parseObject(responseStr.toJSONString(), SyncResponse.class);
-            return response;
+            return JSONObject.parseObject(responseStr.toJSONString(), SyncResponse.class);
         }
-        return null;
+        return SyncResponse.failed();
     }
 
     /**

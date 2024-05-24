@@ -1,6 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 
 @Slf4j
@@ -32,15 +31,13 @@ public class ScoldMeHandler implements IAllMessageEvent {
     }
 
     @Autowired
-    private AbstractPathConfig abstractPathConfig;
+    private AbstractWebResourceConfig abstractPathConfig;
     private static File[] fileList;
-
-    @PostConstruct
-    private void loadAudioFileList(){
-        // 初始化类时加载文件
-        fileList = FileUtil.getFileList(abstractPathConfig.resourcesAudioPath() + File.separator + "dg");
+    
+    public static void refreshFile(){
+        fileList = FileUtil.getFileList(FileUtil.getAudioDgDir());
+        fileList = fileList == null ? new File[0] : fileList;
     }
-
 
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
@@ -57,7 +54,7 @@ public class ScoldMeHandler implements IAllMessageEvent {
             int i = CommonUtil.randomInt(0, fileList.length - 1);
             File file = fileList[i];
             KQCodeUtils instance = KQCodeUtils.getInstance();
-            String s = abstractPathConfig.webResourcesAudioPath() + "/dg/" + file.getName();
+            String s = abstractPathConfig.webDgAudioPath() + "/" + file.getName();
             log.info("骂我音频地址：{}",s);
             String cq = instance.toCq(CqCodeTypeEnum.record.getType(), "file=" + s);
             Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);

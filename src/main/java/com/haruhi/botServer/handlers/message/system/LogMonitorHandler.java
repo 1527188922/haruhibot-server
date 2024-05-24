@@ -4,19 +4,16 @@ import cn.hutool.core.io.LineHandler;
 import cn.hutool.core.io.file.Tailer;
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.config.path.AbstractPathConfig;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
+import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -26,26 +23,9 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class LogMonitorHandler implements IPrivateMessageEvent {
 
-	@Value("${log.path}")
-	private String logPath;
-	@Value("${log.filename}")
-	private String logPrefix;
-
-	@Autowired
-	private AbstractPathConfig pathConfig;
-
-	private static File LOG_FILE;
+	private final String filename = "haruhibot.log";
 
 	private volatile static Tailer tailer;
-
-	
-	@PostConstruct
-	public void initFile() {
-		String logFileName = logPrefix + "" + "." + "log";
-		String filePath = pathConfig.applicationHomePath() + File.separator + logPath;
-		LOG_FILE = new File(filePath + File.separator + logFileName);
-
-	}
 
 	@Override
 	public int weight() {
@@ -94,7 +74,7 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 	private void startTailer(boolean async, Charset charset,LogFileLineHandler handler){
 		synchronized (LogMonitorHandler.class){
 			if(tailer == null && BotConfig.SUPERUSERS.size() > 0){
-				tailer = new Tailer(LOG_FILE, charset, handler);
+				tailer = new Tailer(new File(FileUtil.getLogsDir() + File.separator + filename), charset, handler);
 				tailer.start(async);
 			}
 		}

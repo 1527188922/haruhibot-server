@@ -1,6 +1,6 @@
 package com.haruhi.botServer.service;
 
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.service.pokeReply.PokeReplyService;
 import com.haruhi.botServer.service.verbalTricks.VerbalTricksService;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
@@ -20,8 +20,6 @@ import java.text.MessageFormat;
 @Service
 public class SystemService {
 
-    @Autowired
-    private AbstractPathConfig envConfig;
     @Autowired
     private PokeReplyService pokeReplyService;
     @Autowired
@@ -44,7 +42,7 @@ public class SystemService {
                 return;
             }
             if (Strings.isNotBlank(s)) {
-                File file = new File(envConfig.applicationHomePath() + File.separator + scriptName);
+                File file = new File(FileUtil.getAppDir() + File.separator + scriptName);
                 FileUtil.writeText(file,s);
             }
             log.info("生成停止脚本完成:{}",scriptName);
@@ -56,6 +54,7 @@ public class SystemService {
            pokeReplyService.loadPokeReply();
            verbalTricksService.loadVerbalTricks();
            wordStripService.loadWordStrip();
+           ScoldMeHandler.refreshFile();
            log.info("加载缓存完成");
        }catch (Exception e){
            log.error("加载缓存异常",e);

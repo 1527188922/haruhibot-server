@@ -3,19 +3,19 @@ package com.haruhi.botServer.handlers.message.system;
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.config.path.AbstractPathConfig;
+import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.DownloadFileResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
+import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
@@ -45,22 +45,16 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
     }
     private static CacheMap<String, File[]> cacheMap = null;
     private static int expireTime = 20;
-    private static String logWebDir;
     private static File logDir;
 
-    @Value("${log.path}")
-    private String logPath;
-    private String logSeparator = ".";
-    private String logSuffix = "log";
 
     @Autowired
-    private AbstractPathConfig pathConfig;
+    private AbstractWebResourceConfig pathConfig;
 
     @PostConstruct
     private void initCache(){
         cacheMap = new CacheMap<>(expireTime, TimeUnit.SECONDS, BotConfig.SUPERUSERS.size() == 0 ? 1 : BotConfig.SUPERUSERS.size());
-        logWebDir = pathConfig.webHomePath() + "/" + logPath;
-        logDir = new File(pathConfig.applicationHomePath() + File.separator + logPath);
+        logDir = new File(FileUtil.getLogsDir());
     }
 
 
@@ -82,7 +76,7 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
 
             ThreadPoolUtil.getHandleCommandPool().execute(()->{
 
-                File[] files1 = logDir.listFiles(pathname -> pathname.isFile() && pathname.getName().endsWith(logSeparator + logSuffix));
+                File[] files1 = logDir.listFiles(pathname -> pathname.isFile() && pathname.getName().endsWith(".log"));
                 if(files1 != null && files1.length > 0){
                     StringBuilder builder = new StringBuilder();
                     for (int i = 0; i < files1.length; i++) {
@@ -131,17 +125,17 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
                     return;
                 }
                 // 注意该路径可能不存在与bot程序所在的主机上
-                DownloadFileResp downloadFile = WsSyncRequestUtil.downloadFile(session, logWebDir + "/" +
-                        file.getName() + "?t=" + System.currentTimeMillis(), 1, null, 30 * 1000);
+                DownloadFileResp downloadFile = WsSyncRequestUtil.downloadFile(session, 
+                        pathConfig.webLogsPath() + "/" + file.getName() + "?t=" + System.currentTimeMillis(), 
+                        1, null, 30 * 1000);
 
                 if(downloadFile == null || Strings.isBlank(downloadFile.getFile())){
-                    Server.sendPrivateMessage(session,message.getUserId(),"上传日志失败，gocq下载文件失败",true);
+                    Server.sendPrivateMessage(session,message.getUserId(),"上传日志失败，napcat下载文件失败",true);
                     return;
                 }
                 SyncResponse response = WsSyncRequestUtil.uploadPrivateFile(session, message.getUserId(), downloadFile.getFile(), file.getName(), 60 * 1000);
-                if(response == null || response.getRetcode() == null || response.getRetcode() != 0){
-                    Server.sendPrivateMessage(session,message.getUserId(),"上传日志失败，gocq上传私聊文件失败",true);
-                    return;
+                if (!response.isSuccess()) {
+                    Server.sendPrivateMessage(session,message.getUserId(),"上传日志失败\n"+response.getMessage(),true);
                 }
             }catch (Exception e){
                 log.error("上传日志文件异常",e);
