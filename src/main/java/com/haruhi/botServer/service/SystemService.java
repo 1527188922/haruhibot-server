@@ -33,10 +33,10 @@ public class SystemService {
             String scriptName = null;
             if(SystemUtil.IS_OS_LINUX || SystemUtil.IS_OS_MAC){
                 s = MessageFormat.format("kill -9 {0}",SystemInfo.PID);
-                scriptName = "stop.sh";
+                scriptName = "kill.sh";
             }else if (SystemUtil.IS_OS_WINDOWS){
                 s = MessageFormat.format("taskkill /pid {0} -t -f",SystemInfo.PID);
-                scriptName = "stop.bat";
+                scriptName = "kill.bat";
             }else {
                 log.warn("当前系统不支持生成停止脚本:{}",SystemInfo.OS_NAME);
                 return;
@@ -45,7 +45,7 @@ public class SystemService {
                 File file = new File(FileUtil.getAppDir() + File.separator + scriptName);
                 FileUtil.writeText(file,s);
             }
-            log.info("生成停止脚本完成:{}",scriptName);
+            log.info("生成kill脚本完成:{}",scriptName);
         }
     }
 

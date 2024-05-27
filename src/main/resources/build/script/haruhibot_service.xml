@@ -1,0 +1,10 @@
+<service>
+    <id>haruhibot_server_8090</id>
+    <name>haruhibot_server_8090</name>
+    <description>haruhibot_server_8090</description>
+    <env name="JAVA_HOME" value="%JAVA_HOME%"/>
+    <executable>java</executable>
+    <arguments>-Xmx1024m -Xms1024m -jar haruhibotServer.jar</arguments>
+    <startmode>Automatic</startmode>
+    <log mode="none"/>
+</service>
