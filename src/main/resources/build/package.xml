@@ -36,6 +36,7 @@
                 <include>*.bat</include>
                 <include>*.sh</include>
                 <include>*.xml</include>
+                <include>*.exe</include>
             </includes>
         </fileSet>
         <fileSet>
