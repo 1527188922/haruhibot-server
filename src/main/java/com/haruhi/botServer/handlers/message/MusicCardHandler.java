@@ -126,9 +126,9 @@ public class MusicCardHandler implements IAllMessageEvent {
                 }
                 // 将搜索结果保存到缓存
                 cache.put(getKey(message),res);
-                if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
+                if(message.isGroupMsg()){
                     sendGroup(session,message,res,musicName);
-                }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+                }else if(message.isPrivateMsg()){
                     sendPrivate(session,message,res,musicName);
                 }
             } catch (Exception e) {

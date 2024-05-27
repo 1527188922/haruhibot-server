@@ -38,9 +38,9 @@ public class SeeNewsHandler implements IAllMessageEvent {
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
                 List<NewsBy163Resp> newsBy163Resps = NewsService.requestNewsBy163();
-                if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
+                if (message.isGroupMsg()) {
                     NewsService.sendGroup(session,newsBy163Resps,message.getGroupId());
-                }else if (MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+                }else if (message.isPrivateMsg()){
                     NewsService.sendPrivate(session,newsBy163Resps,message.getUserId());
                 }
             }catch (Exception e){

@@ -207,6 +207,14 @@ public class Message implements Serializable {
 
     }
     
+    public boolean isGroupMsg(){
+        return MessageTypeEnum.group.getType().equals(this.messageType);
+    }
+
+    public boolean isPrivateMsg(){
+        return MessageTypeEnum.privat.getType().equals(this.messageType);
+    }
+    
     public boolean isReplyMsg(){
         if(!CollectionUtils.isEmpty(this.message)){
             return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.reply.name());

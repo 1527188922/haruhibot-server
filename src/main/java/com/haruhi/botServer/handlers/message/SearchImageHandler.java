@@ -84,8 +84,8 @@ public class SearchImageHandler implements IAllMessageEvent {
         }
         if (matches) {
             if(CollectionUtils.isEmpty(picMessageData)
-                    && ((MessageTypeEnum.group.getType().equals(message.getMessageType()) && SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP)
-                    || MessageTypeEnum.privat.getType().equals(message.getMessageType()))){
+                    && ((message.isGroupMsg() && SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP)
+                    || message.isPrivateMsg())){
                 cache.add(key);
                 Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
             }else if(!CollectionUtils.isEmpty(picMessageData)){
@@ -97,7 +97,7 @@ public class SearchImageHandler implements IAllMessageEvent {
     }
 
     private void startSearch(WebSocketSession session,Message message, Message replyMessage,String url, String key){
-        if(!SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP && MessageTypeEnum.group.getType().equals(message.getMessageType())){
+        if(!SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP && message.isGroupMsg()){
 //            Server.sendMessage(session,message.getUserId(),message.getGroupId(),MessageTypeEnum.group.getType(),"搜图功能请加机器人好友后私聊使用",true);
             return;
         }
@@ -108,7 +108,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         }
     }
     private Message replySearch(WebSocketSession session, Message message){
-        if (MessageTypeEnum.group.getType().equals(message.getMessageType()) && message.isReplyMsg()) {
+        if (message.isGroupMsg() && message.isReplyMsg()) {
             String s = message.getRawMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
             if (s.matches(RegexEnum.SEARCH_IMAGE.getValue())) {
                 List<String> replyMsgIds = message.getReplyMsgIds();

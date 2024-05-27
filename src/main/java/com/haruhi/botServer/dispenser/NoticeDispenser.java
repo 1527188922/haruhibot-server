@@ -55,7 +55,7 @@ public class NoticeDispenser {
         if(!CollectionUtils.isEmpty(container)){
             String subType = message.getSubType();
             String noticeType = message.getNoticeType();
-            if(SwitchConfig.DISABLE_GROUP && MessageTypeEnum.group.getType().equals(message.getMessageType())){
+            if(SwitchConfig.DISABLE_GROUP && message.isGroupMsg()){
                 return;
             }
             log.info("收到通知类消息：subType：{}，noticeType：{}",subType,noticeType);

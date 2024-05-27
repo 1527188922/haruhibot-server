@@ -51,7 +51,7 @@ public class BtSearchHandler implements IAllMessageEvent {
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
 
-        if (MessageTypeEnum.group.getType().equals(message.getMessageType()) && !SwitchConfig.SEARCH_BT_ALLOW_GROUP){
+        if (message.isGroupMsg() && !SwitchConfig.SEARCH_BT_ALLOW_GROUP){
             return false;
         }
 
@@ -192,9 +192,9 @@ public class BtSearchHandler implements IAllMessageEvent {
                     noData(session,message,keyword);
                     return;
                 }
-                if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
+                if(message.isGroupMsg()){
                     Server.sendGroupMessage(session,message.getGroupId(),message.getSelfId(),BotConfig.NAME,res);
-                }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+                }else if(message.isPrivateMsg()){
                     Server.sendPrivateMessage(session,message.getUserId(),message.getSelfId(),BotConfig.NAME,res);
                 }
             }catch (Exception e){

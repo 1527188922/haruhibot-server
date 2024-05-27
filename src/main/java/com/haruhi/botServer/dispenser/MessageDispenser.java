@@ -104,13 +104,11 @@ public class MessageDispenser {
         container.remove(bean);
     }
 
-    public void onEvent(final WebSocketSession session,final Message message, final String command){
+    public void onEvent(WebSocketSession session, Message message, String command){
         if (!CollectionUtils.isEmpty(container)) {
-            final String messageType = message.getMessageType();
-
-            if (MessageTypeEnum.group.getType().equals(messageType)) {
+            if (message.isGroupMsg()) {
                 executeGroupMessageHandler(container,session,message,command);
-            } else if (MessageTypeEnum.privat.getType().equals(messageType)) {
+            } else if (message.isPrivateMsg()) {
                 executePrivateMessageHandler(container,session,message,command);
             }
         }

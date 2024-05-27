@@ -37,7 +37,7 @@ public class PokeMeHandler implements IPokeEvent {
                 int size = cache.size();
                 if(size > 0){
                     String reply = cache.get(CommonUtil.randomInt(0, size - 1));
-                    if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
+                    if(message.isGroupMsg()){
                         if("".equals(reply)){
                             KQCodeUtils instance = KQCodeUtils.getInstance();
                             String s = instance.toCq(CqCodeTypeEnum.poke.getType(), "qq=" + message.getUserId());
@@ -45,7 +45,7 @@ public class PokeMeHandler implements IPokeEvent {
                         }else{
                             Server.sendGroupMessage(session,message.getGroupId(),reply, true);
                         }
-                    }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+                    }else if(message.isPrivateMsg()){
                         // gocq私聊不能发送给戳一戳 所以这里只回复文字
                         while (Strings.isBlank(reply)){
                             reply = cache.get(CommonUtil.randomInt(0, size - 1));

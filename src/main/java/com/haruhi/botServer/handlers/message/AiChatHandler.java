@@ -46,14 +46,14 @@ public class AiChatHandler implements IAllMessageEvent {
     }
 
     public MatchResult<String> matching(Message message, String command) {
-        if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+        if(message.isPrivateMsg()){
             // 私聊了机器人
             if(!message.isTextMsg()){
                 return MatchResult.unmatched();
             }
             return MatchResult.matched(message.getText(-1));
         }
-        if(MessageTypeEnum.group.getType().equals(message.getMessageType())){
+        if(message.isGroupMsg()){
             if(!message.isAtBot()){
                 // 没有at机器人
                 return MatchResult.unmatched();
