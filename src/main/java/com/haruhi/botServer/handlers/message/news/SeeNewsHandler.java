@@ -1,7 +1,6 @@
 package com.haruhi.botServer.handlers.message.news;
 
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
 import com.haruhi.botServer.event.message.IAllMessageEvent;

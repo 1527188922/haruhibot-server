@@ -3,7 +3,6 @@ package com.haruhi.botServer.handlers.message;
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.music.response.Song;
 import com.haruhi.botServer.event.message.IAllMessageEvent;

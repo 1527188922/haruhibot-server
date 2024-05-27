@@ -1,7 +1,6 @@
 package com.haruhi.botServer.dispenser;
 
 import com.haruhi.botServer.config.SwitchConfig;
-import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.constant.event.NoticeTypeEnum;
 import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
