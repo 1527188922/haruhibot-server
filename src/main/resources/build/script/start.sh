@@ -1,5 +1,5 @@
 #!/bin/bash
-currentPath=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+currentPath=$( cd "$( dirname "$0" )" && pwd )
 echo "Current path is ${currentPath}"
 xmlFile="${currentPath}/haruhibot_service.xml"
 echo "XML file is ${xmlFile}"
