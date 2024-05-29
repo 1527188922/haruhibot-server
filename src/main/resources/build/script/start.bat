@@ -63,6 +63,3 @@ goto end
 echo ------- 
 echo 本窗口将在15s后自动关闭...
 ping 127.1 -n 15 >nul
-
-
-

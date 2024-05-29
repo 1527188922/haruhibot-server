@@ -95,12 +95,13 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
                     return;
                 }
                 KQCodeUtils instance = KQCodeUtils.getInstance();
-                String cq = "";
-                if(Strings.isNotBlank(playerInfoResp.getFirst_frame())){
-                    cq = instance.toCq(CqCodeTypeEnum.image.getType(), "url=" + playerInfoResp.getFirst_frame(),"file="+CommonUtil.uuid()+".jpg");
-                    cq = "\n"+cq;
-                }
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),MessageFormat.format("获取弹幕成功，数量：{0}\n开始生成...\n标题：{1}{2}",chatList.size(),playerInfoResp.getPart(),cq),false);
+//                String cq = "";
+//                if(Strings.isNotBlank(playerInfoResp.getFirst_frame())){
+//                    cq = instance.toCq(CqCodeTypeEnum.image.getType(), "url=" + playerInfoResp.getFirst_frame(),"file="+CommonUtil.uuid()+".jpg");
+//                    cq = "\n"+cq;
+//                }
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        MessageFormat.format("获取弹幕成功，数量：{0}\n视频标题：{1}\n开始生成...",chatList.size(),playerInfoResp.getPart()),false);
                 List<String> list = WordSlicesTask.execute(chatList);
                 Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(list));
                 if(CollectionUtils.isEmpty(map)){
