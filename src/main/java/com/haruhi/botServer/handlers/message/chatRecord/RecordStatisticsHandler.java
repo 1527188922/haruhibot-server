@@ -2,6 +2,7 @@ package com.haruhi.botServer.handlers.message.chatRecord;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
@@ -10,10 +11,12 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.mapper.ChatRecordMapper;
+import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
+import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -53,7 +56,9 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
+                long l = System.currentTimeMillis();
                 List<ChatRecord> chatRecords = chatRecordMapper.groupRecordCounting(message.getGroupId(), message.getSelfId());
+                log.info("聊天记录分组执行sql cost:{}",System.currentTimeMillis() - l);
                 if(CollectionUtils.isEmpty(chatRecords)){
                     Server.sendGroupMessage(session,message.getGroupId(),"暂无聊天记录",true);
                     return;
@@ -80,10 +85,13 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 for (int i = 0; i < chatRecords.size(); i++) {
                     ChatRecord item = chatRecords.get(i);
                     String name = getName(item, groupMemberList);
-                    String meg = (i + 1) + "\n" 
+                    String imageCq = KQCodeUtils.getInstance().toCq(CqCodeTypeEnum.image.getType(), 
+                            "file=" + CommonUtil.getAvatarUrl(item.getUserId(), false));
+                    String msg = imageCq
+                            + (i + 1) + "\n" 
                             + name + "(" +item.getUserId() + ")"
                             + "\n发言数：" + item.getTotal();
-                    params.add(new ForwardMsgItem(new ForwardMsgItem.Data(name,item.getUserId(), meg)));
+                    params.add(new ForwardMsgItem(new ForwardMsgItem.Data(name,item.getUserId(), msg)));
                 }
 
                 Server.sendGroupMessage(session, message.getGroupId(), params);

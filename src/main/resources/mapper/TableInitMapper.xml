@@ -3,20 +3,23 @@
 <mapper namespace="com.haruhi.botServer.mapper.TableInitMapper">
     <update id="createChatRecord">
         CREATE TABLE `${tableName}` (
-            `id` INT auto_increment NOT NULL,
-            `card` varchar(30) COMMENT '群昵称',
-            `nickname` varchar(30) COMMENT 'qq昵称',
-            `message_id` varchar(30) NOT NULL,
-            `group_id` BIGINT,
-            `user_id` BIGINT NOT NULL,
-            `self_id` BIGINT NOT NULL,
-            `content` TEXT COLLATE utf8mb4_unicode_ci,
-            create_time BIGINT NOT NULL,
-            message_type varchar(12) NOT NULL COMMENT '消息类型 private group',
-            `deleted` tinyint(1) NOT NULL DEFAULT '0',
-            PRIMARY KEY (`id`),
-            KEY `index_content` (`content`(767))
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天记录';
+         `id` int(11) NOT NULL AUTO_INCREMENT,
+         `card` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '群昵称',
+         `nickname` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'qq昵称',
+         `message_id` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+         `group_id` bigint(20) DEFAULT NULL,
+         `user_id` bigint(20) NOT NULL,
+         `self_id` bigint(20) NOT NULL,
+         `content` text COLLATE utf8mb4_unicode_ci,
+         `create_time` bigint(20) NOT NULL,
+         `deleted` tinyint(1) NOT NULL DEFAULT '0',
+         `message_type` varchar(12) COLLATE utf8mb4_unicode_ci NOT NULL,
+         PRIMARY KEY (`id`),
+         KEY `index_content` (`content`(767)),
+         KEY `t_chat_record_create_time_IDX` (`create_time`) USING BTREE,
+         KEY `t_chat_record_group_id_IDX` (`group_id`) USING BTREE,
+         KEY `t_chat_record_user_id_IDX` (`user_id`) USING BTREE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群聊历史聊天表';
     </update>
 
     <update id="createPokeReply">

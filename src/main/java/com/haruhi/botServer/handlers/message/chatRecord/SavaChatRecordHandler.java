@@ -73,9 +73,13 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
                 param.setUserId(message.getUserId());
                 param.setContent(message.getRawMessage());
                 param.setSelfId(message.getSelfId());
-                param.setCreateTime(message.getTime() * 1000);
                 param.setMessageId(message.getMessageId());
                 param.setMessageType(message.getMessageType());
+                if(message.getTime() != null && String.valueOf(message.getTime()).length() == 10){
+                    param.setCreateTime(message.getTime() * 1000);
+                }else{
+                    param.setCreateTime(message.getTime());
+                }
                 service.save(param);
             }catch (Exception e){
                 log.error("保存聊天记录异常 {}", JSONObject.toJSONString(param),e);

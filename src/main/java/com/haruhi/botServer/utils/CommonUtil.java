@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -166,5 +167,10 @@ public class CommonUtil {
                 br.close();
         }
         return ip;
+    }
+
+    public static String getAvatarUrl(Long qq, boolean origin){
+        return origin ? MessageFormat.format("https://q1.qlogo.cn/g?b=qq&nk={0}&s=0",String.valueOf(qq))
+                : MessageFormat.format("https://q2.qlogo.cn/headimg_dl?dst_uin={0}&spec=100",String.valueOf(qq));
     }
 }
