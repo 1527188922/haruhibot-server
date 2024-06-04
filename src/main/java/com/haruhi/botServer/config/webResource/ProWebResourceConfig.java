@@ -82,6 +82,11 @@ public class ProWebResourceConfig extends AbstractWebResourceConfig {
     }
 
     @Override
+    public String webFacePath() {
+        return webResourcesImagePath() + "/" + FileUtil.DIR_FACE;
+    }
+
+    @Override
     public String webBulletWordCloudPath() {
         return webResourcesImagePath() + "/" + FileUtil.DIR_IMAGE_BULLET_WORD_CLOUD;
     }

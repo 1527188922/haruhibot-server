@@ -27,6 +27,7 @@ public class DevWebResourceConfig extends AbstractWebResourceConfig {
         setWebHomePath();
     }
 
+
     public static void setWebHomePath(){
         try {
             InetAddress localHost = Inet4Address.getLocalHost();
@@ -51,6 +52,13 @@ public class DevWebResourceConfig extends AbstractWebResourceConfig {
     @Override
     public String webResourcesImagePath() {
         return webHomePath() + "/build/" + FileUtil.DIR_IMAGE;
+    }
+
+
+
+    @Override
+    public String webFacePath() {
+        return webResourcesImagePath() + "/" + FileUtil.DIR_FACE;
     }
 
     @Override

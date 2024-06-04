@@ -28,11 +28,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
 
 public class CommonUtil {
     private CommonUtil(){}
@@ -193,19 +190,32 @@ public class CommonUtil {
     }
 
     public static void main(String[] args) {
-        // GIF图片文件路径  
-        String gifFilePath = "D:\\my\\bot\\resources\\download.gif";
-        // 叠加的图片文件路径  
-        String overlayImagePath = "D:\\my\\bot\\resources\\g.jpg"; // 或 .png  
-        // 新的GIF图片输出文件路径  
-        String outputGifPath = "D:\\my\\bot\\resources\\download1.gif";
-        
+        sss();
+        ss();
+
+    }
+
+    private static void sss(){
+        // GIF图片文件路径
+        String gifFilePath = "D:\\temp\\resources\\bot\\download.gif";
+        // 叠加的图片文件路径
+        String overlayImagePath = "D:\\temp\\resources\\bot\\g.jpg"; // 或 .png
+        // 新的GIF图片输出文件路径
+        String outputGifPath = "D:\\temp\\resources\\bot\\download1.gif";
+
 
         try {
-
             BufferedImage bufferedImage = Thumbnails.of(overlayImagePath)
-                    .size(110, 110) // 设置目标图片的宽度和高度为200x200像素  
+                    .size(120, 120) // 设置目标图片的宽度和高度为200x200像素
                     .asBufferedImage();
+
+
+            BufferedImage bufferedImage1 = Thumbnails.of(overlayImagePath)
+                    .size(112, 112) // 设置目标图片的宽度和高度为200x200像素
+                    .asBufferedImage();
+
+
+            bufferedImage1 = rotateImage(bufferedImage1,90,new Color(255, 255, 255));
 
             GifDecoder gifDecoder = new GifDecoder();
             gifDecoder.read(new FileInputStream(gifFilePath));
@@ -213,19 +223,26 @@ public class CommonUtil {
             List<BufferedImage> frames = new ArrayList<>();
             for (int i = 0; i < n; i++) {
                 BufferedImage frame = gifDecoder.getFrame(i);  // 原gif的帧
-                // 在指定位置叠加图片（这里假设是(100, 100)）  
                 Graphics2D g2d = frame.createGraphics();
-//                BufferedImage overlayImage = ImageIO.read(new File(overlayImagePath));
                 BufferedImage circularOverlay = makeImageCircular(bufferedImage);
+                BufferedImage circularOverlay1 = makeImageCircular(bufferedImage1);
 
                 g2d.drawImage(frame, 0, 0, null);
-//                g2d.drawImage(overlayImage, 100, 100, null);
-                g2d.drawImage(circularOverlay, 100, 100, null);
+                if(i == 0){
+                    g2d.drawImage(circularOverlay, 117, -7, null);
+                    g2d.drawImage(circularOverlay1, 3, 176, null);
+                }
+                if(i == 1){
+                    g2d.drawImage(circularOverlay, 110, 4, null);
+                    g2d.drawImage(circularOverlay1, 13 , 173, null);
+                }
+                if(i == 2){
+                    g2d.drawImage(circularOverlay, 132, -9, null);
+                    g2d.drawImage(circularOverlay1, 7, 159, null);
+                }
                 g2d.dispose();
-
                 frames.add(frame);
             }
-
             File output = new File(outputGifPath);
             AnimatedGifEncoder animatedGifEncoder = new AnimatedGifEncoder();
             animatedGifEncoder.start(new FileOutputStream(output));
@@ -238,10 +255,36 @@ public class CommonUtil {
         }catch (Exception e){
             e.printStackTrace();
         }
+    }
+    private static void ss(){
+        try {
+            // 读取GIF图片
+            File gifFile = new File("D:\\temp\\resources\\bot\\download1.gif");
+            ImageInputStream imageInputStream = ImageIO.createImageInputStream(gifFile);
+            Iterator<ImageReader> imageReaders = ImageIO.getImageReaders(imageInputStream);
+            ImageReader reader = imageReaders.next();
+            reader.setInput(imageInputStream);
 
+            // 获取GIF图片的帧数
+            int numFrames = reader.getNumImages(true);
+            // 0 x110 y-16
+            // 解帧并保存
+            for (int i = 0; i < numFrames; i++) {
+                BufferedImage frame = reader.read(i);
+                File outputFile = new File("D:\\temp\\resources\\bot\\frame_" + i + ".png");
+                ImageIO.write(frame, "png", outputFile);
+            }
+
+            // 关闭流
+            imageInputStream.close();
+            reader.dispose();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    private static BufferedImage makeImageCircular(BufferedImage image) {
+
+    public static BufferedImage makeImageCircular(BufferedImage image) {
         int w = image.getWidth();
         int h = image.getHeight();
 
@@ -345,4 +388,75 @@ public class CommonUtil {
         }
         return null;
     }
+
+
+
+    /**
+     * 创建任意角度的旋转图像
+     * @param image
+     * @param theta
+     * @param backgroundColor
+     * @return
+     */
+    public static BufferedImage rotateImage(BufferedImage image, double theta,Color backgroundColor) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        double angle = theta * Math.PI / 180; // 度转弧度
+        double[] xCoords = getX(width / 2, height / 2, angle);
+        double[] yCoords = getY(width / 2, height / 2, angle);
+        int WIDTH = (int) (xCoords[3] - xCoords[0]);
+        int HEIGHT = (int) (yCoords[3] - yCoords[0]);
+        BufferedImage resultImage = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        for (int i = 0; i < WIDTH; i++) {
+            for (int j = 0; j < HEIGHT; j++) {
+                int x = i - WIDTH / 2;
+                int y = HEIGHT / 2 - j;
+                double radius = Math.sqrt(x * x + y * y);
+                double angle1;
+                if (y > 0) {
+                    angle1 = Math.acos(x / radius);
+                } else {
+                    angle1 = 2 * Math.PI - Math.acos(x / radius);
+                }
+                x = (int) (radius * Math.cos(angle1 - angle));
+                y = (int) (radius * Math.sin(angle1 - angle));
+                if (x < (width / 2) & x > -(width / 2) & y < (height / 2) & y > -(height / 2)) {
+                    int rgb = image.getRGB(x + width / 2, height / 2 - y);
+                    resultImage.setRGB(i, j, rgb);
+                }else {
+                    int rgb = ((0 & 0xff) << 24) | ((backgroundColor.getRed() & 0xff) << 16) | ((backgroundColor.getGreen() & 0xff) << 8)
+                            | ((backgroundColor.getBlue() & 0xff));
+                    resultImage.setRGB(i, j, rgb);
+                }
+            }
+        }
+        return resultImage;
+    }
+
+    // 获取四个角点旋转后Y方向坐标
+    private static double[] getY(int i, int j, double angle) {
+        double results[] = new double[4];
+        double radius = Math.sqrt(i * i + j * j);
+        double angle1 = Math.asin(j / radius);
+        results[0] = radius * Math.sin(angle1 + angle);
+        results[1] = radius * Math.sin(Math.PI - angle1 + angle);
+        results[2] = -results[0];
+        results[3] = -results[1];
+        Arrays.sort(results);
+        return results;
+    }
+
+    // 获取四个角点旋转后X方向坐标
+    private static double[] getX(int i, int j, double angle) {
+        double results[] = new double[4];
+        double radius = Math.sqrt(i * i + j * j);
+        double angle1 = Math.acos(i / radius);
+        results[0] = radius * Math.cos(angle1 + angle);
+        results[1] = radius * Math.cos(Math.PI - angle1 + angle);
+        results[2] = -results[0];
+        results[3] = -results[1];
+        Arrays.sort(results);
+        return results;
+    }
+
 }

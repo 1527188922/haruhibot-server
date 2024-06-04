@@ -23,6 +23,7 @@ public class FileUtil {
     public static final String DIR_IMAGE_BULLET_WORD_CLOUD = "bulletWordCloud";
     public static final String DIR_IMAGE_GROUP_WORD_CLOUD = "wordCloud";
     public static final String DIR_LOGS = "logs";
+    public static final String DIR_FACE = "face";
 
     public static void deleteFile(String path){
         if(Strings.isNotBlank(path)){
@@ -225,5 +226,13 @@ public class FileUtil {
      */
     public static String getAppTempDir(){
         return getAppDir() + File.separator + DIR_APP_TEMP;
+    }
+
+    public static String getFaceDir(){
+        return getImageDir() + File.separator + DIR_FACE;
+    }
+
+    public static String getHuaQFace(){
+        return getFaceDir() + File.separator + "huaQTemplate.gif";
     }
 }

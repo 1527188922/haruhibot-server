@@ -247,6 +247,10 @@ public class Message implements Serializable {
         return isAtQQ(String.valueOf(this.selfId));
     }
 
+    public boolean isAtSelf(){
+        return isAtQQ(String.valueOf(this.userId));
+    }
+
     public boolean isAtQQ(String qq){
         return getAtQQs().contains(qq);
     }

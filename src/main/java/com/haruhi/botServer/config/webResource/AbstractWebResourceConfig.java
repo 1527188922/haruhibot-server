@@ -21,6 +21,8 @@ public abstract class AbstractWebResourceConfig {
 
     public abstract String webWordCloudPath();
 
+    public abstract String webFacePath();
+
     public abstract String webResourcesAudioPath();
     
     public abstract String webDgAudioPath();
