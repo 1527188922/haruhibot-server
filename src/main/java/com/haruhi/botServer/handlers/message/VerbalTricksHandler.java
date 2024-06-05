@@ -1,19 +1,19 @@
 package com.haruhi.botServer.handlers.message;
 
-import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.VerbalTricks;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.ws.Server;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 话术
@@ -32,7 +32,7 @@ public class VerbalTricksHandler implements IAllMessageEvent {
         return "话术";
     }
 
-    private final static Map<String, List<VerbalTricks>> cache = new ConcurrentHashMap<>();
+    private final static Map<String, List<VerbalTricks>> cache = new HashMap<>();
     public static void putAllCache(Map<String, List<VerbalTricks>> other){
         cache.putAll(other);
     }
@@ -43,11 +43,11 @@ public class VerbalTricksHandler implements IAllMessageEvent {
 
     @Override
     public boolean onMessage(WebSocketSession session,Message message, String command) {
-        if(cache.size() == 0){
+        if(cache.size() == 0 || !message.isTextMsg()){
             return false;
         }
         if (message.isAtBot()) {
-            command = command.replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").replace(" ","");
+            command = message.getText(0).trim();
         }
 
         List<VerbalTricks> answerObj = null;
@@ -60,20 +60,15 @@ public class VerbalTricksHandler implements IAllMessageEvent {
         if(answerObj == null){
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message,answerObj));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,answerObj,message));
         return true;
     }
 
-    private class Task implements Runnable{
+    @AllArgsConstructor
+    private static class Task implements Runnable{
         private WebSocketSession session;
         private List<VerbalTricks>  answerObj;
         private Message message;
-
-        public Task(WebSocketSession session,Message message,List<VerbalTricks> answerObj){
-            this.session = session;
-            this.answerObj = answerObj;
-            this.message = message;
-        }
 
 
         @Override

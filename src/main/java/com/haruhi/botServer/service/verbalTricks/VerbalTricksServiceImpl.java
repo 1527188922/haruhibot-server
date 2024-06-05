@@ -24,11 +24,13 @@ public class VerbalTricksServiceImpl extends ServiceImpl<VerbalTricksMapper, Ver
     @Override
     public void loadVerbalTricks() {
         List<VerbalTricks> all = verbalTricksMapper.selectList(new LambdaQueryWrapper<VerbalTricks>()
+                .ne(VerbalTricks::getRegex,"")
+                .ne(VerbalTricks::getAnswer,"")
                 .eq(VerbalTricks::getDeleted,false));
         if(!CollectionUtils.isEmpty(all)){
             Map<String, List<VerbalTricks>> groupMap = all.stream().collect(Collectors.groupingBy(VerbalTricks::getRegex, Collectors.toList()));
             VerbalTricksHandler.putAllCache(groupMap);
-            log.info("加载全局回复数据到内存成功，数据总量：{}，分组后的数量：{}",all.size(),groupMap.size());
+            log.info("自定义回复数据加载到内存成功，数据总量：{}，分组后的数量：{}",all.size(),groupMap.size());
         }
 
     }
