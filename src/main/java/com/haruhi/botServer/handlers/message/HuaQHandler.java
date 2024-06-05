@@ -26,12 +26,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Component
 @Slf4j
@@ -63,20 +60,28 @@ public class HuaQHandler implements IGroupMessageEvent {
 
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
-                String fileName = "huaq_" + data.getKey() + "_" + data.getValue() + ".gif";
-                String s = mackHuaQFace(Long.valueOf(data.getKey()), Long.valueOf(data.getValue()), fileName);
-
-                KQCodeUtils instance = KQCodeUtils.getInstance();
-                String imageUrl = abstractPathConfig.webFacePath() + "/" + fileName + "?t=" + System.currentTimeMillis();
-                log.info("huaq表情图片地址：{}",s);
-                String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + imageUrl);
-                Server.sendGroupMessage(session,message.getGroupId(),imageCq,false);
-
+                String fileName = "huaq_" + data.getLeft() + "_" + data.getRight() + ".gif";
+                String out = FileUtil.getFaceDir() + File.separator + fileName;
+                File file = new File(out);
+                if(!file.exists()){
+                    log.info("不存在该表情，开始生成: {}",fileName);
+                    mackHuaQFace(Long.valueOf(data.getLeft()), Long.valueOf(data.getRight()), out);
+                }
+                log.info("huaq表情图片地址：{}",out);
+                sendFaceMsg(session,message.getGroupId(),fileName);
             }catch (Exception e){
                 log.error("发送huaQ表情异常",e);
             }
         });
         return true;
+    }
+    
+    private void sendFaceMsg(WebSocketSession session,Long groupId, String fileName){
+        KQCodeUtils instance = KQCodeUtils.getInstance();
+        String imageUrl = abstractPathConfig.webFacePath() + "/" + fileName + "?t=" + System.currentTimeMillis();
+        log.info("huaq图片url ：{}",imageUrl);
+        String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + imageUrl);
+        Server.sendGroupMessage(session,groupId,imageCq,false);
     }
 
 
@@ -84,17 +89,15 @@ public class HuaQHandler implements IGroupMessageEvent {
         BufferedImage read = ImageIO.read(new URL(CommonUtil.getAvatarUrl(1527188922L, true)));
         System.out.println();
     }
-    private String mackHuaQFace(Long userId, Long atQQ, String fileName){
+    private String mackHuaQFace(Long userId, Long atQQ, String out){
         try {
-
-
             BufferedImage bufferedImage = Thumbnails.of(ImageIO.read(new URL(CommonUtil.getAvatarUrl(userId,true))))
-                    .size(120, 120) // 设置目标图片的宽度和高度为200x200像素
+                    .size(120, 120)
                     .asBufferedImage();
 
 
             BufferedImage bufferedImage1 = Thumbnails.of(ImageIO.read(new URL(CommonUtil.getAvatarUrl(atQQ,true))))
-                    .size(112, 112) // 设置目标图片的宽度和高度为200x200像素
+                    .size(112, 112) 
                     .asBufferedImage();
 
 
@@ -127,7 +130,6 @@ public class HuaQHandler implements IGroupMessageEvent {
                 frames.add(frame);
             }
 
-            String out = FileUtil.getFaceDir() + File.separator + fileName;
             File output = new File(out);
             AnimatedGifEncoder animatedGifEncoder = new AnimatedGifEncoder();
             animatedGifEncoder.start(new FileOutputStream(output));
