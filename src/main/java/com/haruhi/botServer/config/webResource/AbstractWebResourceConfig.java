@@ -26,5 +26,7 @@ public abstract class AbstractWebResourceConfig {
     public abstract String webResourcesAudioPath();
     
     public abstract String webDgAudioPath();
+    
+    public abstract String webExcelPath();
 
 }

@@ -24,6 +24,8 @@ public class FileUtil {
     public static final String DIR_IMAGE_GROUP_WORD_CLOUD = "wordCloud";
     public static final String DIR_LOGS = "logs";
     public static final String DIR_FACE = "face";
+    public static final String DIR_EXCEL = "excel";
+    public static final String FILE_NAME_HUAQ_TEMPLATE = "huaQTemplate.gif";
 
     public static void deleteFile(String path){
         if(Strings.isNotBlank(path)){
@@ -201,7 +203,15 @@ public class FileUtil {
     public static String getImageDir(){
         return getAppDir() + File.separator + DIR_IMAGE;
     }
+    
+    public static String getExcelDir(){
+        return getAppDir() + File.separator + DIR_EXCEL;
+    }
 
+    public static String getGroupChatRecordExcelFile(String groupId){
+        return getExcelDir() + File.separator + "group_chat_record_" + groupId + ".xlsx";
+    }
+    
     /**
      * 弹幕词云图片路径
      * @return
@@ -233,6 +243,6 @@ public class FileUtil {
     }
 
     public static String getHuaQFace(){
-        return getFaceDir() + File.separator + "huaQTemplate.gif";
+        return getFaceDir() + File.separator + FILE_NAME_HUAQ_TEMPLATE;
     }
 }

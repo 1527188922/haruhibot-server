@@ -25,6 +25,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -44,9 +45,34 @@ public class HuaQHandler implements IGroupMessageEvent {
     public String funName() {
         return "撅";
     }
+    
+    private static final String prefix = "huaq_";
 
     @Autowired
     private AbstractWebResourceConfig abstractPathConfig;
+    
+    public static void clearHuaQFace(){
+        File file = new File(FileUtil.getFaceDir());
+        if(file.isDirectory()){
+            File[] files = file.listFiles(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return !FileUtil.FILE_NAME_HUAQ_TEMPLATE.equals(name)
+                            && name.startsWith(prefix);
+                }
+            });
+
+            if (files != null && files.length > 0) {
+                for (File file1 : files) {
+                    if (file1.delete()) {
+                        log.info("删除huaq表情：{}",file1.getAbsolutePath());
+                    }else{
+                        log.error("删除huaq表情失败：{}",file1.getAbsolutePath());
+                    }
+                }
+            }
+        }
+    }
 
 
     @Override
@@ -60,7 +86,7 @@ public class HuaQHandler implements IGroupMessageEvent {
 
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
-                String fileName = "huaq_" + data.getLeft() + "_" + data.getRight() + ".gif";
+                String fileName = prefix + data.getLeft() + "_" + data.getRight() + ".gif";
                 String out = FileUtil.getFaceDir() + File.separator + fileName;
                 File file = new File(out);
                 if(!file.exists()){

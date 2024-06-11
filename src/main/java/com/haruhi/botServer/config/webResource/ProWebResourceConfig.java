@@ -104,4 +104,9 @@ public class ProWebResourceConfig extends AbstractWebResourceConfig {
     public String webDgAudioPath() {
         return webResourcesAudioPath() + "/" + FileUtil.DIR_AUDIO_DG;
     }
+
+    @Override
+    public String webExcelPath() {
+        return webHomePath() + "/" + FileUtil.DIR_EXCEL;
+    }
 }

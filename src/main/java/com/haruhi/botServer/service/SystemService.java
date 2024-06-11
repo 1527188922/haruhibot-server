@@ -1,5 +1,6 @@
 package com.haruhi.botServer.service;
 
+import com.haruhi.botServer.handlers.message.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.service.pokeReply.PokeReplyService;
 import com.haruhi.botServer.service.verbalTricks.VerbalTricksService;
@@ -65,6 +66,7 @@ public class SystemService {
         pokeReplyService.clearCache();
         verbalTricksService.clearCache();
         wordStripService.clearCache();
+        HuaQHandler.clearHuaQFace();
         log.info("清除缓存完成");
     }
 }
