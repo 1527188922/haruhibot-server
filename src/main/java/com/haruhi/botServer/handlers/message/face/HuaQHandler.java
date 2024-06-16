@@ -1,4 +1,4 @@
-package com.haruhi.botServer.handlers.message;
+package com.haruhi.botServer.handlers.message.face;
 
 import cn.hutool.core.img.gif.AnimatedGifEncoder;
 import cn.hutool.core.img.gif.GifDecoder;

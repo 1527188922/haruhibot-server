@@ -1,6 +1,6 @@
 package com.haruhi.botServer.service;
 
-import com.haruhi.botServer.handlers.message.HuaQHandler;
+import com.haruhi.botServer.handlers.message.face.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.service.pokeReply.PokeReplyService;
 import com.haruhi.botServer.service.verbalTricks.VerbalTricksService;
