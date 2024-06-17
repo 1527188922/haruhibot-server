@@ -71,7 +71,7 @@ public class Server extends TextWebSocketHandler {
             }
             Object obj = jsonObject.get("message");
             if(obj != null && obj instanceof String){
-                log.error("message类型为string");
+                log.error("message类型为string ： {}",obj);
                 return;
             }
             final Message bean = JSONObject.parseObject(s, Message.class);
@@ -413,6 +413,18 @@ public class Server extends TextWebSocketHandler {
         }
         return BotConfig.DEFAULT_USER;
     }
+
+    public static WebSocketSession getSessionByBot(Long botId){
+        for (Map.Entry<String, UserSession> entry : sessionCache.entrySet()) {
+            if (entry.getValue() != null 
+                    && entry.getValue().getBotId() != null
+                     && entry.getValue().getBotId().equals(botId)) {
+                return entry.getValue().getSession();
+            }
+        }
+        return null;
+    }
+
 
     private static RequestBox<Params> createForwardMessageRequestBox(MessageTypeEnum messageType, Long id, Long uin, String name, List<String> messages){
         RequestBox<Params> paramsRequestBox = new RequestBox<>();
