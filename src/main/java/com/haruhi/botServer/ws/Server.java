@@ -1,5 +1,13 @@
 package com.haruhi.botServer.ws;
 
+import com.alibaba.dashscope.aigc.generation.Generation;
+import com.alibaba.dashscope.aigc.generation.GenerationParam;
+import com.alibaba.dashscope.aigc.generation.GenerationResult;
+import com.alibaba.dashscope.aigc.generation.models.QwenParam;
+//import com.alibaba.dashscope.common.Message;
+import com.alibaba.dashscope.common.Role;
+import com.alibaba.dashscope.exception.InputRequiredException;
+import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.GocqActionEnum;
@@ -9,8 +17,8 @@ import com.haruhi.botServer.constant.event.PostTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
 import com.haruhi.botServer.dto.gocq.request.Params;
 import com.haruhi.botServer.dto.gocq.request.RequestBox;
-import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
+import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.thread.ProcessMessageTask;
 import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import lombok.AllArgsConstructor;
@@ -25,6 +33,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -472,19 +481,27 @@ public class Server extends TextWebSocketHandler {
         return item;
     }
 
-    public static void main(String[] args) {
-        String s = "{\"status\":\"ok\",\"retcode\":0,\"data\":{\"message_id\":-2147482581},\"message\":\"\",\"wording\":\"\"}";
-        try {
-            JSONObject jsonObject = JSONObject.parseObject(s);
-            if(jsonObject.get("message") instanceof String){
-                System.out.println("111");
-            }
-            JSONObject.parseObject(s,Message.class);
-            System.out.println();
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        
+    public static void main(String[] args) throws NoApiKeyException, InputRequiredException {
+//        ChatResponse response = new Qianfan("7bf5c7f06a624a0ebb240a38931aad00","0a3b12a2398949fc911f479942913528").chatCompletion()
+//                .model("ERNIE-Lite-8K-0922") // 使用model指定预置模型
+//                // .endpoint("completions_pro") // 也可以使用endpoint指定任意模型 (二选一)
+//                .addMessage("user", "你好") // 添加用户消息 (此方法可以调用多次，以实现多轮对话的消息传递)
+////                .temperature(0.7) // 自定义超参数
+//                .execute(); // 发起请求
+//        System.out.println(response.getResult());
+//        System.out.println();
+
+        Generation gen = new Generation();
+        com.alibaba.dashscope.common.Message userMsg = com.alibaba.dashscope.common.Message.builder()
+                .role(Role.USER.getValue()).content("如何评价网络热梗").build();
+        GenerationParam param =
+                GenerationParam.builder().model("qwen2-1.5b-instruct").messages(Arrays.asList(userMsg))
+                        .resultFormat(GenerationParam.ResultFormat.MESSAGE)
+                        .apiKey("")
+                        .topP(0.8)
+                        .build();
+        GenerationResult result = gen.call(param);
+        System.out.println(result);
     }
 
 }

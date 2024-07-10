@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.chenlb.mmseg4j.ComplexSeg;
 import com.chenlb.mmseg4j.Dictionary;
 import com.chenlb.mmseg4j.MMSeg;
+import com.chenlb.mmseg4j.MaxWordSeg;
 import com.chenlb.mmseg4j.Seg;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
@@ -246,6 +247,7 @@ public class WordCloudUtil {
         try {
             input = new StringReader(replace);
             Seg seg = new ComplexSeg(dic);//Complex分词
+//            Seg seg = new MaxWordSeg(dic);//Complex分词
             // Seg seg = new SimpleSeg(dic);//Simple分词
             MMSeg mmSeg = new MMSeg(input, seg);
             com.chenlb.mmseg4j.Word word;

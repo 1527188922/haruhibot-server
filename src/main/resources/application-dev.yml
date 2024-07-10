@@ -41,7 +41,9 @@ switch:
   group-increase: 1
   search-bt-allow-group: 1
   disableGroup: 0
-    
+   
+qianwen:
+  api-key: 
 
 server:
   port: ${bot.port}
