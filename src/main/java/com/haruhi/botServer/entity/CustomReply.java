@@ -48,6 +48,14 @@ public class CustomReply {
             return false;
         }
 
+        if(StringUtils.isBlank(messageType) && MessageTypeEnum.privat.getType().equals(msgType)){
+            return true;
+        }
+
+        if(StringUtils.isBlank(messageType) && MessageTypeEnum.group.getType().equals(msgType)){
+            return StringUtils.isBlank(groupIds) || Arrays.asList(groupIds.split(",")).contains(groupId);
+        }
+
         return StringUtils.isNotBlank(messageType) && messageType.equals(msgType) &&
                 (MessageTypeEnum.privat.getType().equals(msgType) 
                         || (MessageTypeEnum.group.getType().equals(msgType) && (StringUtils.isBlank(groupIds) || Arrays.asList(groupIds.split(",")).contains(groupId))));
