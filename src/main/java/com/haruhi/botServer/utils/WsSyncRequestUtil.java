@@ -50,6 +50,25 @@ public class WsSyncRequestUtil {
     }
 
     /**
+     * 给好友点赞
+     * @param session
+     * @param userId
+     * @param times
+     * @param timeout
+     * @return
+     */
+    public static SyncResponse sendLike(WebSocketSession session,Long userId,int times,long timeout){
+        Map<String, Object> map = new HashMap<>(2);
+        map.put("user_id",userId);
+        map.put("times",times);
+        JSONObject jsonObject = sendSyncRequest(session, GocqActionEnum.SEND_LIKE, map, timeout);
+        if (jsonObject != null) {
+            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
+        }
+        return SyncResponse.failed();
+    }
+
+    /**
      * 获取消息详情对象
      * @param session
      * @param messageId
@@ -173,6 +192,7 @@ public class WsSyncRequestUtil {
         requestBox.setAction(action.getAction());
         String echo = CommonUtil.uuid();
         requestBox.setEcho(echo);
+        String s = JSONObject.toJSONString(requestBox);
         Server.sendMessage(session,JSONObject.toJSONString(requestBox));
         log.debug("echo: {}",echo);
         FutureTask<JSONObject> futureTask = new FutureTask<>(new WsSyncRequestUtil.Task(echo));
