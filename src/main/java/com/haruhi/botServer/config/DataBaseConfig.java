@@ -23,7 +23,7 @@ public class DataBaseConfig {
     // 群聊天历史
     public final static String T_CHAT_RECORD = "t_chat_record";
     // 话术
-    public final static String T_VERBAL_TRICKS = "t_verbal_tricks";
+    public final static String T_CUSTOM_REPLY = "t_custom_reply";
     // 戳一戳回复表
     public final static String T_POKE_REPLY = "t_poke_reply";
     // 词条

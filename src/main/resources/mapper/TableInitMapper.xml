@@ -30,14 +30,20 @@
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='戳一戳回复表';
     </update>
 
-    <update id="createVerbalTricks">
+    <update id="createCustomReply">
         CREATE TABLE `${tableName}` (
-            `id` INT auto_increment NOT NULL,
-            `regex` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
-            `answer` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-            `deleted` tinyint(1) NOT NULL DEFAULT '0',
-            PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='话术表(全局自定的回复)';
+           `id` int(11) NOT NULL AUTO_INCREMENT,
+           `regex` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+           `reply` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+           `deleted` tinyint(1) NOT NULL DEFAULT '0',
+           `is_text` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否为文本消息 若1(true)，则取reply字段直接发送文本回复',
+           `relative_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '优先 相对路径 父级目录为：程序目录/replyCustom',
+           `cq_type` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+           `url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+           `group_ids` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '为空：群聊情况下 所有群可触发',
+           `message_type` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '为空：群聊私聊都可触发',
+           PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='自定义回复表';
     </update>
 
     <update id="createWordStrip">

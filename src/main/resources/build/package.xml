@@ -44,6 +44,10 @@
             <outputDirectory>/image</outputDirectory>
         </fileSet>
         <fileSet>
+            <directory>${project.basedir}/src/main/resources/build/customReply</directory>
+            <outputDirectory>/customReply</outputDirectory>
+        </fileSet>
+        <fileSet>
             <directory>${project.basedir}/src/main/resources/build/audio</directory>
             <outputDirectory>/audio</outputDirectory>
         </fileSet>

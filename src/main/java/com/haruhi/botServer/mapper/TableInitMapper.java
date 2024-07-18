@@ -21,11 +21,11 @@ public interface TableInitMapper {
     int createPokeReply(@Param("tableName") String tableName);
 
     /**
-     * 话术表
+     * 自定义回复表
      * @param tableName
      * @return
      */
-    int createVerbalTricks(@Param("tableName") String tableName);
+    int createCustomReply(@Param("tableName") String tableName);
 
     /**
      * 词条表

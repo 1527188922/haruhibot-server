@@ -1,5 +1,7 @@
 package com.haruhi.botServer.constant;
 
+import org.apache.commons.lang3.StringUtils;
+
 public enum CqCodeTypeEnum {
     at("at"),
     image("image"),
@@ -18,5 +20,19 @@ public enum CqCodeTypeEnum {
     }
     public String getType(){
         return type;
+    }
+    
+    public static CqCodeTypeEnum getByType(String type){
+        if(StringUtils.isBlank(type)){
+            return null;
+        }
+
+        for (CqCodeTypeEnum value : values()) {
+            if (value.type.equals(type)) {
+                return value;
+            }
+        }
+        
+        return null;
     }
 }

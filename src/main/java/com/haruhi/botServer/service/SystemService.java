@@ -3,7 +3,7 @@ package com.haruhi.botServer.service;
 import com.haruhi.botServer.handlers.message.face.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.service.pokeReply.PokeReplyService;
-import com.haruhi.botServer.service.verbalTricks.VerbalTricksService;
+import com.haruhi.botServer.service.verbalTricks.CustomReplyService;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
@@ -24,7 +24,7 @@ public class SystemService {
     @Autowired
     private PokeReplyService pokeReplyService;
     @Autowired
-    private VerbalTricksService verbalTricksService;
+    private CustomReplyService verbalTricksService;
     @Autowired
     private WordStripService wordStripService;
 
@@ -53,7 +53,7 @@ public class SystemService {
     public synchronized void loadCache(){
        try {
            pokeReplyService.loadPokeReply();
-           verbalTricksService.loadVerbalTricks();
+           verbalTricksService.loadToCache();
            wordStripService.loadWordStrip();
            ScoldMeHandler.refreshFile();
            log.info("加载缓存完成");

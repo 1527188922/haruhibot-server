@@ -52,8 +52,8 @@ public class DataBaseService {
                 tableInitMapper.createChatRecord(DataBaseConfig.T_CHAT_RECORD);
             }
 
-            if (dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_VERBAL_TRICKS) == 0) {
-                tableInitMapper.createVerbalTricks(DataBaseConfig.T_VERBAL_TRICKS);
+            if (dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_CUSTOM_REPLY) == 0) {
+                tableInitMapper.createCustomReply(DataBaseConfig.T_CUSTOM_REPLY);
             }
             if (dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_POKE_REPLY) == 0) {
                 tableInitMapper.createPokeReply(DataBaseConfig.T_POKE_REPLY);
