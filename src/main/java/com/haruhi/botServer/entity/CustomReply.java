@@ -40,24 +40,25 @@ public class CustomReply {
     
     
     public boolean pass(String msgType, String groupId){
-        if(StringUtils.isBlank(messageType) && StringUtils.isBlank(groupIds)){
-            return true;
-        }
-        
-        if(StringUtils.isNotBlank(messageType) && !messageType.equals(msgType)){
+        if(StringUtils.isBlank(msgType)){
             return false;
         }
-
-        if(StringUtils.isBlank(messageType) && MessageTypeEnum.privat.getType().equals(msgType)){
+        if (StringUtils.isNotBlank(messageType) && !messageType.equals(msgType)) {
+            return false;
+        }
+        return pass(msgType, this.groupIds, groupId);
+    }
+    
+    private boolean pass(String msgType, String groupIds, String groupId){
+        if (MessageTypeEnum.privat.getType().equals(msgType)) {
             return true;
         }
-
-        if(StringUtils.isBlank(messageType) && MessageTypeEnum.group.getType().equals(msgType)){
-            return StringUtils.isBlank(groupIds) || Arrays.asList(groupIds.split(",")).contains(groupId);
+        if (MessageTypeEnum.group.getType().equals(msgType)) {
+            if(StringUtils.isBlank(groupIds)){
+                return true;
+            }
+            return Arrays.asList(groupIds.split(",")).contains(groupId);
         }
-
-        return StringUtils.isNotBlank(messageType) && messageType.equals(msgType) &&
-                (MessageTypeEnum.privat.getType().equals(msgType) 
-                        || (MessageTypeEnum.group.getType().equals(msgType) && (StringUtils.isBlank(groupIds) || Arrays.asList(groupIds.split(",")).contains(groupId))));
+        return false;
     }
 }
