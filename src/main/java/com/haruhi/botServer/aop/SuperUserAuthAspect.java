@@ -38,7 +38,6 @@ public class SuperUserAuthAspect {
         Object[] args = joinPoint.getArgs();
         WebSocketSession session = null;
         Message message = null;
-        String command = null;
 
         if(args != null && args.length > 0){
             for (Object arg : args) {
@@ -46,13 +45,11 @@ public class SuperUserAuthAspect {
                     session = (WebSocketSession) arg;
                 }else if(arg instanceof Message){
                     message = (Message) arg;
-                }else if(arg instanceof String){
-                    command = (String) arg;
                 }
             }
         }
 
-        if (session == null || message == null || command == null) {
+        if (session == null || message == null) {
             return joinPoint.proceed();
         }
 
