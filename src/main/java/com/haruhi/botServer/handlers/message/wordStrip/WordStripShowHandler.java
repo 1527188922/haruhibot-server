@@ -34,8 +34,8 @@ public class WordStripShowHandler implements IGroupMessageEvent {
     private WordStripService wordStripService;
 
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message, final String command) {
-        if (!command.matches(RegexEnum.WORD_STRIP_SHOW.getValue())) {
+    public boolean onGroup(final WebSocketSession session,final Message message) {
+        if (!message.getRawMessage().matches(RegexEnum.WORD_STRIP_SHOW.getValue())) {
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{

@@ -11,7 +11,6 @@ public interface IPrivateMessageEvent extends IMessageEvent {
     /**
      * 私聊触发
      * @param message
-     * @param command
      */
-    boolean onPrivate(WebSocketSession session,Message message, String command);
+    boolean onPrivate(WebSocketSession session,Message message);
 }

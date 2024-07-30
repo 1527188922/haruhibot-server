@@ -48,14 +48,14 @@ public class BtSearchHandler implements IAllMessageEvent {
     private final static String CMD_SORT_BY_SIZE = "s";
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
+    public boolean onMessage(final WebSocketSession session,final Message message) {
 
         if (message.isGroupMsg() && !SwitchConfig.SEARCH_BT_ALLOW_GROUP){
             return false;
         }
 
         Pattern compile = Pattern.compile(RegexEnum.BT_SEARCH_HAS_PAGE.getValue());
-        Matcher matcher = compile.matcher(command);
+        Matcher matcher = compile.matcher(message.getRawMessage());
         Integer page = null;
         String keyword = null;
         String sort = null;
@@ -63,14 +63,14 @@ public class BtSearchHandler implements IAllMessageEvent {
         if (matcher.find()) {
             try {
                 page = Integer.valueOf(matcher.group(1));
-                String str1 = command.substring(0, command.indexOf("页"));
-                keyword = command.substring(str1.length() + 1, command.length());
+                String str1 = message.getRawMessage().substring(0, message.getRawMessage().indexOf("页"));
+                keyword = message.getRawMessage().substring(str1.length() + 1, message.getRawMessage().length());
             }catch (Exception e){
                 // bt{page}页 page不是整数
             }
-        }else if(command.startsWith(RegexEnum.BT_SEARCH.getValue())){
+        }else if(message.getRawMessage().startsWith(RegexEnum.BT_SEARCH.getValue())){
             page = 1;
-            keyword = command.replaceFirst(RegexEnum.BT_SEARCH.getValue(),"");
+            keyword = message.getRawMessage().replaceFirst(RegexEnum.BT_SEARCH.getValue(),"");
         }
         if(Strings.isBlank(keyword)){
             return false;

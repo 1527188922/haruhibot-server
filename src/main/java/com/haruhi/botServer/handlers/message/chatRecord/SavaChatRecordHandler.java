@@ -44,11 +44,10 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
      * 聊天记录入库
      * 不参与命令处理,最终返回false
      * @param message
-     * @param command
      * @return
      */
     @Override
-    public boolean onMessage(WebSocketSession session, Message message, String command) {
+    public boolean onMessage(WebSocketSession session, Message message) {
         threadPool.execute(new Task(chatRecordService, message));
         return false;
     }

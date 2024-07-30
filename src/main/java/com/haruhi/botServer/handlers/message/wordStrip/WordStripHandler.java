@@ -41,8 +41,8 @@ public class WordStripHandler implements IGroupMessageEvent {
     }
 
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message, final String command) {
-        String answer = cache.get(getKey(message.getSelfId(),message.getGroupId(),command));
+    public boolean onGroup(final WebSocketSession session,final Message message) {
+        String answer = cache.get(getKey(message.getSelfId(),message.getGroupId(),message.getRawMessage()));
         if(answer == null){
             return false;
         }

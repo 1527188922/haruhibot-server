@@ -36,9 +36,9 @@ public class StatusHandler implements IAllMessageEvent {
 
     @SuperuserAuthentication
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message,final String command) {
+    public boolean onMessage(final WebSocketSession session,final Message message) {
 
-        if (command.matches(RegexEnum.STATUS.getValue())) {
+        if (message.getRawMessage().matches(RegexEnum.STATUS.getValue())) {
             ThreadPoolUtil.getHandleCommandPool().execute(()->{
                 String properties = getProperties(message.getMessageType());
                 Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),properties,true);

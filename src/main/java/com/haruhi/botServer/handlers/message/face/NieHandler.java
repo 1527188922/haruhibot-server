@@ -36,7 +36,7 @@ public class NieHandler implements IGroupMessageEvent {
 
 
     @Override
-    public boolean onGroup(WebSocketSession session, Message message, String command) {
+    public boolean onGroup(WebSocketSession session, Message message) {
         MatchResult<File[]> result = matching(message);
         if(!result.isMatched()){
             return false;

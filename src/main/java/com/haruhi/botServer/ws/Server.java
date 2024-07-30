@@ -80,7 +80,7 @@ public class Server extends TextWebSocketHandler {
             }
             Object obj = jsonObject.get("message");
             if(obj != null && obj instanceof String){
-                log.error("message类型为string ： {}",obj);
+                log.error("message类型为string: [{}]",obj);
                 return;
             }
             final Message bean = JSONObject.parseObject(s, Message.class);
@@ -88,7 +88,7 @@ public class Server extends TextWebSocketHandler {
                 // 心跳包
                 return;
             }
-            ProcessMessageTask.execute(session,bean,s);
+            ProcessMessageTask.execute(session,bean);
         }catch (Exception e){
             log.error("解析payload异常:{}",s,e);
         }

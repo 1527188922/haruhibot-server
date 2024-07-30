@@ -11,7 +11,6 @@ public interface IGroupMessageEvent extends IMessageEvent {
     /**
      * 群聊触发
      * @param message
-     * @param command
      */
-    boolean onGroup(WebSocketSession session,Message message, String command);
+    boolean onGroup(WebSocketSession session,Message message);
 }

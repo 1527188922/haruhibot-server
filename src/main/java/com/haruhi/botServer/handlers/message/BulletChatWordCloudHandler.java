@@ -43,11 +43,11 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
     private AbstractWebResourceConfig abstractPathConfig;
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
-        if(!command.startsWith(RegexEnum.BULLET_CHAT_WORD_CLOUD.getValue())){
+    public boolean onMessage(final WebSocketSession session,final Message message) {
+        if(!message.getRawMessage().startsWith(RegexEnum.BULLET_CHAT_WORD_CLOUD.getValue())){
             return false;
         }
-        String param = command.replaceFirst(RegexEnum.BULLET_CHAT_WORD_CLOUD.getValue(), "");
+        String param = message.getRawMessage().replaceFirst(RegexEnum.BULLET_CHAT_WORD_CLOUD.getValue(), "");
         if(Strings.isBlank(param)){
             return false;
         }

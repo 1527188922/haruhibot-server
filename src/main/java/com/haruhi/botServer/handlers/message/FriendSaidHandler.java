@@ -34,9 +34,9 @@ public class FriendSaidHandler implements IGroupMessageEvent {
     }
 
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message,final String command) {
+    public boolean onGroup(final WebSocketSession session,final Message message) {
 
-        String say = CommonUtil.commandReplaceFirst(command, RegexEnum.FRIEND_SAID);
+        String say = CommonUtil.commandReplaceFirst(message.getRawMessage(), RegexEnum.FRIEND_SAID);
         if(Strings.isBlank(say)){
             return false;
         }

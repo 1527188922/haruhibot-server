@@ -43,7 +43,7 @@ public class AiChatHandler implements IAllMessageEvent {
         return "智障聊天";
     }
 
-    public MatchResult<String> matching(Message message, String command) {
+    public MatchResult<String> matching(Message message) {
         if(message.isPrivateMsg()){
             // 私聊了机器人
             if(!message.isTextMsg()){
@@ -63,11 +63,11 @@ public class AiChatHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
+    public boolean onMessage(final WebSocketSession session,final Message message) {
         if(!SwitchConfig.ENABLE_AI_CHAT){
             return false;
         }
-        MatchResult<String> matchResult = matching(message, command);
+        MatchResult<String> matchResult = matching(message);
         if(!matchResult.isMatched()){
             return false;
         }

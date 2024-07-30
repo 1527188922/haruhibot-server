@@ -33,11 +33,10 @@ public class PixivHandler implements IAllMessageEvent {
 
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
+    public boolean onMessage(final WebSocketSession session,final Message message) {
         List<String> tags = null;
         String tag = null;
-        KQCodeUtils instance = KQCodeUtils.getInstance();
-        String cq = instance.getCq(command, 0);
+        String cq = KQCodeUtils.getInstance().getCq(message.getRawMessage(), 0);
         if(cq != null){
             return false;
         }
@@ -46,8 +45,8 @@ public class PixivHandler implements IAllMessageEvent {
 
         String[] split = RegexEnum.PIXIV.getValue().split("\\|");
         for (String s : split) {
-            if (command.startsWith(s)) {
-                tag = command.replace(s,"");
+            if (message.getRawMessage().startsWith(s)) {
+                tag = message.getRawMessage().replace(s,"");
                 if(Strings.isBlank(tag.trim())){
                     tags = new ArrayList<>(1);
                 }else{

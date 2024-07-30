@@ -76,7 +76,7 @@ public class HuaQHandler implements IGroupMessageEvent {
 
 
     @Override
-    public boolean onGroup(WebSocketSession session, Message message, String command) {
+    public boolean onGroup(WebSocketSession session, Message message) {
         MatchResult<Pair<String, String>> pairMatchResult = matches(message);
         if (!pairMatchResult.isMatched()) {
             return false;

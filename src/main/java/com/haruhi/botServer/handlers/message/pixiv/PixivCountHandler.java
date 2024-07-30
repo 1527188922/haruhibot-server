@@ -32,8 +32,8 @@ public class PixivCountHandler implements IAllMessageEvent {
     private PixivService pixivService;
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
-        if(!command.matches(RegexEnum.PIXIV_COUNT.getValue())){
+    public boolean onMessage(final WebSocketSession session,final Message message) {
+        if(!message.getRawMessage().matches(RegexEnum.PIXIV_COUNT.getValue())){
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{

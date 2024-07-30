@@ -35,12 +35,12 @@ public class RefreshCacheHandler implements IAllMessageEvent {
 
     @Override
     @SuperuserAuthentication
-    public boolean onMessage(WebSocketSession session, Message message, String command) {
+    public boolean onMessage(WebSocketSession session, Message message) {
         String cmd;
         if(message.isAtBot()){
             cmd = message.getText(-1);
         }else{
-            cmd = command;
+            cmd = message.getRawMessage();
         }
         if (!cmd.trim().matches(RegexEnum.FLUSH_CACHE.getValue())){
             return false;

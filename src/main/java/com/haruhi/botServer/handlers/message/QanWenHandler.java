@@ -50,7 +50,7 @@ public class QanWenHandler implements IAllMessageEvent {
     
     
     @Override
-    public boolean onMessage(WebSocketSession session, Message message, String command) {
+    public boolean onMessage(WebSocketSession session, Message message) {
         MatchResult<String> match = matches(message);
         if(!match.isMatched()){
             return false;

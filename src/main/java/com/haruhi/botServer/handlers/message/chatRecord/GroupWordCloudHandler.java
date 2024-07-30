@@ -48,8 +48,8 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
         return null;
     }
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message, final String command) {
-        RegexEnum matching = matching(command);
+    public boolean onGroup(final WebSocketSession session,final Message message) {
+        RegexEnum matching = matching(message.getRawMessage());
         if (matching == null) {
             return false;
         }

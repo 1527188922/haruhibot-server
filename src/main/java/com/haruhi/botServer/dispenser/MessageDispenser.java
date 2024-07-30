@@ -103,29 +103,29 @@ public class MessageDispenser {
         container.remove(bean);
     }
 
-    public void onEvent(WebSocketSession session, Message message, String command){
+    public void onEvent(WebSocketSession session, Message message){
         if (!CollectionUtils.isEmpty(container)) {
             if (message.isGroupMsg()) {
-                executeGroupMessageHandler(container,session,message,command);
+                executeGroupMessageHandler(container,session,message);
             } else if (message.isPrivateMsg()) {
-                executePrivateMessageHandler(container,session,message,command);
+                executePrivateMessageHandler(container,session,message);
             }
         }
     }
 
-    private void executeGroupMessageHandler(final List<IMessageEvent> events,final WebSocketSession session,final Message message, final String command){
+    private void executeGroupMessageHandler(List<IMessageEvent> events, WebSocketSession session, Message message){
         for (IMessageEvent element : events) {
             if(SwitchConfig.DISABLE_GROUP && element.getClass() != SavaChatRecordHandler.class){
                 continue;
             }
             if (element instanceof IAllMessageEvent) {
                 IAllMessageEvent event = (IAllMessageEvent) element;
-                if (event.onMessage(session, message, command)) {
+                if (event.onMessage(session, message)) {
                     break;
                 }
             } else if(element instanceof IGroupMessageEvent){
                 IGroupMessageEvent event = (IGroupMessageEvent) element;
-                if (event.onGroup(session, message, command)) {
+                if (event.onGroup(session, message)) {
                     break;
                 }
             }
@@ -133,16 +133,16 @@ public class MessageDispenser {
     }
 
 
-    private void executePrivateMessageHandler(final List<IMessageEvent> events,final WebSocketSession session,final Message message, final String command){
+    private void executePrivateMessageHandler(List<IMessageEvent> events, WebSocketSession session, Message message){
         for (IMessageEvent element : events) {
             if (element instanceof IAllMessageEvent) {
                 IAllMessageEvent event = (IAllMessageEvent) element;
-                if (event.onMessage(session, message, command)) {
+                if (event.onMessage(session, message)) {
                     break;
                 }
             } else if (element instanceof IPrivateMessageEvent) {
                 IPrivateMessageEvent event = (IPrivateMessageEvent) element;
-                if (event.onPrivate(session, message, command)) {
+                if (event.onPrivate(session, message)) {
                     break;
                 }
             }

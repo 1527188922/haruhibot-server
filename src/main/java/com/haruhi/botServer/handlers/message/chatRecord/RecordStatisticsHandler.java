@@ -48,9 +48,9 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
     }
     
     @Override
-    public boolean onGroup(WebSocketSession session, Message message, String command) {
+    public boolean onGroup(WebSocketSession session, Message message) {
         
-        if(!command.matches(RegexEnum.RECORD_STATISTICS.getValue())){
+        if(!message.getRawMessage().matches(RegexEnum.RECORD_STATISTICS.getValue())){
             return false;
         }
 

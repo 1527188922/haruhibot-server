@@ -28,7 +28,7 @@ public class SendLikeHandler implements IAllMessageEvent {
 
 
     @Override
-    public boolean onMessage(WebSocketSession session, Message message, String command) {
+    public boolean onMessage(WebSocketSession session, Message message) {
         MatchResult result = matches(message);
         if(!result.isMatched()){
             return false;

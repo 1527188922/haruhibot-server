@@ -402,7 +402,7 @@ public class DemoHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message,final String command) {
+    public boolean onMessage(final WebSocketSession session,final Message message) {
         if(CollectionUtils.isEmpty(roots)){
             return false;
         }

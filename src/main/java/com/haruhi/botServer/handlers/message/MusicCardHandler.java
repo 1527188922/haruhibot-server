@@ -50,16 +50,16 @@ public class MusicCardHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
+    public boolean onMessage(final WebSocketSession session,final Message message) {
         Integer index = null;
         try {
-            index = Integer.valueOf(command.replace(" ",""));
+            index = Integer.valueOf(message.getRawMessage().replace(" ",""));
         }catch (Exception e){}
 
         String key = getKey(message);
         List<Song> songs = cache.get(key);
         if(songs != null && index == null){
-            String songName = getSongName(command);
+            String songName = getSongName(message.getRawMessage());
             if(Strings.isNotBlank(songName)){
                 // 表示再次点歌
                 search(session,message,songName);
@@ -80,7 +80,7 @@ public class MusicCardHandler implements IAllMessageEvent {
             return true;
         }else{
             // 不存在缓存
-            String songName = getSongName(command);
+            String songName = getSongName(message.getRawMessage());
             if(Strings.isNotBlank(songName)){
                 // 匹配上命令 开始搜索歌曲
                 search(session,message,songName);

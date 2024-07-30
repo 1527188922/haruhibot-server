@@ -33,10 +33,10 @@ public class WordStripDeleteHandler implements IGroupMessageEvent {
     private WordStripService wordStripService;
 
     @Override
-    public boolean onGroup(final WebSocketSession sessions,final Message message, final String command) {
+    public boolean onGroup(final WebSocketSession sessions,final Message message) {
         String keyWord = null;
-        if(command.startsWith(RegexEnum.WORD_STRIP_DELETE.getValue())){
-            keyWord = command.replaceFirst(RegexEnum.WORD_STRIP_DELETE.getValue(),"");
+        if(message.getRawMessage().startsWith(RegexEnum.WORD_STRIP_DELETE.getValue())){
+            keyWord = message.getRawMessage().replaceFirst(RegexEnum.WORD_STRIP_DELETE.getValue(),"");
         }
 
         if(Strings.isBlank(keyWord)){

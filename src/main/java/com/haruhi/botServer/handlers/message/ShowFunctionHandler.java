@@ -29,8 +29,8 @@ public class ShowFunctionHandler implements IAllMessageEvent {
         return "显示所有功能";
     }
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
-        if (!command.matches(RegexEnum.SHOW_ALL_FUNCTION.getValue())) {
+    public boolean onMessage(final WebSocketSession session,final Message message) {
+        if (!message.getRawMessage().matches(RegexEnum.SHOW_ALL_FUNCTION.getValue())) {
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message));

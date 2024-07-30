@@ -50,10 +50,10 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
     
     
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message, String command) {
+    public boolean onGroup(final WebSocketSession session,final Message message) {
         KQCodeUtils instance = KQCodeUtils.getInstance();
         // 对发起游戏的判断
-        if(RegexEnum.GAME_RUSSIAN_ROULETTE.getValue().equals(command)){
+        if(RegexEnum.GAME_RUSSIAN_ROULETTE.getValue().equals(message.getRawMessage())){
             final String cacheKey = cacheKey(message);
             RussianRouletteGame game = cache.get(cacheKey);
             if (game != null) {

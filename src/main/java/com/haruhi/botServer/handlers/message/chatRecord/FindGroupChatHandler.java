@@ -35,8 +35,8 @@ public class FindGroupChatHandler implements IGroupMessageEvent {
     private ChatRecordService chatRecordService;
 
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message, final String command) {
-        Param param = matching(session,message,command);
+    public boolean onGroup(final WebSocketSession session,final Message message) {
+        Param param = matching(session,message);
         if(param == null){
             return false;
         }
@@ -63,13 +63,13 @@ public class FindGroupChatHandler implements IGroupMessageEvent {
         }
     }
 
-    private Param matching(final WebSocketSession session,final Message message,final String command){
+    private Param matching(final WebSocketSession session,final Message message){
         for (Regex item : Regex.values()) {
-            if(!command.startsWith(item.prefix)){
+            if(!message.getRawMessage().startsWith(item.prefix)){
                 continue;
             }
             Pattern compile = Pattern.compile(item.getValue());
-            Matcher matcher = compile.matcher(command);
+            Matcher matcher = compile.matcher(message.getRawMessage());
             if(matcher.find()){
                 Integer num = null;
                 String args = null;

@@ -61,18 +61,18 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
 
     @SuperuserAuthentication
     @Override
-    public boolean onPrivate(final WebSocketSession session,final Message message,final String command) {
+    public boolean onPrivate(final WebSocketSession session,final Message message) {
         File[] files = cacheMap.get(key(message));
         if (files != null) {
             try {
-                int index = Integer.parseInt(command) - 1;
+                int index = Integer.parseInt(message.getRawMessage()) - 1;
 
                 ThreadPoolUtil.getHandleCommandPool().execute(new UploadLogFileTask(files,index,session,message));
                 return true;
             }catch (NumberFormatException e){
                 return false;
             }
-        }else if(command.matches(RegexEnum.SEND_LOG.getValue())){
+        }else if(message.getRawMessage().matches(RegexEnum.SEND_LOG.getValue())){
 
             ThreadPoolUtil.getHandleCommandPool().execute(()->{
 

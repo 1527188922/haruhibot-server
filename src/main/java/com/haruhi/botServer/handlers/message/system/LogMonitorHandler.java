@@ -40,9 +40,9 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 
 	@SuperuserAuthentication
 	@Override
-	public boolean onPrivate(final WebSocketSession session,final Message message,final String command) {
+	public boolean onPrivate(final WebSocketSession session,final Message message) {
 
-		if (command.matches(RegexEnum.START_MONITOR_LOG.getValue())) {
+		if (message.getRawMessage().matches(RegexEnum.START_MONITOR_LOG.getValue())) {
 
 			ThreadPoolUtil.getHandleCommandPool().execute(()->{
 				if(tailer == null){
@@ -55,7 +55,7 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 			});
 
 			return true;
-		}else if(command.matches(RegexEnum.STOP_MONITOR_LOG.getValue())){
+		}else if(message.getRawMessage().matches(RegexEnum.STOP_MONITOR_LOG.getValue())){
 			ThreadPoolUtil.getHandleCommandPool().execute(()->{
 				if(tailer != null){
 					stopTailer();

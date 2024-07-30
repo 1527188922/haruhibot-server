@@ -30,8 +30,8 @@ public class SeeNewsHandler implements IAllMessageEvent {
     private NewsService NewsService;
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
-        if(!command.matches(RegexEnum.SEE_TODAY_NEWS.getValue())){
+    public boolean onMessage(final WebSocketSession session,final Message message) {
+        if(!message.getRawMessage().matches(RegexEnum.SEE_TODAY_NEWS.getValue())){
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{

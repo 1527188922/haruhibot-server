@@ -35,16 +35,16 @@ public class WordStripAddHandler implements IGroupMessageEvent {
     private WordStripService wordStripService;
 
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message, final String command) {
+    public boolean onGroup(final WebSocketSession session,final Message message) {
 
         String keyWord = null;
         String answer = null;
         Pattern compile = Pattern.compile(RegexEnum.WORD_STRIP_ADD.getValue());
-        Matcher matcher = compile.matcher(command);
+        Matcher matcher = compile.matcher(message.getRawMessage());
         if(matcher.find()){
             keyWord = matcher.group(1);
             if(Strings.isNotBlank(keyWord)){
-                answer = command.substring(command.indexOf("答") + 1);
+                answer = message.getRawMessage().substring(message.getRawMessage().indexOf("答") + 1);
             }
         }
 

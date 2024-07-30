@@ -53,7 +53,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
 
 
     @Override
-    public boolean onGroup(WebSocketSession session, Message message, String command) {
+    public boolean onGroup(WebSocketSession session, Message message) {
         MatchResult result = matches(message);
         if(!result.isMatched()){
             return false;

@@ -57,7 +57,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         return  selfId + "-" + userId + "-" + groupId;
     }
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
+    public boolean onMessage(final WebSocketSession session,final Message message) {
         Message replyMessage = replySearch(session, message);
         if(replyMessage != null){
             // 回复式识图
@@ -76,7 +76,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         boolean matches = false;
         String[] split = RegexEnum.SEARCH_IMAGE.getValue().split("\\|");
         for (String s : split) {
-            if(command.startsWith(s)){
+            if(message.getRawMessage().startsWith(s)){
                 matches = true;
                 break;
             }

@@ -33,15 +33,15 @@ public class PixivRHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
+    public boolean onMessage(WebSocketSession session, Message message) {
         String[] split = RegexEnum.PIXIV_R.getValue().split("\\|");
         boolean flag = false;
         String tag = null;
         List<String> tags = null;
         for (String s : split) {
-            if (command.startsWith(s)) {
+            if (message.getRawMessage().startsWith(s)) {
                 flag = true;
-                tag = command.replaceFirst(s,"");
+                tag = message.getRawMessage().replaceFirst(s,"");
                 if(Strings.isBlank(tag)){
                     tags = new ArrayList<>(1);
                 }else{

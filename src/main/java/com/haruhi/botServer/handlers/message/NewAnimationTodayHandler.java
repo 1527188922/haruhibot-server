@@ -38,8 +38,8 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session, final Message message, final String command) {
-        if(!command.matches(RegexEnum.NEW_ANIMATION_TODAY.getValue())){
+    public boolean onMessage(final WebSocketSession session, final Message message) {
+        if(!message.getRawMessage().matches(RegexEnum.NEW_ANIMATION_TODAY.getValue())){
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message));

@@ -40,12 +40,12 @@ public class ScoldMeHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message, final String command) {
+    public boolean onMessage(final WebSocketSession session,final Message message) {
         String cmd;
         if(message.isAtBot()){
             cmd = message.getText(-1);
         }else{
-            cmd = command;
+            cmd = message.getRawMessage();
         }
         if (!cmd.trim().matches(RegexEnum.SCOLD_ME_DG.getValue())){
             return false;
