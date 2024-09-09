@@ -27,12 +27,12 @@ public class NieHandler implements IGroupMessageEvent {
 
     @Override
     public int weight() {
-        return HandlerWeightEnum.W_960.getWeight();
+        return HandlerWeightEnum.W_890.getWeight();
     }
 
     @Override
     public String funName() {
-        return HandlerWeightEnum.W_960.getName();
+        return HandlerWeightEnum.W_890.getName();
     }
 
 

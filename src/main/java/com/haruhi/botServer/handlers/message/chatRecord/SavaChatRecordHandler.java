@@ -6,16 +6,11 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.chatRecord.ChatRecordService;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -33,14 +28,6 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
     @Autowired
     private ChatRecordService chatRecordService;
 
-    private static ExecutorService threadPool;
-    public SavaChatRecordHandler(){
-        if (threadPool == null) {
-            threadPool = new ThreadPoolExecutor(1, 1,15L * 60L, TimeUnit.SECONDS,
-                    new LinkedBlockingQueue<Runnable>(),new CustomizableThreadFactory("pool-insertRecord-"));
-        }
-    }
-
     /**
      * 聊天记录入库
      * 不参与命令处理,最终返回false
@@ -49,7 +36,7 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
      */
     @Override
     public boolean onMessage(WebSocketSession session, Message message) {
-        threadPool.execute(new Task(chatRecordService, message));
+        ThreadPoolUtil.getSharePool().execute(new Task(chatRecordService, message));
         return false;
     }
 

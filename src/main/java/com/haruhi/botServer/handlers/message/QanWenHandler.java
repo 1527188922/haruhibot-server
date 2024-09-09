@@ -41,12 +41,12 @@ public class QanWenHandler implements IAllMessageEvent {
 
     @Override
     public String funName() {
-        return HandlerWeightEnum.W_901.getName();
+        return HandlerWeightEnum.W_880.getName();
     }
     
     @Override
     public int weight() {
-        return HandlerWeightEnum.W_901.getWeight();
+        return HandlerWeightEnum.W_880.getWeight();
     }
     
     

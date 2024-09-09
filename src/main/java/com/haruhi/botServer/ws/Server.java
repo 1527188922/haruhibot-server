@@ -130,7 +130,7 @@ public class Server extends TextWebSocketHandler {
      * @param session 客户端session
      * @param groupId 群号
      * @param message 消息
-     * @param autoEscape 是否以纯文本发送 true:以纯文本发送，不解析cq码
+     * @param autoEscape 是否以纯文本发送 true:以纯文本发送，不解析cq码 false:解析cq码
      */
     public static void sendGroupMessage(WebSocketSession session, Long groupId, String message, boolean autoEscape){
         RequestBox<Params> requestBox = new RequestBox<>();

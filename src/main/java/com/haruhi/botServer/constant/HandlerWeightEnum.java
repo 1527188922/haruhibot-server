@@ -6,9 +6,12 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum HandlerWeightEnum {
+    // 9开头 优先级最高 处理之后还需要继续往下传递
     W_999(999,"保存聊天记录"),
-    W_960(960,"捏"),
-    W_901(901,"千问"),
+    W_990(990,"复读机"),
+
+    W_890(890,"捏"),
+    W_880(880,"千问"),
     W_860(860,"显示所有功能"),
     W_820(820,"pixr根据tag"),
     W_780(780,"pix统计"),
