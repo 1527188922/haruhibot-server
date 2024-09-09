@@ -2,6 +2,7 @@ package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.SwitchConfig;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -30,12 +31,12 @@ import java.util.regex.Pattern;
 public class BtSearchHandler implements IAllMessageEvent {
     @Override
     public int weight() {
-        return 87;
+        return HandlerWeightEnum.W_470.getWeight();
     }
 
     @Override
     public String funName() {
-        return "bt搜索";
+        return HandlerWeightEnum.W_470.getName();
     }
     
     private final static String SORT_BY_TIME = "time";

@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message.chatRecord;
 
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
@@ -21,12 +22,12 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
 
     @Override
     public int weight() {
-        return 90;
+        return HandlerWeightEnum.W_540.getWeight();
     }
 
     @Override
     public String funName() {
-        return "群词云";
+        return HandlerWeightEnum.W_540.getName();
     }
 
     public static final Map<String, Integer> lock = new ConcurrentHashMap<>();

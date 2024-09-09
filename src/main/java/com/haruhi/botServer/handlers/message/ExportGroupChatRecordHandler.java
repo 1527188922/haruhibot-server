@@ -5,6 +5,7 @@ import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
@@ -36,12 +37,12 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
 
     @Override
     public int weight() {
-        return 10;
+        return HandlerWeightEnum.W_230.getWeight();
     }
 
     @Override
     public String funName() {
-        return "导出群聊记录Excel";
+        return HandlerWeightEnum.W_230.getName();
     }
     
     @Autowired

@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message.news;
 
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
@@ -19,12 +20,12 @@ public class SeeNewsHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
-        return 81;
+        return HandlerWeightEnum.W_400.getWeight();
     }
 
     @Override
     public String funName() {
-        return "查看每日新闻";
+        return HandlerWeightEnum.W_400.getName();
     }
     @Autowired
     private NewsService NewsService;

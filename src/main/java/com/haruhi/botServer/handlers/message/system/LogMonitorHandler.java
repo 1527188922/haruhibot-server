@@ -4,6 +4,7 @@ import cn.hutool.core.io.LineHandler;
 import cn.hutool.core.io.file.Tailer;
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
@@ -29,12 +30,12 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 
 	@Override
 	public int weight() {
-		return 62;
+		return HandlerWeightEnum.W_330.getWeight();
 	}
 
 	@Override
 	public String funName() {
-		return "实时日志";
+		return HandlerWeightEnum.W_330.getName();
 	}
 
 

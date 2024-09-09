@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message.pixiv;
 
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
@@ -20,12 +21,12 @@ import java.util.List;
 public class PixivHandler implements IAllMessageEvent {
     @Override
     public int weight() {
-        return 97;
+        return HandlerWeightEnum.W_740.getWeight();
     }
 
     @Override
     public String funName() {
-        return "pix根据tag";
+        return HandlerWeightEnum.W_740.getName();
     }
 
     @Autowired

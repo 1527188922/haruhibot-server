@@ -4,6 +4,7 @@ import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.DataBaseConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -25,12 +26,12 @@ public class StatusHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
-        return 60;
+        return HandlerWeightEnum.W_300.getWeight();
     }
 
     @Override
     public String funName() {
-        return "查看状态";
+        return HandlerWeightEnum.W_300.getName();
     }
 
 

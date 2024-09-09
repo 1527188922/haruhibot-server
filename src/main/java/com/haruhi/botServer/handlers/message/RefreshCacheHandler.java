@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
@@ -23,12 +24,12 @@ public class RefreshCacheHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
-        return 5;
+        return HandlerWeightEnum.W_200.getWeight();
     }
 
     @Override
     public String funName() {
-        return "刷新缓存";
+        return HandlerWeightEnum.W_200.getName();
     }
     
     private static final AtomicBoolean REFRESH_LOCK = new AtomicBoolean(false);

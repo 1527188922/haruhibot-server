@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handlers.message.pixiv;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.Pixiv;
@@ -20,12 +21,12 @@ import java.text.MessageFormat;
 public class PixivCountHandler implements IAllMessageEvent {
     @Override
     public int weight() {
-        return 101;
+        return HandlerWeightEnum.W_780.getWeight();
     }
 
     @Override
     public String funName() {
-        return "pix统计";
+        return HandlerWeightEnum.W_780.getName();
     }
 
     @Autowired

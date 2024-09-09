@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message.chatRecord;
 
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
@@ -23,12 +24,12 @@ import java.util.regex.Pattern;
 public class FindGroupChatHandler implements IGroupMessageEvent {
     @Override
     public int weight() {
-        return 91;
+        return HandlerWeightEnum.W_600.getWeight();
     }
 
     @Override
     public String funName() {
-        return "群聊天记录搜索";
+        return HandlerWeightEnum.W_600.getName();
     }
 
     @Autowired

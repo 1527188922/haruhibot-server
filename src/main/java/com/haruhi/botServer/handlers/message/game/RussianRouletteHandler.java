@@ -2,6 +2,7 @@ package com.haruhi.botServer.handlers.message.game;
 
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
@@ -32,12 +33,12 @@ import java.util.concurrent.TimeUnit;
 public class RussianRouletteHandler implements IGroupMessageEvent {
     @Override
     public int weight() {
-        return 75;
+        return HandlerWeightEnum.W_370.getWeight();
     }
 
     @Override
     public String funName() {
-        return "俄罗斯轮盘";
+        return HandlerWeightEnum.W_370.getName();
     }
 
     private static final int maxPlayers = 2;

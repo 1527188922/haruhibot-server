@@ -2,6 +2,7 @@ package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.music.response.Song;
@@ -32,12 +33,12 @@ public class MusicCardHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
-        return 80;
+        return HandlerWeightEnum.W_380.getWeight();
     }
 
     @Override
     public String funName() {
-        return "点歌";
+        return HandlerWeightEnum.W_380.getName();
     }
 
     private String getKey(final Message message){

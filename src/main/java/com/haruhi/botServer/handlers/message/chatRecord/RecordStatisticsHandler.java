@@ -3,6 +3,7 @@ package com.haruhi.botServer.handlers.message.chatRecord;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
@@ -39,12 +40,12 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 
     @Override
     public int weight() {
-        return 50;
+        return HandlerWeightEnum.W_250.getWeight();
     }
 
     @Override
     public String funName() {
-        return "群聊记录统计";
+        return HandlerWeightEnum.W_250.getName();
     }
     
     @Override

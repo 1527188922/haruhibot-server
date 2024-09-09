@@ -4,6 +4,7 @@ import cn.hutool.core.img.gif.AnimatedGifEncoder;
 import cn.hutool.core.img.gif.GifDecoder;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -38,12 +39,12 @@ public class HuaQHandler implements IGroupMessageEvent {
 
     @Override
     public int weight() {
-        return 55;
+        return HandlerWeightEnum.W_270.getWeight();
     }
 
     @Override
     public String funName() {
-        return "撅";
+        return HandlerWeightEnum.W_270.getName();
     }
     
     private static final String prefix = "huaq_";

@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.GroupMember;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -25,12 +26,12 @@ public class FriendSaidHandler implements IGroupMessageEvent {
 
     @Override
     public int weight() {
-        return 84;
+        return HandlerWeightEnum.W_430.getWeight();
     }
 
     @Override
     public String funName() {
-        return "朋友说";
+        return HandlerWeightEnum.W_430.getName();
     }
 
     @Override

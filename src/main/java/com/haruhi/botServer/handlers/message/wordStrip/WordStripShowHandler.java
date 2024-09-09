@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handlers.message.wordStrip;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.WordStrip;
@@ -22,12 +23,12 @@ import java.util.List;
 public class WordStripShowHandler implements IGroupMessageEvent {
     @Override
     public int weight() {
-        return 93;
+        return HandlerWeightEnum.W_640.getWeight();
     }
 
     @Override
     public String funName() {
-        return "本群词条";
+        return HandlerWeightEnum.W_640.getName();
     }
 
     @Autowired

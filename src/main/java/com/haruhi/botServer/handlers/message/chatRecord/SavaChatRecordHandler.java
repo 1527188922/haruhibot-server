@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handlers.message.chatRecord;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
@@ -21,12 +22,12 @@ import java.util.concurrent.TimeUnit;
 public class SavaChatRecordHandler implements IAllMessageEvent {
     @Override
     public int weight() {
-        return 997;
+        return HandlerWeightEnum.W_999.getWeight();
     }
 
     @Override
     public String funName() {
-        return "保存聊天记录";
+        return HandlerWeightEnum.W_999.getName();
     }
 
     @Autowired

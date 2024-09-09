@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dispenser.MessageDispenser;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -21,12 +22,12 @@ public class ShowFunctionHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
-        return 104;
+        return HandlerWeightEnum.W_860.getWeight();
     }
 
     @Override
     public String funName() {
-        return "显示所有功能";
+        return HandlerWeightEnum.W_860.getName();
     }
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message) {

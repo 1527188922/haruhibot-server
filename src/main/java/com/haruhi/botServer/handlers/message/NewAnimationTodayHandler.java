@@ -2,6 +2,7 @@ package com.haruhi.botServer.handlers.message;
 
 import com.alibaba.fastjson.JSONArray;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.agefans.response.NewAnimationTodayResp;
@@ -29,12 +30,12 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
-        return 85;
+        return HandlerWeightEnum.W_450.getWeight();
     }
 
     @Override
     public String funName() {
-        return "今日新番";
+        return HandlerWeightEnum.W_450.getName();
     }
 
     @Override

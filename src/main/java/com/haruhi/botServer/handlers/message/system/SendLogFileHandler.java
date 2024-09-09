@@ -4,6 +4,7 @@ import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.DownloadFileResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -36,12 +37,12 @@ import java.util.concurrent.TimeUnit;
 public class SendLogFileHandler implements IPrivateMessageEvent {
     @Override
     public int weight() {
-        return 64;
+        return HandlerWeightEnum.W_350.getWeight();
     }
 
     @Override
     public String funName() {
-        return "上传日志";
+        return HandlerWeightEnum.W_350.getName();
     }
     private static CacheMap<String, File[]> cacheMap = null;
     private static int expireTime = 20;

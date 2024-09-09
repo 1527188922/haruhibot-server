@@ -2,6 +2,7 @@ package com.haruhi.botServer.handlers.message;
 
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.CustomReply;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
@@ -26,12 +27,12 @@ import java.util.Map;
 public class CustomReplyHandler implements IAllMessageEvent {
     @Override
     public int weight() {
-        return 2;
+        return HandlerWeightEnum.W_180.getWeight();
     }
 
     @Override
     public String funName() {
-        return "自定义回复";
+        return HandlerWeightEnum.W_180.getName();
     }
 
     private final static Map<String, List<CustomReply>> cache = new HashMap<>();

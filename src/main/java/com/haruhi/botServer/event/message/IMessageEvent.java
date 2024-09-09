@@ -13,4 +13,8 @@ public interface IMessageEvent {
     int weight();
 
     String funName();
+
+    default String print(){
+        return weight() + "-" + funName();
+    }
 }

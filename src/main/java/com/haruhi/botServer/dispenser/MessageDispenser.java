@@ -54,8 +54,13 @@ public class MessageDispenser {
             }
             checkWeight();
             int size = sortByWeight();
+            printHandler();
             log.info("加载了{}个消息处理类",size);
         }
+    }
+
+    public void printHandler(){
+        container.forEach(e -> log.info(e.print()));
     }
 
     private void checkWeight(){

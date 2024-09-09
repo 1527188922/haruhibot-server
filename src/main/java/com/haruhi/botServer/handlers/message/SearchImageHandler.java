@@ -5,6 +5,7 @@ import com.haruhi.botServer.cache.CacheSet;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -42,12 +43,12 @@ public class SearchImageHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
-        return 98;
+        return HandlerWeightEnum.W_760.getWeight();
     }
 
     @Override
     public String funName() {
-        return "识图";
+        return HandlerWeightEnum.W_760.getName();
     }
     private static int size = 20;
 

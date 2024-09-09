@@ -2,6 +2,7 @@ package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
@@ -22,12 +23,12 @@ import java.io.File;
 public class ScoldMeHandler implements IAllMessageEvent {
     @Override
     public int weight() {
-        return 88;
+        return HandlerWeightEnum.W_485.getWeight();
     }
 
     @Override
     public String funName() {
-        return "骂我";
+        return HandlerWeightEnum.W_485.getName();
     }
 
     @Autowired

@@ -3,6 +3,7 @@ package com.haruhi.botServer.handlers.message;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.aiChat.response.ChatResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
@@ -35,12 +36,12 @@ public class AiChatHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
-        return 1;
+        return HandlerWeightEnum.W_160.getWeight();
     }
 
     @Override
     public String funName() {
-        return "智障聊天";
+        return HandlerWeightEnum.W_160.getName();
     }
 
     public MatchResult<String> matching(Message message) {

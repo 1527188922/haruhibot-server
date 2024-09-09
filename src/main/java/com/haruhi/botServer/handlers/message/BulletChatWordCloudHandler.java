@@ -2,6 +2,7 @@ package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.xml.bilibili.PlayerInfoResp;
@@ -31,12 +32,12 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
 
     @Override
     public int weight() {
-        return 89;
+        return HandlerWeightEnum.W_500.getWeight();
     }
 
     @Override
     public String funName() {
-        return "弹幕词云";
+        return HandlerWeightEnum.W_500.getName();
     }
 
     @Autowired
