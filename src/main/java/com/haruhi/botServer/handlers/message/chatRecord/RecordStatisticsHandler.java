@@ -94,8 +94,15 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                             + "\n发言数：" + item.getTotal();
                     params.add(new ForwardMsgItem(new ForwardMsgItem.Data(name,item.getUserId(), msg)));
                 }
-
-                Server.sendGroupMessage(session, message.getGroupId(), params);
+                List<List<ForwardMsgItem>> lists = CommonUtil.averageAssignList(params, 70);
+                for (int i = 0; i < lists.size(); i++) {
+                    Server.sendGroupMessage(session, message.getGroupId(), lists.get(i));
+                    if(i < lists.size() - 1){
+                        try {
+                            Thread.sleep(2000);
+                        }catch (InterruptedException e){}
+                    }
+                }
             }catch (Exception e){
                 log.error("聊天统计异常",e);
                 Server.sendGroupMessage(session, message.getGroupId(), "聊天统计异常\n"+e.getMessage(),true);

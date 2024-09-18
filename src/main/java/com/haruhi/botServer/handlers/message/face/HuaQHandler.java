@@ -92,7 +92,7 @@ public class HuaQHandler implements IGroupMessageEvent {
                 File file = new File(out);
                 if(!file.exists()){
                     log.info("不存在该表情，开始生成: {}",fileName);
-                    mackHuaQFace(Long.valueOf(data.getLeft()), Long.valueOf(data.getRight()), out);
+                    makeHuaQFace(Long.valueOf(data.getLeft()), Long.valueOf(data.getRight()), out);
                 }
                 log.info("huaq表情图片地址：{}",out);
                 sendFaceMsg(session,message.getGroupId(),fileName);
@@ -113,10 +113,78 @@ public class HuaQHandler implements IGroupMessageEvent {
 
 
     public static void main(String[] args) throws IOException {
-        BufferedImage read = ImageIO.read(new URL(CommonUtil.getAvatarUrl(1527188922L, true)));
+
+        String imgPath = "D:\\temp\\pic\\e7657678d75003dd4c6162b44039b0b6.gif";
+        GifDecoder gifDecoder = new GifDecoder();
+        gifDecoder.read(new FileInputStream(imgPath));
+        int n = gifDecoder.getFrameCount();
+        BufferedImage bufferedImage = Thumbnails.of(ImageIO.read(new URL(CommonUtil.getAvatarUrl(1527188922L,true))))
+                .size(74, 74)
+                .asBufferedImage();
+        BufferedImage circularOverlay = CommonUtil.makeImageCircular(bufferedImage);
+
+
+        for (int i = 0; i < n; i++) {
+            BufferedImage frame = gifDecoder.getFrame(i);  // 原gif的帧
+            Graphics2D g2d = frame.createGraphics();
+
+            g2d.drawImage(frame, 0, 0, null);
+            if(i == 0){
+                g2d.drawImage(circularOverlay, 82, 73, null);
+//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+
+            if(i == 1 || i == 2){
+                g2d.drawImage(circularOverlay, 84, 75, null);
+//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+
+            if(i == 3){
+                g2d.drawImage(circularOverlay, 79, 75, null);
+//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+            if(i == 4){
+                g2d.drawImage(circularOverlay, 74, 75, null);
+//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+            if(i == 5){
+                g2d.drawImage(circularOverlay, 74, 77, null);
+//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+            if(i == 6 || i == 7 || i == 8){
+                g2d.drawImage(circularOverlay, 75, 78, null);
+//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+            if(i == 9 || i == 10){
+                g2d.drawImage(circularOverlay, 77, 78, null);
+                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+            if(i == 11){
+                circularOverlay = Thumbnails.of(circularOverlay)
+                        .size(67, 67)
+                        .asBufferedImage();
+                circularOverlay = CommonUtil.rotateImage(circularOverlay,18,new Color(255, 255, 255));
+                g2d.drawImage(circularOverlay, 75, 75, null);
+//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+
+            if(i == 12){
+                circularOverlay = CommonUtil.rotateImage(circularOverlay,25,new Color(255, 255, 255));
+                g2d.drawImage(circularOverlay, 60, 55, null);
+//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+            if(i == 13){
+                circularOverlay = CommonUtil.rotateImage(circularOverlay,33,new Color(255, 255, 255));
+                g2d.drawImage(circularOverlay, 60, 55, null);
+                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\output"+i+"-"+i+".png"));
+            }
+        }
+
+
+
         System.out.println();
     }
-    private String mackHuaQFace(Long userId, Long atQQ, String out){
+    private String makeHuaQFace(Long userId, Long atQQ, String out){
         try {
             BufferedImage bufferedImage = Thumbnails.of(ImageIO.read(new URL(CommonUtil.getAvatarUrl(userId,true))))
                     .size(120, 120)
