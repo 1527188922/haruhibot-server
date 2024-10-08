@@ -30,9 +30,11 @@ public class CreateTmpDirectoryFilter implements Filter {
             tmp.mkdirs();
             log.info("创建了临时目录：{}",tmp);
         }
-        File file = FileUtil.mkdirs(FileUtil.getAppTempDir());
-        log.info("创建了自定义临时目录：{}",file);
-
+        File appTempDir = new File(FileUtil.getAppTempDir());
+        if(!appTempDir.exists()){
+            File file = FileUtil.mkdirs(FileUtil.getAppTempDir());
+            log.info("创建了自定义临时目录：{}",file);
+        }
         filterChain.doFilter(request,response);
     }
 
