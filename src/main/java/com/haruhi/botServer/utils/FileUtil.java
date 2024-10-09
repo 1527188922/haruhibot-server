@@ -29,6 +29,7 @@ public class FileUtil {
     public static final String DIR_CUSTOM_REPLY = "customReply";
     
     public static final String FILE_NAME_HUAQ_TEMPLATE = "huaQTemplate.gif";
+    public static final String FILE_NAME_JUMP_TEMPLATE = "jumpTemplate.gif";
 
     public static void deleteFile(String path){
         if(Strings.isNotBlank(path)){
@@ -247,6 +248,10 @@ public class FileUtil {
 
     public static String getHuaQFace(){
         return getFaceDir() + File.separator + FILE_NAME_HUAQ_TEMPLATE;
+    }
+
+    public static String getJumpFace(){
+        return getFaceDir() + File.separator + FILE_NAME_JUMP_TEMPLATE;
     }
     
     public static String getCustomReplyDir(){

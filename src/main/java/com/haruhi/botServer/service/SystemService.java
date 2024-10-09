@@ -2,6 +2,7 @@ package com.haruhi.botServer.service;
 
 import com.haruhi.botServer.handlers.message.face.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
+import com.haruhi.botServer.handlers.message.face.JumpHandler;
 import com.haruhi.botServer.service.pokeReply.PokeReplyService;
 import com.haruhi.botServer.service.verbalTricks.CustomReplyService;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
@@ -67,6 +68,7 @@ public class SystemService {
         verbalTricksService.clearCache();
         wordStripService.clearCache();
         HuaQHandler.clearHuaQFace();
+        JumpHandler.clearJumpFace();
         log.info("清除缓存完成");
     }
 }
