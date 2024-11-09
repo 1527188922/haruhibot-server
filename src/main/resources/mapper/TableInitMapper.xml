@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.haruhi.botServer.mapper.TableInitMapper">
+<mapper namespace="com.haruhi.botServer.mapper.system.TableInitMapper">
     <update id="createChatRecord">
         CREATE TABLE `${tableName}` (
          `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -76,5 +76,17 @@
             PRIMARY KEY (`id`),
             KEY `index_tags` (`tags`(767))
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='pixiv图库（定时爬虫下载,需要在配置文件开启该爬虫）';
+    </update>
+
+    <update id="createSendLikeRecord">
+        CREATE TABLE `${tableName}` (
+            `id` INT auto_increment NOT NULL,
+            `user_id` BIGINT NOT NULL,
+            `self_id` BIGINT NOT NULL,
+            `send_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `times` INT NOT NULL,
+            `message_type` varchar(12),
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='点赞记录表';
     </update>
 </mapper>

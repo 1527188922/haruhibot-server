@@ -192,7 +192,6 @@ public class WsSyncRequestUtil {
         requestBox.setAction(action.getAction());
         String echo = CommonUtil.uuid();
         requestBox.setEcho(echo);
-        String s = JSONObject.toJSONString(requestBox);
         Server.sendMessage(session,JSONObject.toJSONString(requestBox));
         log.debug("echo: {}",echo);
         FutureTask<JSONObject> futureTask = new FutureTask<>(new WsSyncRequestUtil.Task(echo));

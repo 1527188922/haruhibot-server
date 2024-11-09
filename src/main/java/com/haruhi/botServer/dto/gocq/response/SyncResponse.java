@@ -20,7 +20,7 @@ public class SyncResponse<T> {
     private T data;
     
     public boolean isSuccess(){
-        return retcode != null && retcode == 0;
+        return retcode != null && retcode == 0 && STATUS_OK.equals(status);
     }
     
     public static SyncResponse failed(){

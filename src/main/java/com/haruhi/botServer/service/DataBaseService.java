@@ -4,7 +4,7 @@ import com.baomidou.dynamic.datasource.DynamicDataSourceCreator;
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DataSourceProperty;
 import com.haruhi.botServer.config.DataBaseConfig;
-import com.haruhi.botServer.mapper.TableInitMapper;
+import com.haruhi.botServer.mapper.system.TableInitMapper;
 import com.haruhi.botServer.mapper.system.DataBaseInitMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +63,9 @@ public class DataBaseService {
             }
             if(dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_PIXIV) == 0){
                 tableInitMapper.createPixiv(DataBaseConfig.T_PIXIV);
+            }
+            if(dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_SEND_LIKE_RECORD) == 0){
+                tableInitMapper.createSendLikeRecord(DataBaseConfig.T_SEND_LIKE_RECORD);
             }
 
             log.info("初始化数据库完成");

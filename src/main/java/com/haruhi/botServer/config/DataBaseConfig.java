@@ -30,6 +30,7 @@ public class DataBaseConfig {
     public final static String T_WORD_STRIP = "t_word_strip";
     // pixiv 图库表
     public final static String T_PIXIV = "t_pixiv";
+    public final static String T_SEND_LIKE_RECORD = "t_send_like_record";
 
 
 

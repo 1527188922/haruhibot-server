@@ -1,4 +1,4 @@
-package com.haruhi.botServer.mapper;
+package com.haruhi.botServer.mapper.system;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -39,4 +39,7 @@ public interface TableInitMapper {
      * @return
      */
     int createPixiv(@Param("tableName") String tableName);
+
+
+    int createSendLikeRecord(@Param("tableName") String tableName);
 }
