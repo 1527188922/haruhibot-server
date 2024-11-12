@@ -5,6 +5,7 @@ public enum GocqActionEnum {
     SEND_MSG("send_msg","发送消息"),
     SEND_PRIVATE_MSG("send_private_msg","发送私聊消息"),
     SEND_GROUP_MSG("send_group_msg","发送群消息"),
+    SEND_FORWARD_MSG("send_forward_msg","转发合并消息"),
     SEND_GROUP_FORWARD_MSG("send_group_forward_msg","转发群合并消息"),
     SEND_PRIVATE_FORWARD_MSG("send_private_forward_msg","转发私聊合并消息"),
     SEND_LIKE("send_like","发送好友赞"),

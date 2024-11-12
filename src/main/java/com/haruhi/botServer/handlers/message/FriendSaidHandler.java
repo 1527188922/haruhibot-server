@@ -1,9 +1,14 @@
 package com.haruhi.botServer.handlers.message;
 
+import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
+import com.haruhi.botServer.dto.gocq.request.Params;
+import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.GroupMember;
 import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.napcat.ForwardMsg;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.WsSyncRequestUtil;
@@ -19,7 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-@Component
+//@Component
 @Slf4j
 public class FriendSaidHandler implements IGroupMessageEvent {
     
@@ -37,23 +42,23 @@ public class FriendSaidHandler implements IGroupMessageEvent {
     @Override
     public boolean onGroup(final WebSocketSession session,final Message message) {
 
-        String say = CommonUtil.commandReplaceFirst(message.getRawMessage(), RegexEnum.FRIEND_SAID);
-        if(Strings.isBlank(say)){
+        String word = CommonUtil.commandReplaceFirst(message.getRawMessage(), RegexEnum.FRIEND_SAID);
+        if(Strings.isBlank(word)){
             return false;
         }
-        say = say.replaceFirst("他|她|它","我");
-        ThreadPoolUtil.getHandleCommandPool().execute(new FriendSaidHandler.SayTask(session, message, say));
+        word = word.replaceFirst("他|她|它","我");
+        ThreadPoolUtil.getHandleCommandPool().execute(new FriendSaidHandler.SayTask(session, message, word));
         return true;
     }
 
     private static class SayTask implements Runnable{
         private final WebSocketSession session;
         private final Message message;
-        private final String say;
-        SayTask(WebSocketSession session, Message message, String say) {
+        private final String word;
+        SayTask(WebSocketSession session, Message message, String word) {
             this.session = session;
             this.message = message;
-            this.say = say;
+            this.word = word;
         }
 
         @Override
@@ -67,8 +72,12 @@ public class FriendSaidHandler implements IGroupMessageEvent {
                 }
                 int i = CommonUtil.randomInt(0, groupMemberList.size() - 1);
                 GroupMember friend = groupMemberList.get(i);
-                Server.sendGroupMessage(session,message.getGroupId(),friend.getUserId(),friend.getNickname(),Collections.singletonList(say));
-                
+                Server.sendGroupMessage(session,message.getGroupId(),friend.getUserId(),friend.getNickname(),Collections.singletonList(word));
+//                RequestBox<ForwardMsg> requestBox = new RequestBox<>();
+//                ForwardMsg instance = ForwardMsg.instance(message.getMessageType(), message.getGroupId(), friend.getUserId(), friend.getNickname(), Collections.singletonList(word));
+//                requestBox.setParams(instance);
+//                requestBox.setAction(GocqActionEnum.SEND_FORWARD_MSG.getAction());
+//                Server.sendMessage(session, JSONObject.toJSONString(requestBox));
             }catch (Exception e){
                 log.error("朋友说发生异常",e);
             }
