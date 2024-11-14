@@ -92,10 +92,9 @@ public class DownloadPixivJob extends AbstractJob {
                 }
                 int total = 0;
                 for (PixivItem e : data) {
-                    LambdaQueryWrapper<Pixiv> queryWrapper = new LambdaQueryWrapper<>();
-                    queryWrapper.eq(Pixiv::getImgUrl,e.getUrls().getOriginal());
-                    Pixiv one = pixivService.getOne(queryWrapper);
-                    if(one == null){
+                    int count = pixivService.count(new LambdaQueryWrapper<Pixiv>()
+                            .eq(Pixiv::getImgUrl,e.getUrls().getOriginal()));
+                    if(count == 0){
                         Pixiv param = new Pixiv();
                         param.setPid(e.getPid());
                         param.setTitle(e.getTitle());
