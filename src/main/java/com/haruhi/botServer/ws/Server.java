@@ -10,20 +10,20 @@ import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
-import com.haruhi.botServer.constant.event.MetaEventEnum;
-import com.haruhi.botServer.constant.event.PostTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
 import com.haruhi.botServer.dto.gocq.request.Params;
 import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.thread.ProcessMessageTask;
+import com.haruhi.botServer.thread.MessageProcessor;
 import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -41,8 +41,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * gocq（客户端）使用反向ws连接
  */
 @Slf4j
+@Component
 public class Server extends TextWebSocketHandler {
-    
+
+    @Autowired
+    private MessageProcessor messageProcessor;
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -73,20 +77,18 @@ public class Server extends TextWebSocketHandler {
             String echo = jsonObject.getString("echo");
             if (Strings.isNotBlank(echo)) {
                 WsSyncRequestUtil.putEchoResult(echo,jsonObject);
-                log.debug("echo消息：{}",echo);
+                log.info("echo响应：{}",s);
                 return;
             }
-            Object obj = jsonObject.get("message");
-            if(obj != null && obj instanceof String){
-                log.error("message类型为string: [{}]",obj);
+            if(jsonObject.containsKey("retcode") && jsonObject.containsKey("status")){
+                // {"status":"ok","retcode":0,"data":{"message_id":-2147139720},"message":"","wording":""}
+                log.info("非echo响应：{}",s);
                 return;
             }
+            // {"time":1731649946,"self_id":2995339277,"post_type":"meta_event","meta_event_type":"lifecycle","sub_type":"connect"}
+            // {"time":1731650096,"self_id":2995339277,"post_type":"meta_event","meta_event_type":"heartbeat","status":{"online":true,"good":true},"interval":30000}
             final Message bean = JSONObject.parseObject(s, Message.class);
-            if(PostTypeEnum.meta_event.toString().equals(bean.getPostType()) && MetaEventEnum.heartbeat.toString().equals(bean.getMetaEventType())){
-                // 心跳包
-                return;
-            }
-            ProcessMessageTask.execute(session,bean);
+            messageProcessor.execute(session, bean);
         }catch (Exception e){
             log.error("解析payload异常:{}",s,e);
         }

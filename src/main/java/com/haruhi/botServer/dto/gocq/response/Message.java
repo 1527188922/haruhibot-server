@@ -58,7 +58,7 @@ public class Message implements Serializable {
     public Message(String postType, String metaEventType, String messageType, String noticeType, Long operatorId,
                    Long time, Long selfId, String subType, Long userId, Long senderId, Long groupId, Long targetId,
                    List<MessageHolder> message, String rawMessage, Integer font, Sender sender, String messageId, Integer messageSeq, String anonymous,
-                   Raw raw) {
+                   Raw raw,Long interval,Status status) {
         this.postType = postType;
         this.metaEventType = metaEventType;
         this.noticeType = noticeType;
@@ -86,6 +86,8 @@ public class Message implements Serializable {
             }
         }
         this.raw = raw;
+        this.interval = interval;
+        this.status = status;
     }
 
     private final String postType;
@@ -109,7 +111,18 @@ public class Message implements Serializable {
     private final Integer messageSeq;
     private final String anonymous;
     private final Raw raw;
-    
+    private final Long interval;
+    private final Status status;
+
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Status{
+        private Boolean online;
+        private Boolean good;
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

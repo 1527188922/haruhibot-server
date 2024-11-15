@@ -12,10 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.stream.Collectors;
-
 @Slf4j
 @Component
 public class ShowFunctionHandler implements IAllMessageEvent {
@@ -47,9 +43,8 @@ public class ShowFunctionHandler implements IAllMessageEvent {
         }
         @Override
         public void run() {
-            Collection<IMessageEvent> values = MessageDispenser.getMessageEventMap().values().stream().sorted(Comparator.comparing(IMessageEvent::weight)).collect(Collectors.toList());
             StringBuilder stringBuilder = new StringBuilder("所有功能：\n");
-            for (IMessageEvent eventType : values) {
+            for (IMessageEvent eventType : MessageDispenser.getContainer()) {
                 stringBuilder.append("id：").append(eventType.weight()).append("\n");
                 stringBuilder.append("名称：").append(eventType.funName()).append("\n");
             }

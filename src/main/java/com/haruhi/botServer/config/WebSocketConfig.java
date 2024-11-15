@@ -21,11 +21,15 @@ public class WebSocketConfig implements WebSocketConfigurer, WebMvcConfigurer {
     private String wsPath;
     @Autowired
     private HeaderInterceptor headerInterceptors;
+    @Autowired
+    private Server server;
+    @Autowired
+    private WebSocketHandshakeInterceptor webSocketHandshakeInterceptor;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(new Server(), Strings.isBlank(wsPath) ? "/ws" : wsPath)
-                .addInterceptors(new WebSocketHandshakeInterceptor())
+        registry.addHandler(server, Strings.isBlank(wsPath) ? "/ws" : wsPath)
+                .addInterceptors(webSocketHandshakeInterceptor)
                 .setAllowedOrigins("*");
     }
 

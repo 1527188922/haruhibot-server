@@ -8,6 +8,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
@@ -19,6 +20,7 @@ import java.util.Map;
  * 拦截握手
  */
 @Slf4j
+@Component
 public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
 
     @Override
