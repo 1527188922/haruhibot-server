@@ -14,6 +14,7 @@ import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
@@ -56,9 +57,19 @@ public class SendLikeHandler implements IAllMessageEvent {
                 if(sendLikeRes.isSuccess()){
                     Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"攒了你"+TIMES+"次哦，记得回赞",true);
                     record(message);
+                    return;
                 }
+
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        StringUtils.isNotBlank(sendLikeRes.getMessage())
+                                ? sendLikeRes.getMessage() : StringUtils.isNotBlank(sendLikeRes.getWording())
+                                ? sendLikeRes.getWording() : "点赞失败"
+                        ,true);
             }catch (Exception e){
                 log.error("点赞异常",e);
+                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        "点赞异常\n"+e.getMessage(),
+                        true);
             }
         });
         return true;
