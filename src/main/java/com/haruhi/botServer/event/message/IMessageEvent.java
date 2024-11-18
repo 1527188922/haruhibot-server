@@ -17,4 +17,8 @@ public interface IMessageEvent {
     default String print(){
         return weight() + "-" + funName();
     }
+
+    default boolean handleSelfMsg(){
+        return false;
+    }
 }

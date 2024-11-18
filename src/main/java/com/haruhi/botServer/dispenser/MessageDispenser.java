@@ -140,7 +140,7 @@ public class MessageDispenser {
             return;
         }
         for (IMessageEvent element : events) {
-            if(SwitchConfig.DISABLE_GROUP && element.getClass() != SavaChatRecordHandler.class){
+            if (toContinue(element, message)) {
                 continue;
             }
             if (element instanceof IAllMessageEvent) {
@@ -163,6 +163,9 @@ public class MessageDispenser {
            return;
         }
         for (IMessageEvent element : events) {
+            if (toContinue(element, message)) {
+                continue;
+            }
             if (element instanceof IAllMessageEvent) {
                 IAllMessageEvent event = (IAllMessageEvent) element;
                 if (event.onMessage(session, message)) {
@@ -175,6 +178,18 @@ public class MessageDispenser {
                 }
             }
         }
+    }
+
+    private boolean toContinue(IMessageEvent event, Message message){
+        if(message.isSelfMsg() && !event.handleSelfMsg()){
+            // 机器人self消息 且 handler类不处理self消息
+            return true;
+        }
+        if(message.isGroupMsg() && SwitchConfig.DISABLE_GROUP && event.getClass() != SavaChatRecordHandler.class){
+            // 本次为群消息 且开了禁用群功能 则只让聊天记录保存handler类生效
+            return true;
+        }
+        return false;
     }
 
     /**

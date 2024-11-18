@@ -256,10 +256,21 @@ public class Message implements Serializable {
         return false;
     }
 
+    public boolean isSelfMsg(){
+        return userId != null && userId.equals(selfId);
+    }
+    /**
+     * 用户at 机器人
+     * @return
+     */
     public boolean isAtBot(){
         return isAtQQ(String.valueOf(this.selfId));
     }
 
+    /**
+     * 用户at用户自己
+     * @return
+     */
     public boolean isAtSelf(){
         return isAtQQ(String.valueOf(this.userId));
     }

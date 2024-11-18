@@ -11,7 +11,7 @@ public class SwitchConfig {
     public static boolean GROUP_INCREASE;
     public static boolean GROUP_DECREASE;
     public static boolean SEARCH_BT_ALLOW_GROUP;
-    public static boolean DISABLE_GROUP;
+    public static boolean DISABLE_GROUP;//true:禁用所有群功能
     
     public SwitchConfig(@Value("${switch.ai-chat}") String aiChat,
                         @Value("${switch.search-image-allow-group}") String searchImageAllowGroup,
