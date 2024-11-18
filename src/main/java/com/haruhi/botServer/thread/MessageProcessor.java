@@ -37,16 +37,17 @@ public class MessageProcessor{
 
         threadPool.execute(()->{
             try {
-                if(PostTypeEnum.message.toString().equals(message.getPostType())){
+                if(PostTypeEnum.message.name().equals(message.getPostType())
+                        || PostTypeEnum.message_sent.name().equals(message.getPostType())){
                     // 普通消息
                     log.info("[{}]收到来自用户[{}]的消息:{}", message.getMessageType(), message.getUserId(), message.getRawMessage());
                     if(message.getRawMessage() != null){
                         messageDispenser.onEvent(session, message);
                     }
-                }else if(PostTypeEnum.notice.toString().equals(message.getPostType())){
+                }else if(PostTypeEnum.notice.name().equals(message.getPostType())){
                     // bot通知
                     noticeDispenser.onEvent(session, message);
-                } else if(PostTypeEnum.meta_event.toString().equals(message.getPostType())){
+                } else if(PostTypeEnum.meta_event.name().equals(message.getPostType())){
                     // 系统消息
                     handleMetaEvent(session,message);
                 }else {

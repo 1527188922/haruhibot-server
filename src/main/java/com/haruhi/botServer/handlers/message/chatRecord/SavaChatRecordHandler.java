@@ -25,6 +25,11 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
         return HandlerWeightEnum.W_999.getName();
     }
 
+    @Override
+    public boolean handleSelfMsg() {
+        return true;
+    }
+
     @Autowired
     private ChatRecordService chatRecordService;
 
@@ -36,41 +41,32 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
      */
     @Override
     public boolean onMessage(WebSocketSession session, Message message) {
-        ThreadPoolUtil.getSharePool().execute(new Task(chatRecordService, message));
-        return false;
-    }
 
-    private static class Task implements Runnable{
-        private final ChatRecordService service;
-        private final Message message;
-        public Task(ChatRecordService service, final Message message){
-            this.service = service;
-            this.message = message;
-        }
+        ThreadPoolUtil.getSharePool().execute(()->{
 
-        @Override
-        public void run() {
-            ChatRecord param = new ChatRecord();
+            ChatRecord record = new ChatRecord();
             try {
                 if(message.getSender() != null){
-                    param.setCard(message.getSender().getCard());
-                    param.setNickname(message.getSender().getNickname());
+                    record.setCard(message.getSender().getCard());
+                    record.setNickname(message.getSender().getNickname());
                 }
-                param.setGroupId(message.getGroupId());
-                param.setUserId(message.getUserId());
-                param.setContent(message.getRawMessage());
-                param.setSelfId(message.getSelfId());
-                param.setMessageId(message.getMessageId());
-                param.setMessageType(message.getMessageType());
+                record.setGroupId(message.getGroupId());
+                record.setUserId(message.getUserId());
+                record.setContent(message.getRawMessage());
+                record.setSelfId(message.getSelfId());
+                record.setMessageId(message.getMessageId());
+                record.setMessageType(message.getMessageType());
                 if(message.getTime() != null && String.valueOf(message.getTime()).length() == 10){
-                    param.setCreateTime(message.getTime() * 1000);
+                    record.setCreateTime(message.getTime() * 1000);
                 }else{
-                    param.setCreateTime(message.getTime());
+                    record.setCreateTime(message.getTime());
                 }
-                service.save(param);
+                chatRecordService.save(record);
             }catch (Exception e){
-                log.error("保存聊天记录异常 {}", JSONObject.toJSONString(param),e);
+                log.error("保存聊天记录异常 {}", JSONObject.toJSONString(record),e);
             }
-        }
+        });
+
+        return false;
     }
 }

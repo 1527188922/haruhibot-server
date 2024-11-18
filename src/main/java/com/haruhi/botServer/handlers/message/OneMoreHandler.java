@@ -27,6 +27,10 @@ public class OneMoreHandler implements IGroupMessageEvent {
         return HandlerWeightEnum.W_990.getName();
     }
 
+    @Override
+    public boolean handleSelfMsg() {
+        return true;
+    }
 
     private final ConcurrentHashMap<String, Pair<String,Boolean>> msgCache = new ConcurrentHashMap<>();
 

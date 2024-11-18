@@ -9,5 +9,7 @@ public enum PostTypeEnum {
     // 系统/程序事件
     meta_event,
     // bot通知
-    notice
+    notice,
+    // 机器人自身发送的消息
+    message_sent
 }
