@@ -41,6 +41,7 @@ public enum RegexEnum {
     SEND_LOG("/sendlog|/发送日志"),
     STATUS("/status|/状态"),
     RECORD_STATISTICS("聊天统计|聊天排名"),
+    EXPORT_CHAT_RECORD("导出聊天记录|导出聊天excel|导出聊天EXCEL|生成聊天excel|生成聊天EXCEL"),
     
     ;
 

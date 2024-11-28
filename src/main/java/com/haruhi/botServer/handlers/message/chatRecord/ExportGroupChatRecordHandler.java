@@ -1,22 +1,22 @@
-package com.haruhi.botServer.handlers.message;
+package com.haruhi.botServer.handlers.message.chatRecord;
 
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
+import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.service.chatRecord.ChatRecordService;
-import com.haruhi.botServer.utils.DateTimeUtil;
-import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.MatchResult;
-import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.utils.*;
 import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.text.StrBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -53,6 +53,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
     private final static ConcurrentMap<String, AtomicBoolean> LOCK_MAP = new ConcurrentHashMap<>();
 
 
+    @SuperuserAuthentication
     @Override
     public boolean onGroup(WebSocketSession session, Message message) {
         MatchResult result = matches(message);
@@ -112,7 +113,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
                 Server.sendGroupMessage(session,message.getGroupId(), strBuilder.toString(), true);
             }catch (Exception e){
                 log.info("导出群聊记录异常 groupId:{}",message.getGroupId(), e);
-                Server.sendGroupMessage(session,message.getGroupId(),"导出群聊记录异常\n"+e.getMessage(),true);
+                Server.sendGroupMessage(session,message.getGroupId(),"导出群聊记录异常\n"+ "群号："+ message.getGroupId() + "\n"+e.getMessage(),true);
             }finally {
                 lock.set(false);
                 if(excelWriter != null){
@@ -141,15 +142,20 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
 
 
     private MatchResult matches(Message message){
-        if(!message.isTextMsg()){
+        if(!message.isTextMsg() || (message.isAtMsg() && !message.isAtBot())){
             return MatchResult.unmatched();
         }
 
-        if(message.getText(0).trim().matches("导出聊天记录|导出聊天excel|导出聊天EXCEL|生成聊天excel|生成聊天EXCEL")){
+        String s = CommonUtil.commandReplaceFirst(message.getText(0).trim(), RegexEnum.EXPORT_CHAT_RECORD);
+        if (StringUtils.isBlank(s)) {
             return MatchResult.matched(message.getGroupId());
         }
-
-        return MatchResult.unmatched();
+        try {
+            long l = Long.parseLong(s);
+            return MatchResult.matched(l);
+        }catch (NumberFormatException e){
+            return MatchResult.unmatched();
+        }
     }
 
 }
