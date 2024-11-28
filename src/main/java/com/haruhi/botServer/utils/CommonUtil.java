@@ -4,6 +4,7 @@ import cn.hutool.core.img.gif.AnimatedGifEncoder;
 import cn.hutool.core.img.gif.GifDecoder;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
+import com.haruhi.botServer.dto.BaseResp;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import net.coobird.thumbnailator.Thumbnails;
 import org.apache.logging.log4j.util.Strings;
@@ -61,14 +62,14 @@ public class CommonUtil {
         return null;
     }
 
-    public static boolean commandStartsWith(final String command, RegexEnum regexEnum){
+    public static BaseResp<String> commandStartsWith(final String command, RegexEnum regexEnum){
         String[] split = regexEnum.getValue().split("\\|");
         for (String s : split) {
             if (command.startsWith(s)) {
-                return true;
+                return BaseResp.success(command.replaceFirst(s,""));
             }
         }
-        return false;
+        return BaseResp.fail();
     }
 
     /**

@@ -8,6 +8,7 @@ import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
+import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
@@ -56,7 +57,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
     @SuperuserAuthentication
     @Override
     public boolean onGroup(WebSocketSession session, Message message) {
-        MatchResult result = matches(message);
+        MatchResult<Long> result = matches(message);
         if(!result.isMatched()){
             return false;
         }
@@ -64,33 +65,33 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
         if (lock == null){
             AtomicBoolean newLock = new AtomicBoolean(false);
             LOCK_MAP.put(String.valueOf(result.getData()), newLock);
-            exportExcel(session, message, newLock);
+            exportExcel(session, message,result.getData(), newLock);
             return true;
         }
         if(!lock.compareAndSet(false,true)){
             Server.sendGroupMessage(session,message.getGroupId(),"正在生成Excel中，请稍等...",true);
             return true;
         }
-        exportExcel(session, message, lock);
+        exportExcel(session, message,result.getData(), lock);
         return true;
     }
    
-    private void exportExcel(WebSocketSession session, Message message, AtomicBoolean lock){
+    private void exportExcel(WebSocketSession session, Message message,Long exportGroupId, AtomicBoolean lock){
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             ExcelWriter excelWriter = null;
             try {
                 long l = System.currentTimeMillis();
                 List<ChatRecord> list = chatRecordService.list(new LambdaQueryWrapper<ChatRecord>()
-                        .eq(ChatRecord::getGroupId,message.getGroupId())
+                        .eq(ChatRecord::getGroupId,exportGroupId)
                         .orderByDesc(ChatRecord::getCreateTime));
                 long l4 = System.currentTimeMillis() - l;
                 log.info("查询聊天记录完成，耗时：{} 数量：{}",l4, list.size());
                 if(CollectionUtils.isEmpty(list)){
-                    Server.sendGroupMessage(session,message.getGroupId(),"未查到本群聊天记录",true);
+                    Server.sendGroupMessage(session,message.getGroupId(),"未查到群："+exportGroupId+"的聊天记录",true);
                     return;
                 }
 
-                File file = new File(FileUtil.getGroupChatRecordExcelFile(String.valueOf(message.getGroupId())));
+                File file = new File(FileUtil.getGroupChatRecordExcelFile(String.valueOf(exportGroupId)));
                 if(file.isFile()){
                     file.delete();
                 }
@@ -98,7 +99,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
                 WriteSheet sheet1 = EasyExcel.writerSheet(1, "群聊记录")
                         .head(ChatRecordExportBody.class)
                         .build();
-                String fileName = "group_chat_record_" + message.getGroupId() + ".xlsx";
+                String fileName = "group_chat_record_" + exportGroupId + ".xlsx";
                 excelWriter = EasyExcel.write(new FileOutputStream(new File(FileUtil.mkdirs(FileUtil.getExcelDir()) + File.separator + fileName))).build();
                 excelWriter.write(convertObjToExcelData(list),sheet1);
                 long l2 = System.currentTimeMillis() - l;
@@ -112,8 +113,8 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
                 strBuilder.append(webResourceConfig.webExcelPath() + "/" + fileName);
                 Server.sendGroupMessage(session,message.getGroupId(), strBuilder.toString(), true);
             }catch (Exception e){
-                log.info("导出群聊记录异常 groupId:{}",message.getGroupId(), e);
-                Server.sendGroupMessage(session,message.getGroupId(),"导出群聊记录异常\n"+ "群号："+ message.getGroupId() + "\n"+e.getMessage(),true);
+                log.info("导出群聊记录异常 groupId:{} exportGroupId:{}",message.getGroupId(),exportGroupId, e);
+                Server.sendGroupMessage(session,message.getGroupId(),"导出群聊记录异常\n"+ "群号："+ exportGroupId + "\n"+e.getMessage(),true);
             }finally {
                 lock.set(false);
                 if(excelWriter != null){
@@ -141,17 +142,20 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
     }
 
 
-    private MatchResult matches(Message message){
+    private MatchResult<Long> matches(Message message){
         if(!message.isTextMsg() || (message.isAtMsg() && !message.isAtBot())){
             return MatchResult.unmatched();
         }
 
-        String s = CommonUtil.commandReplaceFirst(message.getText(0).trim(), RegexEnum.EXPORT_CHAT_RECORD);
-        if (StringUtils.isBlank(s)) {
+        BaseResp<String> baseResp = CommonUtil.commandStartsWith(message.getText(0).trim(), RegexEnum.EXPORT_CHAT_RECORD);
+        if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
+            return MatchResult.unmatched();
+        }
+        if (StringUtils.isBlank(baseResp.getData())) {
             return MatchResult.matched(message.getGroupId());
         }
         try {
-            long l = Long.parseLong(s);
+            long l = Long.parseLong(baseResp.getData());
             return MatchResult.matched(l);
         }catch (NumberFormatException e){
             return MatchResult.unmatched();
