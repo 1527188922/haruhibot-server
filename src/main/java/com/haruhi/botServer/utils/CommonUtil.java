@@ -7,6 +7,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import net.coobird.thumbnailator.Thumbnails;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.util.CollectionUtils;
 
@@ -31,6 +32,8 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CommonUtil {
     private CommonUtil(){}
@@ -191,9 +194,9 @@ public class CommonUtil {
     }
 
     public static void main(String[] args) {
-        sss();
-        ss();
-
+//        sss();
+//        ss();
+        System.out.println(isValidMagnetLink("magnet:?xt=urn:btih:GHTGWJOAMHKQNBO5PA7HPAGWW3GINTVD"));
     }
 
     private static void sss(){
@@ -375,6 +378,18 @@ public class CommonUtil {
         results[3] = -results[1];
         Arrays.sort(results);
         return results;
+    }
+
+
+    /**
+     * 判断字符串是否为磁力链接
+     */
+    public static boolean isValidMagnetLink(String input) {
+        if (StringUtils.isBlank(input)) {
+            return false;
+        }
+
+        return input.startsWith("magnet:?xt=urn:btih:") && !input.contains("\n") && !input.contains("\r");
     }
 
 }

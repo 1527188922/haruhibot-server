@@ -249,6 +249,14 @@ public class Message implements Serializable {
         return false;
     }
 
+    public boolean isTextMsgOnly(){
+        if(CollectionUtils.isEmpty(this.message)){
+            return false;
+        }
+        List<MessageHolder> collect = this.message.stream().filter(e -> !MessageHolderTypeEnum.text.name().equals(e.getType())).collect(Collectors.toList());
+        return CollectionUtils.isEmpty(collect);
+    }
+
     public boolean isAtMsg(){
         if(!CollectionUtils.isEmpty(this.message)){
             return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.at.name());
