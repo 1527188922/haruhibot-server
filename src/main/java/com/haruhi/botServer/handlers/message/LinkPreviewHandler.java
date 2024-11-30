@@ -3,13 +3,12 @@ package com.haruhi.botServer.handlers.message;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.AnalysisMagnetLinkResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.text.StrBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class LinkPreviewHandler implements IAllMessageEvent {
+public class LinkPreviewHandler implements IPrivateMessageEvent {
 
 
     @Override
@@ -37,7 +36,7 @@ public class LinkPreviewHandler implements IAllMessageEvent {
 
 
     @Override
-    public boolean onMessage(WebSocketSession session, Message message) {
+    public boolean onPrivate(WebSocketSession session, Message message) {
         if(!message.isTextMsgOnly() || !CommonUtil.isValidMagnetLink(message.getText(-1))){
             return false;
         }
@@ -46,21 +45,18 @@ public class LinkPreviewHandler implements IAllMessageEvent {
             String link = message.getText(-1);
             AnalysisMagnetLinkResp resp = request(link);
             if(resp == null || resp.getCount() == null || resp.getCount() == 0){
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                Server.sendPrivateMessage(session,message.getUserId(),
                         "磁力未解析出结果\n"+link,
                         true);
                 return;
             }
             if(StringUtils.isNotBlank(resp.getError())){
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                Server.sendPrivateMessage(session,message.getUserId(),
                         "磁力解析异常\n"+resp.getError(),
                         true);
                 return;
             }
-
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
-                    formatterResp(resp),
-                    true);
+            Server.sendPrivateMessage(session,message.getUserId(), formatterResp(resp),true);
         });
         return true;
     }
@@ -73,7 +69,7 @@ public class LinkPreviewHandler implements IAllMessageEvent {
                 .append("文件数量：").append(resp.getCount());
         if(resp.getSize() != null && resp.getSize() != 0){
             String size = String.format("%.3f",((double) resp.getSize() / 1024D / 1024D)); //MB
-            stringBuilder.append("\n").append("总大小：").append(size);
+            stringBuilder.append("\n").append("总大小：").append(size).append("MB");
         }
         if (!CollectionUtils.isEmpty(resp.getScreenshots())) {
             List<String> collect = resp.getScreenshots().stream().map(AnalysisMagnetLinkResp.Screenshots::getScreenshot).collect(Collectors.toList());
