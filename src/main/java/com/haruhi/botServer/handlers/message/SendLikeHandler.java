@@ -75,7 +75,7 @@ public class SendLikeHandler implements IAllMessageEvent {
         return true;
     }
     private MatchResult matches(Message message){
-        if(!message.isTextMsg()){
+        if(!(message.isTextMsgOnly() || (message.isTextMsg() && message.isAtBot()))){
             return MatchResult.unmatched();
         }
         if("赞我".equals(message.getText(0).trim())){
