@@ -46,7 +46,9 @@ public class CustomReplyHandler implements IAllMessageEvent {
 
     @Override
     public boolean onMessage(WebSocketSession session,Message message) {
-        if(cache.size() == 0 || !message.isTextMsg() || (message.isAtMsg() && !message.isAtBot())){
+        if(! (cache.size() != 0 &&
+                ((message.isPrivateMsg() && message.isTextMsgOnly())
+                        || (message.isGroupMsg() && message.isTextMsg() && message.isAtBot() && !message.isPicMsg())))){
             return false;
         }
 
