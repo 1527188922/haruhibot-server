@@ -38,9 +38,6 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class SearchImageHandler implements IAllMessageEvent {
     
-    private static final boolean ALLOW_GROUP = false;
-    
-
     @Override
     public int weight() {
         return HandlerWeightEnum.W_760.getWeight();
@@ -59,6 +56,11 @@ public class SearchImageHandler implements IAllMessageEvent {
     }
     @Override
     public boolean onMessage(final WebSocketSession session,final Message message) {
+
+        if(!SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP && message.isGroupMsg()){
+            return false;
+        }
+
         Message replyMessage = replySearch(session, message);
         if(replyMessage != null){
             // 回复式识图
@@ -83,9 +85,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             }
         }
         if (matches) {
-            if(CollectionUtils.isEmpty(picMessageData)
-                    && ((message.isGroupMsg() && SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP)
-                    || message.isPrivateMsg())){
+            if(CollectionUtils.isEmpty(picMessageData)){
                 cache.add(key);
                 Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
             }else if(!CollectionUtils.isEmpty(picMessageData)){
@@ -97,10 +97,6 @@ public class SearchImageHandler implements IAllMessageEvent {
     }
 
     private void startSearch(WebSocketSession session,Message message, Message replyMessage,String url, String key){
-        if(!SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP && message.isGroupMsg()){
-//            Server.sendMessage(session,message.getUserId(),message.getGroupId(),MessageTypeEnum.group.getType(),"搜图功能请加机器人好友后私聊使用",true);
-            return;
-        }
         Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜图...",true);
         ThreadPoolUtil.getHandleCommandPool().execute(new SearchImageTask(session,message,replyMessage,url));
         if(key != null){

@@ -146,11 +146,13 @@ public class MessageDispenser {
             if (element instanceof IAllMessageEvent) {
                 IAllMessageEvent event = (IAllMessageEvent) element;
                 if (event.onMessage(session, message)) {
+                    printLog("onMessage","群",message);
                     break;
                 }
             } else if(element instanceof IGroupMessageEvent){
                 IGroupMessageEvent event = (IGroupMessageEvent) element;
                 if (event.onGroup(session, message)) {
+                    printLog("onGroup","群",message);
                     break;
                 }
             }
@@ -169,15 +171,21 @@ public class MessageDispenser {
             if (element instanceof IAllMessageEvent) {
                 IAllMessageEvent event = (IAllMessageEvent) element;
                 if (event.onMessage(session, message)) {
+                    printLog("onMessage","私",message);
                     break;
                 }
             } else if (element instanceof IPrivateMessageEvent) {
                 IPrivateMessageEvent event = (IPrivateMessageEvent) element;
                 if (event.onPrivate(session, message)) {
+                    printLog("onPrivate","私",message);
                     break;
                 }
             }
         }
+    }
+
+    private void printLog(String fnName,String messageType, Message message){
+        log.info("[{}][{}][UID:{}][GID:{}] {}",messageType,fnName,message.getUserId(),message.getGroupId(),message.getRawMessage());
     }
 
     private boolean toContinue(IMessageEvent event, Message message){

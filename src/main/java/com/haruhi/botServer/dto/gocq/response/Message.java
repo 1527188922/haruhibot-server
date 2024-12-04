@@ -236,32 +236,38 @@ public class Message implements Serializable {
     }
 
     public boolean isPicMsg(){
-        if(!CollectionUtils.isEmpty(this.message)){
-            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.image.name());
-        }
-        return false;
+        return isMsg(MessageHolderTypeEnum.image);
+    }
+
+    public boolean isPicMsgOnly(){
+        return isOnly(MessageHolderTypeEnum.image);
     }
 
     public boolean isTextMsg(){
-        if(!CollectionUtils.isEmpty(this.message)){
-            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.text.name());
-        }
-        return false;
+        return isMsg(MessageHolderTypeEnum.text);
     }
 
     public boolean isTextMsgOnly(){
-        if(CollectionUtils.isEmpty(this.message)){
-            return false;
-        }
-        List<MessageHolder> collect = this.message.stream().filter(e -> !MessageHolderTypeEnum.text.name().equals(e.getType())).collect(Collectors.toList());
-        return CollectionUtils.isEmpty(collect);
+        return isOnly(MessageHolderTypeEnum.text);
     }
 
     public boolean isAtMsg(){
+        return isMsg(MessageHolderTypeEnum.at);
+    }
+
+    public boolean isMsg(MessageHolderTypeEnum holderTypeEnum){
         if(!CollectionUtils.isEmpty(this.message)){
-            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.at.name());
+            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(holderTypeEnum.name());
         }
         return false;
+    }
+
+    public boolean isOnly(MessageHolderTypeEnum holderTypeEnum){
+        if(CollectionUtils.isEmpty(this.message)){
+            return false;
+        }
+        List<MessageHolder> collect = this.message.stream().filter(e -> !holderTypeEnum.name().equals(e.getType())).collect(Collectors.toList());
+        return CollectionUtils.isEmpty(collect);
     }
 
     public boolean isSelfMsg(){

@@ -40,7 +40,6 @@ public class MessageProcessor{
                 if(PostTypeEnum.message.name().equals(message.getPostType())
                         || PostTypeEnum.message_sent.name().equals(message.getPostType())){
                     // 普通消息
-                    log.info("[{}]收到来自用户[{}]的消息:{}", message.getMessageType(), message.getUserId(), message.getRawMessage());
                     if(message.getRawMessage() != null){
                         messageDispenser.onEvent(session, message);
                     }
