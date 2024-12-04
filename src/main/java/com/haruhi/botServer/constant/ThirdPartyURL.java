@@ -19,6 +19,9 @@ public class ThirdPartyURL {
     public static String PLAYER_CID = "https://api.bilibili.com/x/player/pagelist";
     // lolicon
     public static String LOLICON = "https://api.lolicon.app/setu/v2";
+    // 预览磁力链接
+    public static String WHATS_LINK = "https://whatslink.info/api/v1/link";
+
     /**
      * bt搜索备用域名
      * http://www.eclzz.art

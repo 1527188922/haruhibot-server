@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.constant.HandlerWeightEnum;
+import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.AnalysisMagnetLinkResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
@@ -83,12 +84,7 @@ public class LinkPreviewHandler implements IPrivateMessageEvent {
         RestTemplate restTemplate = RestUtil.getRestTemplate(6 * 1000);
         HashMap<String, Object> urlParam = new HashMap<>();
         urlParam.put("url",link);
-        return RestUtil.sendGetRequest(restTemplate, "https://whatslink.info/api/v1/link", urlParam, AnalysisMagnetLinkResp.class);
+        return RestUtil.sendGetRequest(restTemplate, ThirdPartyURL.WHATS_LINK, urlParam, AnalysisMagnetLinkResp.class);
     }
 
-    public static void main(String[] args) {
-        LinkPreviewHandler analysisMagnetLinkHandler = new LinkPreviewHandler();
-        AnalysisMagnetLinkResp request = analysisMagnetLinkHandler.request("magnet:?xt=urn:btih:GHTGWJOAMHKQNBO5PA7HPAGWW3GINTVD");
-        System.out.println(request);
-    }
 }
