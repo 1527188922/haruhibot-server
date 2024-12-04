@@ -154,6 +154,12 @@
             <groupId>com.alibaba</groupId>
             <artifactId>dashscope-sdk-java</artifactId>
             <version>2.15.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
 <!--            <exclusions>-->
 <!--                <exclusion>-->
 <!--                    <groupId>org.projectlombok</groupId>-->
