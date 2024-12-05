@@ -128,7 +128,7 @@ public class RestUtil {
             log.info("接口响应结果为null");
             return null;
         }
-
+        log.info("http请求响应：{}",body);
         if(tClass == String.class){
             return (T)body;
         }

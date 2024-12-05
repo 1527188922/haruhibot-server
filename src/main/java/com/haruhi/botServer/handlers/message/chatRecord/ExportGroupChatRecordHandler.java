@@ -100,15 +100,15 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
                         .head(ChatRecordExportBody.class)
                         .build();
                 String fileName = "group_chat_record_" + exportGroupId + ".xlsx";
-                excelWriter = EasyExcel.write(new FileOutputStream(new File(FileUtil.mkdirs(FileUtil.getExcelDir()) + File.separator + fileName))).build();
+                excelWriter = EasyExcel.write(new FileOutputStream(FileUtil.mkdirs(FileUtil.getExcelDir()) + File.separator + fileName)).build();
                 excelWriter.write(convertObjToExcelData(list),sheet1);
                 long l2 = System.currentTimeMillis() - l;
                 long l3 = System.currentTimeMillis() - l1;
                 log.info("生成Excel耗时：{} 总耗时：{}",l3,l2);
                 StrBuilder strBuilder = new StrBuilder();
-                strBuilder.append("生成完成\n查询聊天记录耗时：").append(l4).append("\n");
-                strBuilder.append("生成Excel耗时：").append(l3).append("\n");
-                strBuilder.append("总耗时：").append(l2).append("\n");
+                strBuilder.append("生成完成\n查询聊天记录耗时：").append(l4).append("ms").append("\n");
+                strBuilder.append("生成Excel耗时：").append(l3).append("ms").append("\n");
+                strBuilder.append("总耗时：").append(l2).append("ms").append("\n");
                 strBuilder.append("浏览器打开下方链接可下载Excel：\n");
                 strBuilder.append(webResourceConfig.webExcelPath() + "/" + fileName);
                 Server.sendGroupMessage(session,message.getGroupId(), strBuilder.toString(), true);

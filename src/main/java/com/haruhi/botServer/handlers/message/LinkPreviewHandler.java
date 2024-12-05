@@ -69,7 +69,13 @@ public class LinkPreviewHandler implements IPrivateMessageEvent {
                 .append("类型：").append(resp.getFileType()).append("\n")
                 .append("文件数量：").append(resp.getCount());
         if(resp.getSize() != null && resp.getSize() != 0){
-            String size = String.format("%.3f",((double) resp.getSize() / 1024D / 1024D)); //MB
+            double v = (double) resp.getSize() / 1024D / 1024D; //MB
+            String size = "";
+            if(v >= 1024D){
+                size = String.format("%.3f",(v / 1024D)); //GB
+            }else{
+                size = String.format("%.3f",v);
+            }
             stringBuilder.append("\n").append("总大小：").append(size).append("MB");
         }
         if (!CollectionUtils.isEmpty(resp.getScreenshots())) {

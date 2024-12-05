@@ -99,7 +99,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                     Server.sendGroupMessage(session, message.getGroupId(), lists.get(i));
                     if(i < lists.size() - 1){
                         try {
-                            Thread.sleep(2000);
+                            Thread.sleep(1200);
                         }catch (InterruptedException e){}
                     }
                 }
