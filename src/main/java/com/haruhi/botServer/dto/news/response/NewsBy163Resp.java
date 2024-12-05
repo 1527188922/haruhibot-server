@@ -1,5 +1,6 @@
 package com.haruhi.botServer.dto.news.response;
 
+import com.haruhi.botServer.utils.DateTimeUtil;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -20,6 +21,10 @@ public class NewsBy163Resp implements Serializable {
     private Integer upTimes;
 
     private Date lmodify;
+
+    public void setLmodify(String lmodify) {
+        this.lmodify = DateTimeUtil.parseDate(lmodify,"yyyy-MM-dd HH','mm','ss");
+    }
 
     private String source;
 

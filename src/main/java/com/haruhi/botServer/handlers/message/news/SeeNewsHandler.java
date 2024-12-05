@@ -10,6 +10,7 @@ import com.haruhi.botServer.service.news.NewsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.List;
@@ -38,6 +39,9 @@ public class SeeNewsHandler implements IAllMessageEvent {
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
                 List<NewsBy163Resp> newsBy163Resps = NewsService.requestNewsBy163();
+                if(CollectionUtils.isEmpty(newsBy163Resps)){
+                    return;
+                }
                 if (message.isGroupMsg()) {
                     NewsService.sendGroup(session,newsBy163Resps,message.getGroupId());
                 }else if (message.isPrivateMsg()){

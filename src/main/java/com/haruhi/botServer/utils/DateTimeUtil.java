@@ -1,5 +1,6 @@
 package com.haruhi.botServer.utils;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.ParseException;
@@ -10,6 +11,8 @@ import java.util.Date;
 @Slf4j
 public class DateTimeUtil {
     private DateTimeUtil(){}
+
+    @AllArgsConstructor
     public enum PatternEnum {
         yyyyMMddHHmmssSSS("yyyy-MM-dd HH:mm:ss.SSS"),
         yyyyMMddHHmmss("yyyy-MM-dd HH:mm:ss"),
@@ -19,9 +22,6 @@ public class DateTimeUtil {
         yyyy("yyyy");
 
         private String pattern;
-        PatternEnum(String pattern){
-            this.pattern = pattern;
-        }
     }
 
     /**
@@ -103,11 +103,15 @@ public class DateTimeUtil {
     }
 
     public static Date parseDate(String dateStr,PatternEnum patternEnum){
-        SimpleDateFormat df = new SimpleDateFormat(patternEnum.pattern);
+        return parseDate(dateStr,patternEnum.pattern);
+    }
+
+    public static Date parseDate(String dateStr,String pattern){
+        SimpleDateFormat df = new SimpleDateFormat(pattern);
         try {
             return df.parse(dateStr);
         } catch (ParseException e) {
-            log.error("字符串时间转Date对象异常,date:{},format:{}",dateStr,patternEnum.pattern,e);
+            log.error("字符串时间转Date对象异常,date:{},format:{}",dateStr,pattern,e);
             return null;
         }
     }
