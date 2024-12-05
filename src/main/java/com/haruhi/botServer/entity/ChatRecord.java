@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.config.DataBaseConfig;
 import lombok.Data;
 
+import java.util.Date;
+
 @Data
 @TableName(value = DataBaseConfig.T_CHAT_RECORD)
 public class ChatRecord {
@@ -20,7 +22,7 @@ public class ChatRecord {
     private Long userId;
     private Long selfId;
     private String content;
-    private Long createTime;
+    private Date time;
     private Boolean deleted;
     
     private String messageType;

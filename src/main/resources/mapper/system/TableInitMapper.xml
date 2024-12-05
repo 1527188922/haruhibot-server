@@ -11,12 +11,12 @@
          `user_id` bigint(20) NOT NULL,
          `self_id` bigint(20) NOT NULL,
          `content` text COLLATE utf8mb4_unicode_ci,
-         `create_time` bigint(20) NOT NULL,
+         `time` datetime,
          `deleted` tinyint(1) NOT NULL DEFAULT '0',
          `message_type` varchar(12) COLLATE utf8mb4_unicode_ci NOT NULL,
          PRIMARY KEY (`id`),
          KEY `index_content` (`content`(767)),
-         KEY `t_chat_record_create_time_IDX` (`create_time`) USING BTREE,
+         KEY `t_chat_record_time_IDX` (`time`) USING BTREE,
          KEY `t_chat_record_group_id_IDX` (`group_id`) USING BTREE,
          KEY `t_chat_record_user_id_IDX` (`user_id`) USING BTREE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群聊历史聊天表';

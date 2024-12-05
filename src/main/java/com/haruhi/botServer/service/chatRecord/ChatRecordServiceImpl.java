@@ -69,7 +69,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
         queryWrapper.eq(ChatRecord::getDeleted,false)
                 .eq(ChatRecord::getGroupId,message.getGroupId())
                 .eq(ChatRecord::getSelfId,message.getSelfId())
-                .gt(ChatRecord::getCreateTime,date.getTime())
+                .gt(ChatRecord::getTime,date)
                 .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType());
         List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
         if(!CollectionUtils.isEmpty(userIds)){
@@ -82,7 +82,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
             queryWrapper.notLike(ChatRecord::getContent,"[CQ:");
         }
         // 升序
-        queryWrapper.orderByAsc(ChatRecord::getCreateTime);
+        queryWrapper.orderByAsc(ChatRecord::getTime);
         List<ChatRecord> chatList = chatRecordMapper.selectList(queryWrapper);
         if(!CollectionUtils.isEmpty(chatList)){
             int limit = 80;
@@ -158,7 +158,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
         queryWrapper.eq(ChatRecord::getDeleted,false)
                 .eq(ChatRecord::getGroupId,message.getGroupId())
                 .eq(ChatRecord::getSelfId,message.getSelfId())
-                .gt(ChatRecord::getCreateTime,date.getTime())
+                .gt(ChatRecord::getTime,date)
                 .eq(ChatRecord::getMessageType,MessageTypeEnum.group.getType());
         for (GroupWordCloudHandler.RegexEnum value : GroupWordCloudHandler.RegexEnum.values()) {
             queryWrapper.notLike(ChatRecord::getContent,value.getRegex());

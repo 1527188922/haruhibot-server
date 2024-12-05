@@ -6,7 +6,7 @@ import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
-import com.haruhi.botServer.handlers.message.chatRecord.SavaChatRecordHandler;
+import com.haruhi.botServer.handlers.message.chatRecord.ChatRecordHandler;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -193,7 +193,7 @@ public class MessageDispenser {
             // 机器人self消息 且 handler类不处理self消息
             return true;
         }
-        if(message.isGroupMsg() && SwitchConfig.DISABLE_GROUP && event.getClass() != SavaChatRecordHandler.class){
+        if(message.isGroupMsg() && SwitchConfig.DISABLE_GROUP && event.getClass() != ChatRecordHandler.class){
             // 本次为群消息 且开了禁用群功能 则只让聊天记录保存handler类生效
             return true;
         }

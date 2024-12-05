@@ -12,9 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.Date;
+
 @Slf4j
 @Component
-public class SavaChatRecordHandler implements IAllMessageEvent {
+public class ChatRecordHandler implements IAllMessageEvent {
     @Override
     public int weight() {
         return HandlerWeightEnum.W_999.getWeight();
@@ -56,11 +58,7 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
                 record.setSelfId(message.getSelfId());
                 record.setMessageId(message.getMessageId());
                 record.setMessageType(message.getMessageType());
-                if(message.getTime() != null && String.valueOf(message.getTime()).length() == 10){
-                    record.setCreateTime(message.getTime() * 1000);
-                }else{
-                    record.setCreateTime(message.getTime());
-                }
+                setTime(message, record);
                 chatRecordService.save(record);
             }catch (Exception e){
                 log.error("保存聊天记录异常 {}", JSONObject.toJSONString(record),e);
@@ -68,5 +66,17 @@ public class SavaChatRecordHandler implements IAllMessageEvent {
         });
 
         return false;
+    }
+
+    private void setTime(Message message, ChatRecord record){
+        if (message.getTime() == null) {
+            record.setTime(new Date());
+            return;
+        }
+        if(String.valueOf(message.getTime()).length() == 10){
+            record.setTime(new Date(message.getTime() * 1000));
+        }else{
+            record.setTime(new Date(message.getTime()));
+        }
     }
 }

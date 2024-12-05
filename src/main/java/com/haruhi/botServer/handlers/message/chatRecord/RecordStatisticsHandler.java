@@ -70,17 +70,17 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 List<ForwardMsgItem> params = new ArrayList<>(chatRecords.size() + 1);
 
                 ChatRecord chatRecord = chatRecordMapper.selectOne(new LambdaQueryWrapper<ChatRecord>()
-                        .select(ChatRecord::getCreateTime)
+                        .select(ChatRecord::getTime)
                         .eq(ChatRecord::getGroupId, message.getGroupId())
                         .eq(ChatRecord::getSelfId, message.getSelfId())
                         .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
                         .eq(ChatRecord::getDeleted, false)
-                        .orderByAsc(ChatRecord::getCreateTime)
+                        .orderByAsc(ChatRecord::getTime)
                         .last("LIMIT 1"));
-                if(chatRecord != null && chatRecord.getCreateTime() != null){
+                if(chatRecord != null && chatRecord.getTime() != null){
                     
                     params.add(new ForwardMsgItem(new ForwardMsgItem.Data(BotConfig.NAME, message.getSelfId(), 
-                            "从[" + DateTimeUtil.dateTimeFormat(chatRecord.getCreateTime(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss) + "]开始统计")));
+                            "从[" + DateTimeUtil.dateTimeFormat(chatRecord.getTime(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss) + "]开始统计")));
                 }
 
                 for (int i = 0; i < chatRecords.size(); i++) {
@@ -138,7 +138,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 .eq(ChatRecord::getGroupId, e.getGroupId())
                 .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
                 .eq(ChatRecord::getDeleted, false)
-                .orderByDesc(ChatRecord::getCreateTime)
+                .orderByDesc(ChatRecord::getTime)
                 .last("LIMIT 1"));
         if(chatRecord != null){
             return StringUtils.isNotBlank(chatRecord.getCard()) ? chatRecord.getCard()

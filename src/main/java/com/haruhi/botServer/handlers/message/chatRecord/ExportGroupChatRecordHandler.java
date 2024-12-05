@@ -83,7 +83,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
                 long l = System.currentTimeMillis();
                 List<ChatRecord> list = chatRecordService.list(new LambdaQueryWrapper<ChatRecord>()
                         .eq(ChatRecord::getGroupId,exportGroupId)
-                        .orderByDesc(ChatRecord::getCreateTime));
+                        .orderByDesc(ChatRecord::getTime));
                 long l4 = System.currentTimeMillis() - l;
                 log.info("查询聊天记录完成，耗时：{} 数量：{}",l4, list.size());
                 if(CollectionUtils.isEmpty(list)){
@@ -134,7 +134,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
             exportBody.setNickName(record.getNickname());
             exportBody.setUserId(String.valueOf(record.getUserId()));
             exportBody.setContent(record.getContent());
-            exportBody.setCreateTime(DateTimeUtil.dateTimeFormat(record.getCreateTime(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+            exportBody.setCreateTime(DateTimeUtil.dateTimeFormat(record.getTime(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
             res.add(exportBody);
         }
         log.info("转excel实体完成 耗时：{}",System.currentTimeMillis() - l);
