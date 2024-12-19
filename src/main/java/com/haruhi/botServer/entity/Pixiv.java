@@ -11,7 +11,7 @@ import lombok.Data;
 @TableName(value = DataBaseConfig.T_PIXIV)
 public class Pixiv {
     @TableId(value = "id",type = IdType.AUTO)
-    private Integer id;
+    private Long id;
     private String pid;
     private String title;
     private Integer width;

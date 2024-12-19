@@ -31,6 +31,7 @@ public class DataBaseConfig {
     // pixiv 图库表
     public final static String T_PIXIV = "t_pixiv";
     public final static String T_SEND_LIKE_RECORD = "t_send_like_record";
+    public final static String T_DICTIONARY = "t_dictionary";
 
 
 

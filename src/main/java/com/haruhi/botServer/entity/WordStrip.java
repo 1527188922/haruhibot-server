@@ -10,7 +10,7 @@ import lombok.Data;
 @TableName(value = DataBaseConfig.T_WORD_STRIP)
 public class WordStrip {
     @TableId(value = "id",type = IdType.AUTO)
-    private Integer id;
+    private Long id;
     private Long userId;
     private Long groupId;
     private Long selfId;

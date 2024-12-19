@@ -42,4 +42,6 @@ public interface TableInitMapper {
 
 
     int createSendLikeRecord(@Param("tableName") String tableName);
+
+    int createDictionary(@Param("tableName") String tableName);
 }

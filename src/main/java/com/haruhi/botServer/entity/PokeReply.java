@@ -10,6 +10,6 @@ import lombok.Data;
 @TableName(value = DataBaseConfig.T_POKE_REPLY)
 public class PokeReply {
     @TableId(value = "id",type = IdType.AUTO)
-    private Integer id;
+    private Long id;
     private String reply;
 }

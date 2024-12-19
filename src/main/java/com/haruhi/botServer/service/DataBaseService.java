@@ -67,6 +67,9 @@ public class DataBaseService {
             if(dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_SEND_LIKE_RECORD) == 0){
                 tableInitMapper.createSendLikeRecord(DataBaseConfig.T_SEND_LIKE_RECORD);
             }
+            if(dataBaseInitMapper.tableIsExist(dataBaseConfig.getMasterDBName(),DataBaseConfig.T_DICTIONARY) == 0){
+                tableInitMapper.createDictionary(DataBaseConfig.T_DICTIONARY);
+            }
 
             log.info("初始化数据库完成");
         }catch (Exception e){

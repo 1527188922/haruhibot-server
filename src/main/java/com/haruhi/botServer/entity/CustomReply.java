@@ -17,7 +17,7 @@ import java.util.Arrays;
 public class CustomReply {
 
     @TableId(value = "id",type = IdType.AUTO)
-    private Integer id;
+    private Long id;
     private String regex;
     private String reply;
     private Boolean deleted;

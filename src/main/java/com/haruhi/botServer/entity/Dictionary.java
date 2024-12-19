@@ -9,14 +9,13 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@TableName(value = DataBaseConfig.T_SEND_LIKE_RECORD)
-public class SendLikeRecord {
+@TableName(value = DataBaseConfig.T_DICTIONARY)
+public class Dictionary {
 
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "id",type = IdType.AUTO)
     private Long id;
-    private Long userId;
-    private Long selfId;
-    private Date sendTime;
-    private Integer times;
-    private String messageType;
+    private String key;
+    private String content;
+    private Date createTime;
+    private Date modifyTime;
 }

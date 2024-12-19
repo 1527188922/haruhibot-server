@@ -14,7 +14,7 @@ import java.util.Date;
 public class ChatRecord {
 
     @TableId(value = "id",type = IdType.AUTO)
-    private Integer id;
+    private Long id;
     private String card;
     private String nickname;
     private String messageId;
