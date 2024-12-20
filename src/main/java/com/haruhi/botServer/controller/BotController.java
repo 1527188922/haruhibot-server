@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 @Slf4j
 @RestController
@@ -35,14 +36,23 @@ public class BotController {
         }
         if((enumByType == MessageTypeEnum.group && (groupId == null || groupId == 0))
         || (enumByType == MessageTypeEnum.privat && (userId == null || userId == 0))
-        || StringUtils.isBlank(msg) || botId == null || botId == 0){
+        || StringUtils.isBlank(msg)){
             return HttpResp.fail("参数错误",null);
         }
-        WebSocketSession session = Server.getSessionByBot(botId);
+        if(Server.getConnections() == 0){
+            return HttpResp.fail("暂无连接",null);
+        }
+
+        WebSocketSession session = null;
+        if (Objects.isNull(botId)) {
+            session = Server.getSession();
+        }else{
+            session = Server.getSessionByBot(botId);
+        }
         if(session == null){
             return HttpResp.fail("session不存在",null);
         }
-        if(StringUtils.isNotBlank(sync) || sync.equals("1")){
+        if("1".equals(sync)){
             SyncResponse response = Server.sendSyncMessage(session, userId, groupId, enumByType.getType(), botId, "haruhi", Arrays.asList(msg), 30 * 1000);
             log.info("同步发送响应 {}",JSONObject.toJSONString(response));
             return HttpResp.success("已发送",response);

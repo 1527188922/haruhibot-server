@@ -61,6 +61,12 @@ public class Server extends TextWebSocketHandler {
     public static int getConnections(){
         return sessionCache.size();
     }
+    public static WebSocketSession getSession(){
+        if (getConnections() > 0) {
+            return ((UserSession)sessionCache.values().toArray()[0]).getSession();
+        }
+        return null;
+    }
     @Override
     public void afterConnectionEstablished(final WebSocketSession session) throws Exception {
         sessionCache.put(session.getId(),new UserSession(null,session));
