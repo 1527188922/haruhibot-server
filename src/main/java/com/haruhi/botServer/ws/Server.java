@@ -128,7 +128,7 @@ public class Server extends TextWebSocketHandler {
         UserSession userSession = sessionCache.get(id);
         if(userSession != null){
             sessionCache.remove(id);
-            log.info("客户端断开：{}  当前连接数：{}",userSession.getBotId(),getConnections());
+            log.info("客户端断开 botId:{}  当前连接数：{}",userSession.getBotId(),getConnections());
         }
     }
     /**
@@ -197,7 +197,7 @@ public class Server extends TextWebSocketHandler {
      */
     public static void sendGroupMessage(WebSocketSession session, Long groupId,String name, List<String> messages){
         if (!CollectionUtils.isEmpty(messages)) {
-            Long uin = getUserBySession(session);
+            Long uin = getBotBySession(session);
             RequestBox<Params> requestBox = createForwardMessageRequestBox(MessageTypeEnum.group,groupId,uin,name,messages);
             sendMessage(session,JSONObject.toJSONString(requestBox));
         }
@@ -290,7 +290,7 @@ public class Server extends TextWebSocketHandler {
      */
     public static void sendPrivateMessage(WebSocketSession session, Long userId,String name, List<String> messages){
         if (!CollectionUtils.isEmpty(messages)) {
-            Long uin = getUserBySession(session);
+            Long uin = getBotBySession(session);
             RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageTypeEnum.privat,userId,uin,name,messages);
             sendMessage(session,JSONObject.toJSONString(paramsRequestBox));
         }
@@ -420,7 +420,7 @@ public class Server extends TextWebSocketHandler {
         }
     }
 
-    public static Long getUserBySession(WebSocketSession session){
+    public static Long getBotBySession(WebSocketSession session){
         UserSession userSession = sessionCache.get(session.getId());
         
         if(userSession != null){
