@@ -6,11 +6,10 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.Pixiv;
 import com.haruhi.botServer.mapper.PixivMapper;
 import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -26,7 +25,7 @@ public class PixivServiceImpl extends ServiceImpl<PixivMapper, Pixiv> implements
     private PixivMapper pixivMapper;
 
     @Override
-    public void roundSend(WebSocketSession session,int num, Boolean isR18, List<String> tags, Message message, String tag) {
+    public void roundSend(Bot bot, int num, Boolean isR18, List<String> tags, Message message, String tag) {
         List<Pixiv> pixivs = null;
         HashSet<Pixiv> pixivHashSet = null;
         boolean noTag = CollectionUtils.isEmpty(tags);
@@ -37,7 +36,7 @@ public class PixivServiceImpl extends ServiceImpl<PixivMapper, Pixiv> implements
 
         }
         if (CollectionUtils.isEmpty(pixivs)) {
-            empty(session,noTag,tag,message);
+            empty(bot,noTag,tag,message);
             return;
         }
         int size = pixivs.size();
@@ -56,14 +55,14 @@ public class PixivServiceImpl extends ServiceImpl<PixivMapper, Pixiv> implements
             forwardMessage = createForwardMessage(pixivs);
         }
         if (!CollectionUtils.isEmpty(forwardMessage)) {
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),message.getSelfId(),BotConfig.NAME,forwardMessage);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),message.getSelfId(),BotConfig.NAME,forwardMessage);
         }
     }
-    private void empty(WebSocketSession session,boolean noTag, String tag, Message message){
+    private void empty(Bot bot,boolean noTag, String tag, Message message){
         if(noTag){
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"pix图库还没有图片~",true);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"pix图库还没有图片~",true);
         }else{
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("没有[{0}]的图片，换一个tag试试吧~", tag),true);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("没有[{0}]的图片，换一个tag试试吧~", tag),true);
         }
     }
     private List<String> createForwardMessage(Collection<Pixiv> pixivs){

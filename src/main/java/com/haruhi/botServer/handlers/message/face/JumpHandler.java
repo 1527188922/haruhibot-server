@@ -11,6 +11,7 @@ import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -77,7 +78,7 @@ public class JumpHandler implements IGroupMessageEvent {
 
 
     @Override
-    public boolean onGroup(WebSocketSession session, Message message) {
+    public boolean onGroup(Bot bot, Message message) {
         MatchResult<Pair<String, String>> pairMatchResult = matches(message);
         if (!pairMatchResult.isMatched()) {
             return false;
@@ -95,7 +96,7 @@ public class JumpHandler implements IGroupMessageEvent {
                     makeHuaQFace(Long.valueOf(data.getRight()), out);
                 }
                 log.info("jump表情图片地址：{}",out);
-                sendFaceMsg(session,message.getGroupId(),fileName);
+                sendFaceMsg(bot,message.getGroupId(),fileName);
             }catch (Exception e){
                 log.error("发送jump表情异常",e);
             }
@@ -103,12 +104,12 @@ public class JumpHandler implements IGroupMessageEvent {
         return true;
     }
 
-    private void sendFaceMsg(WebSocketSession session,Long groupId, String fileName){
+    private void sendFaceMsg(Bot bot,Long groupId, String fileName){
         KQCodeUtils instance = KQCodeUtils.getInstance();
         String imageUrl = abstractPathConfig.webFacePath() + "/" + fileName + "?t=" + System.currentTimeMillis();
         log.info("jump图片url ：{}",imageUrl);
         String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + imageUrl);
-        Server.sendGroupMessage(session,groupId,imageCq,false);
+        bot.sendGroupMessage(groupId,imageCq,false);
     }
 
     private MatchResult<Pair<String,String>> matches(Message message){

@@ -8,6 +8,7 @@ import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -37,7 +38,7 @@ public class LinkPreviewHandler implements IPrivateMessageEvent {
 
 
     @Override
-    public boolean onPrivate(WebSocketSession session, Message message) {
+    public boolean onPrivate(Bot bot, Message message) {
         if(!message.isTextMsgOnly() || !CommonUtil.isValidMagnetLink(message.getText(-1))){
             return false;
         }
@@ -46,18 +47,18 @@ public class LinkPreviewHandler implements IPrivateMessageEvent {
             String link = message.getText(-1);
             AnalysisMagnetLinkResp resp = request(link);
             if(resp == null || resp.getCount() == null || resp.getCount() == 0){
-                Server.sendPrivateMessage(session,message.getUserId(),
+                bot.sendPrivateMessage(message.getUserId(),
                         "磁力未解析出结果\n"+link,
                         true);
                 return;
             }
             if(StringUtils.isNotBlank(resp.getError())){
-                Server.sendPrivateMessage(session,message.getUserId(),
+                bot.sendPrivateMessage(message.getUserId(),
                         "磁力解析异常\n"+resp.getError(),
                         true);
                 return;
             }
-            Server.sendPrivateMessage(session,message.getUserId(), formatterResp(resp),true);
+            bot.sendPrivateMessage(message.getUserId(), formatterResp(resp),true);
         });
         return true;
     }

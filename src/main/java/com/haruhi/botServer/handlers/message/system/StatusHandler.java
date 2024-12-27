@@ -13,11 +13,10 @@ import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.utils.system.SystemUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 @Component
 @Slf4j
@@ -37,12 +36,12 @@ public class StatusHandler implements IAllMessageEvent {
 
     @SuperuserAuthentication
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(final Bot bot, final Message message) {
 
         if (message.getRawMessage().matches(RegexEnum.STATUS.getValue())) {
             ThreadPoolUtil.getHandleCommandPool().execute(()->{
                 String properties = getProperties(message.getMessageType());
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),properties,true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),properties,true);
 
             });
 

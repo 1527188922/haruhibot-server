@@ -10,12 +10,10 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.HttpClientUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -39,20 +37,20 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session, final Message message) {
+    public boolean onMessage(final Bot bot, final Message message) {
         if(!message.getRawMessage().matches(RegexEnum.NEW_ANIMATION_TODAY.getValue())){
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(bot,message));
         return true;
     }
 
     private class Task implements Runnable{
         private Message message;
-        private WebSocketSession session;
+        private Bot bot;
 
-        Task(WebSocketSession session,Message message){
-            this.session = session;
+        Task(Bot bot,Message message){
+            this.bot = bot;
             this.message = message;
         }
         @Override
@@ -63,7 +61,7 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
                     responseHtml = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(10 * 1000),ThirdPartyURL.AGEFANSTV, null);
                 }catch (Exception e){
                     log.error("获取新番请求异常 {}",ThirdPartyURL.AGEFANSTV,e);
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "获取新番异常\n"+e.getMessage(),true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "获取新番异常\n"+e.getMessage(),true);
                     return;
                 }
                 log.debug("age html : {}",responseHtml);
@@ -77,18 +75,18 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
                     }
                     data = data.stream().filter(NewAnimationTodayResp::getIsnew).collect(Collectors.toList());
                     if(CollectionUtils.isEmpty(data)){
-                        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "今日还没有番剧更新",true);
+                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "今日还没有番剧更新",true);
                         return;
                     }
                     List<String> param = new ArrayList<>(data.size());
                     for (NewAnimationTodayResp datum : data) {
                         param.add(splicingParam(datum));
                     }
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),message.getSelfId(),BotConfig.NAME,param);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),message.getSelfId(),BotConfig.NAME,param);
                 }
             }catch (Exception e){
                 log.error("解析新番数据异常",e);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("今日新番异常",e.getMessage()),true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("今日新番异常",e.getMessage()),true);
             }
 
         }

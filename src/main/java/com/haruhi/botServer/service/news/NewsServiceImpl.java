@@ -9,6 +9,7 @@ import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.RestUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -54,11 +55,11 @@ public class NewsServiceImpl implements NewsService {
     }
 
     @Override
-    public void sendGroup(WebSocketSession session, List<NewsBy163Resp> list, Long... groupIds) {
+    public void sendGroup(Bot bot, List<NewsBy163Resp> list, Long... groupIds) {
         if(groupIds != null){
             List<String> newsGroupMessage = createNewsMessage(list);
             for (Long groupId : groupIds) {
-                Server.sendGroupMessage(session,groupId,BotConfig.NAME,newsGroupMessage);
+                bot.sendGroupMessage(groupId,BotConfig.NAME,newsGroupMessage);
             }
         }
     }
@@ -101,11 +102,11 @@ public class NewsServiceImpl implements NewsService {
     }
 
     @Override
-    public void sendPrivate(WebSocketSession session,List<NewsBy163Resp> list,Long... userIds) {
+    public void sendPrivate(Bot bot,List<NewsBy163Resp> list,Long... userIds) {
         if(userIds != null){
             List<String> newsMessage = createNewsMessage(list);
             for (Long userId : userIds) {
-                Server.sendPrivateMessage(session,userId,BotConfig.NAME,newsMessage);
+                bot.sendPrivateMessage(userId,BotConfig.NAME,newsMessage);
             }
         }
 

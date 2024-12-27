@@ -9,12 +9,11 @@ import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.io.File;
 
@@ -41,7 +40,7 @@ public class ScoldMeHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(final Bot bot, final Message message) {
         String cmd;
         if(message.isAtBot()){
             cmd = message.getText(-1);
@@ -58,7 +57,7 @@ public class ScoldMeHandler implements IAllMessageEvent {
             String s = abstractPathConfig.webDgAudioPath() + "/" + file.getName();
             log.info("骂我音频地址：{}",s);
             String cq = instance.toCq(CqCodeTypeEnum.record.getType(), "file=" + s);
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);
         });
 
         return true;

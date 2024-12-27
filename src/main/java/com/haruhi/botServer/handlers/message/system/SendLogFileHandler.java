@@ -11,15 +11,13 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -62,13 +60,13 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
 
     @SuperuserAuthentication
     @Override
-    public boolean onPrivate(final WebSocketSession session,final Message message) {
+    public boolean onPrivate(final Bot bot, final Message message) {
         File[] files = cacheMap.get(key(message));
         if (files != null) {
             try {
                 int index = Integer.parseInt(message.getRawMessage()) - 1;
 
-                ThreadPoolUtil.getHandleCommandPool().execute(new UploadLogFileTask(files,index,session,message));
+                ThreadPoolUtil.getHandleCommandPool().execute(new UploadLogFileTask(files,index,bot,message));
                 return true;
             }catch (NumberFormatException e){
                 return false;
@@ -85,9 +83,9 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
                                 .append("\n" + String.format("%.2f",(double)files1[i].length() / 1024 / 1024) + "MB").append("\n");
                     }
                     cacheMap.put(key(message),files1);
-                    Server.sendPrivateMessage(session,message.getUserId(),builder.toString(),true);
+                    bot.sendPrivateMessage(message.getUserId(),builder.toString(),true);
                 }else {
-                    Server.sendPrivateMessage(session,message.getUserId(),"没有日志文件",true);
+                    bot.sendPrivateMessage(message.getUserId(),"没有日志文件",true);
                 }
             });
 
@@ -103,11 +101,11 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
     private class UploadLogFileTask implements Runnable{
 
         private final File[] files;
-        private final WebSocketSession session;
+        private final Bot bot;
         private final Message message;
         private final int index;
-        UploadLogFileTask(File[] files,int index,WebSocketSession session,Message message){
-            this.session = session;
+        UploadLogFileTask(File[] files,int index,Bot bot,Message message){
+            this.bot = bot;
             this.index = index;
             this.message = message;
             this.files = files;
@@ -117,26 +115,26 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
         public void run() {
             try {
                 if(index < 0 || index >= files.length){
-                    Server.sendPrivateMessage(session,message.getUserId(),"请输入范围内序号",true);
+                    bot.sendPrivateMessage(message.getUserId(),"请输入范围内序号",true);
                     return;
                 }
                 File file = files[index];
                 if(file == null || !file.exists() || file.isDirectory()){
-                    Server.sendPrivateMessage(session,message.getUserId(),"文件不存在\n"+file,true);
+                    bot.sendPrivateMessage(message.getUserId(),"文件不存在\n"+file,true);
                     return;
                 }
                 // 注意该路径可能不存在与bot程序所在的主机上
-                DownloadFileResp downloadFile = WsSyncRequestUtil.downloadFile(session, 
+                DownloadFileResp downloadFile = bot.downloadFile(
                         pathConfig.webLogsPath() + "/" + file.getName() + "?t=" + System.currentTimeMillis(), 
                         1, null, 30 * 1000);
 
                 if(downloadFile == null || Strings.isBlank(downloadFile.getFile())){
-                    Server.sendPrivateMessage(session,message.getUserId(),"上传日志失败，napcat下载文件失败",true);
+                    bot.sendPrivateMessage(message.getUserId(),"上传日志失败，napcat下载文件失败",true);
                     return;
                 }
-                SyncResponse response = WsSyncRequestUtil.uploadPrivateFile(session, message.getUserId(), downloadFile.getFile(), file.getName(), 60 * 1000);
+                SyncResponse response = bot.uploadPrivateFile(message.getUserId(), downloadFile.getFile(), file.getName(), 60 * 1000);
                 if (!response.isSuccess()) {
-                    Server.sendPrivateMessage(session,message.getUserId(),"上传日志失败\n"+response.getMessage(),true);
+                    bot.sendPrivateMessage(message.getUserId(),"上传日志失败\n"+response.getMessage(),true);
                 }
             }catch (Exception e){
                 log.error("上传日志文件异常",e);

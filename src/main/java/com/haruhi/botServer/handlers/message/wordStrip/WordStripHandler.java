@@ -4,10 +4,10 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,13 +42,13 @@ public class WordStripHandler implements IGroupMessageEvent {
     }
 
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message) {
+    public boolean onGroup(Bot bot, final Message message) {
         String answer = cache.get(getKey(message.getSelfId(),message.getGroupId(),message.getRawMessage()));
         if(answer == null){
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            Server.sendGroupMessage(session,message.getGroupId(),answer,false);
+            bot.sendGroupMessage(message.getGroupId(),answer,false);
         });
         return true;
     }

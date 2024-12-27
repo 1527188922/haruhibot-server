@@ -4,10 +4,9 @@ import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,13 +93,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
+            protected boolean run(final Bot bot,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是a1",true);
                 return true;
             }
@@ -119,13 +118,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message)throws Exception {
+            protected boolean run(final Bot bot,final Message message)throws Exception {
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是a2",true);
                 return true;
             }
@@ -144,7 +143,7 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
+            protected boolean run(final Bot bot,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
@@ -155,7 +154,7 @@ public class DemoHandler implements IAllMessageEvent {
                     // 不同session之间异步发送
                     final int j = i;
                     ThreadPoolUtil.getHandleCommandPool().execute(()->{
-                        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                                 "我是a3-" + j,true);
                     });
                 }
@@ -179,13 +178,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
+            protected boolean run(final Bot bot,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}", d);
-                Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(),
+                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                         "我是b1", true);
                 return true;
             }
@@ -204,13 +203,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message)throws Exception {
+            protected boolean run(final Bot bot,final Message message)throws Exception {
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}", d);
-                Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(),
+                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                         "我是b2", true);
                 return true;
             }
@@ -228,13 +227,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
+            protected boolean run(final Bot bot,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是b3",true);
                 return true;
             }
@@ -253,13 +252,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
+            protected boolean run(final Bot bot,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是b4",true);
                 return true;
             }
@@ -277,13 +276,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message) throws Exception {
+            protected boolean run(final Bot bot,final Message message) throws Exception {
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是b5",true);
                 return true;
             }
@@ -301,13 +300,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message)throws Exception {
+            protected boolean run(final Bot bot,final Message message)throws Exception {
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}", d);
-                Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(),
+                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                         "我是c1", true);
                 return true;
             }
@@ -325,13 +324,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
+            protected boolean run(final Bot bot,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是c2",true);
                 return true;
             }
@@ -349,13 +348,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message) throws Exception{
+            protected boolean run(final Bot bot,final Message message) throws Exception{
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是c3",true);
                 return true;
             }
@@ -373,13 +372,13 @@ public class DemoHandler implements IAllMessageEvent {
 //            }
 
             @Override
-            protected boolean run(final WebSocketSession session,final Message message) throws Exception {
+            protected boolean run(final Bot bot,final Message message) throws Exception {
                 String d = getData();
                 if (!d.equals(message.getRawMessage())) {
                     return false;
                 }
                 log.info("这是当前节点自定的数据：{}",d);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         "我是d1",true);
                 return true;
             }
@@ -402,12 +401,12 @@ public class DemoHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(final Bot bot, final Message message) {
         if(CollectionUtils.isEmpty(roots)){
             return false;
         }
 
-        return ergodicNodes(session,message);
+        return ergodicNodes(bot,message);
     }
 
     // ------------ ---------------    ------------------- --------------------
@@ -415,11 +414,11 @@ public class DemoHandler implements IAllMessageEvent {
     /**
      * 判断从缓存节点的子节点集合从执行
      * 还是从根节点集合执行
-     * @param session
+     * @param bot
      * @param message
      * @return
      */
-    private boolean ergodicNodes(final WebSocketSession session,final Message message){
+    private boolean ergodicNodes(final Bot bot,final Message message){
         // 先查找缓存是否存在该用户的执行记录 实际就是查一个node对象
         RunnableNode currentNode = getNode(message);
         List<RunnableNode> nodes = null;
@@ -431,27 +430,27 @@ public class DemoHandler implements IAllMessageEvent {
             nodes = roots;
         }
 
-        return execute(session, message, nodes);
+        return execute(bot, message, nodes);
     }
 
     /**
      * 循环匹配执行同一层级的节点(循环调用run())
-     * @param session
+     * @param bot
      * @param message
      * @param nodes 同一层级的节点集合
      * @return
      */
-    private boolean execute(final WebSocketSession session,final Message message,final List<RunnableNode> nodes){
+    private boolean execute(final Bot bot,final Message message,final List<RunnableNode> nodes){
         for (RunnableNode node: nodes) {
             boolean execute = false;
             try {
-                execute = node.run(session, message);
+                execute = node.run(bot, message);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             if (execute) {
                 // execute==true 表示该节点的matches方法返回true 说明匹配成功 将任务提交到了线程池执行
-                missionAccomplished(session,message,node);
+                missionAccomplished(bot,message,node);
                 return true;
             }
         }
@@ -460,11 +459,11 @@ public class DemoHandler implements IAllMessageEvent {
 
     /**
      * 执行完成之后做的事
-     * @param session
+     * @param bot
      * @param message
      * @param currentNode 被执行的节点
      */
-    private void missionAccomplished(final WebSocketSession session,final Message message,final RunnableNode currentNode){
+    private void missionAccomplished(final Bot bot,final Message message,final RunnableNode currentNode){
         List childNodes = currentNode.getChildNodes();
         if(!CollectionUtils.isEmpty(childNodes)){
             // 当前执行的节点还存在子节点 将当前执行的节点存到缓存
@@ -476,7 +475,7 @@ public class DemoHandler implements IAllMessageEvent {
 //                // 节点没有父节点 表示当前节点为根节点
 //                tip = "你所完成的根节点指令之下没有其他指令了，接下来将重新回根节点";
 //            }
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                     "终节点执行完成",true);
             log.info("终节点执行完成");
             removeCache(message);

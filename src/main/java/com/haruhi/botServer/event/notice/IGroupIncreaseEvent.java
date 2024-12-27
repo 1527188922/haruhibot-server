@@ -2,7 +2,7 @@ package com.haruhi.botServer.event.notice;
 
 
 import com.haruhi.botServer.dto.gocq.response.Message;
-import org.springframework.web.socket.WebSocketSession;
+import com.haruhi.botServer.ws.Bot;
 
 /**
  * 群加入成员事件
@@ -16,5 +16,5 @@ public interface IGroupIncreaseEvent extends INoticeEvent {
      * time : 时间 (秒级时间戳)
      * @param message
      */
-    void onGroupIncrease(WebSocketSession session,Message message);
+    void onGroupIncrease(Bot bot, Message message);
 }

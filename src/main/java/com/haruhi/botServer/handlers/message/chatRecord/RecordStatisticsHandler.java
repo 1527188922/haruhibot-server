@@ -14,9 +14,8 @@ import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.mapper.ChatRecordMapper;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
-import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +23,6 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +47,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
     }
     
     @Override
-    public boolean onGroup(WebSocketSession session, Message message) {
+    public boolean onGroup(Bot bot, Message message) {
         
         if(!message.getRawMessage().matches(RegexEnum.RECORD_STATISTICS.getValue())){
             return false;
@@ -61,11 +59,11 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 List<ChatRecord> chatRecords = chatRecordMapper.groupRecordCounting(message.getGroupId(), message.getSelfId());
                 log.info("聊天记录分组执行sql cost:{}",System.currentTimeMillis() - l);
                 if(CollectionUtils.isEmpty(chatRecords)){
-                    Server.sendGroupMessage(session,message.getGroupId(),"暂无聊天记录",true);
+                    bot.sendGroupMessage(message.getGroupId(),"暂无聊天记录",true);
                     return;
                 }
 
-                List<GroupMember> groupMemberList = WsSyncRequestUtil.getGroupMemberList(session, message.getGroupId(), Collections.singletonList(message.getSelfId()), 10 * 1000);
+                List<GroupMember> groupMemberList = bot.getGroupMemberList(message.getGroupId(), Collections.singletonList(message.getSelfId()), 10 * 1000);
 
                 List<ForwardMsgItem> params = new ArrayList<>(chatRecords.size() + 1);
 
@@ -96,7 +94,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 }
                 List<List<ForwardMsgItem>> lists = CommonUtil.averageAssignList(params, 70);
                 for (int i = 0; i < lists.size(); i++) {
-                    Server.sendGroupMessage(session, message.getGroupId(), lists.get(i));
+                    bot.sendGroupMessage(message.getGroupId(), lists.get(i));
                     if(i < lists.size() - 1){
                         try {
                             Thread.sleep(1200);
@@ -105,7 +103,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 }
             }catch (Exception e){
                 log.error("聊天统计异常",e);
-                Server.sendGroupMessage(session, message.getGroupId(), "聊天统计异常\n"+e.getMessage(),true);
+                bot.sendGroupMessage(message.getGroupId(), "聊天统计异常\n"+e.getMessage(),true);
             }
             
         });

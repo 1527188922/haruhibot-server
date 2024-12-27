@@ -7,6 +7,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ public class RefreshCacheHandler implements IAllMessageEvent {
 
     @Override
     @SuperuserAuthentication
-    public boolean onMessage(WebSocketSession session, Message message) {
+    public boolean onMessage(Bot bot, Message message) {
         String cmd;
         if(message.isAtBot()){
             cmd = message.getText(-1);
@@ -48,7 +49,7 @@ public class RefreshCacheHandler implements IAllMessageEvent {
         }
 
         if(!REFRESH_LOCK.compareAndSet(false,true)){
-            Server.sendMessage(session,message.getUserId(), message.getGroupId(), message.getMessageType(),
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                     "正在刷新中...", true);
             return true;
         }
@@ -58,7 +59,7 @@ public class RefreshCacheHandler implements IAllMessageEvent {
                 long l = System.currentTimeMillis();
                 systemService.clearCache();
                 systemService.loadCache();
-                Server.sendMessage(session,message.getUserId(), message.getGroupId(), message.getMessageType(),
+                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                         "刷新缓存完成\n耗时：" + (System.currentTimeMillis() - l) + "ms", true);
             }finally {
                 REFRESH_LOCK.set(false);

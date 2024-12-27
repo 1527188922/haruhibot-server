@@ -7,11 +7,11 @@ import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.news.NewsService;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.List;
 
@@ -29,23 +29,23 @@ public class SeeNewsHandler implements IAllMessageEvent {
         return HandlerWeightEnum.W_400.getName();
     }
     @Autowired
-    private NewsService NewsService;
+    private NewsService newsService;
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(final Bot bot, final Message message) {
         if(!message.getRawMessage().matches(RegexEnum.SEE_TODAY_NEWS.getValue())){
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
-                List<NewsBy163Resp> newsBy163Resps = NewsService.requestNewsBy163();
+                List<NewsBy163Resp> newsBy163Resps = newsService.requestNewsBy163();
                 if(CollectionUtils.isEmpty(newsBy163Resps)){
                     return;
                 }
                 if (message.isGroupMsg()) {
-                    NewsService.sendGroup(session,newsBy163Resps,message.getGroupId());
+                    newsService.sendGroup(bot,newsBy163Resps,message.getGroupId());
                 }else if (message.isPrivateMsg()){
-                    NewsService.sendPrivate(session,newsBy163Resps,message.getUserId());
+                    newsService.sendPrivate(bot,newsBy163Resps,message.getUserId());
                 }
             }catch (Exception e){
                 log.error("查看今日新闻异常",e);

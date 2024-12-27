@@ -2,6 +2,7 @@ package com.haruhi.botServer.instructions;
 
 import com.haruhi.botServer.dto.gocq.response.Message;
 //import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketSession;
@@ -122,12 +123,12 @@ public abstract class RunnableNode<T>{
      * run()中自定义匹配规则和节点要做的事情
      * matches()和run() 用同一个方法更好,这样有更大的自定义空间 而且 有些参数从匹配过程中就能拿到 没必要把matches()和run()分开
      * 至于匹配成功之后的执行 是由当前线程执行还是提交线程池 自行发挥 不再强行提交线程池
-     * @param session 客户端session
+     * @param bot 客户端session
      * @param message gocq消息对象
      * @return true:表示该节点匹配成功 被执行
      * @throws Exception
      */
-    protected abstract boolean run(final WebSocketSession session,final Message message) throws Exception;
+    protected abstract boolean run(final Bot bot, final Message message) throws Exception;
 
 //    public boolean execute(final WebSocketSession session,final Message message){
 //        boolean matches = false;

@@ -13,9 +13,8 @@ import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.dto.searchImage.response.Results;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.utils.WsSyncRequestUtil;
 import com.haruhi.botServer.utils.RestUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +25,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.net.SocketTimeoutException;
 import java.text.MessageFormat;
@@ -55,16 +53,16 @@ public class SearchImageHandler implements IAllMessageEvent {
         return  selfId + "-" + userId + "-" + groupId;
     }
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(final Bot bot, final Message message) {
 
         if(!SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP && message.isGroupMsg()){
             return false;
         }
 
-        Message replyMessage = replySearch(session, message);
+        Message replyMessage = replySearch(bot, message);
         if(replyMessage != null){
             // 回复式识图
-            startSearch(session,message,replyMessage,replyMessage.getPicUrls().get(0),null);
+            startSearch(bot,message,replyMessage,replyMessage.getPicUrls().get(0),null);
             return true;
         }
 
@@ -72,7 +70,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         String key = getKey(String.valueOf(message.getSelfId()), String.valueOf(message.getUserId()), String.valueOf(message.getGroupId()));
         if(cache.contains(key) && !CollectionUtils.isEmpty(picMessageData)){
             // 存在缓存 并且 图片路径不为空
-            startSearch(session,message,null,picMessageData.get(0).getUrl(),key);
+            startSearch(bot,message,null,picMessageData.get(0).getUrl(),key);
             return true;
         }
 
@@ -87,28 +85,28 @@ public class SearchImageHandler implements IAllMessageEvent {
         if (matches) {
             if(CollectionUtils.isEmpty(picMessageData)){
                 cache.add(key);
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
             }else if(!CollectionUtils.isEmpty(picMessageData)){
-                startSearch(session,message,null,picMessageData.get(0).getUrl(),key);
+                startSearch(bot,message,null,picMessageData.get(0).getUrl(),key);
             }
             return true;
         }
         return false;
     }
 
-    private void startSearch(WebSocketSession session,Message message, Message replyMessage,String url, String key){
-        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜图...",true);
-        ThreadPoolUtil.getHandleCommandPool().execute(new SearchImageTask(session,message,replyMessage,url));
+    private void startSearch(Bot bot,Message message, Message replyMessage,String url, String key){
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜图...",true);
+        ThreadPoolUtil.getHandleCommandPool().execute(new SearchImageTask(bot,message,replyMessage,url));
         if(key != null){
             cache.remove(key);
         }
     }
-    private Message replySearch(WebSocketSession session, Message message){
+    private Message replySearch(Bot bot, Message message){
         if (message.isGroupMsg() && message.isReplyMsg()) {
             String s = message.getRawMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
             if (s.matches(RegexEnum.SEARCH_IMAGE.getValue())) {
                 List<String> replyMsgIds = message.getReplyMsgIds();
-                Message msg = WsSyncRequestUtil.getMsg(session,replyMsgIds.get(0),2L * 1000L);
+                Message msg = bot.getMsg(replyMsgIds.get(0),2L * 1000L);
                 log.debug("回复式识图，根据msgId获取消息 {} {}",replyMsgIds.get(0), JSONObject.toJSONString(msg));
                 if(msg != null && msg.isPicMsg()){
                     return msg;
@@ -120,7 +118,7 @@ public class SearchImageHandler implements IAllMessageEvent {
 
     @AllArgsConstructor
     private class SearchImageTask implements Runnable{
-        private WebSocketSession session;
+        private Bot bot;
         private Message message;
         private Message replyMessage;
         private String url;
@@ -149,24 +147,24 @@ public class SearchImageHandler implements IAllMessageEvent {
                     JSONObject jsonObject = JSONObject.parseObject(response.getBody());
                     String resultsStr = jsonObject.getString("results");
                     if(Strings.isBlank(resultsStr)){
-                        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜索结果为空",true);
+                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "搜索结果为空",true);
                     }else{
                         List<Results> resultList = JSONObject.parseArray(resultsStr, Results.class);
                         sort(resultList);
-                        sendResult(session,resultList, replyMessage,message);
+                        sendResult(bot,resultList, replyMessage,message);
                     }
                 }
             }catch (ResourceAccessException e){
                 Throwable cause = e.getCause();
                 if(cause instanceof SocketTimeoutException){
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图超时",true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图超时",true);
                     log.error("搜图超时",e);
                 }else{
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
                     log.error("搜图异常",e);
                 }
             }catch (Exception e){
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
                 log.error("搜图异常",e);
             }
 
@@ -191,7 +189,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         }
     }
 
-    private void sendResult(WebSocketSession session, List<Results> resultList, Message replyMessage, Message message){
+    private void sendResult(Bot bot, List<Results> resultList, Message replyMessage, Message message){
         List<String> forwardMsgs = new ArrayList<>(resultList.size() + 1);
         String m = replyMessage != null ? replyMessage.getRawMessage() : message.getRawMessage();
         String cq = KQCodeUtils.getInstance().getCq(m, CqCodeTypeEnum.image.getType());
@@ -200,12 +198,12 @@ public class SearchImageHandler implements IAllMessageEvent {
             forwardMsgs.add(getItemMsg(results));
         }
 
-        SyncResponse syncResponse = Server.sendSyncMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), 
+        SyncResponse syncResponse = bot.sendSyncMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                 message.getSelfId(), BotConfig.NAME, forwardMsgs, 8 * 1000);
         if(syncResponse == null || (syncResponse.getRetcode() != null && syncResponse.getRetcode() != 0)){
             log.error("识图结果同步发送失败，使用异步发送");
             forwardMsgs.remove(0);
-            Server.sendMessage(session, message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
         }
     }
     private String getItemMsg(Results results){

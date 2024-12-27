@@ -3,14 +3,14 @@ package com.haruhi.botServer.controller;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
+import com.haruhi.botServer.ws.BotContainer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -39,25 +39,25 @@ public class BotController {
         || StringUtils.isBlank(msg)){
             return HttpResp.fail("参数错误",null);
         }
-        if(Server.getConnections() == 0){
+        if(BotContainer.getConnections() == 0){
             return HttpResp.fail("暂无连接",null);
         }
 
-        WebSocketSession session = null;
+        Bot bot = null;
         if (Objects.isNull(botId)) {
-            session = Server.getSession();
+            bot = BotContainer.getBotFirst();
         }else{
-            session = Server.getSessionByBot(botId);
+            bot = BotContainer.getBotById(botId);
         }
-        if(session == null){
+        if(bot == null){
             return HttpResp.fail("session不存在",null);
         }
         if("1".equals(sync)){
-            SyncResponse response = Server.sendSyncMessage(session, userId, groupId, enumByType.getType(), botId, "haruhi", Arrays.asList(msg), 30 * 1000);
+            SyncResponse response = bot.sendSyncMessage(userId, groupId, enumByType.getType(), botId, "haruhi", Arrays.asList(msg), 30 * 1000);
             log.info("同步发送响应 {}",JSONObject.toJSONString(response));
             return HttpResp.success("已发送",response);
         }
-        Server.sendMessage(session, userId, groupId, enumByType.getType(), msg, false);
+        bot.sendMessage(userId, groupId, enumByType.getType(), msg, false);
         return HttpResp.success("已发送",null);
     }
     

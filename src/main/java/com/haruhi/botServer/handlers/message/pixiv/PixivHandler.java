@@ -6,11 +6,11 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.pixiv.PixivService;
+import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +34,7 @@ public class PixivHandler implements IAllMessageEvent {
 
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(final Bot bot, final Message message) {
         List<String> tags = null;
         String tag = null;
         String cq = KQCodeUtils.getInstance().getCq(message.getRawMessage(), 0);
@@ -61,28 +61,12 @@ public class PixivHandler implements IAllMessageEvent {
         }
 
 
-        ThreadPoolUtil.getHandleCommandPool().execute(new PixivTask(session,pixivService,tags,message,tag));
+        List<String> finalTags = tags;
+        String finalTag = tag;
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
+            pixivService.roundSend(bot,20,null, finalTags,message, finalTag);
+        });
         return true;
-    }
-
-    private class PixivTask implements Runnable{
-        private WebSocketSession session;
-        private PixivService pixivService;
-        private List<String> tags;
-        private String tag;
-        private Message message;
-        public PixivTask(WebSocketSession session,PixivService pixivService, List<String> tags, Message message,String tag){
-            this.session = session;
-            this.tags = tags;
-            this.tag = tag;
-            this.pixivService = pixivService;
-            this.message = message;
-        }
-
-        @Override
-        public void run() {
-            pixivService.roundSend(session,20,null,tags,message,tag);
-        }
     }
 
 }

@@ -17,6 +17,7 @@ import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +64,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
      * @param param
      */
     @Override
-    public void sendGroupChatList(WebSocketSession session, Message message, FindGroupChatHandler.Param param) {
+    public void sendGroupChatList(Bot bot, Message message, FindGroupChatHandler.Param param) {
         Date date = limitDate(param);
         LambdaQueryWrapper<ChatRecord> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ChatRecord::getDeleted,false)
@@ -91,22 +92,22 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
                 List<List<ChatRecord>> lists = CommonUtil.averageAssignList(chatList, limit);
                 for (List<ChatRecord> list : lists) {
                     pool.execute(()->{
-                        partSend(session,list,message);
+                        partSend(bot,list,message);
                     });
                 }
             }else{
-                partSend(session,chatList,message);
+                partSend(bot,chatList,message);
             }
         }else{
-            Server.sendGroupMessage(session,message.getGroupId(), "该条件下没有聊天记录。",true);
+            bot.sendGroupMessage(message.getGroupId(), "该条件下没有聊天记录。",true);
         }
     }
-    private void partSend(WebSocketSession session, List<ChatRecord> chatList, Message message){
+    private void partSend(Bot bot, List<ChatRecord> chatList, Message message){
         List<ForwardMsgItem> params = new ArrayList<>(chatList.size());
         for (ChatRecord e : chatList) {
             params.add(new ForwardMsgItem(new ForwardMsgItem.Data(getName(e),e.getUserId(),e.getContent())));
         }
-        Server.sendGroupMessage(session,message.getGroupId(),params);
+        bot.sendGroupMessage(message.getGroupId(),params);
 
     }
     private String getName(ChatRecord e){
@@ -150,7 +151,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
      * @param message
      */
     @Override
-    public void sendWordCloudImage(WebSocketSession session, GroupWordCloudHandler.RegexEnum regexEnum, Message message) {
+    public void sendWordCloudImage(Bot bot, GroupWordCloudHandler.RegexEnum regexEnum, Message message) {
         // 解析查询条件
         log.info("群[{}]开始生成词云图...",message.getGroupId());
         Date date = limitDate(regexEnum);
@@ -170,12 +171,12 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
         // 从数据库查询聊天记录
         List<ChatRecord> corpus = chatRecordMapper.selectList(queryWrapper);
         if (CollectionUtils.isEmpty(corpus)) {
-            Server.sendGroupMessage(session,message.getGroupId(),"该条件下没有聊天记录",true);
+            bot.sendGroupMessage(message.getGroupId(),"该条件下没有聊天记录",true);
             generateComplete(message);
             return;
         }
 
-        Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("词云图片将从{0}条聊天记录中生成,开始分词...",corpus.size()),true);
+        bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("词云图片将从{0}条聊天记录中生成,开始分词...",corpus.size()),true);
         try{
             // 开始分词
             long l = System.currentTimeMillis();
@@ -184,12 +185,12 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
             // 设置权重和排除指定词语
             Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(strings));
             if(CollectionUtils.isEmpty(map)){
-                Server.sendGroupMessage(session,message.getGroupId(),"分词为0，本次不生成词云图",true);
+                bot.sendGroupMessage(message.getGroupId(),"分词为0，本次不生成词云图",true);
                 generateComplete(message);
                 return;
             }
             long l1 = System.currentTimeMillis();
-            Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("分词完成:{0}条\n耗时:{1}毫秒\n开始生成图片...",strings.size(),l1 - l),true);
+            bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("分词完成:{0}条\n耗时:{1}毫秒\n开始生成图片...",strings.size(),l1 - l),true);
             // 开始生成图片
             String fileName = regexEnum.getUnit().toString() + "-" + message.getGroupId() + ".png";
             outPutPath = FileUtil.mkdirs(FileUtil.getWordCloudDir()) + File.separator + fileName;
@@ -205,10 +206,9 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
             String s = abstractPathConfig.webWordCloudPath() + "/" + fileName + "?t=" + System.currentTimeMillis();
             log.info("群词云图片地址：{}",s);
             String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
-            //
-            Server.sendGroupMessage(session,message.getGroupId(),imageCq,false);
+            bot.sendGroupMessage(message.getGroupId(),imageCq,false);
         }catch (Exception e){
-            Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("生成词云图片异常：{0}",e.getMessage()),true);
+            bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("生成词云图片异常：{0}",e.getMessage()),true);
             log.error("生成词云图片异常",e);
         }finally {
             generateComplete(message);

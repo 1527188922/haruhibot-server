@@ -6,6 +6,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.chatRecord.ChatRecordService;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,18 +50,20 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
         return null;
     }
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message) {
+    public boolean onGroup(Bot bot, final Message message) {
         RegexEnum matching = matching(message.getRawMessage());
         if (matching == null) {
             return false;
         }
         if(lock.containsKey(String.valueOf(message.getGroupId()) + message.getSelfId())){
-            Server.sendGroupMessage(session,message.getGroupId(),"词云正在生成中...莫着急",true);
+            bot.sendGroupMessage(message.getGroupId(),"词云正在生成中...莫着急",true);
             return true;
         }else{
             lock.put(String.valueOf(message.getGroupId()) + message.getSelfId(),1);
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,groupChatHistoryService,matching,message));
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
+            groupChatHistoryService.sendWordCloudImage(bot,matching, message);
+        });
         return true;
     }
     private class Task implements Runnable{
@@ -76,7 +79,7 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
         }
         @Override
         public void run() {
-            groupChatHistoryService.sendWordCloudImage(session,regexEnum, message);
+
         }
     }
     public enum RegexEnum{

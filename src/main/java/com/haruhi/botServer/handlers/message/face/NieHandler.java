@@ -8,6 +8,7 @@ import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.MatchResult;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,7 @@ public class NieHandler implements IGroupMessageEvent {
 
 
     @Override
-    public boolean onGroup(WebSocketSession session, Message message) {
+    public boolean onGroup(Bot bot, Message message) {
         MatchResult<File[]> result = matching(message);
         if(!result.isMatched()){
             return false;
@@ -51,7 +52,7 @@ public class NieHandler implements IGroupMessageEvent {
         }
         String s = webResourceConfig.webFacePath() + "/" + fileName + "?t=" + System.currentTimeMillis();
         String imageCq = KQCodeUtils.getInstance().toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
-        Server.sendGroupMessage(session,message.getGroupId(),imageCq,false);
+        bot.sendGroupMessage(message.getGroupId(),imageCq,false);
         return true;
     }
 

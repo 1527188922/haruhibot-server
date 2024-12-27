@@ -1,7 +1,7 @@
 package com.haruhi.botServer.event.message;
 
 import com.haruhi.botServer.dto.gocq.response.Message;
-import org.springframework.web.socket.WebSocketSession;
+import com.haruhi.botServer.ws.Bot;
 
 /**
  * 实现这个接口的类
@@ -12,5 +12,5 @@ public interface IPrivateMessageEvent extends IMessageEvent {
      * 私聊触发
      * @param message
      */
-    boolean onPrivate(WebSocketSession session,Message message);
+    boolean onPrivate(Bot bot, Message message);
 }

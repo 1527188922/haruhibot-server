@@ -1,7 +1,7 @@
 package com.haruhi.botServer.event.message;
 
 import com.haruhi.botServer.dto.gocq.response.Message;
-import org.springframework.web.socket.WebSocketSession;
+import com.haruhi.botServer.ws.Bot;
 
 /**
  * 实现这接口的类
@@ -12,5 +12,5 @@ public interface IGroupMessageEvent extends IMessageEvent {
      * 群聊触发
      * @param message
      */
-    boolean onGroup(WebSocketSession session,Message message);
+    boolean onGroup(Bot bot, Message message);
 }

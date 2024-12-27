@@ -9,9 +9,9 @@ import com.haruhi.botServer.dto.xml.bilibili.PlayerInfoResp;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.thread.WordSlicesTask;
-import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.WordCloudUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,6 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -44,7 +43,7 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
     private AbstractWebResourceConfig abstractPathConfig;
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(Bot bot, final Message message) {
         if(!message.getRawMessage().startsWith(RegexEnum.BULLET_CHAT_WORD_CLOUD.getValue())){
             return false;
         }
@@ -53,7 +52,7 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
             return false;
         }
 
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session,message,param));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(bot,message,param));
         return true;
     }
     private String getBv(String param){
@@ -67,11 +66,11 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
     }
     private class Task implements Runnable{
 
-        private WebSocketSession session;
+        private Bot bot;
         private Message message;
         private String param;
-        public Task(WebSocketSession session,Message message,String param){
-            this.session = session;
+        public Task(Bot session,Message message,String param){
+            this.bot = session;
             this.message = message;
             this.param = param;
         }
@@ -87,12 +86,12 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
                 }
                 PlayerInfoResp playerInfoResp = WordCloudUtil.getPlayerInfo(bv);
                 if(playerInfoResp == null || Strings.isBlank(playerInfoResp.getCid())){
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"视频cid获取失败",true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"视频cid获取失败",true);
                     return;
                 }
                 List<String> chatList = WordCloudUtil.getChatList(playerInfoResp.getCid());
                 if(CollectionUtils.isEmpty(chatList)){
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"弹幕数为0，不生成",true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"弹幕数为0，不生成",true);
                     return;
                 }
                 KQCodeUtils instance = KQCodeUtils.getInstance();
@@ -101,12 +100,12 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
 //                    cq = instance.toCq(CqCodeTypeEnum.image.getType(), "url=" + playerInfoResp.getFirst_frame(),"file="+CommonUtil.uuid()+".jpg");
 //                    cq = "\n"+cq;
 //                }
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         MessageFormat.format("获取弹幕成功，数量：{0}\n视频标题：{1}\n开始生成...",chatList.size(),playerInfoResp.getPart()),false);
                 List<String> list = WordSlicesTask.execute(chatList);
                 Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(list));
                 if(CollectionUtils.isEmpty(map)){
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"有效词料为0，不生成",true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"有效词料为0，不生成",true);
                     return;
                 }
                 String fileName = bv + "-" + message.getUserId() + ".png";
@@ -119,9 +118,9 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
                 log.info("弹幕词云地址：{}",s);
                 String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
 
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),imageCq,false);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),imageCq,false);
             }catch (Exception e){
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),MessageFormat.format("弹幕词云生成异常:{0}",e.getMessage()),true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageFormat.format("弹幕词云生成异常:{0}",e.getMessage()),true);
                 log.error("弹幕词云异常",e);
             }
         }

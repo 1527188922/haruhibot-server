@@ -9,12 +9,11 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +50,7 @@ public class QanWenHandler implements IAllMessageEvent {
     
     
     @Override
-    public boolean onMessage(WebSocketSession session, Message message) {
+    public boolean onMessage(Bot bot, Message message) {
         MatchResult<String> match = matches(message);
         if(!match.isMatched()){
             return false;
@@ -66,7 +65,7 @@ public class QanWenHandler implements IAllMessageEvent {
                 CACHE.put(key,qianWen);
             }
             String res = qianWen.call(data);
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),res,true);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),res,true);
         });
         return true;
     }

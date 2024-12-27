@@ -1,7 +1,7 @@
 package com.haruhi.botServer.service.news;
 
 import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
-import org.springframework.web.socket.WebSocketSession;
+import com.haruhi.botServer.ws.Bot;
 
 import java.util.List;
 
@@ -9,7 +9,7 @@ public interface NewsService {
 
     List<NewsBy163Resp> requestNewsBy163();
 
-    void sendGroup(WebSocketSession session,List<NewsBy163Resp> list, Long... groupIds);
+    void sendGroup(Bot bot, List<NewsBy163Resp> list, Long... groupIds);
 
-    void sendPrivate(WebSocketSession session,List<NewsBy163Resp> list,Long... userIds);
+    void sendPrivate(Bot bot,List<NewsBy163Resp> list,Long... userIds);
 }

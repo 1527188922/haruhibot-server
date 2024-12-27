@@ -7,6 +7,7 @@ import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.chatRecord.ChatRecordService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -42,9 +43,9 @@ public class ChatRecordHandler implements IAllMessageEvent {
      * @return
      */
     @Override
-    public boolean onMessage(WebSocketSession session, Message message) {
+    public boolean onMessage(Bot bot, Message message) {
 
-        ThreadPoolUtil.getSharePool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
 
             ChatRecord record = new ChatRecord();
             try {

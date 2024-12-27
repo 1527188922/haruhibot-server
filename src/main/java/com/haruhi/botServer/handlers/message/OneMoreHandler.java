@@ -4,6 +4,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -35,7 +36,7 @@ public class OneMoreHandler implements IGroupMessageEvent {
     private final ConcurrentHashMap<String, Pair<String,Boolean>> msgCache = new ConcurrentHashMap<>();
 
     @Override
-    public boolean onGroup(WebSocketSession session, Message message) {
+    public boolean onGroup(Bot bot, Message message) {
 
         ThreadPoolUtil.getSharePool().execute(()->{
 
@@ -48,7 +49,7 @@ public class OneMoreHandler implements IGroupMessageEvent {
 
             if (pair.getLeft().equals(message.getRawMessage())) {
                 if (!pair.getRight()) {
-                    Server.sendGroupMessage(session,message.getGroupId(),message.getRawMessage(),false);
+                    bot.sendGroupMessage(message.getGroupId(),message.getRawMessage(),false);
                     pair.setValue(true);
                 }
             }else{

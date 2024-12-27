@@ -6,6 +6,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.chatRecord.ChatRecordService;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -36,35 +37,20 @@ public class FindGroupChatHandler implements IGroupMessageEvent {
     private ChatRecordService chatRecordService;
 
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message) {
-        Param param = matching(session,message);
+    public boolean onGroup(Bot bot, final Message message) {
+        Param param = matching(bot,message);
         if(param == null){
             return false;
         }
 
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session, chatRecordService,message,param));
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
+            chatRecordService.sendGroupChatList(bot,message,param);
+        });
         return true;
     }
 
-    private class Task implements Runnable{
-        private WebSocketSession session;
-        private ChatRecordService service;
-        private Message message;
-        private Param param;
 
-        public Task(WebSocketSession session, ChatRecordService service, Message message, Param param){
-            this.session = session;
-            this.service = service;
-            this.message = message;
-            this.param = param;
-        }
-        @Override
-        public void run() {
-            service.sendGroupChatList(session,message,param);
-        }
-    }
-
-    private Param matching(final WebSocketSession session,final Message message){
+    private Param matching(Bot bot,final Message message){
         for (Regex item : Regex.values()) {
             if(!message.getRawMessage().startsWith(item.prefix)){
                 continue;
@@ -78,7 +64,7 @@ public class FindGroupChatHandler implements IGroupMessageEvent {
                     args = matcher.group(1);
                     num = Integer.valueOf(args);
                 }catch (Exception e){
-                    Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("错误的参数[{0}],请输入整数...",args),true);
+                    bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("错误的参数[{0}],请输入整数...",args),true);
                     return null;
                 }
                 return new Param(num,item.timeUnit,item.messageType);

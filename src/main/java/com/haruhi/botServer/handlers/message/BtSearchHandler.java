@@ -9,6 +9,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.HttpClientUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -49,7 +50,7 @@ public class BtSearchHandler implements IAllMessageEvent {
     private final static String CMD_SORT_BY_SIZE = "s";
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(Bot bot, final Message message) {
 
         if (message.isGroupMsg() && !SwitchConfig.SEARCH_BT_ALLOW_GROUP){
             return false;
@@ -101,8 +102,8 @@ public class BtSearchHandler implements IAllMessageEvent {
             sort = SORT_BY_REL;
         }
 
-        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),buildMessage(keyword, page, sort),true);
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(session, message, keyword, page, sort));
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),buildMessage(keyword, page, sort),true);
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(bot, message, keyword, page, sort));
         return true;
     }
     
@@ -133,14 +134,14 @@ public class BtSearchHandler implements IAllMessageEvent {
     }
 
     static class Task implements Runnable{
-        private WebSocketSession session;
+        private Bot bot;
         private Message message;
         private Integer page;
         private String keyword;
         private String sort;
         
-        Task(WebSocketSession session,Message message,String keyword,Integer page,String sort){
-            this.session = session;
+        Task(Bot bot,Message message,String keyword,Integer page,String sort){
+            this.bot = bot;
             this.message = message;
             this.page = page;
             this.keyword = keyword;
@@ -155,14 +156,14 @@ public class BtSearchHandler implements IAllMessageEvent {
                     htmlStr = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(10 * 1000), url, null);
                 }catch (Exception e){
                     log.error("bt搜索 请求异常 {}", url, e);
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"bt搜索发生异常\n"+e.getMessage(),true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"bt搜索发生异常\n"+e.getMessage(),true);
                     return;
                 }
                 
                 Document document = Jsoup.parse(htmlStr);
                 Elements list = document.getElementsByClass("search-item");
                 if (CollectionUtils.isEmpty(list)) {
-                    noData(session,message,keyword);
+                    noData(bot,message,keyword);
                     return;
                 }
                 List<String> res = new ArrayList<>(list.size());
@@ -189,23 +190,23 @@ public class BtSearchHandler implements IAllMessageEvent {
                     res.add(strBuilder.toString());
                 }
                 if(res.size() == 0){
-                    noData(session,message,keyword);
+                    noData(bot,message,keyword);
                     return;
                 }
                 if(message.isGroupMsg()){
-                    Server.sendGroupMessage(session,message.getGroupId(),message.getSelfId(),BotConfig.NAME,res);
+                    bot.sendGroupMessage(message.getGroupId(),message.getSelfId(),BotConfig.NAME,res);
                 }else if(message.isPrivateMsg()){
-                    Server.sendPrivateMessage(session,message.getUserId(),message.getSelfId(),BotConfig.NAME,res);
+                    bot.sendPrivateMessage(message.getUserId(),message.getSelfId(),BotConfig.NAME,res);
                 }
             }catch (Exception e){
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),MessageFormat.format("bt搜索异常:{0}",e.getMessage()),true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageFormat.format("bt搜索异常:{0}",e.getMessage()),true);
                 log.error("bt搜索异常",e);
             }
 
         }
         
-        private void noData(WebSocketSession session,Message message,String keyword){
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"没搜到：" + keyword,true);
+        private void noData(Bot bot,Message message,String keyword){
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"没搜到：" + keyword,true);
         }
 
 

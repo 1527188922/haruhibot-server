@@ -8,12 +8,12 @@ import com.haruhi.botServer.entity.WordStrip;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.text.MessageFormat;
 import java.util.regex.Matcher;
@@ -36,7 +36,7 @@ public class WordStripAddHandler implements IGroupMessageEvent {
     private WordStripService wordStripService;
 
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message) {
+    public boolean onGroup(Bot bot, final Message message) {
 
         String keyWord = null;
         String answer = null;
@@ -70,7 +70,7 @@ public class WordStripAddHandler implements IGroupMessageEvent {
                         param.setAnswer(finalAnswer);
                         save = wordStripService.update(param,queryWrapper);
                     }else{
-                        Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("已存在词条：{0}",finalKeyWord),false);
+                        bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("已存在词条：{0}",finalKeyWord),false);
                         return;
                     }
                 }else{
@@ -83,10 +83,10 @@ public class WordStripAddHandler implements IGroupMessageEvent {
                 }
                 if(save){
                     WordStripHandler.putCache(message.getSelfId(),message.getGroupId(),finalKeyWord,finalAnswer);
-                    Server.sendGroupMessage(session,message.getGroupId(),MessageFormat.format("词条添加成功：{0}",finalKeyWord),false);
+                    bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("词条添加成功：{0}",finalKeyWord),false);
                     return;
                 }
-                Server.sendGroupMessage(session,message.getGroupId(), MessageFormat.format("词条添加失败：{0}-->0",finalKeyWord),false);
+                bot.sendGroupMessage(message.getGroupId(), MessageFormat.format("词条添加失败：{0}-->0",finalKeyWord),false);
             }catch (Exception e){
                 log.error("添加词条异常",e);
             }

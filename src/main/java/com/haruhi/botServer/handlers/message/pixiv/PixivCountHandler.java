@@ -8,11 +8,10 @@ import com.haruhi.botServer.entity.Pixiv;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.pixiv.PixivService;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.text.MessageFormat;
 
@@ -33,7 +32,7 @@ public class PixivCountHandler implements IAllMessageEvent {
     private PixivService pixivService;
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(final Bot bot, final Message message) {
         if(!message.getRawMessage().matches(RegexEnum.PIXIV_COUNT.getValue())){
             return false;
         }
@@ -44,7 +43,7 @@ public class PixivCountHandler implements IAllMessageEvent {
             queryWrapperR18.lambda().eq(Pixiv::getIsR18,true);
             int count = pixivService.count(queryWrapper);
             int countR18 = pixivService.count(queryWrapperR18);
-            Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                     MessageFormat.format("pixiv库：\n非r18：{0}\nr18：{1}\n总计：{2}",count,countR18,count + countR18)
                     ,true);
         });

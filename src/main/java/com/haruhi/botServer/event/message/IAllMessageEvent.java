@@ -1,7 +1,7 @@
 package com.haruhi.botServer.event.message;
 
 import com.haruhi.botServer.dto.gocq.response.Message;
-import org.springframework.web.socket.WebSocketSession;
+import com.haruhi.botServer.ws.Bot;
 
 /**
  * 实现这个接口的类
@@ -12,5 +12,5 @@ public interface IAllMessageEvent extends IMessageEvent {
      * 群聊私聊都触发
      * @param message 由go-cqhttp发来的json串 转换过来的java bean
      */
-    boolean onMessage(WebSocketSession session,Message message);
+    boolean onMessage(Bot bot, Message message);
 }

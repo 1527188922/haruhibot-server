@@ -8,6 +8,7 @@ import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.handlers.message.chatRecord.ChatRecordHandler;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -124,18 +125,18 @@ public class MessageDispenser {
         }
     }
 
-    public void onEvent(WebSocketSession session, Message message){
+    public void onEvent(Bot bot, Message message){
         if (CollectionUtils.isEmpty(container)) {
             return;
         }
         if (message.isGroupMsg()) {
-            executeGroupMessageHandler(groupContainer,session,message);
+            executeGroupMessageHandler(groupContainer,bot,message);
         } else if (message.isPrivateMsg()) {
-            executePrivateMessageHandler(privateContainer,session,message);
+            executePrivateMessageHandler(privateContainer,bot,message);
         }
     }
 
-    private void executeGroupMessageHandler(List<IMessageEvent> events, WebSocketSession session, Message message){
+    private void executeGroupMessageHandler(List<IMessageEvent> events, Bot bot, Message message){
         if(CollectionUtils.isEmpty(events)){
             return;
         }
@@ -145,13 +146,13 @@ public class MessageDispenser {
             }
             if (element instanceof IAllMessageEvent) {
                 IAllMessageEvent event = (IAllMessageEvent) element;
-                if (event.onMessage(session, message)) {
+                if (event.onMessage(bot, message)) {
                     printLog("onMessage","群",message);
                     break;
                 }
             } else if(element instanceof IGroupMessageEvent){
                 IGroupMessageEvent event = (IGroupMessageEvent) element;
-                if (event.onGroup(session, message)) {
+                if (event.onGroup(bot, message)) {
                     printLog("onGroup","群",message);
                     break;
                 }
@@ -160,7 +161,7 @@ public class MessageDispenser {
     }
 
 
-    private void executePrivateMessageHandler(List<IMessageEvent> events, WebSocketSession session, Message message){
+    private void executePrivateMessageHandler(List<IMessageEvent> events, Bot bot, Message message){
         if(CollectionUtils.isEmpty(events)){
            return;
         }
@@ -170,13 +171,13 @@ public class MessageDispenser {
             }
             if (element instanceof IAllMessageEvent) {
                 IAllMessageEvent event = (IAllMessageEvent) element;
-                if (event.onMessage(session, message)) {
+                if (event.onMessage(bot, message)) {
                     printLog("onMessage","私",message);
                     break;
                 }
             } else if (element instanceof IPrivateMessageEvent) {
                 IPrivateMessageEvent event = (IPrivateMessageEvent) element;
-                if (event.onPrivate(session, message)) {
+                if (event.onPrivate(bot, message)) {
                     printLog("onPrivate","私",message);
                     break;
                 }

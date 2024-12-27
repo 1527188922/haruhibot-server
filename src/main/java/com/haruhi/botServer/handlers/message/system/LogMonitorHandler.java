@@ -10,10 +10,10 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -41,16 +41,16 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 
 	@SuperuserAuthentication
 	@Override
-	public boolean onPrivate(final WebSocketSession session,final Message message) {
+	public boolean onPrivate(Bot bot, final Message message) {
 
 		if (message.getRawMessage().matches(RegexEnum.START_MONITOR_LOG.getValue())) {
 
 			ThreadPoolUtil.getHandleCommandPool().execute(()->{
 				if(tailer == null){
-					startTailer(true,StandardCharsets.UTF_8, new LogFileLineHandler(session));
-					Server.sendPrivateMessage(session,message.getUserId(),"已开启\n日志将实时发送给第一个超级用户",true);
+					startTailer(true,StandardCharsets.UTF_8, new LogFileLineHandler(bot));
+					bot.sendPrivateMessage(message.getUserId(),"已开启\n日志将实时发送给第一个超级用户",true);
 				}else {
-					Server.sendPrivateMessage(session,message.getUserId(),"已处于开启状态",true);
+					bot.sendPrivateMessage(message.getUserId(),"已处于开启状态",true);
 				}
 
 			});
@@ -60,9 +60,9 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 			ThreadPoolUtil.getHandleCommandPool().execute(()->{
 				if(tailer != null){
 					stopTailer();
-					Server.sendPrivateMessage(session,message.getUserId(),"已关闭",true);
+					bot.sendPrivateMessage(message.getUserId(),"已关闭",true);
 				}else {
-					Server.sendPrivateMessage(session,message.getUserId(),"已处于关闭状态",true);
+					bot.sendPrivateMessage(message.getUserId(),"已处于关闭状态",true);
 				}
 			});
 			return true;
@@ -92,17 +92,17 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 
 	private static class LogFileLineHandler implements LineHandler{
 
-		private final WebSocketSession session;
+		private final Bot bot;
 
 
-		LogFileLineHandler(final WebSocketSession session){
-			this.session = session;
+		LogFileLineHandler(final Bot bot){
+			this.bot = bot;
 		}
 
 		@Override
 		public void handle(String s) {
 			// 这里不用抓异常 如果发发生异常就让这个线程中断
-			Server.sendPrivateMessage(session, BotConfig.SUPERUSERS.get(0),s,true);
+			bot.sendPrivateMessage(BotConfig.SUPERUSERS.get(0),s,true);
 		}
 	}
 }

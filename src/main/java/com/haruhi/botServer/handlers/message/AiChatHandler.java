@@ -11,12 +11,11 @@ import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.RestUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -62,7 +61,7 @@ public class AiChatHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(Bot bot, Message message) {
         if(!SwitchConfig.ENABLE_AI_CHAT){
             return false;
         }
@@ -80,13 +79,13 @@ public class AiChatHandler implements IAllMessageEvent {
             try {
                 chatResp = RestUtil.sendGetRequest(RestUtil.getRestTemplate(8 * 1000), ThirdPartyURL.AI_CHAT, urlParam, ChatResp.class);
             }catch (Exception e){
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("聊天api请求异常:{0}",e.getMessage()),true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("聊天api请求异常:{0}",e.getMessage()),true);
                 log.error("青云客api请求异常",e);
             }
             if(chatResp != null){
                 String content = chatResp.getContent();
                 if(content != null){
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),processContent(content),false);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),processContent(content),false);
                 }
             }
         });

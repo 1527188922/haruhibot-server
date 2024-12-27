@@ -1,7 +1,7 @@
 package com.haruhi.botServer.interceptors;
 
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.BotContainer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpHeaders;
@@ -49,7 +49,7 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
         if(BotConfig.MAX_CONNECTIONS < 0){
             return true;
         }
-        int connections = Server.getConnections();
+        int connections = BotContainer.getConnections();
         if(connections >= BotConfig.MAX_CONNECTIONS){
             log.info("当前连接数:{},已达到最大连接数:{},本次禁止握手",connections,BotConfig.MAX_CONNECTIONS);
             return false;

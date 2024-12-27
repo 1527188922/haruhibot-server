@@ -1,12 +1,12 @@
 package com.haruhi.botServer.event.notice;
 
 import com.haruhi.botServer.dto.gocq.response.Message;
-import org.springframework.web.socket.WebSocketSession;
+import com.haruhi.botServer.ws.Bot;
 
 /**
  * 实现这个接口的类,都能收到戳一戳消息
  */
 public interface IPokeEvent extends INoticeEvent {
 
-    void onPoke(WebSocketSession session,Message message);
+    void onPoke(Bot bot, Message message);
 }

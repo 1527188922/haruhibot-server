@@ -8,12 +8,12 @@ import com.haruhi.botServer.entity.WordStrip;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.text.MessageFormat;
 
@@ -34,7 +34,7 @@ public class WordStripDeleteHandler implements IGroupMessageEvent {
     private WordStripService wordStripService;
 
     @Override
-    public boolean onGroup(final WebSocketSession sessions,final Message message) {
+    public boolean onGroup(Bot bot, Message message) {
         String keyWord = null;
         if(message.getRawMessage().startsWith(RegexEnum.WORD_STRIP_DELETE.getValue())){
             keyWord = message.getRawMessage().replaceFirst(RegexEnum.WORD_STRIP_DELETE.getValue(),"");
@@ -50,21 +50,21 @@ public class WordStripDeleteHandler implements IGroupMessageEvent {
             queryWrapper.eq(WordStrip::getGroupId,message.getGroupId()).eq(WordStrip::getSelfId,message.getSelfId()).eq(WordStrip::getKeyWord, finalKeyWord);
             WordStrip one = wordStripService.getOne(queryWrapper);
             if(one == null){
-                Server.sendGroupMessage(sessions,message.getGroupId(),MessageFormat.format("词条不存在：{0}",finalKeyWord),false);
+                bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("词条不存在：{0}",finalKeyWord),false);
                 return;
             }
             if(!one.getUserId().equals(message.getUserId())){
-                Server.sendGroupMessage(sessions,message.getGroupId(),
+                bot.sendGroupMessage(message.getGroupId(),
                         MessageFormat.format("你不是该词条的创建人，不可删除：{0}\n创建人:{1}",finalKeyWord,String.valueOf(one.getUserId())),false);
                 return;
             }
             try {
                 if (wordStripService.removeById(one.getId())) {
                     WordStripHandler.removeCache(message.getSelfId(),message.getGroupId(),finalKeyWord);
-                    Server.sendGroupMessage(sessions,message.getGroupId(),MessageFormat.format("删除词条成功：{0}",finalKeyWord),false);
+                    bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("删除词条成功：{0}",finalKeyWord),false);
                 }
             }catch (Exception e){
-                Server.sendGroupMessage(sessions,message.getGroupId(),MessageFormat.format("删除词条异常：{0}",e.getMessage()),true);
+                bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("删除词条异常：{0}",e.getMessage()),true);
                 log.error("删除词条异常",e);
             }
 

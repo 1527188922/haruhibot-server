@@ -11,13 +11,12 @@ import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.music.AbstractMusicService;
 import com.haruhi.botServer.factory.MusicServiceFactory;
 import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.javassist.tools.rmi.ObjectNotFoundException;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -51,7 +50,7 @@ public class MusicCardHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(final WebSocketSession session,final Message message) {
+    public boolean onMessage(final Bot bot, final Message message) {
         Integer index = null;
         try {
             index = Integer.valueOf(message.getRawMessage().replace(" ",""));
@@ -63,7 +62,7 @@ public class MusicCardHandler implements IAllMessageEvent {
             String songName = getSongName(message.getRawMessage());
             if(Strings.isNotBlank(songName)){
                 // 表示再次点歌
-                search(session,message,songName);
+                search(bot,message,songName);
                 return true;
             }
             // 存在缓存 但是输入的不是纯数字并且不是再次点歌 返回false，继续往下匹配
@@ -71,28 +70,28 @@ public class MusicCardHandler implements IAllMessageEvent {
         }else if(songs != null){
             // 存在缓存 输入了纯数字
             if(index <= 0 || index > songs.size()){
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"不存在序号" + index + "的歌曲",true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"不存在序号" + index + "的歌曲",true);
                 return true;
             }
             // 若这里删除缓存，那么一次搜索只能点一次歌
             // 若不删除，那么在缓存 存在期间，都可以通过输入纯数字持续点歌
             // cache.remove(key);
-            ThreadPoolUtil.getHandleCommandPool().execute(new SendMusicCardTask(session,songs,index,message));
+            ThreadPoolUtil.getHandleCommandPool().execute(new SendMusicCardTask(bot,songs,index,message));
             return true;
         }else{
             // 不存在缓存
             String songName = getSongName(message.getRawMessage());
             if(Strings.isNotBlank(songName)){
                 // 匹配上命令 开始搜索歌曲
-                search(session,message,songName);
+                search(bot,message,songName);
                 return true;
             }
         }
         return false;
     }
-    private void search(WebSocketSession session,Message message,String songName){
-        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜索歌曲：" + songName,true);
-        ThreadPoolUtil.getHandleCommandPool().execute(new SearchMusicTask(session,message,songName));
+    private void search(Bot bot,Message message,String songName){
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜索歌曲：" + songName,true);
+        ThreadPoolUtil.getHandleCommandPool().execute(new SearchMusicTask(bot,message,songName));
     }
 
     private String getSongName(final String command){
@@ -101,12 +100,12 @@ public class MusicCardHandler implements IAllMessageEvent {
 
     private class SearchMusicTask implements Runnable{
 
-        private WebSocketSession session;
+        private Bot bot;
         private Message message;
         private String musicName;
 
-        SearchMusicTask(WebSocketSession session,Message message,String musicName){
-            this.session = session;
+        SearchMusicTask(Bot bot, Message message, String musicName){
+            this.bot = bot;
             this.message = message;
             this.musicName = musicName;
         }
@@ -116,20 +115,20 @@ public class MusicCardHandler implements IAllMessageEvent {
             try {
                 List<Song> res = MusicServiceFactory.getMusicService(MusicServiceFactory.MusicType.cloudMusic).searchMusic(musicName);
                 if(CollectionUtils.isEmpty(res)){
-                    Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),"未找到歌曲：" + musicName,true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"未找到歌曲：" + musicName,true);
                     return;
                 }
                 if(res.size() == 1){
                     // 搜索结果只有一条，直接发送这个音乐卡片
-                    sendMusicCard(session,message,res,0,true);
+                    sendMusicCard(bot,message,res,0,true);
                     return;
                 }
                 // 将搜索结果保存到缓存
                 cache.put(getKey(message),res);
                 if(message.isGroupMsg()){
-                    sendGroup(session,message,res,musicName);
+                    sendGroup(bot,message,res,musicName);
                 }else if(message.isPrivateMsg()){
-                    sendPrivate(session,message,res,musicName);
+                    sendPrivate(bot,message,res,musicName);
                 }
             } catch (Exception e) {
                 log.error("搜索歌曲发生异常",e);
@@ -137,7 +136,7 @@ public class MusicCardHandler implements IAllMessageEvent {
         }
     }
 
-    private void sendGroup(WebSocketSession session,Message message,List<Song> songs,String songName){
+    private void sendGroup(Bot bot,Message message,List<Song> songs,String songName){
         int size = songs.size();
         List<String> forwardMsgs = new ArrayList<>(size + 1);
         forwardMsgs.add(MessageFormat.format("搜索【{0}】成功！接下来请在{1}秒内发送纯数字序号选择歌曲",songName,expireTime));
@@ -145,27 +144,27 @@ public class MusicCardHandler implements IAllMessageEvent {
             Song e = songs.get(i);
             forwardMsgs.add(MessageFormat.format("{0}：{1}\n歌手：{2}\n专辑：{3}",(i + 1),e.getName(),e.getArtists(),e.getAlbumName()));
         }
-        Server.sendGroupMessage(session,message.getGroupId(),message.getSelfId(),BotConfig.NAME,forwardMsgs);
+        bot.sendGroupMessage(message.getGroupId(),message.getSelfId(),BotConfig.NAME,forwardMsgs);
     }
-    private void sendPrivate(WebSocketSession session,Message message,List<Song> songs,String songName){
+    private void sendPrivate(Bot bot,Message message,List<Song> songs,String songName){
         StringBuilder stringBuilder = new StringBuilder(MessageFormat.format("搜索【{0}】成功！接下来请在{1}秒内发送纯数字序号选择歌曲\n\n",songName,expireTime));
         int size = songs.size();
         for (int i = 0; i < size; i++) {
             Song e = songs.get(i);
             stringBuilder.append(MessageFormat.format("{0}：{1}\n歌手：{2}\n专辑：{3}\n\n",(i + 1),e.getName(),e.getArtists(),e.getAlbumName()));
         }
-        Server.sendPrivateMessage(session,message.getUserId(),stringBuilder.toString(),true);
+        bot.sendPrivateMessage(message.getUserId(),stringBuilder.toString(),true);
     }
 
     private class SendMusicCardTask implements Runnable{
 
-        private WebSocketSession session;
+        private Bot bot;
         private List<Song> songs;
         private Integer index;
         private Message message;
 
-        SendMusicCardTask(WebSocketSession session,List<Song> songs,Integer index,Message message){
-            this.session = session;
+        SendMusicCardTask(Bot bot,List<Song> songs,Integer index,Message message){
+            this.bot = bot;
             this.songs = songs;
             this.index = index;
             this.message = message;
@@ -174,17 +173,17 @@ public class MusicCardHandler implements IAllMessageEvent {
         @Override
         public void run() {
             try {
-                sendMusicCard(session,message,songs,index - 1,true);
+                sendMusicCard(bot,message,songs,index - 1,true);
             } catch (ObjectNotFoundException e) {
                 log.error("发送音乐卡片异常",e);
             }
         }
     }
 
-    private void sendMusicCard(WebSocketSession session, Message message, List<Song> songs, Integer index, boolean checked) throws ObjectNotFoundException {
+    private void sendMusicCard(Bot bot, Message message, List<Song> songs, Integer index, boolean checked) throws ObjectNotFoundException {
         AbstractMusicService musicService = MusicServiceFactory.getMusicService(MusicServiceFactory.MusicType.cloudMusic);
         String musicCq = musicService.createMusicCq(songs, index,checked);
-        Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),musicCq,false);
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),musicCq,false);
     }
 
 

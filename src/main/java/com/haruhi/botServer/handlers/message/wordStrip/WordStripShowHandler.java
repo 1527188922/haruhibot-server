@@ -8,12 +8,11 @@ import com.haruhi.botServer.entity.WordStrip;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.text.MessageFormat;
 import java.util.List;
@@ -35,7 +34,7 @@ public class WordStripShowHandler implements IGroupMessageEvent {
     private WordStripService wordStripService;
 
     @Override
-    public boolean onGroup(final WebSocketSession session,final Message message) {
+    public boolean onGroup(Bot bot, final Message message) {
         if (!message.getRawMessage().matches(RegexEnum.WORD_STRIP_SHOW.getValue())) {
             return false;
         }
@@ -44,10 +43,10 @@ public class WordStripShowHandler implements IGroupMessageEvent {
             queryWrapper.eq(WordStrip::getGroupId,message.getGroupId()).eq(WordStrip::getSelfId,message.getSelfId());
             List<WordStrip> list = wordStripService.list(queryWrapper);
             if(CollectionUtils.isEmpty(list)){
-                Server.sendGroupMessage(session,message.getGroupId(),"本群没有词条",true);
+                bot.sendGroupMessage(message.getGroupId(),"本群没有词条",true);
                 return;
             }
-            Server.sendGroupMessage(session,message.getGroupId(), processWordStrip(list),false);
+            bot.sendGroupMessage(message.getGroupId(), processWordStrip(list),false);
         });
         return true;
     }

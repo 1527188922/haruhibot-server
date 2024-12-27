@@ -8,6 +8,7 @@ import com.haruhi.botServer.entity.CustomReply;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,7 @@ public class CustomReplyHandler implements IAllMessageEvent {
     }
 
     @Override
-    public boolean onMessage(WebSocketSession session,Message message) {
+    public boolean onMessage(Bot bot, Message message) {
         if(! (cache.size() != 0 &&
                 ((message.isPrivateMsg() && message.isTextMsgOnly())
                         || (message.isGroupMsg() && message.isTextMsg() && message.isAtBot() && !message.isPicMsg())))){
@@ -78,7 +79,7 @@ public class CustomReplyHandler implements IAllMessageEvent {
                     log.error("text类型自定义回复中，reply为空 {}", JSONObject.toJSONString(customReply));
                     return;
                 }
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),customReply.getReply(),false);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),customReply.getReply(),false);
             }else{
                 CqCodeTypeEnum cqCodeTypeEnum = CqCodeTypeEnum.getByType(customReply.getCqType());
                 if(cqCodeTypeEnum == null){
@@ -95,7 +96,7 @@ public class CustomReplyHandler implements IAllMessageEvent {
                         : customReply.getUrl();
                 String cq = KQCodeUtils.getInstance().toCq(cqCodeTypeEnum.getType(), "file=" + file);
 
-                Server.sendMessage(session,message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);
             }
             
         });

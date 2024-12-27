@@ -8,10 +8,10 @@ import com.haruhi.botServer.event.notice.IGroupDecreaseEvent;
 import com.haruhi.botServer.event.notice.IGroupIncreaseEvent;
 import com.haruhi.botServer.event.notice.INoticeEvent;
 import com.haruhi.botServer.event.notice.IPokeEvent;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public class NoticeDispenser {
         container.add(event);
     }
 
-    public void onEvent(final WebSocketSession session,final Message message){
+    public void onEvent(final Bot bot, final Message message){
         if(!CollectionUtils.isEmpty(container)){
             String subType = message.getSubType();
             String noticeType = message.getNoticeType();
@@ -61,20 +61,20 @@ public class NoticeDispenser {
             if(NoticeTypeEnum.notify.toString().equals(noticeType) && SubTypeEnum.poke.toString().equals(subType)){
                 for (INoticeEvent value : container){
                     if(value instanceof IPokeEvent){
-                        ((IPokeEvent) value).onPoke(session,message);
+                        ((IPokeEvent) value).onPoke(bot,message);
                     }
                 }
 
             }else if(NoticeTypeEnum.group_increase.toString().equals(noticeType)){
                 for (INoticeEvent value : container){
                     if(value instanceof IGroupIncreaseEvent){
-                        ((IGroupIncreaseEvent) value).onGroupIncrease(session,message);
+                        ((IGroupIncreaseEvent) value).onGroupIncrease(bot,message);
                     }
                 }
             }else if(NoticeTypeEnum.group_decrease.toString().equals(noticeType)){
                 for (INoticeEvent value : container){
                     if (value instanceof IGroupDecreaseEvent) {
-                        ((IGroupDecreaseEvent)value).onGroupDecrease(session,message);
+                        ((IGroupDecreaseEvent)value).onGroupDecrease(bot,message);
                     }
                 }
             }

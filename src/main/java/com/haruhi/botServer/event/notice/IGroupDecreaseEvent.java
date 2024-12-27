@@ -1,7 +1,7 @@
 package com.haruhi.botServer.event.notice;
 
 import com.haruhi.botServer.dto.gocq.response.Message;
-import org.springframework.web.socket.WebSocketSession;
+import com.haruhi.botServer.ws.Bot;
 
 /**
  * 群退出成员事件
@@ -17,5 +17,5 @@ public interface IGroupDecreaseEvent extends INoticeEvent {
      * time : 时间 (秒级时间戳)
      * @param message
      */
-    void onGroupDecrease(WebSocketSession session, Message message);
+    void onGroupDecrease(Bot bot, Message message);
 }

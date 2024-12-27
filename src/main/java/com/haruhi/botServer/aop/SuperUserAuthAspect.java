@@ -5,13 +5,13 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -36,20 +36,20 @@ public class SuperUserAuthAspect {
         }
 
         Object[] args = joinPoint.getArgs();
-        WebSocketSession session = null;
+        Bot bot = null;
         Message message = null;
 
         if(args != null && args.length > 0){
             for (Object arg : args) {
-                if(arg instanceof WebSocketSession){
-                    session = (WebSocketSession) arg;
+                if(arg instanceof Bot){
+                    bot = (Bot) arg;
                 }else if(arg instanceof Message){
                     message = (Message) arg;
                 }
             }
         }
 
-        if (session == null || message == null) {
+        if (bot == null || message == null) {
             return joinPoint.proceed();
         }
 
