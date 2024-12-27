@@ -4,6 +4,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.GroupMember;
 import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -42,8 +43,13 @@ public class FriendSaidHandler implements IGroupMessageEvent {
         String finalWord = word;
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
-                List<GroupMember> groupMemberList = bot.getGroupMemberList(message.getGroupId(),
-                        Arrays.asList(message.getSelfId(),message.getUserId()), 2L * 1000L);
+                SyncResponse<List<GroupMember>> syncResponse = bot.getGroupMemberList(message.getGroupId(), 2L * 1000L);
+
+                List<GroupMember> groupMemberList = syncResponse.getData();
+                if(!CollectionUtils.isEmpty(groupMemberList)){
+                    List<Long> longs = Arrays.asList(message.getSelfId(), message.getUserId());
+                    groupMemberList.removeIf(next -> longs.contains(next.getUserId()));
+                }
                 if(CollectionUtils.isEmpty(groupMemberList)){
 //                    Server.sendGroupMessage(session,message.getGroupId(),"你哪来的朋友？",true);
                     return;

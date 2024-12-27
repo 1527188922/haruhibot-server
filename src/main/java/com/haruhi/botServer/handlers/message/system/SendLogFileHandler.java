@@ -124,15 +124,15 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
                     return;
                 }
                 // 注意该路径可能不存在与bot程序所在的主机上
-                DownloadFileResp downloadFile = bot.downloadFile(
-                        pathConfig.webLogsPath() + "/" + file.getName() + "?t=" + System.currentTimeMillis(), 
+                SyncResponse<DownloadFileResp> syncResponse = bot.downloadFile(
+                        pathConfig.webLogsPath() + "/" + file.getName() + "?t=" + System.currentTimeMillis(),
                         1, null, 30 * 1000);
 
-                if(downloadFile == null || Strings.isBlank(downloadFile.getFile())){
+                if(syncResponse.getData() == null || Strings.isBlank(syncResponse.getData().getFile())){
                     bot.sendPrivateMessage(message.getUserId(),"上传日志失败，napcat下载文件失败",true);
                     return;
                 }
-                SyncResponse response = bot.uploadPrivateFile(message.getUserId(), downloadFile.getFile(), file.getName(), 60 * 1000);
+                SyncResponse<String> response = bot.uploadPrivateFile(message.getUserId(), syncResponse.getData().getFile(), file.getName(), 60 * 1000);
                 if (!response.isSuccess()) {
                     bot.sendPrivateMessage(message.getUserId(),"上传日志失败\n"+response.getMessage(),true);
                 }

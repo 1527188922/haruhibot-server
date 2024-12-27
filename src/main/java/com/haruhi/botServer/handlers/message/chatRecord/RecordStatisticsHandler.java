@@ -9,6 +9,7 @@ import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
 import com.haruhi.botServer.dto.gocq.response.GroupMember;
 import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.entity.ChatRecord;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.mapper.ChatRecordMapper;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -63,7 +63,13 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                     return;
                 }
 
-                List<GroupMember> groupMemberList = bot.getGroupMemberList(message.getGroupId(), Collections.singletonList(message.getSelfId()), 10 * 1000);
+                SyncResponse<List<GroupMember>> syncResponse = bot.getGroupMemberList(message.getGroupId(), 10 * 1000);
+
+                List<GroupMember> groupMemberList = syncResponse.getData();
+//                if(!CollectionUtils.isEmpty(groupMemberList)){
+//                    List<Long> longs = Collections.singletonList(message.getSelfId());
+//                    groupMemberList.removeIf(next -> longs.contains(next.getUserId()));
+//                }
 
                 List<ForwardMsgItem> params = new ArrayList<>(chatRecords.size() + 1);
 

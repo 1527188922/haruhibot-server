@@ -53,7 +53,7 @@ public class BotController {
             return HttpResp.fail("session不存在",null);
         }
         if("1".equals(sync)){
-            SyncResponse response = bot.sendSyncMessage(userId, groupId, enumByType.getType(), botId, "haruhi", Arrays.asList(msg), 30 * 1000);
+            SyncResponse<String> response = bot.sendSyncMessage(userId, groupId, enumByType.getType(), botId, "haruhi", Arrays.asList(msg), 30 * 1000);
             log.info("同步发送响应 {}",JSONObject.toJSONString(response));
             return HttpResp.success("已发送",response);
         }

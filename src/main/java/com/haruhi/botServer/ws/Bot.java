@@ -1,7 +1,7 @@
 package com.haruhi.botServer.ws;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
@@ -131,13 +131,9 @@ public class Bot {
      * @param timeout
      * @return
      */
-    public SyncResponse sendSyncGroupMessage(Long groupId, Long uin, String name, List<String> messages, long timeout){
+    public SyncResponse<String> sendSyncGroupMessage(Long groupId, Long uin, String name, List<String> messages, long timeout){
         Params params = createForwardMessageParams(MessageTypeEnum.group,groupId,uin,name,messages);
-        JSONObject jsonObject = sendSyncRequest(GocqActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout);
-        if (jsonObject != null) {
-            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
-        }
-        return null;
+        return sendSyncRequest(GocqActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout, new TypeReference<SyncResponse<String>>(){});
     }
 
 
@@ -218,13 +214,9 @@ public class Bot {
      * @param timeout
      * @return
      */
-    public SyncResponse sendSyncPrivateMessage(Long userId, Long uin, String name, List<String> messages, long timeout){
+    public SyncResponse<String> sendSyncPrivateMessage(Long userId, Long uin, String name, List<String> messages, long timeout){
         Params params = createForwardMessageParams(MessageTypeEnum.privat,userId,uin,name,messages);
-        JSONObject jsonObject = sendSyncRequest(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG, params, timeout);
-        if (jsonObject != null) {
-            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
-        }
-        return null;
+        return sendSyncRequest(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG, params, timeout,new TypeReference<SyncResponse<String>>() {});
     }
 
 
@@ -296,7 +288,7 @@ public class Bot {
      * @param timeout
      * @return
      */
-    public SyncResponse sendSyncMessage(Long userId,Long groupId,String messageType,Long uin,String name, List<String> messages,long timeout){
+    public SyncResponse<String> sendSyncMessage(Long userId,Long groupId,String messageType,Long uin,String name, List<String> messages,long timeout){
         Params params = new Params();
         GocqActionEnum actionEnum = null;
         if (MessageTypeEnum.privat.getType().equals(messageType)) {
@@ -313,11 +305,7 @@ public class Bot {
             forwardMsgs.add(createForwardMsgItem(uin,name,s));
         }
         params.setMessages(forwardMsgs);
-        JSONObject jsonObject = sendSyncRequest(actionEnum, params, timeout);
-        if (jsonObject != null) {
-            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
-        }
-        return null;
+        return sendSyncRequest(actionEnum, params, timeout,new TypeReference<SyncResponse<String>>() {});
     }
 
     public void sendMessage(String text){
@@ -393,15 +381,11 @@ public class Bot {
      * @param timeout
      * @return
      */
-    public SyncResponse sendLike(Long userId,int times,long timeout){
+    public SyncResponse<String> sendLike(Long userId,int times,long timeout){
         Map<String, Object> map = new HashMap<>(2);
         map.put("user_id",userId);
         map.put("times",times);
-        JSONObject jsonObject = sendSyncRequest(GocqActionEnum.SEND_LIKE, map, timeout);
-        if (jsonObject != null) {
-            return JSONObject.parseObject(jsonObject.toJSONString(), SyncResponse.class);
-        }
-        return SyncResponse.failed();
+        return sendSyncRequest(GocqActionEnum.SEND_LIKE, map, timeout,new TypeReference<SyncResponse<String>>() {});
     }
 
     /**
@@ -410,48 +394,27 @@ public class Bot {
      * @param timeout
      * @return
      */
-    public Message getMsg(String messageId, long timeout){
+    public SyncResponse<Message> getMsg(String messageId, long timeout){
         Map<String, Object> map = new HashMap<>(1);
         map.put("message_id",Long.parseLong(messageId));
-        JSONObject jsonObject = sendSyncRequest(GocqActionEnum.GET_MSG, map, timeout);
-        if (jsonObject != null) {
-            return JSONObject.parseObject(jsonObject.getString("data"), Message.class);
-        }
-        return null;
+        return sendSyncRequest(GocqActionEnum.GET_MSG, map, timeout,new TypeReference<SyncResponse<Message>>() {});
     }
 
 
-    public SelfInfo getLoginInfo(long timeout){
-        JSONObject responseStr = sendSyncRequest(GocqActionEnum.GET_LOGIN_INGO,null,timeout);
-        if (responseStr != null) {
-            SelfInfo data = JSONObject.parseObject(responseStr.getString("data"), SelfInfo.class);
-            return data;
-        }
-        return null;
+    public SyncResponse<SelfInfo> getLoginInfo(long timeout){
+        return sendSyncRequest(GocqActionEnum.GET_LOGIN_INGO, null, timeout, new TypeReference<SyncResponse<SelfInfo>>() {});
     }
 
     /**
      * 获取群成员
      * @param groupId 群号
-     * @param exclude 需要排除的成员qq号
      * @return
      */
-    public List<GroupMember> getGroupMemberList(Long groupId, List<Long> exclude, long timeout){
+    public SyncResponse<List<GroupMember>> getGroupMemberList(Long groupId, long timeout){
         Map<String, Object> params = new HashMap<>(1);
         params.put("group_id",groupId);
-        JSONObject jsonObject = sendSyncRequest(GocqActionEnum.GET_GROUP_MEMBER_LIST, params, timeout);
-        if (jsonObject == null) {
-            return null;
-        }
-        String dataStr = jsonObject.getString("data");
-        if(Strings.isBlank(dataStr)){
-            return null;
-        }
-        List<GroupMember> data = JSONArray.parseArray(dataStr, GroupMember.class);
-        if(!CollectionUtils.isEmpty(exclude) && !CollectionUtils.isEmpty(data)){
-            data.removeIf(next -> exclude.contains(next.getUserId()));
-        }
-        return data;
+        return sendSyncRequest(GocqActionEnum.GET_GROUP_MEMBER_LIST, params, timeout, new TypeReference<SyncResponse<List<GroupMember>>>() {
+        });
     }
 
     /**
@@ -462,16 +425,12 @@ public class Bot {
      * @param timeout
      * @return
      */
-    public SyncResponse uploadPrivateFile(Long userId, String filePath, String fileName, long timeout){
+    public SyncResponse<String> uploadPrivateFile(Long userId, String filePath, String fileName, long timeout){
         Map<String, Object> param = new HashMap<>(3);
         param.put("user_id",userId);
         param.put("file",filePath);
         param.put("name",fileName);
-        JSONObject responseStr = sendSyncRequest(GocqActionEnum.UPLOAD_PRIVATE_FILE,param,timeout);
-        if (responseStr != null) {
-            return JSONObject.parseObject(responseStr.toJSONString(), SyncResponse.class);
-        }
-        return SyncResponse.failed();
+        return sendSyncRequest(GocqActionEnum.UPLOAD_PRIVATE_FILE, param, timeout, new TypeReference<SyncResponse<String>>() {});
     }
 
     /**
@@ -482,7 +441,7 @@ public class Bot {
      * @param timeout
      * @return 返回gocq下载到的文件绝对路径
      */
-    public DownloadFileResp downloadFile(String url, int threadCount, HttpHeaders httpHeaders, long timeout){
+    public SyncResponse<DownloadFileResp> downloadFile(String url, int threadCount, HttpHeaders httpHeaders, long timeout){
 
         Map<String, Object> param = new HashMap<>(3);
         param.put("url",url);
@@ -500,11 +459,7 @@ public class Bot {
             param.put("headers",JSONObject.toJSONString(headStrs));
 
         }
-        JSONObject jsonObject = sendSyncRequest(GocqActionEnum.DOWNLOAD_FILE, param, timeout);
-        if(jsonObject != null){
-            return jsonObject.getObject("data",DownloadFileResp.class);
-        }
-        return null;
+        return sendSyncRequest(GocqActionEnum.DOWNLOAD_FILE, param, timeout, new TypeReference<SyncResponse<DownloadFileResp>>() { });
     }
 
 
@@ -516,7 +471,7 @@ public class Bot {
      * @param <T>
      * @return
      */
-    public <T> JSONObject sendSyncRequest(GocqActionEnum action, T params, long timeout){
+    public <T,R> SyncResponse<R> sendSyncRequest(GocqActionEnum action, T params, long timeout,TypeReference<SyncResponse<R>> typeReference){
         RequestBox<T> requestBox = new RequestBox<>();
         if(params != null){
             requestBox.setParams(params);
@@ -536,7 +491,7 @@ public class Bot {
                 res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
             }
             log.debug("echo: {},result: {}",echo,res);
-            return res;
+            return res.toJavaObject(typeReference);
         }catch (InterruptedException e){
             log.error("发送同步消息线程中断异常,echo:{}",echo,e);
         } catch (ExecutionException e) {
@@ -549,7 +504,7 @@ public class Bot {
             futureTask.cancel(true);
             resultMap.remove(echo);
         }
-        return null;
+        return new SyncResponse<R>(500,SyncResponse.STATUS_FAILED,null,"无响应","无响应",(R) null);
     }
 
     private static class Task implements Callable<JSONObject> {

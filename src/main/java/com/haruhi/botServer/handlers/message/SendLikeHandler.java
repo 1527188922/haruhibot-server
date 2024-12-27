@@ -50,7 +50,7 @@ public class SendLikeHandler implements IAllMessageEvent {
                     return;
                 }
 
-                SyncResponse sendLikeRes = bot.sendLike(message.getUserId(), TIMES, 10 * 1000);
+                SyncResponse<String> sendLikeRes = bot.sendLike(message.getUserId(), TIMES, 10 * 1000);
                 log.info("发送点赞响应：{}", JSONObject.toJSONString(sendLikeRes));
                 if(sendLikeRes.isSuccess()){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"攒了你"+TIMES+"次哦，记得回赞",true);

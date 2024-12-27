@@ -106,7 +106,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             String s = message.getRawMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
             if (s.matches(RegexEnum.SEARCH_IMAGE.getValue())) {
                 List<String> replyMsgIds = message.getReplyMsgIds();
-                Message msg = bot.getMsg(replyMsgIds.get(0),2L * 1000L);
+                Message msg = bot.getMsg(replyMsgIds.get(0),2L * 1000L).getData();
                 log.debug("回复式识图，根据msgId获取消息 {} {}",replyMsgIds.get(0), JSONObject.toJSONString(msg));
                 if(msg != null && msg.isPicMsg()){
                     return msg;
@@ -198,7 +198,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             forwardMsgs.add(getItemMsg(results));
         }
 
-        SyncResponse syncResponse = bot.sendSyncMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
+        SyncResponse<String> syncResponse = bot.sendSyncMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                 message.getSelfId(), BotConfig.NAME, forwardMsgs, 8 * 1000);
         if(syncResponse == null || (syncResponse.getRetcode() != null && syncResponse.getRetcode() != 0)){
             log.error("识图结果同步发送失败，使用异步发送");
