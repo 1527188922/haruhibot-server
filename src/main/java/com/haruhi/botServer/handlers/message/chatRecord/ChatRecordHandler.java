@@ -64,7 +64,7 @@ public class ChatRecordHandler implements IAllMessageEvent {
             }catch (Exception e){
                 log.error("保存聊天记录异常 {}", JSONObject.toJSONString(record),e);
             }
-        });
+        },false);
 
         return false;
     }

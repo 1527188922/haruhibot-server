@@ -32,8 +32,14 @@ public class HandleCommandThreadPoolExecutor extends ThreadPoolExecutor {
 
     @Override
     public void execute(@NotNull Runnable command) {
+        execute(command,true);
+    }
+
+    public void execute(@NotNull Runnable command,boolean printLog) {
         super.execute(command);
-        log.info("线程池已受理一个命令:{}",command);
+        if(printLog){
+            log.info("线程池已受理一个命令:{}",command);
+        }
     }
 
 }

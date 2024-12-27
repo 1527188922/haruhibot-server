@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class BotContainer {
 
+    // <sessionId,Bot>
     private static final Map<String, Bot> BOT_MAP = new ConcurrentHashMap<>();
 
     public static int getConnections(){

@@ -51,6 +51,10 @@ public class Bot {
         this.session = session;
     }
 
+    public String getSessionId(){
+        return session != null ? session.getId() : null;
+    }
+
     /**
      * 发送群消息
      * @param groupId 群号

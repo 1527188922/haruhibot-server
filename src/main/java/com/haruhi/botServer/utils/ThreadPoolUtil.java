@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -17,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class ThreadPoolUtil {
     private ThreadPoolUtil(){}
-    private final static ThreadPoolExecutor handleCommandPool = new HandleCommandThreadPoolExecutor(5, 10, 1, TimeUnit.HOURS,
+    private final static HandleCommandThreadPoolExecutor handleCommandPool = new HandleCommandThreadPoolExecutor(5, 10, 1, TimeUnit.HOURS,
             new ArrayBlockingQueue(20), new CustomizableThreadFactory("pool-handleCommand-"), new ShareRunsPolicy("pool-handleCommand"));
 
     private final static ExecutorService sharePool = new ThreadPoolExecutor(1, 1,3L * 1000L, TimeUnit.MILLISECONDS,
@@ -33,7 +32,7 @@ public class ThreadPoolUtil {
         }
     }
 
-    public static Executor getHandleCommandPool(){
+    public static HandleCommandThreadPoolExecutor getHandleCommandPool(){
         return handleCommandPool;
     }
 
