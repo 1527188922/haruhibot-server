@@ -1,5 +1,6 @@
 package com.haruhi.botServer.service;
 
+import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.dto.jmcomic.*;
 import com.haruhi.botServer.utils.FileUtil;
@@ -21,8 +22,15 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -112,16 +120,63 @@ public class JmcomicService {
 //                byte[] body = responseEntity.getBody();
 //                FileUtils.writeByteArrayToFile(file, body);
 
-                ResponseEntity<InputStream> responseEntity = RestUtil.sendGetRequest(restTemplate, param.getImgUrl(), null, null,
-                        new ParameterizedTypeReference<InputStream>() {});
-                InputStream body = responseEntity.getBody();
-                FileUtils.copyInputStreamToFile(body,file);
-            }catch (Exception e) {
+//                ResponseEntity<InputStream> responseEntity = RestUtil.sendGetRequest(restTemplate, param.getImgUrl(), null, null,
+//                        new ParameterizedTypeReference<InputStream>() {});
+//                InputStream body = responseEntity.getBody();
+//                FileUtils.copyInputStreamToFile(body,file);
 
+                System.out.println(param.getImgUrl());
+                byte[] bytes = HttpUtil.downloadBytes(param.getImgUrl());
+//                FileUtils.writeByteArrayToFile(file, bytes);
+                saveImg(8,bytes,file);
+//                FileUtils.writeByteArrayToFile(file, bytes);
+            }catch (Exception e) {
+                e.printStackTrace();
             }
         });
     }
 
+    private void saveImg(int blockNum,byte[] bytes,File file) throws Exception {
+        BufferedImage srcImg = ImageIO.read(new ByteArrayInputStream(bytes));
+        // 2. 转换图像格式（保持与Rust一致的RGB8）
+        BufferedImage rgbImg = new BufferedImage(
+                srcImg.getWidth(),
+                srcImg.getHeight(),
+                BufferedImage.TYPE_INT_RGB
+        );
+        rgbImg.createGraphics().drawImage(srcImg, 0, 0, null);
+        BufferedImage dstImg = blockNum == 0 ? rgbImg : stitchImg(rgbImg, blockNum);
+        ImageIO.write(dstImg, "webp", file);
+//        FileUtils.writeByteArrayToFile(file, bytes);
+    }
+
+    private BufferedImage stitchImg(BufferedImage srcImg, int blockNum) {
+        int width = srcImg.getWidth();
+        int height = srcImg.getHeight();
+        BufferedImage stitchedImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        int remainderHeight = height % blockNum;
+        WritableRaster dstRaster = stitchedImg.getRaster();
+        Raster srcRaster = srcImg.getRaster();
+
+        for (int i = 0; i < blockNum; i++) {
+            int blockHeight = height / blockNum;
+            if (i == 0 && remainderHeight > 0) {
+                blockHeight += remainderHeight;
+            }
+
+            int srcStartY = height - blockHeight * (i + 1);
+            int dstStartY = blockHeight * i + (i == 0 ? 0 : remainderHeight);
+
+            // 逐行复制像素
+            for (int y = 0; y < blockHeight; y++) {
+                int[] srcPixels = new int[width];
+                srcRaster.getDataElements(0, srcStartY + y, width, 1, srcPixels);
+                dstRaster.setDataElements(0, dstStartY + y, width, 1, srcPixels);
+            }
+        }
+        return stitchedImg;
+    }
 
     public Album album(String aid) throws Exception {
         String url = "https://" + API_DOMAIN + "/album";
@@ -200,7 +255,7 @@ public class JmcomicService {
     public static void main(String[] args) {
         try {
             JmcomicService jmcomicService = new JmcomicService();
-//            UserProfile login = jmcomicService.login("1527188922","lf1527188922");
+//            UserProfile login = jmcomicService.login("","");
 //            System.out.println("login = " + login);
 //            Album album = jmcomicService.album("287058");
 //            System.out.println("album = " + album);
