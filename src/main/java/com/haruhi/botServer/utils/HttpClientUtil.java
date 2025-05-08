@@ -78,13 +78,7 @@ public class HttpClientUtil {
     }
 
     private static String getUrl(String s,Map<String,Object> urlParams){
-        String url = "";
-        if(!CollectionUtils.isEmpty(urlParams)){
-            url = RestUtil.urlSplicing(s,urlParams);
-        }else{
-            url = s;
-        }
-        return url;
+        return RestUtil.urlSplicing(s,urlParams);
     }
 
     private static String request(CloseableHttpClient httpClient, HttpUriRequest httpUriRequest) throws IOException, ClientProtocolException, ParseException {

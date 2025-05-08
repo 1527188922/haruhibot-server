@@ -13,7 +13,6 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -29,9 +28,32 @@ public class RestUtil {
     public static <T> T sendGetRequest(RestTemplate restTemplate, String url,Map<String, Object> urlRequestParam, Class<T> type){
         return RestUtil.sendRequest(restTemplate,url, HttpMethod.GET,null,urlRequestParam,type);
     }
-    public static <T,O> T sendPostRequest(RestTemplate restTemplate, String url,O msgBody, Map<String, Object> urlRequestParam, Class<T> type){
-        return RestUtil.sendRequest(restTemplate,url,HttpMethod.POST,msgBody,urlRequestParam,type);
+    public static <T> T sendPostRequest(RestTemplate restTemplate, String url, Object reqBody, Map<String, Object> urlParam,
+                                        HttpHeaders headers, ParameterizedTypeReference<T> respType){
+        if(headers == null){
+            headers = new HttpHeaders();
+        }
+        if(headers.getContentType() == null){
+            headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
+        }
+        HttpEntity<Object> httpEntity = new HttpEntity<>(reqBody,headers);
+        ResponseEntity<T> responseEntity = restTemplate.exchange(urlSplicing(url,urlParam), HttpMethod.POST, httpEntity, respType);
+        return responseEntity.getBody();
     }
+
+    public static <T> ResponseEntity<T> sendGetRequest(RestTemplate restTemplate, String url, Map<String, Object> urlParam,
+                                        HttpHeaders headers, ParameterizedTypeReference<T> respType){
+        if(headers == null){
+            headers = new HttpHeaders();
+        }
+        if(headers.getContentType() == null){
+            headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
+        }
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+        ResponseEntity<T> responseEntity = restTemplate.exchange(urlSplicing(url,urlParam), HttpMethod.GET, httpEntity, respType);
+        return responseEntity;
+    }
+
     private static <T,O> T sendRequest(RestTemplate restTemplate, String url,HttpMethod method ,O msgBody, Map<String, Object> urlRequestParam, Class<T> type){
         try {
             // 设置请求头
@@ -39,16 +61,9 @@ public class RestUtil {
             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
             httpHeaders.add("Accept", MediaType.APPLICATION_JSON_VALUE);
             HttpEntity<O> entity = new HttpEntity<>(msgBody, httpHeaders);
-            ResponseEntity<String> response = null;
+            ResponseEntity<String> response = restTemplate.exchange(urlSplicing(url,urlRequestParam), method, entity, new ParameterizedTypeReference<String>() {
+            });
             log.info("发起rest请求：{}，payload:{}，urlParam:{}",url,JSONObject.toJSONString(msgBody),JSONObject.toJSONString(urlRequestParam));
-            if(!CollectionUtils.isEmpty(urlRequestParam)){
-                response = restTemplate.exchange(urlSplicing(url,urlRequestParam), method, entity, new ParameterizedTypeReference<String>() {
-                });
-            }else{
-                response = restTemplate.exchange(url, method,entity,new ParameterizedTypeReference<String>() {
-                });
-            }
-
             return processResponse(response,type);
         }catch (Exception e){
             log.error("rest请求发生异常,url:{}",url,e);
@@ -57,6 +72,9 @@ public class RestUtil {
     }
 
     public static String urlSplicing(String url,Map<String,Object> param){
+        if(CollectionUtils.isEmpty(param)){
+            return url;
+        }
         StringBuilder sb=new StringBuilder("?");
         for(Map.Entry<String,Object> map:param.entrySet()){
             sb.append(map.getKey()+"="+(map.getValue())+"&");
