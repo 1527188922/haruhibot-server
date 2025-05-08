@@ -1,21 +1,34 @@
 package com.haruhi.botServer.service;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.dto.jmcomic.*;
+import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.RestUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class JmcomicService {
     private static final String API_DOMAIN = "www.cdnblackmyth.club";
     private static final String APP_TOKEN_SECRET = "18comicAPP";
@@ -26,7 +39,7 @@ public class JmcomicService {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
 
 
-    public String login(String username, String password) throws Exception {
+    public UserProfile login(String username, String password) throws Exception {
         String url = "https://" + API_DOMAIN + "/login";
         LinkedMultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
         formData.add("username", username);
@@ -38,12 +51,79 @@ public class JmcomicService {
                 headerParam.toSingleValueMap(), new ParameterizedTypeReference<String>() {
         });
         JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
-        String data = jsonObject.getString("data");
-        return decryptData(ts, data);
+        String data = decryptData(ts, jsonObject.getString("data"));
+        return JSONObject.parseObject(data, UserProfile.class);
     }
 
 
-    public String album(String aid) throws Exception {
+    public void downAlbum(String aid) throws Exception {
+        Album album = album(aid);
+        if (CollectionUtils.isEmpty(album.getSeries())) {
+            Series series = new Series();
+            series.setSort("1");
+            series.setTitle("第1话");
+            series.setId(aid);
+            album.setSeries(Collections.singletonList(series));
+        }
+        String albumName = album.getName() + "_" + aid;
+        String albumPath = FileUtil.getJmcomicDir() + File.separator + albumName;
+        for (Series series : album.getSeries()) {
+            series.setTitle("第" + series.getSort() +"话");
+            try {
+                String chapterPath = albumPath + File.separator + (series.getTitle()+"_" + (StringUtils.isBlank(series.getName()) ? "" : series.getName()));
+                Chapter chapter = chapter(series.getId());
+                downChapter(chapter,chapterPath,10 * 1000);
+            }catch (Exception e) {
+                log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
+            }
+        }
+    }
+
+
+    public void downChapter(Chapter chapter,String chapterPath,int timeout) throws Exception {
+        List<String> images = chapter.getImages();
+        if (CollectionUtils.isEmpty(images)) {
+            log.error("该章节无图片 c:{}",JSONObject.toJSONString(chapter));
+            return;
+        }
+        List<DownloadParam> collect = images.stream().map(filename -> {
+            DownloadParam downloadParam = new DownloadParam();
+
+            downloadParam.setImgUrl(buildImgUrl(chapter.getId(), filename));
+            downloadParam.setFilename(filename);
+            downloadParam.setImgFilePath(chapterPath + File.separator + filename);
+
+            return downloadParam;
+        }).collect(Collectors.toList());
+
+        RestTemplate restTemplate = new RestTemplate();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(timeout);
+        requestFactory.setReadTimeout(timeout);
+        restTemplate.setRequestFactory(requestFactory);
+
+
+        collect.forEach(param -> {
+            try {
+                File file = new File(param.getImgFilePath());
+
+//                ResponseEntity<byte[]> responseEntity = RestUtil.sendGetRequest(restTemplate, param, null, null,
+//                        new ParameterizedTypeReference<byte[]>() {});
+//                byte[] body = responseEntity.getBody();
+//                FileUtils.writeByteArrayToFile(file, body);
+
+                ResponseEntity<InputStream> responseEntity = RestUtil.sendGetRequest(restTemplate, param.getImgUrl(), null, null,
+                        new ParameterizedTypeReference<InputStream>() {});
+                InputStream body = responseEntity.getBody();
+                FileUtils.copyInputStreamToFile(body,file);
+            }catch (Exception e) {
+
+            }
+        });
+    }
+
+
+    public Album album(String aid) throws Exception {
         String url = "https://" + API_DOMAIN + "/album";
         long ts = System.currentTimeMillis() / 1000;
         HttpHeaders headerParam = headerParam(ts);
@@ -54,9 +134,31 @@ public class JmcomicService {
                 url,  urlParam, headerParam, new ParameterizedTypeReference<String>() {
                 });
         JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
-        return decryptData(ts, jsonObject.getString("data"));
+        String data = decryptData(ts, jsonObject.getString("data"));
+        return JSONObject.parseObject(data,Album.class);
     }
 
+
+    public Chapter chapter(String chapterId)throws Exception{
+        String url = "https://" + API_DOMAIN + "/chapter";
+        long ts = System.currentTimeMillis() / 1000;
+        HttpHeaders headerParam = headerParam(ts);
+
+        HashMap<String, Object> urlParam = new HashMap<>();
+        urlParam.put("id", chapterId);
+        ResponseEntity<String> responseEntity = RestUtil.sendGetRequest(RestUtil.getRestTemplate(5000),
+                url,  urlParam, headerParam, new ParameterizedTypeReference<String>() {
+                });
+        JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
+        String data = decryptData(ts, jsonObject.getString("data"));
+        return JSONObject.parseObject(data, Chapter.class);
+    }
+
+
+
+    private String buildImgUrl(Long chapterId,String filename) {
+        return "https://" + IMAGE_DOMAIN + "/media/photos/"+ chapterId +"/"+ filename;
+    }
 
     private HttpHeaders headerParam(long ts){
         HttpHeaders httpHeaders = new HttpHeaders();
@@ -72,7 +174,6 @@ public class JmcomicService {
     private String decryptData(long ts, String encryptedData) throws Exception {
         byte[] encryptedBytes = Base64.decodeBase64(encryptedData);
 
-        // 生成密钥
         String keyStr = ts + APP_DATA_SECRET;
         String hexStr = DigestUtils.md5Hex(keyStr); // 将16字节的MD5哈希转换为32字符的十六进制字符串
         byte[] key = hexStr.getBytes(StandardCharsets.US_ASCII); // 转换为32字节的密钥
@@ -92,7 +193,6 @@ public class JmcomicService {
 //        byte[] decryptedWithoutPadding = new byte[decryptedData.length - paddingLength];
 //        System.arraycopy(decryptedData, 0, decryptedWithoutPadding, 0, decryptedWithoutPadding.length);
 
-        // 转换为UTF-8字符串
         return new String(decryptedData, StandardCharsets.UTF_8);
     }
 
@@ -100,10 +200,15 @@ public class JmcomicService {
     public static void main(String[] args) {
         try {
             JmcomicService jmcomicService = new JmcomicService();
-            String login = jmcomicService.login("","");
-            String album = jmcomicService.album("");
-            System.out.println("login = " + login);
-            System.out.println("album = " + album);
+//            UserProfile login = jmcomicService.login("1527188922","lf1527188922");
+//            System.out.println("login = " + login);
+//            Album album = jmcomicService.album("287058");
+//            System.out.println("album = " + album);
+//            Chapter chapter = jmcomicService.chapter("287058");
+//            System.out.println("chapter = " + chapter);
+
+            jmcomicService.downAlbum("517158");
+
         } catch (Exception e) {
             e.printStackTrace();
         }

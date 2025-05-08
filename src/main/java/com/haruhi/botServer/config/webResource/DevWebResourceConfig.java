@@ -53,7 +53,10 @@ public class DevWebResourceConfig extends AbstractWebResourceConfig {
     public String webResourcesImagePath() {
         return webHomePath() + "/build/" + FileUtil.DIR_IMAGE;
     }
-
+    @Override
+    public String webResourcesJmcomicPath() {
+        return webHomePath() + "/build/" + FileUtil.DIR_JMCOMIC;
+    }
 
 
     @Override

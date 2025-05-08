@@ -25,6 +25,7 @@ public class FileUtil {
     public static final String DIR_LOGS = "logs";
     public static final String DIR_FACE = "face";
     public static final String DIR_EXCEL = "excel";
+    public static final String DIR_JMCOMIC = "jmcomic";
 
     public static final String DIR_CUSTOM_REPLY = "customReply";
     
@@ -206,6 +207,10 @@ public class FileUtil {
 
     public static String getImageDir(){
         return getAppDir() + File.separator + DIR_IMAGE;
+    }
+
+    public static String getJmcomicDir(){
+        return getAppDir() + File.separator + DIR_JMCOMIC;
     }
     
     public static String getExcelDir(){

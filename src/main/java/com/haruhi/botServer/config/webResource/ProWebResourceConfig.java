@@ -82,6 +82,11 @@ public class ProWebResourceConfig extends AbstractWebResourceConfig {
     }
 
     @Override
+    public String webResourcesJmcomicPath() {
+        return webHomePath() + "/" + FileUtil.DIR_JMCOMIC;
+    }
+
+    @Override
     public String webFacePath() {
         return webResourcesImagePath() + "/" + FileUtil.DIR_FACE;
     }

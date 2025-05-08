@@ -16,6 +16,7 @@ public abstract class AbstractWebResourceConfig {
      * @return
      */
     public abstract String webResourcesImagePath();
+    public abstract String webResourcesJmcomicPath();
 
     public abstract String webBulletWordCloudPath();
 
