@@ -71,10 +71,10 @@ public class JmcomicService {
         if(!file.exists()){
             return BaseResp.fail("本子不存在");
         }
-        String zipPath = albumDir + File.separator + (baseResp.getData() + ".zip");
-        File zipFile = new File(zipPath);
+        String zipFilePath = FileUtil.getJmcomicDir() + File.separator + (baseResp.getData() + ".zip");
+        File zipFile = new File(zipFilePath);
         if(!zipFile.exists()){
-            ZipUtil.zip(albumDir,zipPath);
+            ZipUtil.zip(albumDir,zipFilePath);
         }
         return BaseResp.success(zipFile);
     }
@@ -99,12 +99,14 @@ public class JmcomicService {
             }
             String albumName = album.getName() + "_JM" + aid;
             String albumPath = FileUtil.getJmcomicDir() + File.separator + albumName;
+            log.info("开始下载：{} 共{}话", aid, album.getSeries().size());
             for (Series series : album.getSeries()) {
                 series.setTitle("第" + series.getSort() +"话");
                 try {
                     String chapterPath = albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
                     Chapter chapter = requestChapter(series.getId());
                     downChapter(chapter,chapterPath);
+                    log.info("{}下载完成", series.getTitle());
                 }catch (Exception e) {
                     log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                 }
@@ -123,7 +125,7 @@ public class JmcomicService {
             return;
         }
         long chapterId = chapter.getId();
-        long scrambleId = getScrambleId(String.valueOf(chapterId));
+        long scrambleId = getScrambleId(chapterId);
 
         List<DownloadParam> downloadParams = images.stream().map(filename -> {
             DownloadParam downloadParam = new DownloadParam();
@@ -275,7 +277,7 @@ public class JmcomicService {
         return JSONObject.parseObject(data, Chapter.class);
     }
 
-    public long getScrambleId(String chapterId){
+    public long getScrambleId(long chapterId){
         try {
             String url = "https://" + API_DOMAIN + "/chapter_view_template";
             long ts = System.currentTimeMillis() / 1000;
@@ -363,9 +365,10 @@ public class JmcomicService {
 //            System.out.println("chapter = " + chapter);
 
 //            jmcomicService.downAlbum("517158");
+            jmcomicService.albumToZip("454521");
 
 //            jmcomicService.getScrambleId("517158");
-            jmcomicService.calculateBlockNum(220980, 517158, "00001");
+//            jmcomicService.calculateBlockNum(220980, 517158, "00001");
         } catch (Exception e) {
             e.printStackTrace();
         }

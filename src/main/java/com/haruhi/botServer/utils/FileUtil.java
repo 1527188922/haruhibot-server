@@ -7,9 +7,18 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Slf4j
 public class FileUtil {
@@ -287,4 +296,112 @@ public class FileUtil {
     public static String getCustomReplyDir(){
         return getAppDir() + File.separator + DIR_CUSTOM_REPLY;
     }
+
+
+
+    /**
+     * @param zipPathDir  压缩包输出到该路径 ，如 /home/data/zip-folder/
+     * @param zipFileName 压缩包名称 ，如 test.zip
+     * @param fileList    要压缩的文件列表（绝对路径），如 /home/person/test/测试.doc，/home/person/haha/测试.doc
+     * @return
+     */
+    public static File compressFiles(String zipPathDir, String zipFileName, List<File> fileList) {
+        File zipFile = new File(zipPathDir);
+        if (!zipFile.exists()) {
+            zipFile.mkdirs();
+        }
+        File resFile = new File(zipPathDir + File.separator + zipFileName);
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(resFile))) {
+            for (File file : fileList) {
+                if (file.exists()) {
+                    ZipEntry zipEntry = new ZipEntry(file.getName());
+                    zos.putNextEntry(zipEntry);
+                    byte[] buffer = new byte[4096];
+                    compressSingleFile(file, zos, buffer);
+                }
+            }
+            zos.flush();
+            return resFile;
+        } catch (Exception e) {
+            log.error("压缩所有文件成zip包出错",e);
+            return null;
+        }
+    }
+
+    /**
+     * 压缩单个文件
+     * @param file
+     * @param zos
+     * @param buffer
+     */
+    public static void compressSingleFile(File file, ZipOutputStream zos, byte[] buffer) {
+        int len;
+        try (FileInputStream fis = new FileInputStream(file)) {
+            while ((len = fis.read(buffer)) > 0) {
+                zos.write(buffer, 0, len);
+                zos.flush();
+            }
+            zos.closeEntry();
+        } catch (IOException e) {
+            log.error("压缩单个文件异常",e);
+        }
+    }
+
+    public static List<File> getAllFiles(String directoryPath)  {
+        try (Stream<Path> paths = Files.walk(Paths.get(directoryPath))) {
+            return paths
+                    .filter(Files::isRegularFile) // 仅保留文件（排除目录）
+                    .map(Path::toFile)            // 转换为File对象
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+
+
+    public static void zipFolder(Path sourceFolder, Path zipFile) throws IOException {
+        // 验证源文件夹是否存在
+        if (!Files.isDirectory(sourceFolder)) {
+            throw new IllegalArgumentException("指定的路径不是文件夹: " + sourceFolder);
+        }
+
+        // 使用try-with-resources确保资源自动关闭
+        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
+            // 遍历文件夹树
+            Files.walkFileTree(sourceFolder, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    // 计算相对路径并创建目录条目
+                    Path relativePath = sourceFolder.relativize(dir);
+                    String entryName = relativePath.toString().isEmpty()
+                            ? sourceFolder.getFileName().toString() + "/"
+                            : sourceFolder.getFileName().toString() + "/" + relativePath + "/";
+
+                    // 添加目录到ZIP（跳过根目录的空路径）
+                    if (!entryName.equals(sourceFolder.getFileName().toString() + "/")) {
+                        entryName = sourceFolder.getFileName().toString() + "/" + relativePath + "/";
+                    }
+
+                    zos.putNextEntry(new ZipEntry(entryName));
+                    zos.closeEntry();
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    // 计算文件在ZIP中的路径
+                    Path relativePath = sourceFolder.relativize(file);
+                    String entryName = sourceFolder.getFileName().toString() + "/" + relativePath;
+
+                    // 添加文件到ZIP
+                    zos.putNextEntry(new ZipEntry(entryName));
+                    Files.copy(file, zos);
+                    zos.closeEntry();
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+    }
+
 }
