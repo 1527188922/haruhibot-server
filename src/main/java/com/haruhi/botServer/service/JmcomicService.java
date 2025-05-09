@@ -1,6 +1,7 @@
 package com.haruhi.botServer.service;
 
 import cn.hutool.core.collection.ConcurrentHashSet;
+import cn.hutool.core.util.ZipUtil;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.dto.BaseResp;
@@ -60,6 +61,25 @@ public class JmcomicService {
         return JSONObject.parseObject(data, UserProfile.class);
     }
 
+    public BaseResp<File> albumToZip(String aid) throws Exception {
+        BaseResp<String> baseResp = downAlbum(aid);
+        if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
+            return BaseResp.fail(baseResp.getMsg());
+        }
+        String albumDir = FileUtil.getJmcomicDir() + File.separator + baseResp.getData();
+        File file = new File(albumDir);
+        if(!file.exists()){
+            return BaseResp.fail("本子不存在");
+        }
+        String zipPath = albumDir + File.separator + (baseResp.getData() + ".zip");
+        File zipFile = new File(zipPath);
+        if(!zipFile.exists()){
+            ZipUtil.zip(albumDir,zipPath);
+        }
+        return BaseResp.success(zipFile);
+    }
+
+
 
     public BaseResp<String> downAlbum(String aid) throws Exception {
         synchronized (JmcomicService.class){
@@ -89,7 +109,7 @@ public class JmcomicService {
                     log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                 }
             }
-            return BaseResp.success(albumPath);
+            return BaseResp.success(albumName);
         }finally {
             LOCK.remove(aid);
         }
