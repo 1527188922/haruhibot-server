@@ -6,8 +6,10 @@ import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.*;
+import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.RestUtil;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -29,6 +31,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -147,18 +150,24 @@ public class JmcomicService {
             return;
         }
         FileUtil.mkdirs(chapterPath);
-        downloadParams.forEach(param -> {
+        List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, 40);
+
+        List<CompletableFuture<Void>> taskList = lists.stream().map(list -> CompletableFuture.runAsync(() -> list.forEach(param -> {
             try {
-                log.info("开始下载图片：{}",param.getImgUrl());
+                log.info("开始下载图片：{}", param.getImgUrl());
                 long l = System.currentTimeMillis();
                 byte[] bytes = HttpUtil.downloadBytes(param.getImgUrl());
-                log.info("下载完成：{} cost:{}",param.getImgUrl(),(System.currentTimeMillis()-l));
-                saveImg(param.getBlockNum(),bytes,param.getImgFile());
-                log.info("图片保存成功：{} path={}",param.getImgUrl(),param.getImgFile().getAbsolutePath());
-            }catch (Exception e) {
-                log.error("下载jm图片异常 {}",param,e);
+                log.info("下载完成：{} cost:{}", param.getImgUrl(), (System.currentTimeMillis() - l));
+                saveImg(param.getBlockNum(), bytes, param.getImgFile());
+                log.info("图片保存成功：{} path={}", param.getImgUrl(), param.getImgFile().getAbsolutePath());
+            } catch (Exception e) {
+                log.error("下载jm图片异常 {}", param, e);
             }
-        });
+        }), ThreadPoolUtil.getCommonExecutor())).collect(Collectors.toList());
+        log.info("开始执行任务 数量：{}",lists.size());
+        long l = System.currentTimeMillis();
+        taskList.forEach(CompletableFuture::join);
+        log.info("全部执行完成 cost:{}",System.currentTimeMillis() - l);
     }
 
     public int calculateBlockNum(long scrambleId, long chapterId, String filename) {

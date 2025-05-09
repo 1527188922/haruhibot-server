@@ -128,6 +128,34 @@ public class CommonUtil {
         }
         return result;
     }
+
+    /**
+     * 将列表切分为指定数量的子列表
+     */
+    public static <T> List<List<T>> split(List<T> list, int splitCount) {
+        List<List<T>> result = new ArrayList<>();
+
+        // 处理空列表或无效参数
+        if (list == null || list.isEmpty()) {
+            return result;
+        }
+
+        int size = list.size();
+        // 计算实际切分数量（确保不小于1）
+        int actualSplitCount = Math.max(1, Math.min(splitCount, size));
+
+        // 计算每个子列表的基础大小（向上取整）
+        int chunkSize = (int) Math.ceil((double) size / actualSplitCount);
+
+        // 执行切分
+        for (int i = 0; i < size; i += chunkSize) {
+            int end = Math.min(i + chunkSize, size);
+            result.add(new ArrayList<>(list.subList(i, end)));
+        }
+
+        return result;
+    }
+
     public static String uuid(){
         return UUID.randomUUID().toString().replace("-","");
     }
