@@ -71,6 +71,31 @@ public class FileUtil {
     }
 
     /**
+     * 获取后缀名
+     * 转小写
+     * @param fileName
+     * @return
+     */
+    public static String getFileExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+
+        if (dotIndex == -1 || dotIndex == fileName.length() - 1) {
+            return null; // 无扩展名或以点结尾
+        }
+
+        return fileName.substring(dotIndex + 1).toLowerCase();
+    }
+    // 获取无扩展名的文件名
+    public static String getBaseName(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+
+        if (dotIndex == -1) {
+            return fileName; // 无扩展名
+        }
+
+        return fileName.substring(0, dotIndex);
+    }
+    /**
      * 获取一个路径下所有的文件对象
      * 仅文件
      * @param file
