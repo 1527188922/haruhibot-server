@@ -42,6 +42,7 @@ public enum RegexEnum {
     STATUS("/status|/状态"),
     RECORD_STATISTICS("聊天统计|聊天排名"),
     EXPORT_CHAT_RECORD("导出聊天记录|导出聊天excel|导出聊天EXCEL|生成聊天excel|生成聊天EXCEL"),
+    JM_COMIC_DOWNLOAD("jm|JM"),
     
     ;
 
