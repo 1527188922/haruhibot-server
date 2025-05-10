@@ -113,7 +113,7 @@ public class JmcomicService {
                 try {
                     String chapterPath = albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
                     Chapter chapter = requestChapter(series.getId());
-                    downloadChapter(chapter,chapterPath,series.getTitle());
+                    downloadChapter(chapter,chapterPath,series.getTitle(),-1);
                 }catch (Exception e) {
                     log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                 }
@@ -125,7 +125,7 @@ public class JmcomicService {
     }
 
 
-    public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle) {
+    public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle,int lastCount) {
         List<String> images = chapter.getImages();
         if (CollectionUtils.isEmpty(images)) {
             log.error("该章节无图片 c:{}",JSONObject.toJSONString(chapter));
@@ -153,42 +153,50 @@ public class JmcomicService {
             log.info("该章节不存在需下载图片");
             return;
         }
+        if (downloadParams.size() == lastCount) {
+            log.error("本次下载数和上次下载数相同，终止下载");
+            return;
+        }
         CountDownLatch countDownLatch = new CountDownLatch(downloadParams.size());
         FileUtil.mkdirs(chapterPath);
         List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, SystemUtil.getAvailableProcessors() * 2 + 1);
 
-        List<CompletableFuture<Void>> taskList = lists.stream().map(list -> CompletableFuture.runAsync(() -> list.forEach(param -> {
-            String imgUrl = param.getImgUrl();
-            byte[] bytes = null;
-            try {
-                log.info("开始下载图片：{}", imgUrl);
-                long l = System.currentTimeMillis();
-                bytes = HttpRequest.get(imgUrl)
-                        .setConnectionTimeout(4 * 1000)
-                        .setReadTimeout(10 * 1000)
-                        .execute()
-                        .bodyBytes();
-                log.info("下载图片完成：{} cost:{}", imgUrl, (System.currentTimeMillis() - l));
-            }catch (HttpException e){
-                if (e.getCause() instanceof SocketTimeoutException) {
-                    log.error("下载jm图片超时 {}", imgUrl, e);
-                }else{
-                    log.error("下载jm图片网络异常 {}", imgUrl, e);
-                }
-            }catch (Exception e) {
-                log.error("下载jm图片异常 {}", JSONObject.toJSONString(param), e);
-            }
-            if (bytes == null) {
-                return;
-            }
-            try {
-                saveImg(param.getBlockNum(), bytes, param.getImgFile());
-                log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
-                countDownLatch.countDown();
-            }catch (Exception e) {
-                log.error("保存图片异常：{}", JSONObject.toJSONString(param));
-            }
-        }), ThreadPoolUtil.getCommonExecutor())).collect(Collectors.toList());
+        List<CompletableFuture<Void>> taskList = lists.stream().map(list -> {
+            return CompletableFuture.runAsync(() -> {
+                list.forEach(param -> {
+                    String imgUrl = param.getImgUrl();
+                    byte[] bytes = null;
+                    try {
+                        log.info("开始下载图片：{}", imgUrl);
+                        long l = System.currentTimeMillis();
+                        bytes = HttpRequest.get(imgUrl)
+                                .setConnectionTimeout(4 * 1000)
+                                .setReadTimeout(10 * 1000)
+                                .execute()
+                                .bodyBytes();
+                        log.info("下载图片完成：{} cost:{}", imgUrl, (System.currentTimeMillis() - l));
+                    }catch (HttpException e){
+                        if (e.getCause() instanceof SocketTimeoutException) {
+                            log.error("下载jm图片超时 {}", imgUrl, e);
+                        }else{
+                            log.error("下载jm图片网络异常 {}", imgUrl, e);
+                        }
+                    }catch (Exception e) {
+                        log.error("下载jm图片异常 {}", JSONObject.toJSONString(param), e);
+                    }
+                    if (bytes == null) {
+                        return;
+                    }
+                    try {
+                        saveImg(param.getBlockNum(), bytes, param.getImgFile());
+                        log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
+                        countDownLatch.countDown();
+                    }catch (Exception e) {
+                        log.error("保存图片异常：{}", JSONObject.toJSONString(param),e);
+                    }
+                });
+            }, ThreadPoolUtil.getCommonExecutor());
+        }).collect(Collectors.toList());
         log.info("开始下载【{}】 线程数：{}",seriesTitle, taskList.size());
         long l = System.currentTimeMillis();
         taskList.forEach(CompletableFuture::join);
@@ -196,7 +204,7 @@ public class JmcomicService {
         long count = countDownLatch.getCount();
         if (count > 0) {
             log.info("本章【{}】剩余数量：{} 开始下载剩余图片", seriesTitle,count);
-            downloadChapter(chapter, chapterPath, seriesTitle);
+            downloadChapter(chapter, chapterPath, seriesTitle,downloadParams.size());
         }
     }
 
