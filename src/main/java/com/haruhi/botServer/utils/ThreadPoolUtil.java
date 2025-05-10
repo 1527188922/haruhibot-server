@@ -4,6 +4,7 @@ package com.haruhi.botServer.utils;
 import com.haruhi.botServer.thread.pool.HandleCommandThreadPoolExecutor;
 import com.haruhi.botServer.thread.pool.policy.ShareRunsPolicy;
 import com.haruhi.botServer.utils.system.SystemInfo;
+import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -36,7 +37,7 @@ public class ThreadPoolUtil {
     }
 
     @Getter
-    private final static ExecutorService commonExecutor = new ThreadPoolExecutor(40,60,60,TimeUnit.SECONDS,new ArrayBlockingQueue<>(10000)
+    private final static ExecutorService commonExecutor = new ThreadPoolExecutor(SystemUtil.getAvailableProcessors() * 2 + 1,SystemUtil.getAvailableProcessors() * 4 + 1,60,TimeUnit.SECONDS,new ArrayBlockingQueue<>(10000)
     ,new CustomizableThreadFactory("common-"));
 
 }

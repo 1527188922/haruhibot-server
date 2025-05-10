@@ -10,6 +10,7 @@ import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -120,7 +121,7 @@ public class JmcomicService {
     }
 
 
-    public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle) throws Exception {
+    public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle) {
         List<String> images = chapter.getImages();
         if (CollectionUtils.isEmpty(images)) {
             log.error("该章节无图片 c:{}",JSONObject.toJSONString(chapter));
@@ -149,7 +150,7 @@ public class JmcomicService {
             return;
         }
         FileUtil.mkdirs(chapterPath);
-        List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, 40);
+        List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, SystemUtil.getAvailableProcessors() * 2 + 1);
 
         List<CompletableFuture<Void>> taskList = lists.stream().map(list -> CompletableFuture.runAsync(() -> list.forEach(param -> {
             String imgUrl = param.getImgUrl();
