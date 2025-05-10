@@ -77,7 +77,7 @@ public class JmcomicService {
         String zipFilePath = FileUtil.getJmcomicDir() + File.separator + (baseResp.getData() + ".zip");
         File zipFile = new File(zipFilePath);
         if(!zipFile.exists()){
-            ZipUtil.zip(albumDir,zipFilePath);
+            ZipUtil.zip(albumDir,zipFilePath,StandardCharsets.UTF_8,false);
         }
         return BaseResp.success(zipFile);
     }
@@ -152,15 +152,24 @@ public class JmcomicService {
         List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, 40);
 
         List<CompletableFuture<Void>> taskList = lists.stream().map(list -> CompletableFuture.runAsync(() -> list.forEach(param -> {
+            String imgUrl = param.getImgUrl();
+            byte[] bytes = null;
             try {
-                log.info("开始下载图片：{}", param.getImgUrl());
+                log.info("开始下载图片：{}", imgUrl);
                 long l = System.currentTimeMillis();
-                byte[] bytes = HttpUtil.downloadBytes(param.getImgUrl());
-                log.info("下载图片完成：{} cost:{}", param.getImgUrl(), (System.currentTimeMillis() - l));
-                saveImg(param.getBlockNum(), bytes, param.getImgFile());
-                log.info("保存图片成功：{} path={}", param.getImgUrl(), param.getImgFile().getAbsolutePath());
+                bytes = HttpUtil.downloadBytes(imgUrl);
+                log.info("下载图片完成：{} cost:{}", imgUrl, (System.currentTimeMillis() - l));
             } catch (Exception e) {
-                log.error("下载jm图片异常 {}", param, e);
+                log.error("下载jm图片异常 {}", JSONObject.toJSONString(param), e);
+            }
+            if (bytes == null) {
+                return;
+            }
+            try {
+                saveImg(param.getBlockNum(), bytes, param.getImgFile());
+                log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
+            }catch (Exception e) {
+                log.error("保存图片异常：{}", JSONObject.toJSONString(param));
             }
         }), ThreadPoolUtil.getCommonExecutor())).collect(Collectors.toList());
         log.info("开始下载【{}】 线程数：{}",seriesTitle, taskList.size());
