@@ -85,9 +85,6 @@ public class JmcomicService {
 
 
     public BaseResp<String> downloadAlbum(String aid) throws Exception {
-        if (LOCK.contains(aid)) {
-            return BaseResp.fail("【JM"+aid+"】正在下载中...");
-        }
         synchronized (JmcomicService.class){
             if (LOCK.contains(aid)) {
                 return BaseResp.fail("【JM"+aid+"】正在下载中...");
