@@ -2,7 +2,8 @@ package com.haruhi.botServer.service;
 
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.util.ZipUtil;
-import cn.hutool.http.HttpUtil;
+import cn.hutool.http.HttpException;
+import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.*;
@@ -30,9 +31,11 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,9 +80,10 @@ public class JmcomicService {
         }
         String zipFilePath = FileUtil.getJmcomicDir() + File.separator + (baseResp.getData() + ".zip");
         File zipFile = new File(zipFilePath);
-        if(!zipFile.exists()){
-            ZipUtil.zip(albumDir,zipFilePath,StandardCharsets.UTF_8,false);
+        if(zipFile.exists()){
+            zipFile.delete();
         }
+        ZipUtil.zip(albumDir,zipFilePath,StandardCharsets.UTF_8,false);
         return BaseResp.success(zipFile);
     }
 
@@ -149,6 +153,7 @@ public class JmcomicService {
             log.info("该章节不存在需下载图片");
             return;
         }
+        CountDownLatch countDownLatch = new CountDownLatch(downloadParams.size());
         FileUtil.mkdirs(chapterPath);
         List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, SystemUtil.getAvailableProcessors() * 2 + 1);
 
@@ -158,9 +163,19 @@ public class JmcomicService {
             try {
                 log.info("开始下载图片：{}", imgUrl);
                 long l = System.currentTimeMillis();
-                bytes = HttpUtil.downloadBytes(imgUrl);
+                bytes = HttpRequest.get(imgUrl)
+                        .setConnectionTimeout(4 * 1000)
+                        .setReadTimeout(10 * 1000)
+                        .execute()
+                        .bodyBytes();
                 log.info("下载图片完成：{} cost:{}", imgUrl, (System.currentTimeMillis() - l));
-            } catch (Exception e) {
+            }catch (HttpException e){
+                if (e.getCause() instanceof SocketTimeoutException) {
+                    log.error("下载jm图片超时 {}", imgUrl, e);
+                }else{
+                    log.error("下载jm图片网络异常 {}", imgUrl, e);
+                }
+            }catch (Exception e) {
                 log.error("下载jm图片异常 {}", JSONObject.toJSONString(param), e);
             }
             if (bytes == null) {
@@ -169,6 +184,7 @@ public class JmcomicService {
             try {
                 saveImg(param.getBlockNum(), bytes, param.getImgFile());
                 log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
+                countDownLatch.countDown();
             }catch (Exception e) {
                 log.error("保存图片异常：{}", JSONObject.toJSONString(param));
             }
@@ -177,6 +193,11 @@ public class JmcomicService {
         long l = System.currentTimeMillis();
         taskList.forEach(CompletableFuture::join);
         log.info("【{}】下载完成 cost:{}", seriesTitle,(System.currentTimeMillis() - l));
+        long count = countDownLatch.getCount();
+        if (count > 0) {
+            log.info("本章【{}】剩余数量：{} 开始下载剩余图片", seriesTitle,count);
+            downloadChapter(chapter, chapterPath, seriesTitle);
+        }
     }
 
     public int calculateBlockNum(long scrambleId, long chapterId, String filename) {
