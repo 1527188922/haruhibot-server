@@ -64,8 +64,8 @@ public class JmcomicService {
         return JSONObject.parseObject(data, UserProfile.class);
     }
 
-    public BaseResp<File> albumToZip(String aid) throws Exception {
-        BaseResp<String> baseResp = downAlbum(aid);
+    public BaseResp<File> downloadAlbumAsZip(String aid) throws Exception {
+        BaseResp<String> baseResp = downloadAlbum(aid);
         if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
             return BaseResp.fail(baseResp.getMsg());
         }
@@ -84,7 +84,10 @@ public class JmcomicService {
 
 
 
-    public BaseResp<String> downAlbum(String aid) throws Exception {
+    public BaseResp<String> downloadAlbum(String aid) throws Exception {
+        if (LOCK.contains(aid)) {
+            return BaseResp.fail("【JM"+aid+"】正在下载中...");
+        }
         synchronized (JmcomicService.class){
             if (LOCK.contains(aid)) {
                 return BaseResp.fail("【JM"+aid+"】正在下载中...");
@@ -102,14 +105,13 @@ public class JmcomicService {
             }
             String albumName = album.getName() + "_JM" + aid;
             String albumPath = FileUtil.getJmcomicDir() + File.separator + albumName;
-            log.info("开始下载：{} 共{}话", aid, album.getSeries().size());
+            log.info("开始下载：jm{} 共{}话", aid, album.getSeries().size());
             for (Series series : album.getSeries()) {
                 series.setTitle("第" + series.getSort() +"话");
                 try {
                     String chapterPath = albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
                     Chapter chapter = requestChapter(series.getId());
-                    downChapter(chapter,chapterPath);
-                    log.info("{}下载完成", series.getTitle());
+                    downloadChapter(chapter,chapterPath,series.getTitle());
                 }catch (Exception e) {
                     log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                 }
@@ -121,7 +123,7 @@ public class JmcomicService {
     }
 
 
-    public void downChapter(Chapter chapter,String chapterPath) throws Exception {
+    public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle) throws Exception {
         List<String> images = chapter.getImages();
         if (CollectionUtils.isEmpty(images)) {
             log.error("该章节无图片 c:{}",JSONObject.toJSONString(chapter));
@@ -157,17 +159,17 @@ public class JmcomicService {
                 log.info("开始下载图片：{}", param.getImgUrl());
                 long l = System.currentTimeMillis();
                 byte[] bytes = HttpUtil.downloadBytes(param.getImgUrl());
-                log.info("下载完成：{} cost:{}", param.getImgUrl(), (System.currentTimeMillis() - l));
+                log.info("下载图片完成：{} cost:{}", param.getImgUrl(), (System.currentTimeMillis() - l));
                 saveImg(param.getBlockNum(), bytes, param.getImgFile());
-                log.info("图片保存成功：{} path={}", param.getImgUrl(), param.getImgFile().getAbsolutePath());
+                log.info("保存图片成功：{} path={}", param.getImgUrl(), param.getImgFile().getAbsolutePath());
             } catch (Exception e) {
                 log.error("下载jm图片异常 {}", param, e);
             }
         }), ThreadPoolUtil.getCommonExecutor())).collect(Collectors.toList());
-        log.info("开始执行任务 数量：{}",lists.size());
+        log.info("开始下载【{}】 线程数：{}",seriesTitle, taskList.size());
         long l = System.currentTimeMillis();
         taskList.forEach(CompletableFuture::join);
-        log.info("全部执行完成 cost:{}",System.currentTimeMillis() - l);
+        log.info("【{}】下载完成 cost:{}", seriesTitle,(System.currentTimeMillis() - l));
     }
 
     public int calculateBlockNum(long scrambleId, long chapterId, String filename) {
@@ -374,7 +376,7 @@ public class JmcomicService {
 //            System.out.println("chapter = " + chapter);
 
 //            jmcomicService.downAlbum("517158");
-            jmcomicService.albumToZip("454521");
+            jmcomicService.downloadAlbumAsZip("454521");
 
 //            jmcomicService.getScrambleId("517158");
 //            jmcomicService.calculateBlockNum(220980, 517158, "00001");
