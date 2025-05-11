@@ -56,27 +56,21 @@ public class FileUtil {
             file.delete();
         }
     }
-    public static File[] getAllFileList(String path){
-        return getAllFileList(new File(path));
-    }
     public static File[] getFileList(String path){
         return getFileList(new File(path));
-    }
-    public static File[] getDirectoryList(String path){
-        return getDirectoryList(new File(path));
     }
 
     /**
      * 获取一个路径下所有的文件夹对象
      * 仅文件夹,不能递归
-     * @param file
+     * @param dir
      * @return
      */
-    public static File[] getDirectoryList(File file){
-        if(file == null || !file.exists()){
+    public static File[] getDirectoryList(File dir){
+        if(dir == null || !dir.exists()){
             return null;
         }
-        return file.listFiles(File::isDirectory);
+        return dir.listFiles(File::isDirectory);
     }
 
     /**
@@ -347,6 +341,13 @@ public class FileUtil {
         }
     }
 
+    /**
+     * 获取一个文件夹下面所有的文件
+     * 递归获取
+     * 排除目录
+     * @param directoryPath
+     * @return
+     */
     public static List<File> getAllFiles(String directoryPath)  {
         try (Stream<Path> paths = Files.walk(Paths.get(directoryPath))) {
             return paths

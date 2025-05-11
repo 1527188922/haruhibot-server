@@ -17,6 +17,17 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.PageMode;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageFitWidthDestination;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -31,11 +42,14 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -87,7 +101,114 @@ public class JmcomicService {
         return BaseResp.success(zipFile);
     }
 
+    public BaseResp<File> downloadAlbumAsPdf(String aid) throws Exception {
+        BaseResp<String> baseResp = downloadAlbum(aid);
+        if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
+            return BaseResp.fail(baseResp.getMsg());
+        }
+        String albumDir = FileUtil.getJmcomicDir() + File.separator + baseResp.getData();
+        File file = new File(albumDir);
+        if(!file.exists()){
+            return BaseResp.fail("本子不存在");
+        }
+        String pdfFileName = baseResp.getData() + ".pdf";
+        String pdfFilePath = FileUtil.getJmcomicDir() + File.separator + pdfFileName;
+        File pdfFile = new File(pdfFilePath);
+        if(!pdfFile.exists()){
+            log.info("pdf文件不存在，开始生成：{}",pdfFileName);
+            long l = System.currentTimeMillis();
+            albumToPdf(file,pdfFile);
+            log.info("pdf文件生成完成 cost:{} {}",(System.currentTimeMillis() - l),pdfFilePath);
+        }
+        return BaseResp.success(pdfFile);
+    }
 
+    /**
+     * 返回本子pdf文件路径
+     * @param albumDir 本子文件夹
+     * @return
+     */
+    public void albumToPdf(File albumDir,File outputFile) throws Exception {
+        List<File> directoryList = sortFolders(Arrays.asList(FileUtil.getDirectoryList(albumDir)));
+        try (PDDocument document = new PDDocument()){
+            PDDocumentOutline documentOutline = new PDDocumentOutline();
+            document.getDocumentCatalog().setDocumentOutline(documentOutline);
+            PDOutlineItem rootOutline = new PDOutlineItem();
+            rootOutline.setTitle("目录");
+            documentOutline.addLast(rootOutline);
+
+            for (File folder : directoryList) {
+                String chapterTitle = folder.getName();
+
+                // 创建章节书签
+                PDOutlineItem chapterOutline = new PDOutlineItem();
+                chapterOutline.setTitle(chapterTitle);
+                rootOutline.addLast(chapterOutline);
+
+                // 处理章节内图片
+                int chapterStartPage = document.getNumberOfPages();
+                List<File> images = sortFiles(Arrays.asList(FileUtil.getFileList(folder.getAbsolutePath())));
+                for (File image : images) {
+                    addImageToPdf(document, image);
+                }
+
+                // 设置章节跳转目标（最后一个页面）
+                if (!images.isEmpty()) {
+                    PDPageDestination destination = new PDPageFitWidthDestination();
+                    destination.setPage(document.getPage(chapterStartPage));
+                    chapterOutline.setDestination(destination);
+                }
+            }
+
+            document.getDocumentCatalog().setPageMode(PageMode.USE_OUTLINES);
+            document.save(outputFile);
+        }
+    }
+
+    private void addImageToPdf(PDDocument document, File imageFile) throws IOException {
+        BufferedImage bufferedImage = ImageIO.read(imageFile);
+        PDImageXObject image = LosslessFactory.createFromImage(document, bufferedImage);
+        PDPage page = new PDPage(new PDRectangle(image.getWidth(), image.getHeight()));
+        document.addPage(page);
+
+        try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+            contentStream.drawImage(image, 0, 0, image.getWidth(), image.getHeight());
+        }
+    }
+
+    private List<File> sortFolders(List<File> folders) {
+        folders.sort((f1, f2) -> {
+            int num1 = extractChapterNumber(f1.getName().split("_")[0]);
+            int num2 = extractChapterNumber(f2.getName().split("_")[0]);
+            return Integer.compare(num1, num2);
+        });
+        return folders;
+    }
+
+    private List<File> sortFiles(List<File> files) {
+        files.sort((f1, f2) -> {
+            int num1 = extractImageNumber(FileUtil.getBaseName(f1.getName()));
+            int num2 = extractImageNumber(FileUtil.getBaseName(f2.getName()));
+            return Integer.compare(num1, num2);
+        });
+        return files;
+    }
+
+    // 提取章节编号（从"第X话"格式中提取数字）
+    private int extractChapterNumber(String folderName) {
+        Pattern pattern = Pattern.compile("第(\\d+)话");
+        Matcher matcher = pattern.matcher(folderName);
+        return matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
+    }
+
+    private int extractImageNumber(String imageName) {
+        int n = 0;
+        try {
+            n = Integer.parseInt(imageName);
+        }catch (NumberFormatException e) {
+        }
+        return n;
+    }
 
     public BaseResp<String> downloadAlbum(String aid) throws Exception {
         synchronized (JmcomicService.class){
@@ -411,8 +532,10 @@ public class JmcomicService {
 //            Chapter chapter = jmcomicService.chapter("287058");
 //            System.out.println("chapter = " + chapter);
 
-//            jmcomicService.downAlbum("517158");
-            jmcomicService.downloadAlbumAsZip("454521");
+//            jmcomicService.downloadAlbum("517158");
+//            jmcomicService.downloadAlbumAsZip("517158");
+            jmcomicService.downloadAlbumAsPdf("454521");
+
 
 //            jmcomicService.getScrambleId("517158");
 //            jmcomicService.calculateBlockNum(220980, 517158, "00001");
