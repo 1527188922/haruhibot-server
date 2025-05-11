@@ -25,6 +25,11 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 
+/**
+ * go-cqhttp文档：https://docs.go-cqhttp.org/api
+ * napcat文档：https://napneko.github.io/develop/api
+ *
+ */
 @Slf4j
 public class Bot {
 
@@ -431,6 +436,24 @@ public class Bot {
         param.put("file",filePath);
         param.put("name",fileName);
         return sendSyncRequest(GocqActionEnum.UPLOAD_PRIVATE_FILE, param, timeout, new TypeReference<SyncResponse<String>>() {});
+    }
+
+    /**
+     * 上传群文件
+     * @param groupId
+     * @param filePath 文件绝对路径
+     * @param fileName
+     * @param folderId 父级目录id
+     * @param timeout
+     * @return
+     */
+    public SyncResponse<String> uploadGroupFile(Long groupId, String filePath, String fileName,String folderId, long timeout){
+        Map<String, Object> param = new HashMap<>(3);
+        param.put("group_id",groupId);
+        param.put("file",filePath);
+        param.put("name",fileName);
+        param.put("folder",folderId);
+        return sendSyncRequest(GocqActionEnum.UPLOAD_GROUP_FILE, param, timeout, new TypeReference<SyncResponse<String>>() {});
     }
 
     /**

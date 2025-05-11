@@ -42,6 +42,20 @@ public class JmcomicController {
         }
     }
 
+    @GetMapping("/download/pdf/{aid}")
+    public ResponseEntity<Object> downloadPdf(@PathVariable("aid") String aid) {
+        try {
+            BaseResp<File> fileBaseResp = jmcomicService.downloadAlbumAsPdf(aid);
+            if (!BaseResp.SUCCESS_CODE.equals(fileBaseResp.getCode())) {
+                return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(fileBaseResp.getMsg())));
+            }
+            return ResponseEntity.ok().headers(getResponseHeader(true,fileBaseResp.getData()))
+                    .body(new InputStreamResource(Files.newInputStream(fileBaseResp.getData().toPath())));
+        } catch (Exception e) {
+            return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(e.getMessage())));
+        }
+    }
+
     private String jsonBody(HttpResp resp) {
         return JSONObject.toJSONString(resp);
     }

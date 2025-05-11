@@ -420,4 +420,16 @@ public class CommonUtil {
         return input.startsWith("magnet:?xt=urn:btih:") && !input.contains("\n") && !input.contains("\r");
     }
 
+    /**
+     * 替换字符串
+     * 不区分大小写
+     * @param str
+     * @param oldStr
+     * @param newStr
+     * @return
+     */
+    public static String replaceIgnoreCase(String str, String oldStr, String newStr) {
+        return str.replaceAll("(?i)" + Pattern.quote(oldStr), Matcher.quoteReplacement(newStr));
+    }
+
 }

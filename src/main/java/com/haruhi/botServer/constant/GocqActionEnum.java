@@ -17,6 +17,7 @@ public enum GocqActionEnum {
     GET_GROUP_LIST("get_group_list","获取群列表"),
     GET_LOGIN_INGO("get_login_info","获取登录号信息"),
     UPLOAD_PRIVATE_FILE("upload_private_file","上传私聊文件"),
+    UPLOAD_GROUP_FILE("upload_group_file","上传群文件"),
     DOWNLOAD_FILE("download_file","下载文件到缓存目录");
 
     private String action;
