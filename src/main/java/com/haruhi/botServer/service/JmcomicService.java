@@ -22,6 +22,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.PageMode;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.encryption.*;
 import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
@@ -62,6 +63,8 @@ public class JmcomicService {
     private static final String APP_VERSION = "1.7.5";
     private static final String IMAGE_DOMAIN = "cdn-msp2.jmapiproxy2.cc";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+
+    public static final String JM_PASSWORD = "1234";
 
     private static final ConcurrentHashSet<String> LOCK = new ConcurrentHashSet<>();
 
@@ -131,6 +134,19 @@ public class JmcomicService {
     public void albumToPdf(File albumDir,File outputFile) throws Exception {
         List<File> directoryList = sortFolders(Arrays.asList(FileUtil.getDirectoryList(albumDir)));
         try (PDDocument document = new PDDocument()){
+
+            AccessPermission permission = new AccessPermission();
+            permission.setCanModify(false);
+            // 是否可以复制和提取内容
+            permission.setCanExtractContent(false);
+            permission.setCanExtractForAccessibility(false);
+            StandardProtectionPolicy standardProtectionPolicy = new StandardProtectionPolicy(JM_PASSWORD, JM_PASSWORD, permission);
+            SecurityHandler securityHandler = new StandardSecurityHandler(standardProtectionPolicy);
+            securityHandler.prepareDocumentForEncryption(document);
+            PDEncryption encryptionOptions = new PDEncryption();
+            encryptionOptions.setSecurityHandler(securityHandler);
+            document.setEncryptionDictionary(encryptionOptions);
+
             PDDocumentOutline documentOutline = new PDDocumentOutline();
             document.getDocumentCatalog().setDocumentOutline(documentOutline);
             PDOutlineItem rootOutline = new PDOutlineItem();
@@ -534,7 +550,7 @@ public class JmcomicService {
 
 //            jmcomicService.downloadAlbum("517158");
 //            jmcomicService.downloadAlbumAsZip("517158");
-            jmcomicService.downloadAlbumAsPdf("454521");
+            jmcomicService.downloadAlbumAsPdf("517158");
 
 
 //            jmcomicService.getScrambleId("517158");

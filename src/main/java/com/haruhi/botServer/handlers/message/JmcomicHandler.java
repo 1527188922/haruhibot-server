@@ -73,8 +73,9 @@ public class JmcomicHandler implements IAllMessageEvent {
                 }
                 if(isPdf){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                            MessageFormat.format("【JM{0}】下载完成,正在上传pdf文件...\n也可通过浏览器打开连接进行下载\n{1}",
+                            MessageFormat.format("【JM{0}】下载完成,正在上传文件...\n文件密码：{1}\n也可通过浏览器打开连接进行下载\n{2}",
                                     finalAid,
+                                    JmcomicService.JM_PASSWORD,
                                     webResourceConfig.webHomePath()+"/jmcomic/download/pdf/"+finalAid),true);
                     SyncResponse<String> response = null;
                     long l = System.currentTimeMillis();
