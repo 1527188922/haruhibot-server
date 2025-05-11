@@ -13,6 +13,9 @@ import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.model.ZipParameters;
+import net.lingala.zip4j.model.enums.EncryptionMethod;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections4.CollectionUtils;
@@ -100,7 +103,16 @@ public class JmcomicService {
         if(zipFile.exists()){
             zipFile.delete();
         }
-        ZipUtil.zip(albumDir,zipFilePath,StandardCharsets.UTF_8,false);
+//        ZipUtil.zip(albumDir,zipFilePath,StandardCharsets.UTF_8,false);
+
+        ZipFile zip = new ZipFile(zipFile, JM_PASSWORD.toCharArray());
+        ZipParameters parameters = new ZipParameters();
+        parameters.setEncryptFiles(true);
+        parameters.setEncryptionMethod(EncryptionMethod.AES);
+        parameters.setIncludeRootFolder(false);
+        zip.addFolder(file, parameters);
+        zip.setCharset(StandardCharsets.UTF_8);
+
         return BaseResp.success(zipFile);
     }
 
@@ -549,8 +561,8 @@ public class JmcomicService {
 //            System.out.println("chapter = " + chapter);
 
 //            jmcomicService.downloadAlbum("517158");
-//            jmcomicService.downloadAlbumAsZip("517158");
-            jmcomicService.downloadAlbumAsPdf("517158");
+            jmcomicService.downloadAlbumAsZip("517158");
+//            jmcomicService.downloadAlbumAsPdf("517158");
 
 
 //            jmcomicService.getScrambleId("517158");

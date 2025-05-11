@@ -73,24 +73,18 @@ public class JmcomicHandler implements IAllMessageEvent {
                 }
                 if(isPdf){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                            MessageFormat.format("【JM{0}】下载完成,正在上传文件...\n文件密码：{1}\n也可通过浏览器打开连接进行下载\n{2}",
+                            MessageFormat.format("【JM{0}】下载完成,正在上传pdf...\n密码：{1}\n也可通过浏览器打开连接进行下载\n{2}",
                                     finalAid,
                                     JmcomicService.JM_PASSWORD,
                                     webResourceConfig.webHomePath()+"/jmcomic/download/pdf/"+finalAid),true);
-                    SyncResponse<String> response = null;
-                    long l = System.currentTimeMillis();
-                    if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
-                        response = bot.uploadGroupFile(message.getGroupId(), resp.getData().getAbsolutePath(), resp.getData().getName(), null, -1);
-                    }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
-                        response = bot.uploadPrivateFile(message.getUserId(), resp.getData().getAbsolutePath(), resp.getData().getName(), -1);
-                    }
-                    log.info("上传本子pdf完成 cost:{} 响应：{}",(System.currentTimeMillis() - l), JSONObject.toJSONString(response));
+                  uploadFile(bot, message,resp,true);
                 }else{
-                    // zip 不上传qq
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                            MessageFormat.format("【JM{0}】下载完成\n浏览器打开连接\n{1}",
+                            MessageFormat.format("【JM{0}】下载完成,正在上传zip...\n密码：{1}\n也可通过浏览器打开连接进行下载\n{2}",
                                     finalAid,
+                                    JmcomicService.JM_PASSWORD,
                                     webResourceConfig.webHomePath()+"/jmcomic/download/"+finalAid),true);
+                    uploadFile(bot, message, resp,false);
                 }
             } catch (Exception e) {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
@@ -98,6 +92,18 @@ public class JmcomicHandler implements IAllMessageEvent {
             }
         });
         return true;
+    }
+
+    private void uploadFile(Bot bot,Message message,BaseResp<File> resp,boolean isPdf){
+        SyncResponse<String> response = null;
+        long l = System.currentTimeMillis();
+        if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
+            response = bot.uploadGroupFile(message.getGroupId(), resp.getData().getAbsolutePath(), resp.getData().getName(), null, -1);
+        }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
+            response = bot.uploadPrivateFile(message.getUserId(), resp.getData().getAbsolutePath(), resp.getData().getName(), -1);
+        }
+        log.info(isPdf ? "上传本子pdf完成 cost:{} 响应：{}" : "上传本子zip完成 cost:{} 响应：{}"
+                ,(System.currentTimeMillis() - l), JSONObject.toJSONString(response));
     }
 
     private Pair<String,Boolean> calcAid(String aid){

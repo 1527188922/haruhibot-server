@@ -361,48 +361,4 @@ public class FileUtil {
 
 
 
-    public static void zipFolder(Path sourceFolder, Path zipFile) throws IOException {
-        // 验证源文件夹是否存在
-        if (!Files.isDirectory(sourceFolder)) {
-            throw new IllegalArgumentException("指定的路径不是文件夹: " + sourceFolder);
-        }
-
-        // 使用try-with-resources确保资源自动关闭
-        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipFile))) {
-            // 遍历文件夹树
-            Files.walkFileTree(sourceFolder, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    // 计算相对路径并创建目录条目
-                    Path relativePath = sourceFolder.relativize(dir);
-                    String entryName = relativePath.toString().isEmpty()
-                            ? sourceFolder.getFileName().toString() + "/"
-                            : sourceFolder.getFileName().toString() + "/" + relativePath + "/";
-
-                    // 添加目录到ZIP（跳过根目录的空路径）
-                    if (!entryName.equals(sourceFolder.getFileName().toString() + "/")) {
-                        entryName = sourceFolder.getFileName().toString() + "/" + relativePath + "/";
-                    }
-
-                    zos.putNextEntry(new ZipEntry(entryName));
-                    zos.closeEntry();
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    // 计算文件在ZIP中的路径
-                    Path relativePath = sourceFolder.relativize(file);
-                    String entryName = sourceFolder.getFileName().toString() + "/" + relativePath;
-
-                    // 添加文件到ZIP
-                    zos.putNextEntry(new ZipEntry(entryName));
-                    Files.copy(file, zos);
-                    zos.closeEntry();
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        }
-    }
-
 }
