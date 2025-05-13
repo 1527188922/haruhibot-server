@@ -6,6 +6,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.BaseResp;
+import com.haruhi.botServer.dto.gocq.response.DownloadFileResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
@@ -72,19 +73,21 @@ public class JmcomicHandler implements IAllMessageEvent {
                     return;
                 }
                 if(isPdf){
+                    String fileUrl = webResourceConfig.webHomePath()+"/jmcomic/download/pdf/"+finalAid;
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                             MessageFormat.format("【JM{0}】下载完成,正在上传pdf...\n密码：{1}\n也可通过浏览器打开连接进行下载\n{2}",
                                     finalAid,
                                     JmcomicService.JM_PASSWORD,
-                                    webResourceConfig.webHomePath()+"/jmcomic/download/pdf/"+finalAid),true);
-                  uploadFile(bot, message,resp,true);
+                                    fileUrl),true);
+                  uploadFile(bot, message, resp.getData().getName(),fileUrl,true);
                 }else{
+                    String fileUrl = webResourceConfig.webHomePath()+"/jmcomic/download/"+finalAid;
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                             MessageFormat.format("【JM{0}】下载完成,正在上传zip...\n密码：{1}\n也可通过浏览器打开连接进行下载\n{2}",
                                     finalAid,
                                     JmcomicService.JM_PASSWORD,
-                                    webResourceConfig.webHomePath()+"/jmcomic/download/"+finalAid),true);
-                    uploadFile(bot, message, resp,false);
+                                    fileUrl),true);
+                    uploadFile(bot, message, resp.getData().getName(),fileUrl,false);
                 }
             } catch (Exception e) {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
@@ -94,13 +97,21 @@ public class JmcomicHandler implements IAllMessageEvent {
         return true;
     }
 
-    private void uploadFile(Bot bot,Message message,BaseResp<File> resp,boolean isPdf){
+    private void uploadFile(Bot bot,Message message,String fileName, String fileUrl, boolean isPdf){
+        log.info("qq客户端开始下载文件：{}",fileUrl);
+        long l1 = System.currentTimeMillis();
+        SyncResponse<DownloadFileResp> downloadFileRes = bot.downloadFile(fileUrl, 1, null, -1);
+        log.info("qq客户端下载文件完成 cost:{} resp:{}",(System.currentTimeMillis() - l1),JSONObject.toJSONString(downloadFileRes));
+        if (downloadFileRes == null || downloadFileRes.getData() == null || StringUtils.isBlank(downloadFileRes.getData().getFile())) {
+            return;
+        }
         SyncResponse<String> response = null;
+        log.info("qq客户端开始上传文件 {}",downloadFileRes.getData().getFile());
         long l = System.currentTimeMillis();
         if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
-            response = bot.uploadGroupFile(message.getGroupId(), resp.getData().getAbsolutePath(), resp.getData().getName(), null, -1);
+            response = bot.uploadGroupFile(message.getGroupId(), downloadFileRes.getData().getFile(), fileName, null, -1);
         }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
-            response = bot.uploadPrivateFile(message.getUserId(), resp.getData().getAbsolutePath(), resp.getData().getName(), -1);
+            response = bot.uploadPrivateFile(message.getUserId(), downloadFileRes.getData().getFile(), fileName, -1);
         }
         log.info(isPdf ? "上传本子pdf完成 cost:{} 响应：{}" : "上传本子zip完成 cost:{} 响应：{}"
                 ,(System.currentTimeMillis() - l), JSONObject.toJSONString(response));
