@@ -40,7 +40,7 @@ public class OneMoreHandler implements IGroupMessageEvent {
 
         ThreadPoolUtil.getSharePool().execute(()->{
 
-            String groupIdStr = String.valueOf(message.getGroupId());
+            String groupIdStr = String.valueOf(message.getGroupId())+message.getSelfId();
             Pair<String, Boolean> pair = msgCache.get(groupIdStr);
             if(pair == null){
                 putMsg(message);
@@ -62,7 +62,7 @@ public class OneMoreHandler implements IGroupMessageEvent {
 
     private void putMsg(Message message){
         if (!message.isPicMsg()) {
-            msgCache.put(String.valueOf(message.getGroupId()), MutablePair.of(message.getRawMessage(),false));
+            msgCache.put(String.valueOf(message.getGroupId())+message.getSelfId(), MutablePair.of(message.getRawMessage(),false));
         }
     }
 
