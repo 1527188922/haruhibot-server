@@ -72,23 +72,31 @@ public class SearchImageHandler implements IAllMessageEvent {
             startSearch(bot,message,null,picMessageData.get(0).getUrl(),key);
             return true;
         }
+        boolean matches = matches(message);
 
-        boolean matches = false;
-        String[] split = RegexEnum.SEARCH_IMAGE.getValue().split("\\|");
-        for (String s : split) {
-            if(message.getRawMessage().startsWith(s)){
-                matches = true;
-                break;
-            }
-        }
         if (matches) {
             if(CollectionUtils.isEmpty(picMessageData)){
                 cache.add(key);
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
-            }else if(!CollectionUtils.isEmpty(picMessageData)){
+            }else {
                 startSearch(bot,message,null,picMessageData.get(0).getUrl(),key);
             }
             return true;
+        }
+        return false;
+    }
+
+    private boolean matches(Message message){
+        List<String> texts = message.getTexts();
+        if(CollectionUtils.isEmpty(texts)){
+            return false;
+        }
+        String msg = texts.get(0).trim();
+        String[] split = RegexEnum.SEARCH_IMAGE.getValue().split("\\|");
+        for (String s : split) {
+            if(s.equals(msg)){
+                return true;
+            }
         }
         return false;
     }
@@ -101,9 +109,8 @@ public class SearchImageHandler implements IAllMessageEvent {
         }
     }
     private Message replySearch(Bot bot, Message message){
-        if (message.isGroupMsg() && message.isReplyMsg()) {
-            String s = message.getRawMessage().replaceAll(RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
-            if (s.matches(RegexEnum.SEARCH_IMAGE.getValue())) {
+        if (message.isGroupMsg() && message.isReplyMsg() && message.isTextMsg()) {
+            if (message.getText(0).matches(RegexEnum.SEARCH_IMAGE.getValue())) {
                 List<String> replyMsgIds = message.getReplyMsgIds();
                 Message msg = bot.getMsg(replyMsgIds.get(0),2L * 1000L).getData();
                 log.debug("回复式识图，根据msgId获取消息 {} {}",replyMsgIds.get(0), JSONObject.toJSONString(msg));
