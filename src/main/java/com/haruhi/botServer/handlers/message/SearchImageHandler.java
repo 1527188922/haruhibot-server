@@ -1,5 +1,7 @@
 package com.haruhi.botServer.handlers.message;
 
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.cache.CacheSet;
 import com.haruhi.botServer.config.BotConfig;
@@ -13,23 +15,20 @@ import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.dto.searchImage.response.Results;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.web.client.ResourceAccessException;
 
-import java.net.SocketTimeoutException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -129,22 +128,21 @@ public class SearchImageHandler implements IAllMessageEvent {
 //            KQCodeUtils instance = KQCodeUtils.getInstance();
 //            String imageUrl = instance.getParam(this.cq, "url",CqCodeTypeEnum.image.getType(),0);
 
-            LinkedMultiValueMap<String,Object> param = new LinkedMultiValueMap<>(6);
-            param.add("output_type",2);
-            param.add("api_key",BotConfig.SEARCH_IMAGE_KEY);
-            param.add("testmode",1);
-            param.add("numres",6);
-            param.add("db",99);
-            param.add("url", url);
+            Map<String,Object> param = new HashMap<>();
+            param.put("output_type",2);
+            param.put("api_key",BotConfig.SEARCH_IMAGE_KEY);
+            param.put("testmode",1);
+            param.put("numres",6);
+            param.put("db",99);
+            param.put("url", url);
 //            param.add("file",new FileSystemResource(new File(picUrl)));
             try {
                 log.info("开始请求搜图接口,图片:{}", url);
-//                String response = RestUtil.sendPostForm(RestUtil.getRestTemplate(30 * 1000), ThirdPartyURL.SEARCH_IMAGE, param, String.class);
-                ResponseEntity<String> response = RestUtil.sendPostForm(RestUtil.getRestTemplate(30 * 1000), ThirdPartyURL.SEARCH_IMAGE, param,
-                        null, null, new ParameterizedTypeReference<String>() {});
+                HttpResponse response = HttpUtil.createPost(ThirdPartyURL.SEARCH_IMAGE).timeout(30 * 1000).form(param).execute();
                 log.debug("识图接口响应 {}",response);
-                if(response.getBody() != null){
-                    JSONObject jsonObject = JSONObject.parseObject(response.getBody());
+                String body = null;
+                if(response != null && response.isOk() && StringUtils.isNotBlank(body = response.body())) {
+                    JSONObject jsonObject = JSONObject.parseObject(body);
                     String resultsStr = jsonObject.getString("results");
                     if(Strings.isBlank(resultsStr)){
                         bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "搜索结果为空",true);
@@ -153,15 +151,6 @@ public class SearchImageHandler implements IAllMessageEvent {
                         sort(resultList);
                         sendResult(bot,resultList, replyMessage,message);
                     }
-                }
-            }catch (ResourceAccessException e){
-                Throwable cause = e.getCause();
-                if(cause instanceof SocketTimeoutException){
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图超时",true);
-                    log.error("搜图超时",e);
-                }else{
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
-                    log.error("搜图异常",e);
                 }
             }catch (Exception e){
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
