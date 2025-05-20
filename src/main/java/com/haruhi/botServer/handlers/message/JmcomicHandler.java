@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 
 @Service
 @Slf4j
@@ -61,34 +63,22 @@ public class JmcomicHandler implements IAllMessageEvent {
             String finalAid = pair.getKey();
             boolean isPdf = pair.getRight();
             try {
-                BaseResp<File> resp = null;
-                if (isPdf) {
-                    resp = jmcomicService.downloadAlbumAsPdf(finalAid);
-                }else{
-                    resp = jmcomicService.downloadAlbumAsZip(finalAid);
-                }
+                BaseResp<File> resp = isPdf ? jmcomicService.downloadAlbumAsPdf(finalAid) : jmcomicService.downloadAlbumAsZip(finalAid);
                 if(!BaseResp.SUCCESS_CODE.equals(resp.getCode())){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                             resp.getMsg(),true);
                     return;
                 }
-                if(isPdf){
-                    String fileUrl = webResourceConfig.webHomePath()+"/jmcomic/download/pdf/"+finalAid;
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                            MessageFormat.format("【JM{0}】下载完成,正在上传pdf...\n密码：{1}\n也可通过浏览器打开连接进行下载\n{2}",
-                                    finalAid,
-                                    JmcomicService.JM_PASSWORD,
-                                    fileUrl),true);
-                  uploadFile(bot, message, resp.getData().getName(),fileUrl,true);
-                }else{
-                    String fileUrl = webResourceConfig.webHomePath()+"/jmcomic/download/"+finalAid;
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                            MessageFormat.format("【JM{0}】下载完成,正在上传zip...\n密码：{1}\n也可通过浏览器打开连接进行下载\n{2}",
-                                    finalAid,
-                                    JmcomicService.JM_PASSWORD,
-                                    fileUrl),true);
-                    uploadFile(bot, message, resp.getData().getName(),fileUrl,false);
-                }
+
+                ArrayList<String> forwardMsgs = new ArrayList<>();
+                forwardMsgs.add(MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...\n也可通过浏览器打开下方链接进行下载", finalAid));
+                String fileUrl = isPdf ? webResourceConfig.webHomePath()+"/jmcomic/download/pdf/"+finalAid
+                        : webResourceConfig.webHomePath()+"/jmcomic/download/"+finalAid;
+                forwardMsgs.add(fileUrl);
+                forwardMsgs.add(isPdf ? "PDF保护密码："+JmcomicService.JM_PASSWORD : "ZIP解压密码："+JmcomicService.JM_PASSWORD);
+
+                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
+                uploadFile(bot, message, resp.getData().getName(),fileUrl,isPdf);
             } catch (Exception e) {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         MessageFormat.format("下载【JM{0}】异常"+e.getMessage(), finalAid),true);
