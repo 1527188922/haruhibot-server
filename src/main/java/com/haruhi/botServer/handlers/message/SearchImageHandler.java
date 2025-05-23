@@ -186,22 +186,30 @@ public class SearchImageHandler implements IAllMessageEvent {
     }
 
     private void sendResult(Bot bot, List<Results> resultList, Message replyMessage, Message message){
-        List<String> forwardMsgs = new ArrayList<>(resultList.size() + 1);
-        String m = replyMessage != null ? replyMessage.getRawMessage() : message.getRawMessage();
-        String cq = KQCodeUtils.getInstance().getCq(m, CqCodeTypeEnum.image.getType());
-        forwardMsgs.add(cq);
+        List<String> forwardMsgs = new ArrayList<>();
         for (Results results : resultList) {
             forwardMsgs.add(getItemMsg(results));
         }
-
-        SyncResponse<String> syncResponse = bot.sendSyncMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
-                message.getSelfId(), BotConfig.NAME, forwardMsgs, 8 * 1000);
-        if(syncResponse == null || (syncResponse.getRetcode() != null && syncResponse.getRetcode() != 0)){
-            log.error("识图结果同步发送失败，使用异步发送");
-            forwardMsgs.remove(0);
-            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
-        }
+        bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
     }
+
+//    private void sendResult(Bot bot, List<Results> resultList, Message replyMessage, Message message){
+//        List<String> forwardMsgs = new ArrayList<>(resultList.size() + 1);
+//        String m = replyMessage != null ? replyMessage.getRawMessage() : message.getRawMessage();
+//        String cq = KQCodeUtils.getInstance().getCq(m, CqCodeTypeEnum.image.getType());
+//        forwardMsgs.add(cq);
+//        for (Results results : resultList) {
+//            forwardMsgs.add(getItemMsg(results));
+//        }
+//
+//        SyncResponse<String> syncResponse = bot.sendSyncMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
+//                message.getSelfId(), BotConfig.NAME, forwardMsgs, 8 * 1000);
+//        if(syncResponse == null || (syncResponse.getRetcode() != null && syncResponse.getRetcode() != 0)){
+//            log.error("识图结果同步发送失败，使用异步发送");
+//            forwardMsgs.remove(0);
+//            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
+//        }
+//    }
     private String getItemMsg(Results results){
         StringBuilder strBui = new StringBuilder();
         if(results.getHeader().getSimilarity() != null){
