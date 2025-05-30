@@ -40,6 +40,10 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>${project.basedir}/webui/dist</directory>
+            <outputDirectory>${file.separator}webui</outputDirectory>
+        </fileSet>
+        <fileSet>
             <directory>${project.basedir}/src/main/resources/build/image</directory>
             <outputDirectory>/image</outputDirectory>
         </fileSet>
