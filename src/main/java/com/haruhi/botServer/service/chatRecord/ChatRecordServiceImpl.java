@@ -18,7 +18,6 @@ import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.ws.Bot;
-import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -26,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -44,9 +42,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRecord> implements ChatRecordService {
-
-    @Autowired
-    private ChatRecordMapper chatRecordMapper;
 
     @Autowired
     private AbstractWebResourceConfig abstractPathConfig;
@@ -84,7 +79,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
         }
         // 升序
         queryWrapper.orderByAsc(ChatRecord::getTime);
-        List<ChatRecord> chatList = chatRecordMapper.selectList(queryWrapper);
+        List<ChatRecord> chatList = this.list(queryWrapper);
         if(!CollectionUtils.isEmpty(chatList)){
             int limit = 80;
             if(chatList.size() > limit){
@@ -169,7 +164,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
         List<String> userIds = message.getAtQQs();
         queryWrapper.in(!CollectionUtils.isEmpty(userIds),ChatRecord::getUserId,userIds);
         // 从数据库查询聊天记录
-        List<ChatRecord> corpus = chatRecordMapper.selectList(queryWrapper);
+        List<ChatRecord> corpus = this.baseMapper.selectList(queryWrapper);
         if (CollectionUtils.isEmpty(corpus)) {
             bot.sendGroupMessage(message.getGroupId(),"该条件下没有聊天记录",true);
             generateComplete(message);

@@ -10,6 +10,8 @@ import com.haruhi.botServer.dto.gocq.request.RequestBox;
 import com.haruhi.botServer.dto.gocq.response.*;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpHeaders;
@@ -33,7 +35,10 @@ import java.util.concurrent.*;
 @Slf4j
 public class Bot {
 
+    @Setter
+    @Getter
     private Long botId;
+    @Setter
     private WebSocketSession session;
 
     public Bot(Long botId, WebSocketSession session) {
@@ -43,17 +48,6 @@ public class Bot {
 
     public void close() throws IOException {
         session.close();
-    }
-    public Long getBotId() {
-        return botId;
-    }
-
-    public void setBotId(Long botId) {
-        this.botId = botId;
-    }
-
-    public void setSession(WebSocketSession session) {
-        this.session = session;
     }
 
     public String getSessionId(){
