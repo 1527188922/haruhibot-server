@@ -1,6 +1,7 @@
 package com.haruhi.botServer.controller;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.service.JmcomicService;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ import java.nio.file.Files;
 
 @Slf4j
 @RestController
-@RequestMapping("/jmcomic")
+@RequestMapping(BotConfig.CONTEXT_PATH+"/jmcomic")
 public class JmcomicController {
 
 

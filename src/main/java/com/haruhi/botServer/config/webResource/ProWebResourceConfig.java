@@ -62,7 +62,7 @@ public class ProWebResourceConfig extends AbstractWebResourceConfig {
             }
         }
 
-        WEB_HOME_PATH = "http://" + host + ":" + BotConfig.PORT + BotConfig.CONTEXT_PATH;
+        WEB_HOME_PATH = "http://" + host + ":" + BotConfig.PORT;
         log.info("web home path:{}",WEB_HOME_PATH);
     }
 

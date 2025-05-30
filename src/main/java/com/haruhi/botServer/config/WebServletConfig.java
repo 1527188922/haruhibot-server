@@ -5,9 +5,7 @@ import com.haruhi.botServer.interceptors.WebSocketHandshakeInterceptor;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -23,8 +21,6 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @Slf4j
 public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
     
-    @Value("${server.servlet.ws-path}")
-    private String wsPath;
     @Autowired
     private HeaderInterceptor headerInterceptors;
     @Autowired
@@ -34,7 +30,7 @@ public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(server, Strings.isBlank(wsPath) ? "/ws" : wsPath)
+        registry.addHandler(server, BotConfig.CONTEXT_PATH+"/ws")
                 .addInterceptors(webSocketHandshakeInterceptor)
                 .setAllowedOrigins("*");
     }
@@ -42,7 +38,7 @@ public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(headerInterceptors)
-                .addPathPatterns("/**")
+                .addPathPatterns("/api/**")
                 .excludePathPatterns("/error","/css/**", "/js/**", "/index.html", "/img/**", "/fonts/**", "/favicon.ico","/svg/**");
     }
 

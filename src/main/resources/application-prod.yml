@@ -49,9 +49,6 @@ qianwen:
 
 server:
   port: ${bot.port}
-  servlet:
-    context-path: /haruhi
-    ws-path: /ws
 
 mybatis-plus:
   type-aliases-package: com.haruhi.botServer.entity

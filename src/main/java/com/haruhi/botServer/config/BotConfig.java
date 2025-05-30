@@ -19,7 +19,7 @@ public class BotConfig {
     public static Long DEFAULT_USER = null;
     public static String INTERNET_HOST;
     public static int PORT;
-    public static String CONTEXT_PATH;
+    public final static String CONTEXT_PATH = "/api";
     public static int MAX_CONNECTIONS;
     public static List<Long> SUPERUSERS;
     // 是否启用公网ip 0否 1是 若程序和gocq都在同一台主机上 可以不启用
@@ -67,10 +67,10 @@ public class BotConfig {
         INTERNET_HOST = internetHost;
     }
 
-    @Autowired
-    public void setContextPath(@Value("${server.servlet.context-path}") String contextPath){
-        CONTEXT_PATH = contextPath;
-    }
+//    @Autowired
+//    public void setContextPath(@Value("${server.servlet.context-path}") String contextPath){
+//        CONTEXT_PATH = contextPath;
+//    }
 
     @Autowired
     public void setMaxConnections(@Value("${bot.max-connections}") int maxConnections){

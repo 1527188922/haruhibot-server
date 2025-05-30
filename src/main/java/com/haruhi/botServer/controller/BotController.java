@@ -1,6 +1,7 @@
 package com.haruhi.botServer.controller;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.ws.Bot;
@@ -17,7 +18,7 @@ import java.util.Objects;
 
 @Slf4j
 @RestController
-@RequestMapping("/bot")
+@RequestMapping(BotConfig.CONTEXT_PATH+"/bot")
 public class BotController {
     
     
