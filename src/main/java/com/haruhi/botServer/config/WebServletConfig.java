@@ -39,7 +39,8 @@ public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(headerInterceptors)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/error","/css/**", "/js/**", "/index.html", "/img/**", "/fonts/**", "/favicon.ico","/svg/**");
+//                .excludePathPatterns("/error","/css/**", "/js/**", "/index.html", "/img/**", "/fonts/**", "/favicon.ico","/svg/**")
+        ;
     }
 
     @Override
