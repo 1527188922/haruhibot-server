@@ -88,7 +88,7 @@ export default [{
   redirect: '/test/index',
   component: Layout,
   children: [{
-    name: '测试页面',
+    name: '测试页面13123123',
     meta: {
       i18n: 'test'
     },

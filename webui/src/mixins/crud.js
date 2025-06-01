@@ -62,6 +62,10 @@ export default (app, option = {}) => {
             } else {
               this.$message.success('获取成功')
             }
+          }).catch(e=>{
+            console.log(e)
+          }).finally(()=>{
+            this.loading = false;
           })
         }
         if (this.listBefore) {

@@ -22,7 +22,7 @@ public class UserController {
     @PostMapping("/login")
     public HttpResp login(@RequestBody JSONObject request) {
         if(StringUtils.isBlank(webuiConfig.getLoginUserName())
-        || StringUtils.isBlank(webuiConfig.getLoginUserName())){
+        || StringUtils.isBlank(webuiConfig.getLoginPassword())){
             return HttpResp.fail("未配置webui账户密码",null);
         }
         String username = request.getString("username");

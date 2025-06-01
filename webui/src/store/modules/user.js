@@ -3,6 +3,7 @@ import { setStore, getStore } from '@/util/store'
 import { encryption, deepClone } from '@/util/util'
 import { loginByUsername, getUserInfo, getMenu, getTopMenu, logout, refreshToken } from '@/api/user'
 import { formatPath } from '@/router/avue-router'
+import dynamic from "@/router/dynamic";
 const user = {
   state: {
     userInfo: {},
@@ -118,14 +119,22 @@ const user = {
     //获取系统菜单
     GetMenu ({ commit }, parentId) {
       return new Promise(resolve => {
-        getMenu(parentId).then((res) => {
-          const data = res.data.data
-          let menu = deepClone(data);
-          menu.forEach(ele => formatPath(ele, true));
-          commit('SET_MENUALL', menu)
-          commit('SET_MENU', menu)
-          resolve(menu)
-        })
+        // TODO 从后端获取路由
+        // getMenu(parentId).then((res) => {
+        //   const data = res.data.data
+        //   let menu = deepClone(data);
+        //   menu.forEach(ele => formatPath(ele, true));
+        //   commit('SET_MENUALL', menu)
+        //   commit('SET_MENU', menu)
+        //   resolve(menu)
+        // })
+        // TODO 前端写死路由
+        const data = dynamic
+        let menu = deepClone(data);
+        menu.forEach(ele => formatPath(ele, true));
+        commit('SET_MENUALL', menu)
+        commit('SET_MENU', menu)
+        resolve(menu)
       })
     },
   },

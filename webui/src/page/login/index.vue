@@ -19,17 +19,17 @@
             <top-lang></top-lang>
           </h4>
           <userLogin v-if="activeName==='user'"></userLogin>
-          <codeLogin v-else-if="activeName==='code'"></codeLogin>
-          <faceLogin v-else-if="activeName==='face'"></faceLogin>
-          <thirdLogin></thirdLogin>
-          <div class="login-menu">
-            <a href="#"
-               @click.stop="activeName='user'">{{ $t('login.userLogin') }}</a>
-            <a href="#"
-               @click.stop="activeName='code'">{{ $t('login.phoneLogin') }}</a>
-            <a href="#"
-               @click.stop="activeName='face'">{{ $t('login.faceLogin') }}</a>
-          </div>
+<!--          <codeLogin v-else-if="activeName==='code'"></codeLogin>-->
+<!--          <faceLogin v-else-if="activeName==='face'"></faceLogin>-->
+<!--          <thirdLogin></thirdLogin>-->
+<!--          <div class="login-menu">-->
+<!--            <a href="#"-->
+<!--               @click.stop="activeName='user'">{{ $t('login.userLogin') }}</a>-->
+<!--            <a href="#"-->
+<!--               @click.stop="activeName='code'">{{ $t('login.phoneLogin') }}</a>-->
+<!--            <a href="#"-->
+<!--               @click.stop="activeName='face'">{{ $t('login.faceLogin') }}</a>-->
+<!--          </div>-->
         </div>
 
       </div>
