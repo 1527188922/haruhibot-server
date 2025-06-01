@@ -9,8 +9,8 @@ export const loginByUsername = (username, password, code, redomStr) => request({
   data: {
     username,
     password,
-    code,
-    redomStr
+    // code,
+    // redomStr
   }
 })
 

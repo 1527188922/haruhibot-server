@@ -25,7 +25,7 @@ export default {
     };
   },
   created () {
-    this.index.openMenu()
+    // this.index.openMenu()
   },
   watch: {
     isHorizontal () {

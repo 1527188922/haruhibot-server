@@ -8,7 +8,7 @@
           {{time}}
         </div>
         <img class="img"
-             :src="basePath+'/img/logo.png'"
+             :src="'./img/logo.png'"
              alt="">
         <p class="title">{{ $t('login.info') }}</p>
       </div>
@@ -56,7 +56,6 @@ export default {
   },
   data () {
     return {
-      basePath:process.env.VUE_APP_BASE_URL,
       time: "",
       activeName: "user"
     };

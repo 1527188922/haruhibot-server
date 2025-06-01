@@ -111,7 +111,7 @@ export default {
           if (item.path) {
             itemActive = item;
           } else {
-            if (this.menu[childItemActive].length == 0) {
+            if (this.menu[childItemActive].length === 0) {
               itemActive = this.menu[childItemActive];
             } else {
               itemActive = this.menu[childItemActive].children[childItemActive];

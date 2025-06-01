@@ -17,20 +17,23 @@ const user = {
   actions: {
     //根据用户名登录
     LoginByUsername ({ commit }, userInfo = {}) {
-      const user = encryption({
-        data: userInfo,
-        type: 'Aes',
-        key: 'avue',
-        param: ['useranme', 'password']
-      });
-      return new Promise((resolve) => {
-        loginByUsername(user.username, user.password, userInfo.code, userInfo.redomStr).then(res => {
-          const data = res.data.data;
+      // const user = encryption({
+      //   data: userInfo,
+      //   type: 'Aes',
+      //   key: 'avue',
+      //   param: ['useranme', 'password']
+      // });
+      return new Promise((resolve,reject) => {
+        loginByUsername(userInfo.username, userInfo.password, userInfo.code, userInfo.redomStr).then(({data:{code,message,data}}) => {
+          if(code !== 200){
+            reject({code,message,data})
+            return
+          }
           commit('SET_TOKEN', data);
           commit('SET_REFRESH_TOKEN', data)
           commit('DEL_ALL_TAG');
           commit('CLEAR_LOCK');
-          resolve();
+          resolve({code,message,data});
         })
       })
     },
@@ -145,8 +148,8 @@ const user = {
     SET_MENUALL: (state, menuAll) => {
       let menu = state.menuAll;
       menuAll.forEach(ele => {
-        let index = menu.findIndex(item => item.path == ele.path)
-        if (index == -1) {
+        let index = menu.findIndex(item => item.path === ele.path)
+        if (index === -1) {
           menu.push(ele);
         } else {
           menu[index] = ele;

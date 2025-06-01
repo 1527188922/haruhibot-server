@@ -256,13 +256,13 @@ const second = [{
 export default ({ mock }) => {
   if (!mock) return;
   let menu = [first, second];
-  Mock.mock('/user/getMenu', 'get', (res) => {
+  Mock.mock('/api/user/getMenu', 'get', (res) => {
     let body = JSON.parse(res.body);
     return {
       data: menu[body.type] || []
     }
   })
-  Mock.mock('/user/getTopMenu', 'get', () => {
+  Mock.mock('/api/user/getTopMenu', 'get', () => {
     return {
       data: top
     }

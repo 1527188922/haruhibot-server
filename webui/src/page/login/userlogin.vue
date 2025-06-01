@@ -85,8 +85,8 @@ export default {
     };
     return {
       loginForm: {
-        username: "admin",
-        password: "123456",
+        username: "",
+        password: "",
         code: "",
         redomStr: ""
       },
@@ -125,13 +125,13 @@ export default {
   methods: {
     refreshCode () {
       this.loginForm.redomStr = randomLenNum(this.code.len, true);
-      this.code.type == "text"
+      this.code.type === "text"
         ? (this.code.value = randomLenNum(this.code.len))
         : (this.code.src = `${baseUrl}/code?=${this.loginForm.redomStr}`);
       this.loginForm.code = this.code.value;
     },
     showPassword () {
-      this.passwordType == ""
+      this.passwordType === ""
         ? (this.passwordType = "password")
         : (this.passwordType = "");
     },
@@ -140,6 +140,8 @@ export default {
         if (valid) {
           this.$store.dispatch("LoginByUsername", this.loginForm).then(() => {
             this.$router.push(this.tagWel);
+          }).catch(({code,message,data}) =>{
+            this.$message.error(message)
           });
         }
       });

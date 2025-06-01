@@ -2,19 +2,19 @@ import Mock from 'mockjs'
 export default ({ mock }) => {
     if (!mock) return;
     // 用户登录
-    Mock.mock('/user/login', 'post', {
+    Mock.mock('/api/user/login', 'post', {
         data: new Date().getTime() + ''
     });
     //用户退出
-    Mock.mock('/user/logout', 'get', {
+    Mock.mock('/api/user/logout', 'get', {
         data: true,
     });
     //刷新token
-    Mock.mock('/user/refesh', 'post', {
+    Mock.mock('/api/user/refesh', 'post', {
         data: new Date().getTime() + ''
     });
     //获取用户信息
-    Mock.mock('/user/getUserInfo', 'get', {
+    Mock.mock('/api/user/getUserInfo', 'get', {
         data: {
             userInfo: {
                 username: 'admin',
@@ -39,7 +39,7 @@ export default ({ mock }) => {
     });
 
     //获取表格数据
-    Mock.mock('/user/getTable', 'get', () => {
+    Mock.mock('/api/user/getTable', 'get', () => {
         let list = []
         for (let i = 0; i < 5; i++) {
             list.push(Mock.mock({

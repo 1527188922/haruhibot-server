@@ -120,7 +120,7 @@ export default {
   },
   created () {
     this.startTimer()
-    this.$store.dispatch("GetMenu")
+    // this.$store.dispatch("GetMenu")
   },
   methods: {
     switchTheme () {
