@@ -2,10 +2,10 @@
  * 全局配置文件
  */
 export default {
-  title: "Avue",
-  logo: "A",
+  title: "",
+  logo: "H",
   key: 'avue',//配置主键,目前用于存储
-  indexTitle: '后台快速开发模版',
+  indexTitle: 'Suzumiya Haruhi',
   lockPage: '/lock',
   tokenTime: 6000,//token过期时间
   Authorization: 'Authorization',

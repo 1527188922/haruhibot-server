@@ -231,4 +231,4 @@ const release = [{
     children: []
 }]
 
-export default [...release,...demo]
+export default [...release]

@@ -51,13 +51,13 @@
           <top-theme></top-theme>
         </div>
       </el-tooltip>
-      <el-tooltip effect="dark"
-                  :content="$t('navbar.notice')"
-                  placement="bottom">
-        <div class="top-bar__item top-bar__item--show">
-          <top-notice></top-notice>
-        </div>
-      </el-tooltip>
+<!--      <el-tooltip effect="dark"-->
+<!--                  :content="$t('navbar.notice')"-->
+<!--                  placement="bottom">-->
+<!--        <div class="top-bar__item top-bar__item&#45;&#45;show">-->
+<!--          <top-notice></top-notice>-->
+<!--        </div>-->
+<!--      </el-tooltip>-->
       <el-tooltip effect="dark"
                   :content="$t('navbar.language')"
                   placement="bottom">
@@ -74,8 +74,8 @@
              @click="handleScreen"></i>
         </div>
       </el-tooltip>
-      <img class="top-bar__img"
-           :src="userInfo.avatar">
+<!--      <img class="top-bar__img"-->
+<!--           :src="userInfo.avatar">-->
       <el-dropdown>
         <span class="el-dropdown-link">
           {{userInfo.username}}

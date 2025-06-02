@@ -8,10 +8,10 @@
                :visible.sync="box"
                width="60%"
                append-to-body>
-      <el-button type="primary"
-                 size="small"
-                 icon="el-icon-upload"
-                 @click="send">上传服务器</el-button>
+<!--      <el-button type="primary"-->
+<!--                 size="small"-->
+<!--                 icon="el-icon-upload"-->
+<!--                 @click="send">上传服务器</el-button>-->
       <el-button type="danger"
                  size="small"
                  icon="el-icon-delete"
