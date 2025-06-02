@@ -3,6 +3,7 @@ import { setStore, getStore } from '@/util/store'
 import { encryption, deepClone } from '@/util/util'
 import { loginByUsername, getUserInfo, getMenu, getTopMenu, logout, refreshToken } from '@/api/user'
 import { formatPath } from '@/router/avue-router'
+import website from "@/config/website";
 import dynamic from "@/router/dynamic";
 const user = {
   state: {
@@ -31,7 +32,8 @@ const user = {
             return
           }
           commit('SET_TOKEN', data);
-          commit('SET_REFRESH_TOKEN', data)
+          commit('SET_USERIFNO', data);
+          // commit('SET_REFRESH_TOKEN', data)
           commit('DEL_ALL_TAG');
           commit('CLEAR_LOCK');
           resolve({code,message,data});
@@ -63,6 +65,13 @@ const user = {
         })
       })
     },
+    GetUserInfoInSession ({ commit }) {
+      return new Promise((resolve, reject) => {
+        let userInfo = JSON.parse(sessionStorage.getItem(website.userInfoKey))
+        commit('SET_USERIFNO', userInfo);
+        resolve(userInfo)
+      })
+    },
     //刷新token
     RefreshToken ({ state, commit }) {
       return new Promise((resolve, reject) => {
@@ -80,17 +89,20 @@ const user = {
     LogOut ({ commit }) {
       return new Promise((resolve, reject) => {
         logout().then(() => {
-          commit('SET_TOKEN', '')
-          commit('SET_REFRESH_TOKEN', '')
-          commit('SET_MENUALL_NULL', []);
-          commit('SET_MENU', [])
-          commit('SET_ROLES', [])
-          commit('DEL_ALL_TAG', []);
-          commit('CLEAR_LOCK');
-          removeToken()
-          resolve()
+
         }).catch(error => {
           reject(error)
+        }).finally(()=>{
+          commit('SET_TOKEN', '')
+          commit('SET_USERIFNO', {})
+          commit('SET_REFRESH_TOKEN', '')
+          commit('SET_MENUALL_NULL', [])
+          commit('SET_MENU', [])
+          commit('SET_ROLES', [])
+          commit('DEL_ALL_TAG', [])
+          commit('CLEAR_LOCK')
+          removeToken()
+          resolve()
         })
       })
     },
@@ -98,12 +110,13 @@ const user = {
     FedLogOut ({ commit }) {
       return new Promise(resolve => {
         commit('SET_TOKEN', '')
+        commit('SET_USERIFNO', {})
         commit('SET_REFRESH_TOKEN', '')
-        commit('SET_MENUALL_NULL', []);
+        commit('SET_MENUALL_NULL', [])
         commit('SET_MENU', [])
         commit('SET_ROLES', [])
-        commit('DEL_ALL_TAG', []);
-        commit('CLEAR_LOCK');
+        commit('DEL_ALL_TAG', [])
+        commit('CLEAR_LOCK')
         removeToken()
         resolve()
       })
@@ -139,9 +152,9 @@ const user = {
     },
   },
   mutations: {
-    SET_TOKEN: (state, token) => {
-      setToken(token)
-      state.token = token;
+    SET_TOKEN: (state, d) => {
+      setToken(d.token,d.username)
+      state.token = d.token;
       setStore({ name: 'token', content: state.token })
     },
     SET_REFRESH_TOKEN: (state, token) => {
@@ -153,6 +166,7 @@ const user = {
     },
     SET_USERIFNO: (state, userInfo) => {
       state.userInfo = userInfo;
+      sessionStorage.setItem(website.userInfoKey,JSON.stringify(userInfo))
     },
     SET_MENUALL: (state, menuAll) => {
       let menu = state.menuAll;

@@ -9,6 +9,8 @@ export default {
   lockPage: '/lock',
   tokenTime: 6000,//token过期时间
   Authorization: 'Authorization',
+  headerUserNameKey:'UserName',
+  userInfoKey:'userInfo',
   //http的status默认放行不才用统一处理的,
   statusWhiteList: [400],
   //配置首页不可关闭

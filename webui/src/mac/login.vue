@@ -48,13 +48,13 @@ export default {
   },
   methods: {
     handleLogin () {
-      if (this.form.username == '') {
+      if (this.form.username === '') {
         this.isUserNameError = true
         setTimeout(() => {
           this.isUserNameError = false
         }, 1000)
         return
-      } else if (this.form.password == '') {
+      } else if (this.form.password === '') {
         this.isUserPasswordError = true
         setTimeout(() => {
           this.isUserPasswordError = false

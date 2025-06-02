@@ -15,7 +15,7 @@ router.beforeEach((to, from, next) => {
   const isMenu = meta.menu === undefined ? to.query.menu : meta.menu;
   store.commit('SET_IS_MENU', isMenu === undefined);
   if (getToken()) {
-    if (store.getters.isLock && to.path != lockPage) { //如果系统激活锁屏，全部跳转到锁屏页
+    if (store.getters.isLock && to.path !== lockPage) { //如果系统激活锁屏，全部跳转到锁屏页
       next({ path: lockPage })
     } else if (to.path === '/login') { //如果登录成功访问登录页跳转到主页
       next({ path: '/' })
@@ -36,18 +36,18 @@ router.beforeEach((to, from, next) => {
         });
       }
       //如果用户信息为空则获取用户信息，获取用户信息失败，跳转到登录页
-      // if (store.getters.roles.length === 0) {
-      //   store.dispatch('GetUserInfo').then(() => {
-      //     next()
-      //   }).catch(() => {
-      //     store.dispatch('FedLogOut').then(() => {
-      //       next({ path: '/login' })
-      //     })
-      //   })
-      // } else {
-      //   next()
-      // }
-      next()
+      if (store.getters.roles.length === 0) {
+        store.dispatch('GetUserInfoInSession').then(() => {
+          next()
+        }).catch(() => {
+          store.dispatch('FedLogOut').then(() => {
+            next({ path: '/login' })
+          })
+        })
+      } else {
+        next()
+      }
+      // next()
     }
   } else {
     //判断是否需要认证，没有登录访问去登录页

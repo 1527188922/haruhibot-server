@@ -20,7 +20,7 @@ export default {
   },
   computed: {
     isEdit () {
-      return this.$route.path == '/detail/create'
+      return this.$route.path === '/detail/create'
     }
   },
   created () {

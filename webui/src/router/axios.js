@@ -9,8 +9,8 @@ import axios from 'axios'
 import store from '@/store/';
 import router from '@/router/router'
 import { serialize } from '@/util/util'
-import { getToken } from '@/util/auth'
-import { Message } from 'element-ui'
+import { getToken,getUsername } from '@/util/auth'
+// import { Message } from 'element-ui'
 import website from '@/config/website';
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
@@ -25,13 +25,15 @@ axios.defaults.withCredentials = true;
 NProgress.configure({
   showSpinner: false
 });
-//HTTPrequest拦截
+//HTTP Request拦截
 axios.interceptors.request.use(config => {
   NProgress.start() // start progress bar
   const meta = (config.meta || {});
   const isToken = meta.isToken === false;
-  if (getToken() && !isToken) {
-    config.headers[website.Authorization] = 'Bearer ' + getToken() // 让每个请求携带token--['Authorization']为自定义key 请根据实际情况自行修改
+  if (getToken()) {
+    config.headers[website.Authorization] = getToken() // 让每个请求携带token--['Authorization']为自定义key 请根据实际情况自行修改
+    config.headers[website.headerUserNameKey] = getUsername()
+    // store.getters.userInfo.username
   }
   //headers中配置serialize为true开启序列化
   if (config.method === 'post' && meta.isSerialize === true) {

@@ -132,7 +132,7 @@ export function cardid(code) {
         91: "国外 "
     };
     if (!validatenull(code)) {
-        if (code.length == 18) {
+        if (code.length === 18) {
             if (!code || !/(^\d{18}$)|(^\d{17}(\d|X|x)$)/.test(code)) {
                 msg = "证件号码格式错误";
             } else if (!city[code.substr(0, 2)]) {
@@ -181,7 +181,7 @@ export function isvalidatemobile(phone) {
     var isPhone = /^0\d{2,3}-?\d{7,8}$/;
     //增加134 减少|1349[0-9]{7}，增加181,增加145，增加17[678]  
     if (!validatenull(phone)) {
-        if (phone.length == 11) {
+        if (phone.length === 11) {
             if (isPhone.test(phone)) {
                 msg = '手机号码格式不正确';
             } else {
@@ -223,9 +223,9 @@ export function validatenum(num, type) {
  */
 export function validatenumord(num, type) {
     let regName = /[^\d.]/g;
-    if (type == 1) {
+    if (type === 1) {
         if (!regName.test(num)) return false;
-    } else if (type == 2) {
+    } else if (type === 2) {
         regName = /[^\d.]/g;
         if (!regName.test(num)) return false;
     }
@@ -242,11 +242,11 @@ export function validatenull(val) {
         return false;
     }
     if (val instanceof Array) {
-        if (val.length == 0) return true;
+        if (val.length === 0) return true;
     } else if (val instanceof Object) {
         if (JSON.stringify(val) === '{}') return true;
     } else {
-        if (val == 'null' || val == null || val == 'undefined' || val == undefined || val == '') return true;
+        if (val === 'null' || val == null || val === 'undefined' || val === undefined || val === '') return true;
         return false;
     }
     return false;

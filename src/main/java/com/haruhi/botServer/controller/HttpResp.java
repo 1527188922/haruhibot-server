@@ -22,6 +22,9 @@ public class HttpResp<T> {
     public static <T> HttpResp<T> fail(T data){
         return new HttpResp<>(500,null,data);
     }
+    public static <T> HttpResp<T> fail(int code,String msg,T data){
+        return new HttpResp<>(code,msg,data);
+    }
 
     public static <T> HttpResp<T> success(){
         return new HttpResp<>(200,null,null);
