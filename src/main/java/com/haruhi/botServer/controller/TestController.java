@@ -1,5 +1,6 @@
 package com.haruhi.botServer.controller;
 
+import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,7 @@ import java.util.Map;
 @RequestMapping(BotConfig.CONTEXT_PATH+"/test")
 public class TestController {
 
+    @IgnoreAuthentication
     @GetMapping("/ping")
     public HttpResp<Map<String,Object>> ping(){
         HashMap<String, Object> hashMap = new HashMap<String, Object>() {{
@@ -22,6 +24,7 @@ public class TestController {
         return HttpResp.success("pong",hashMap);
     }
 
+    @IgnoreAuthentication
     @PostMapping("/ping/post")
     public HttpResp<Map<String,Object>> pingPost(){
         HashMap<String, Object> hashMap = new HashMap<String, Object>() {{

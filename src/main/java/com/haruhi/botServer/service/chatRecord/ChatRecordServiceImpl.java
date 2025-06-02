@@ -1,6 +1,8 @@
 package com.haruhi.botServer.service.chatRecord;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
@@ -17,6 +19,7 @@ import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
+import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -243,4 +246,22 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
         return res;
     }
 
+
+    @Override
+    public IPage<ChatRecord> search(ChatRecordQueryReq request, boolean page) {
+
+        LambdaQueryWrapper<ChatRecord> queryWrapper = new LambdaQueryWrapper<>();
+
+        IPage<ChatRecord> pageInfo = null;
+
+        if (page) {
+            pageInfo = this.page(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
+        }else{
+            pageInfo = new Page<>(request.getCurrentPage(), request.getPageSize());
+            List<ChatRecord> list = this.list(queryWrapper);
+            pageInfo.setRecords(list);
+            pageInfo.setTotal(list.size());
+        }
+        return pageInfo;
+    }
 }

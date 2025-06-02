@@ -219,13 +219,13 @@ const demo = [
 ]
 
 const release = [{
-    label: "test",
-    path: '/test123123',
-    component: 'views/test/index',
+    label: "聊天记录",
+    path: '/chatRecord',
+    component: 'views/chatRecord/index',
     icon: 'icon-caidan',
     iconBgColor: randomColor(),
     meta: {
-        i18n: 'cache1',
+        i18n: 'chatRecord',
         keepAlive: true
     },
     children: []

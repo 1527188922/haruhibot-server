@@ -1,6 +1,7 @@
 package com.haruhi.botServer.controller;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.service.JmcomicService;
@@ -29,6 +30,7 @@ public class JmcomicController {
     @Autowired
     private JmcomicService jmcomicService;
 
+    @IgnoreAuthentication
     @GetMapping("/download/{aid}")
     public ResponseEntity<Object> download(@PathVariable("aid") String aid) {
         try {
@@ -43,6 +45,7 @@ public class JmcomicController {
         }
     }
 
+    @IgnoreAuthentication
     @GetMapping("/download/pdf/{aid}")
     public ResponseEntity<Object> downloadPdf(@PathVariable("aid") String aid) {
         try {

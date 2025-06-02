@@ -1,6 +1,7 @@
 package com.haruhi.botServer.controller;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
@@ -21,7 +22,8 @@ import java.util.Objects;
 @RequestMapping(BotConfig.CONTEXT_PATH+"/bot")
 public class BotController {
     
-    
+
+    @IgnoreAuthentication
     @PostMapping("/sendMsg")
     public HttpResp sendMessage(@RequestBody JSONObject jsonObject){
         Long userId = jsonObject.getLong("userId");
