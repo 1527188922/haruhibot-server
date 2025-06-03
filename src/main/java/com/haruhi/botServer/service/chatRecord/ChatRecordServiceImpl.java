@@ -23,12 +23,12 @@ import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -179,7 +179,7 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
             List<String> strings = WordSlicesTask.execute(collect);
             // 设置权重和排除指定词语
             Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(strings));
-            if(CollectionUtils.isEmpty(map)){
+            if(org.springframework.util.CollectionUtils.isEmpty(map)){
                 bot.sendGroupMessage(message.getGroupId(),"分词为0，本次不生成词云图",true);
                 generateComplete(message);
                 return;
@@ -253,7 +253,8 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
                 .eq(Objects.nonNull(request.getUserId()),ChatRecord::getUserId,request.getUserId())
                 .like(StringUtils.isNotBlank(request.getContent()),ChatRecord::getContent,request.getContent())
                 .like(StringUtils.isNotBlank(request.getNickName()),ChatRecord::getNickname,request.getNickName())
-                .like(StringUtils.isNotBlank(request.getCard()),ChatRecord::getCard,request.getCard());
+                .like(StringUtils.isNotBlank(request.getCard()),ChatRecord::getCard,request.getCard())
+                .orderByDesc(ChatRecord::getTime);
 
         IPage<ChatRecord> pageInfo = null;
         if (page) {
@@ -263,6 +264,12 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
             List<ChatRecord> list = this.list(queryWrapper);
             pageInfo.setRecords(list);
             pageInfo.setTotal(list.size());
+        }
+        if (pageInfo != null && CollectionUtils.isNotEmpty(pageInfo.getRecords())) {
+            pageInfo.getRecords().forEach(e -> {
+                e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(),false));
+                e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(e.getSelfId(),false));
+            });
         }
         return pageInfo;
     }

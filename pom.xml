@@ -274,6 +274,7 @@
                         <exclude>*.yml</exclude>
                         <exclude>*.xml</exclude>
                         <exclude>build/**</exclude>
+                        <exclude>config/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>

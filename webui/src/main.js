@@ -18,6 +18,7 @@ import basicContainer from './components/basic-container/main'
 import crudCommon from '@/mixins/crud.js'
 import dayjs from 'dayjs'
 import website from '@/config/website'
+import './util/directives'
 window.$crudCommon = crudCommon
 Vue.prototype.$dayjs = dayjs
 Vue.prototype.website = website;

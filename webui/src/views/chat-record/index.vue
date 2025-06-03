@@ -37,27 +37,54 @@
         <el-table-column fixed label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
-        <el-table-column label="消息" prop="content" min-width="90" align="center" show-tooltip-when-overflow />
-        <el-table-column label="QQ号" prop="userId" min-width="90" align="center" show-tooltip-when-overflow />
+        <el-table-column label="消息" prop="content" min-width="300">
+          <template slot-scope="{row}">
+            <span class="chat-content" @click="view(row)">
+              {{row.content}}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="QQ号" prop="userId" min-width="130" align="center" show-tooltip-when-overflow >
+          <template slot-scope="{row}">
+            <div class="face-and-id">
+              <img :src="row.userAvatarUrl">
+              {{row.userId}}
+            </div>
+
+          </template>
+        </el-table-column>
+        <el-table-column label="QQ昵称" prop="nickname" min-width="90" align="center"/>
         <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow />
-        <el-table-column label="QQ昵称" prop="nickname" min-width="90" align="center" show-tooltip-when-overflow />
-        <el-table-column label="群内昵称" prop="card" min-width="90" align="center" show-tooltip-when-overflow />
-        <el-table-column label="消息类型" prop="messageType" min-width="90" align="center" show-tooltip-when-overflow :formatter="(row)=>{return typeMap[row.messageType]}"/>
+        <el-table-column label="群内昵称" prop="card" min-width="90" align="center" />
+        <el-table-column label="消息类型" prop="messageType" min-width="70" align="center" show-tooltip-when-overflow
+                         :formatter="(row)=>{return typeMap[row.messageType]}"/>
+        <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >
+          <template slot-scope="{row}">
+            <div class="face-and-id">
+              <img :src="row.selfAvatarUrl">
+              {{row.selfId}}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="发送时间" prop="time" min-width="140" align="center" show-tooltip-when-overflow/>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
       </div>
     </basic-container>
+    <chat-view ref="chatView"></chat-view>
   </div>
 </template>
 <script>
+import ChatView from "./dialog/chat-view";
 import numberInput from "@/components/input/numberInput.vue"
 import {search as searchApi} from "@/api/chat-record";
 
 export default {
   name:'ChatRecord',
   components:{
-    numberInput
+    numberInput,
+    ChatView
   },
   data(){
     return{
@@ -104,6 +131,9 @@ export default {
       this.pagination.currentPage = 1
       this.selectTableData()
     },
+    view(row){
+      this.$refs.chatView.open(row)
+    },
     exportAsExcel(){
 
     },
@@ -136,6 +166,18 @@ export default {
 </script>
 <style lang="scss" scoped>
 #ChatRecord{
-
+  .face-and-id{
+    display: flex;
+    align-items: center;
+    img{
+      margin-right: 5px;
+      width: 40px;
+      border-radius: 50%
+    }
+  }
+  .chat-content{
+    cursor: pointer;
+    //color: #4395ff;
+  }
 }
 </style>

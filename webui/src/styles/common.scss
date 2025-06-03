@@ -106,6 +106,9 @@ a{
   text-align: center;
   margin-top: 10px;
 }
+.dialog-footer{
+  text-align: center;
+}
 // ele样式覆盖
 @import './element-ui.scss';
 // 顶部右侧显示
