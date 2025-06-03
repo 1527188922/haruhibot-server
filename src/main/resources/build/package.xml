@@ -44,6 +44,10 @@
             <outputDirectory>${file.separator}webui</outputDirectory>
         </fileSet>
         <fileSet>
+            <directory>${project.build.directory}/classes/config</directory>
+            <outputDirectory>${file.separator}/config</outputDirectory>
+        </fileSet>
+        <fileSet>
             <directory>${project.basedir}/src/main/resources/build/image</directory>
             <outputDirectory>/image</outputDirectory>
         </fileSet>
