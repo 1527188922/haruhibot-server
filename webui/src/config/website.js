@@ -22,7 +22,7 @@ export default {
     collapse: true,
     search: true,
     lock: true,
-    screenshot: true,
+    screenshot: false,
     fullscren: true,
     theme: true,
     menu: true,

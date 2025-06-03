@@ -1,6 +1,6 @@
 export default {
   tip: 'ヒント',
-  title: 'Avue汎用管理システムの快速開発フレームワーク',
+  title: 'Haruhi bot',
   logoutTip: 'システムを終了します。続けますか？',
   submitText: 'を選択します',
   cancelText: 'キャンセル',

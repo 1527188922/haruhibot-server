@@ -10,7 +10,7 @@ import store from '@/store/';
 import router from '@/router/router'
 import { serialize } from '@/util/util'
 import { getToken,getUsername } from '@/util/auth'
-// import { Message } from 'element-ui'
+import { Message } from 'element-ui'
 import website from '@/config/website';
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
@@ -51,7 +51,12 @@ axios.interceptors.response.use(res => {
   //如果在白名单里则自行catch逻辑处理
   if (statusWhiteList.includes(status)) return Promise.reject(res);
   //如果是401则跳转到登录页面
-  if (status === 401) store.dispatch('FedLogOut').then(() => router.push({ path: '/login' }));
+  if (status === 401) {
+    Message.warning('登录过期')
+    setTimeout(()=>{
+      store.dispatch('FedLogOut').then(() => router.push({ path: '/login' }));
+    },1500)
+  }
   // 如果请求为非200否者默认统一处理
   if (status !== 200) {
     return Promise.reject(res)

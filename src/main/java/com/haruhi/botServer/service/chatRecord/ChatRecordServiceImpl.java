@@ -23,6 +23,7 @@ import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -31,11 +32,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -250,10 +247,15 @@ public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordMapper, ChatRec
     @Override
     public IPage<ChatRecord> search(ChatRecordQueryReq request, boolean page) {
 
-        LambdaQueryWrapper<ChatRecord> queryWrapper = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<ChatRecord> queryWrapper = new LambdaQueryWrapper<ChatRecord>()
+                .eq(StringUtils.isNotBlank(request.getMessageType()),ChatRecord::getMessageType,request.getMessageType())
+                .eq(Objects.nonNull(request.getGroupId()),ChatRecord::getGroupId,request.getGroupId())
+                .eq(Objects.nonNull(request.getUserId()),ChatRecord::getUserId,request.getUserId())
+                .like(StringUtils.isNotBlank(request.getContent()),ChatRecord::getContent,request.getContent())
+                .like(StringUtils.isNotBlank(request.getNickName()),ChatRecord::getNickname,request.getNickName())
+                .like(StringUtils.isNotBlank(request.getCard()),ChatRecord::getCard,request.getCard());
 
         IPage<ChatRecord> pageInfo = null;
-
         if (page) {
             pageInfo = this.page(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
         }else{

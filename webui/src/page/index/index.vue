@@ -31,7 +31,7 @@
           </keep-alive>
         </div>
         <div class="avue-footer">
-          <p class="copyright">© 2018-2021 Avue designed by smallwei</p>
+<!--          <p class="copyright">© 2018-2021 Avue designed by smallwei</p>-->
         </div>
       </div>
     </div>

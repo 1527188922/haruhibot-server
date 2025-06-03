@@ -39,6 +39,9 @@ export default {
 .basic-container {
   padding: 10px 6px;
   box-sizing: border-box;
+  .el-card__body{
+    padding: 15px;
+  }
   &--block {
     height: 100%;
     .basic-container__card {

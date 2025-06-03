@@ -2,12 +2,17 @@ package com.haruhi.botServer.config;
 
 import com.haruhi.botServer.interceptors.HeaderInterceptor;
 import com.haruhi.botServer.interceptors.WebSocketHandshakeInterceptor;
+import com.haruhi.botServer.service.LoginService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
@@ -57,5 +62,29 @@ public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
         registry.addViewController("/").setViewName("forward:/index.html");
         registry.addViewController("/{path:[^\\.]*}").setViewName("forward:/index.html");
         registry.setOrder(Ordered.HIGHEST_PRECEDENCE);
+    }
+
+
+//    @Bean
+    public CorsFilter corsFilter(){
+        CorsConfiguration config = new CorsConfiguration();
+        config.addAllowedOrigin("*");
+        config.setAllowCredentials(true);
+        config.addAllowedMethod("*");
+        config.addAllowedHeader("*");
+
+        config.addExposedHeader("Content-Type");
+        config.addExposedHeader( "X-Requested-With");
+        config.addExposedHeader("accept");
+        config.addExposedHeader("Origin");
+        config.addExposedHeader(LoginService.HEADER_KEY_AUTHORIZATION);
+        config.addExposedHeader(LoginService.HEADER_KEY_USER_NAME);
+        config.addExposedHeader( "Access-Control-Request-Method");
+        config.addExposedHeader("Access-Control-Request-Headers");
+
+        UrlBasedCorsConfigurationSource configSource = new UrlBasedCorsConfigurationSource();
+        configSource.registerCorsConfiguration("/**", config);
+
+        return new CorsFilter(configSource);
     }
 }

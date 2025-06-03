@@ -42,8 +42,8 @@ public class HeaderInterceptor implements HandlerInterceptor {
         if (!loginService.verifyWebToken(userName,token)) {
             log.error("非法请求 Authorization：{} UserCode：{} URL：{}",token,userName,request.getRequestURI());
             response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
-            response.setStatus(HttpStatus.OK.value());
-            response.getWriter().print(JSONObject.toJSONString(HttpResp.fail(401,"认证异常",null)));
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+//            response.getWriter().print(JSONObject.toJSONString(HttpResp.fail(401,"认证异常",null)));
             return false;
         }
         log.info("访问api=[{}] IP=[{}]", request.getRequestURI(),request.getRemoteAddr());

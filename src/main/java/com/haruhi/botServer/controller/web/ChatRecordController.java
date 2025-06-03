@@ -8,6 +8,7 @@ import com.haruhi.botServer.service.chatRecord.ChatRecordService;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,7 +21,7 @@ public class ChatRecordController {
 
 
     @PostMapping("/search")
-    public HttpResp<IPage<ChatRecord>> list(ChatRecordQueryReq request){
+    public HttpResp<IPage<ChatRecord>> list(@RequestBody ChatRecordQueryReq request){
         IPage<ChatRecord> list = chatRecordService.search(request, true);
         return HttpResp.success(list);
     }

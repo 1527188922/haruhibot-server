@@ -220,15 +220,46 @@ const demo = [
 
 const release = [{
     label: "聊天记录",
-    path: '/chatRecord',
-    component: 'views/chatRecord/index',
+    path: '/chat-record',
+    component: 'views/chat-record/index',
     icon: 'icon-caidan',
     iconBgColor: randomColor(),
     meta: {
-        i18n: 'chatRecord',
+        i18n: 'chat-record',
         keepAlive: true
     },
     children: []
+},{
+    label: "外部页面",
+    path: '/out',
+    icon: 'icon-caidan',
+    iconBgColor: randomColor(),
+    meta: {
+        i18n: 'out',
+    },
+    children: [{
+        label: "go-cqhttp",
+        path: 'go-cqhttp',
+        href: 'https://docs.go-cqhttp.org',
+        icon: 'icon-caidan',
+        iconBgColor: randomColor(),
+        meta: {
+            target: '_blank',
+            // i18n: 'api',
+        }
+    },{
+        label: "NapCat",
+        path: 'nap-cat',
+        href: 'https://napneko.github.io',
+        icon: 'icon-caidan',
+        iconBgColor: randomColor(),
+        meta: {
+            target: '_blank',
+            // i18n: 'api',
+        }
+    }]
+
 }]
 
+// export default [...release,...demo]
 export default [...release]

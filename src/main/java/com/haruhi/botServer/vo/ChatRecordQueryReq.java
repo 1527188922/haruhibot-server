@@ -9,4 +9,6 @@ public class ChatRecordQueryReq extends PageReq {
     private String messageType;
     private Long userId;
     private Long groupId;
+    private String nickName;
+    private String card;
 }

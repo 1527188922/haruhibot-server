@@ -1,5 +1,5 @@
 export default {
-  title: 'Avue is a framework',
+  title: 'Haruhi bot',
   tip: 'tip',
   logoutTip: 'Exit the system, do you want to continue?',
   submitText: 'submit',

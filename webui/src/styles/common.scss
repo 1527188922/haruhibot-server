@@ -94,6 +94,18 @@ a{
   top: 0;
   bottom: 0;
 }
+.query-form-option-buts{
+  text-align: right;
+}
+.el-form{
+  .form-input{
+    width: 180px;
+  }
+}
+.pagination-box{
+  text-align: center;
+  margin-top: 10px;
+}
 // ele样式覆盖
 @import './element-ui.scss';
 // 顶部右侧显示
