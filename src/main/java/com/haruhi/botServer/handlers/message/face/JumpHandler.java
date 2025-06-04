@@ -12,14 +12,12 @@ import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
-import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import javax.imageio.ImageIO;
 import java.awt.*;

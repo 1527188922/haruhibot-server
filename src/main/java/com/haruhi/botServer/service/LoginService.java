@@ -19,7 +19,7 @@ public class LoginService {
     public static final String HEADER_KEY_USER_NAME = "UserName";
     public static final String HEADER_KEY_AUTHORIZATION = "Authorization";
 
-    public static final CacheMap<String,String> WEB_TOKEN_CACHE = new CacheMap<>(5, TimeUnit.MINUTES,1);
+    public static final CacheMap<String,String> WEB_TOKEN_CACHE = new CacheMap<>(15, TimeUnit.MINUTES,1);
 
 
     public BaseResp<String> login(String username, String password) {

@@ -9,13 +9,11 @@ import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
-import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.HashMap;
 import java.util.List;

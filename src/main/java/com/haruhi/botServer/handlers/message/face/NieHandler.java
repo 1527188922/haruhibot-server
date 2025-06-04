@@ -9,12 +9,10 @@ import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.ws.Bot;
-import com.haruhi.botServer.ws.Server;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.io.File;
 import java.io.FilenameFilter;

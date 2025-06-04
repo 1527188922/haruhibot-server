@@ -26,7 +26,7 @@ import java.util.Arrays;
  */
 @Slf4j
 @Component
-public class Server extends TextWebSocketHandler {
+public class BotServer extends TextWebSocketHandler {
 
     @Autowired
     private MessageProcessor messageProcessor;

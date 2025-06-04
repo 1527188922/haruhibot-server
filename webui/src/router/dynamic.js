@@ -230,6 +230,17 @@ const release = [{
     },
     children: []
 },{
+    label: "群词条",
+    path: '/word-strip',
+    component: 'views/word-strip/index',
+    icon: 'icon-caidan',
+    iconBgColor: randomColor(),
+    meta: {
+        // i18n: 'word-strip',
+        keepAlive: true
+    },
+    children: []
+},{
     label: "外部页面",
     path: '/out',
     icon: 'icon-caidan',

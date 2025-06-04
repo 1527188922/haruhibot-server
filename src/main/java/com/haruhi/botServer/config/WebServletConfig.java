@@ -1,13 +1,12 @@
 package com.haruhi.botServer.config;
 
-import com.haruhi.botServer.interceptors.HeaderInterceptor;
+import com.haruhi.botServer.interceptors.ApiHeaderInterceptor;
 import com.haruhi.botServer.interceptors.WebSocketHandshakeInterceptor;
 import com.haruhi.botServer.service.LoginService;
 import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.ws.Server;
+import com.haruhi.botServer.ws.BotServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.web.cors.CorsConfiguration;
@@ -27,22 +26,22 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
     
     @Autowired
-    private HeaderInterceptor headerInterceptors;
+    private ApiHeaderInterceptor apiHeaderInterceptor;
     @Autowired
-    private Server server;
+    private BotServer botServer;
     @Autowired
     private WebSocketHandshakeInterceptor webSocketHandshakeInterceptor;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(server, BotConfig.CONTEXT_PATH+"/ws")
+        registry.addHandler(botServer, BotConfig.CONTEXT_PATH+"/ws")
                 .addInterceptors(webSocketHandshakeInterceptor)
                 .setAllowedOrigins("*");
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(headerInterceptors)
+        registry.addInterceptor(apiHeaderInterceptor)
                 .addPathPatterns("/api/**")
 //                .excludePathPatterns("/error","/css/**", "/js/**", "/index.html", "/img/**", "/fonts/**", "/favicon.ico","/svg/**")
         ;

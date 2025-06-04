@@ -1,8 +1,6 @@
 package com.haruhi.botServer.interceptors;
 
-import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.annotation.IgnoreAuthentication;
-import com.haruhi.botServer.controller.HttpResp;
 import com.haruhi.botServer.service.LoginService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +13,13 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+/**
+ * webui http请求头拦截
+ * 拦截路径：/api/**
+ */
 @Slf4j
 @Component
-public class HeaderInterceptor implements HandlerInterceptor {
+public class ApiHeaderInterceptor implements HandlerInterceptor {
     @Autowired
     private LoginService loginService;
 

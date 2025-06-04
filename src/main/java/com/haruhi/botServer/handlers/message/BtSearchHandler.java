@@ -10,7 +10,6 @@ import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.HttpClientUtil;
 import com.haruhi.botServer.ws.Bot;
-import com.haruhi.botServer.ws.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.jsoup.Jsoup;
@@ -19,7 +18,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
