@@ -28,20 +28,20 @@
           <template slot="label">
             代码地址
           </template>
-          <a href="https://gitee.com/smallweigit/avue-cli"
+          <a href="https://gitee.com/Lelouch-cc/haruhibot-server"
              target="_blank">
-            <el-tag>https://gitee.com/smallweigit/avue-cli</el-tag>
+            <el-tag>https://gitee.com/Lelouch-cc/haruhibot-server</el-tag>
           </a>
         </el-descriptions-item>
-        <el-descriptions-item>
-          <template slot="label">
-            预览地址
-          </template>
-          <a href="https://cli.avuejs.com"
-             target="_blank">
-            <el-tag>https://cli.avuejs.com</el-tag>
-          </a>
-        </el-descriptions-item>
+<!--        <el-descriptions-item>-->
+<!--          <template slot="label">-->
+<!--            预览地址-->
+<!--          </template>-->
+<!--          <a href="https://cli.avuejs.com"-->
+<!--             target="_blank">-->
+<!--            <el-tag>https://cli.avuejs.com</el-tag>-->
+<!--          </a>-->
+<!--        </el-descriptions-item>-->
       </el-descriptions>
     </basic-container>
     <basic-container>
