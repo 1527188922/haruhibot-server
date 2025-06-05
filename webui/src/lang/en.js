@@ -1,5 +1,5 @@
 export default {
-  title: 'Haruhi bot',
+  title: 'Haruhi bot web UI',
   tip: 'tip',
   logoutTip: 'Exit the system, do you want to continue?',
   submitText: 'submit',

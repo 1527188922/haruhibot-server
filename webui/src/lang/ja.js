@@ -1,6 +1,6 @@
 export default {
   tip: 'ヒント',
-  title: 'Haruhi bot',
+  title: 'Haruhi bot web UI',
   logoutTip: 'システムを終了します。続けますか？',
   submitText: 'を選択します',
   cancelText: 'キャンセル',
