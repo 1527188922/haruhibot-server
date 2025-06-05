@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.util.Strings;
+import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
@@ -12,7 +13,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -359,6 +359,22 @@ public class FileUtil {
         }
     }
 
+    public static String detectEncoding(File file) {
+        byte[] buf = new byte[4096];
+        UniversalDetector detector = new UniversalDetector(null);
 
+        try (FileInputStream fis = new FileInputStream(file)) {
+            int nread;
+            while ((nread = fis.read(buf)) > 0 && !detector.isDone()) {
+                detector.handleData(buf, 0, nread);
+            }
+            detector.dataEnd();
+        }catch (IOException e){
+            return "UTF-8";
+        }
+        String encoding = detector.getDetectedCharset();
+        detector.reset();
+        return encoding != null ? encoding : "UTF-8"; // 默认值
+    }
 
 }

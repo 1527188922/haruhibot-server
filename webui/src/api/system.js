@@ -11,3 +11,14 @@ export const findFileNodes = (data) => request({
     method: 'post',
     data
 });
+
+/**
+ *
+ * @param data{path:绝对路径}
+ * @returns {AxiosPromise}
+ */
+export const readFileContent = (data) => request({
+    url: baseUrl + '/sys/readFileContent',
+    method: 'post',
+    data
+});

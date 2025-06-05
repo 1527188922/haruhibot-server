@@ -87,8 +87,9 @@ public class SystemService {
 
             fileNode.setFileName(e.getName());
             fileNode.setAbsolutePath(e.getAbsolutePath());
-            fileNode.setDirectory(e.isDirectory());
+            fileNode.setIsDirectory(e.isDirectory());
             fileNode.setSize(e.length());
+            fileNode.setShowPreview(isShowPreview(e));
             fixFieldLeaf(fileNode, e);
             return fileNode;
         }).collect(Collectors.toList());
@@ -101,5 +102,22 @@ public class SystemService {
         }
         File[] files = e.listFiles();
         fileNode.setLeaf(files == null || files.length == 0);
+    }
+
+
+    private boolean isShowPreview(File file){
+        if(!file.exists() || file.isDirectory()){
+            return false;
+        }
+        return file.length() <= 30 * 1024;
+    }
+
+    public String readFileContent(String filePath){
+        File file = new File(filePath);
+        if (!isShowPreview(file)) {
+            return "";
+        }
+        String s = FileUtil.detectEncoding(file);
+        return cn.hutool.core.io.FileUtil.readString(file, s);
     }
 }

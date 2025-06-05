@@ -241,6 +241,17 @@ const release = [{
     },
     children: []
 },{
+    label: '系统配置',
+    path: '/sys',
+    iconBgColor: randomColor(),
+    children: [{
+        label: '程序文件',
+        path: 'files',
+        iconBgColor: randomColor(),
+        component: 'views/system/file/index',
+        children: []
+    }]
+},{
     label: "外部页面",
     path: '/out',
     icon: 'icon-caidan',

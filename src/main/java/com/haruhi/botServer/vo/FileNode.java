@@ -6,8 +6,9 @@ import lombok.Data;
 public class FileNode {
 
     private String fileName;
-    private boolean leaf;
+    private Boolean leaf;
     private String absolutePath;
-    private boolean isDirectory;
+    private Boolean isDirectory;
     private Long size;
+    private Boolean showPreview;
 }

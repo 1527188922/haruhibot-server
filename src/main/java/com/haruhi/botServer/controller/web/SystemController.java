@@ -40,4 +40,14 @@ public class SystemController {
         return HttpResp.success(map);
 
     }
+
+    @PostMapping("/readFileContent")
+    public HttpResp<String> readFileContent(@RequestBody Map<String,String> request) {
+        String path = request.get("path");//绝对路径
+        if (StringUtils.isBlank(path)) {
+            return HttpResp.fail("缺少文件路径","");
+        }
+        return HttpResp.success(systemService.readFileContent(path));
+    }
+
 }
