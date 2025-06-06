@@ -9,6 +9,7 @@ import com.haruhi.botServer.vo.FileNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,19 +37,23 @@ public class SystemController {
      * @return
      */
     @PostMapping("/fileNodes")
-    public HttpResp fileNodes(@RequestBody FileNode request) {
+    public HttpResp fileNodes(@RequestBody FileNode request,@RequestParam String rootType) {
         String parentPath = request.getAbsolutePath();
+        Long rootDirTotalSize = 0L;
         if (StringUtils.isBlank(parentPath)) {
-            parentPath = FileUtil.getAppDir();
+            Pair<String, Long> pair = systemService.calcRootPath(rootType);
+            parentPath = pair.getKey();
+            rootDirTotalSize = pair.getValue();
         }
         try {
             Map<String, Object> map = new HashMap<>();
-            map.put("appDir", FileUtil.getAppDir());
-            map.put("totalSize", FileUtils.sizeOfDirectory(new File(FileUtil.getAppDir())));
+            map.put("rootDir", parentPath);
+            map.put("rootDirTotalSize", rootDirTotalSize);
             List<FileNode> nodes = systemService.findNodesByParentPath(parentPath);
             map.put("nodes", nodes);
             return HttpResp.success(map);
         }catch (Exception e) {
+            log.error("获取fileNodes异常 ：{}",parentPath, e);
             return HttpResp.fail(e.getMessage(),null);
         }
     }

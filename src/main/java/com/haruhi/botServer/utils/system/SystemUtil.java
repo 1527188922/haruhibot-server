@@ -70,15 +70,6 @@ public class SystemUtil extends SystemUtils {
         return Runtime.getRuntime().availableProcessors();
     }
 
-    public static File getDisk(){
-        for (File file : File.listRoots()) {
-            if (SystemUtil.USER_DIR.startsWith(file.toString())) {
-                return file;
-            }
-        }
-        return null;
-    }
-
     public static double getTotalSpace(){
         if(SystemInfo.DISK != null){
             return (double) SystemInfo.DISK.getTotalSpace();

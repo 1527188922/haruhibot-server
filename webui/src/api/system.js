@@ -4,10 +4,11 @@ import { baseUrl } from '@/config/env';
 /**
  *
  * @param data{parentPath}
+ * @param rootType 1=服务器根目录 2=bot程序根目录
  * @returns {AxiosPromise}
  */
-export const findFileNodes = (data) => request({
-    url: baseUrl + '/sys/fileNodes',
+export const findFileNodes = (data,rootType = '1') => request({
+    url: `${baseUrl}/sys/fileNodes?rootType=${rootType}`,
     method: 'post',
     data
 });

@@ -5,8 +5,8 @@
         <basic-container :show-header="true">
           <div slot="header" class="custom-tree-node">
             <span class="app-dir">
-              {{appDir}}
-              <span class="file-size">{{totalSize | fileSizeFormatter}}</span>
+              {{rootDir}}
+              <span class="file-size">{{rootDirTotalSize | fileSizeFormatter}}</span>
             </span>
           </div>
           <el-tree ref="tree" :data="fileNodes" :props="props" :load="loadNode" node-key="absolutePath" lazy
@@ -51,9 +51,9 @@ export default {
       fileNodes:[],
       src:'',
       readLoading:false,
-      appDir:'',
+      rootDir:'',
       content:'',
-      totalSize:0,
+      rootDirTotalSize:0,
       currentPreviewNodeData:null,
       props:{
         label: 'fileName',
@@ -96,8 +96,8 @@ export default {
 
     async loadNode(node, resolve){
       let {data:{data,code}} = await findFileNodes(node  && node.data && node.data.length !== 0 ? node.data : {})
-      this.appDir = data.appDir
-      this.totalSize = data.totalSize
+      this.rootDir = data.rootDir
+      this.rootDirTotalSize = data.rootDirTotalSize
       resolve(data.nodes)
     },
     handleNodeClick(data, node){
@@ -108,6 +108,10 @@ export default {
     fileSizeFormatter(size){
       let kb = size / 1024
       if(kb > 1024){
+        let mb = kb / 1024
+        if(mb > 1024){
+          return (Math.floor((mb / 1024) * 100) / 100) + 'GB';
+        }
         return (Math.floor((kb / 1024) * 100) / 100) + 'MB';
       }
       return (Math.floor(kb * 100) / 100)+'KB';

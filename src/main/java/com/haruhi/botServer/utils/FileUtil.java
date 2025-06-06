@@ -1,5 +1,6 @@
 package com.haruhi.botServer.utils;
 
+import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -177,6 +178,17 @@ public class FileUtil {
         }
         return file;
     }
+
+
+    public static File getDisk(){
+        for (File file : File.listRoots()) {
+            if (SystemUtil.USER_DIR.startsWith(file.toString())) {
+                return file;
+            }
+        }
+        return null;
+    }
+
 
     /**
      * 获取系统临时目录

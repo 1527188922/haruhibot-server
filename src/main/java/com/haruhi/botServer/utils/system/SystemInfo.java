@@ -1,5 +1,6 @@
 package com.haruhi.botServer.utils.system;
 
+import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -65,7 +66,7 @@ public class SystemInfo {
     }
 
     private static void getDisk(){
-        DISK = SystemUtil.getDisk();
+        DISK = FileUtil.getDisk();
         log.info("disk : {}",DISK);
     }
     private static void getTotalSpace(){

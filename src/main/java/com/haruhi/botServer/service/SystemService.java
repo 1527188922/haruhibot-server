@@ -12,6 +12,9 @@ import com.haruhi.botServer.utils.system.SystemUtil;
 import com.haruhi.botServer.vo.FileNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -78,6 +81,26 @@ public class SystemService {
         log.info("清除缓存完成");
     }
 
+
+    public Pair<String,Long> calcRootPath(String rootType){
+        switch (rootType){
+            case "1":
+                File diskFile = FileUtil.getDisk();
+                return MutablePair.of(diskFile.getAbsolutePath(),calcUsedSpace(diskFile));
+            case "2":
+                return MutablePair.of(FileUtil.getAppDir(), FileUtils.sizeOf(new File(FileUtil.getAppDir())));
+            default:
+                return MutablePair.of(FileUtil.getAppDir(), FileUtils.sizeOf(new File(FileUtil.getAppDir())));
+        }
+    }
+
+    private long calcUsedSpace(File file){
+        long totalSpace = file.getTotalSpace();    // 总空间
+        long freeSpace = file.getFreeSpace();      // 剩余空间
+        return totalSpace - freeSpace;   // 已用空间
+    }
+
+
     public List<FileNode> findNodesByParentPath(String parentPath){
         File[] allFileList = FileUtil.getAllFileList(new File(parentPath));
         if(allFileList == null || allFileList.length == 0){
@@ -90,7 +113,11 @@ public class SystemService {
             fileNode.setAbsolutePath(e.getAbsolutePath());
             fileNode.setIsDirectory(e.isDirectory());
             fileNode.setShowPreview(isShowPreview(e));
-            fileNode.setSize(FileUtils.sizeOf(e));
+            if (e.isDirectory()) {
+                fileNode.setSize(calcUsedSpace(e));
+            }else{
+                fileNode.setSize(e.length());
+            }
             fixFieldLeaf(fileNode, e);
             return fileNode;
         }).collect(Collectors.toList());

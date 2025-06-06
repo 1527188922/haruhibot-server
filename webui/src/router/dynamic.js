@@ -245,7 +245,7 @@ const release = [{
     path: '/sys',
     iconBgColor: randomColor(),
     children: [{
-        label: '程序文件',
+        label: '服务器文件',
         path: 'files',
         iconBgColor: randomColor(),
         component: 'views/system/file/index',
