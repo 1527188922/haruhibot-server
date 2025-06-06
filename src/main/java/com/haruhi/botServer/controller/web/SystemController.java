@@ -38,18 +38,18 @@ public class SystemController {
      */
     @PostMapping("/fileNodes")
     public HttpResp fileNodes(@RequestBody FileNode request,@RequestParam String rootType) {
+        String rootDir = systemService.calcRootPath(rootType);
+
         String parentPath = request.getAbsolutePath();
-        Long rootDirTotalSize = 0L;
         if (StringUtils.isBlank(parentPath)) {
-            Pair<String, Long> pair = systemService.calcRootPath(rootType);
-            parentPath = pair.getKey();
-            rootDirTotalSize = pair.getValue();
+            parentPath = rootDir;
         }
+
         try {
             Map<String, Object> map = new HashMap<>();
-            map.put("rootDir", parentPath);
-            map.put("rootDirTotalSize", rootDirTotalSize);
-            List<FileNode> nodes = systemService.findNodesByParentPath(parentPath);
+            map.put("rootDir", rootDir);
+            map.put("rootDirTotalSize", systemService.calcRootSize(rootType));
+            List<FileNode> nodes = systemService.findNodesByParentPath(parentPath,rootType);
             map.put("nodes", nodes);
             return HttpResp.success(map);
         }catch (Exception e) {

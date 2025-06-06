@@ -82,15 +82,27 @@ public class SystemService {
     }
 
 
-    public Pair<String,Long> calcRootPath(String rootType){
+    public String calcRootPath(String rootType){
         switch (rootType){
             case "1":
                 File diskFile = FileUtil.getDisk();
-                return MutablePair.of(diskFile.getAbsolutePath(),calcUsedSpace(diskFile));
+                return diskFile.getAbsolutePath();
             case "2":
-                return MutablePair.of(FileUtil.getAppDir(), FileUtils.sizeOf(new File(FileUtil.getAppDir())));
+                return FileUtil.getAppDir();
             default:
-                return MutablePair.of(FileUtil.getAppDir(), FileUtils.sizeOf(new File(FileUtil.getAppDir())));
+                return FileUtil.getAppDir();
+        }
+    }
+
+    public Long calcRootSize(String rootType){
+        switch (rootType){
+            case "1":
+                File diskFile = FileUtil.getDisk();
+                return calcUsedSpace(diskFile);
+            case "2":
+                return FileUtils.sizeOf(new File(FileUtil.getAppDir()));
+            default:
+                return FileUtils.sizeOf(new File(FileUtil.getAppDir()));
         }
     }
 
@@ -101,7 +113,7 @@ public class SystemService {
     }
 
 
-    public List<FileNode> findNodesByParentPath(String parentPath){
+    public List<FileNode> findNodesByParentPath(String parentPath, String rootType){
         File[] allFileList = FileUtil.getAllFileList(new File(parentPath));
         if(allFileList == null || allFileList.length == 0){
             return Collections.emptyList();
@@ -113,11 +125,7 @@ public class SystemService {
             fileNode.setAbsolutePath(e.getAbsolutePath());
             fileNode.setIsDirectory(e.isDirectory());
             fileNode.setShowPreview(isShowPreview(e));
-            if (e.isDirectory()) {
-                fileNode.setSize(calcUsedSpace(e));
-            }else{
-                fileNode.setSize(e.length());
-            }
+            fixFieldSize(fileNode, e, rootType);
             fixFieldLeaf(fileNode, e);
             return fileNode;
         }).collect(Collectors.toList());
@@ -130,6 +138,22 @@ public class SystemService {
         }
         File[] files = e.listFiles();
         fileNode.setLeaf(files == null || files.length == 0);
+    }
+
+    private void fixFieldSize(FileNode fileNode,File e,String rootType){
+        if("1".equals(rootType)){
+            if(e.isFile()){
+                fileNode.setSize(e.length());
+            }
+            return;
+        }
+        if ("2".equals(rootType)) {
+            if (e.isDirectory()) {
+                fileNode.setSize(FileUtils.sizeOf(e));
+            }else{
+                fileNode.setSize(e.length());
+            }
+        }
     }
 
     private boolean isShowPreview(File file){

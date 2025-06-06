@@ -1,20 +1,31 @@
 <template>
   <div id="SystemFile">
     <el-row>
-      <el-col :span="9">
+      <el-col>
         <basic-container :show-header="true">
-          <div slot="header" class="custom-tree-node">
-            <span class="app-dir">
-              {{rootDir}}
-              <span class="file-size">{{rootDirTotalSize | fileSizeFormatter}}</span>
+          <div slot="header" class="">
+            <div>
+              <el-input size="small" clearable class="filter-input" placeholder="输入关键字进行过滤" v-model="filterText">
+                <el-select v-model="rootType" slot="prepend" placeholder="请选择" @change="rootTypeChange">
+                  <el-option v-for="(value,key) in rootTypeMap" :key="key" :label="value" :value="key"></el-option>
+                </el-select>
+<!--                <el-button slot="append" icon="el-icon-search"></el-button>-->
+              </el-input>
+
+            </div>
+            <span class="app-dir custom-tree-node">
+              <span class="">
+                {{rootDir}}
+              <span class="file-size" v-if="showSize(rootDirTotalSize)">{{rootDirTotalSize | fileSizeFormatter}}</span>
+              </span>
             </span>
           </div>
           <el-tree ref="tree" :data="fileNodes" :props="props" :load="loadNode" node-key="absolutePath" lazy
-              highlight-current @node-click="handleNodeClick">
+              highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode">
             <span class="custom-tree-node" slot-scope="{ node, data }">
-               <span :class="data.isDirectory ? 'dir-label' : ''">
+               <span :class="data.isDirectory ? 'dir-label' : ''" :title="node.label">
                  {{ node.label }}
-                 <span class="file-size">{{ data.size | fileSizeFormatter }}</span>
+                 <span class="file-size" v-if="showSize(data.size)">{{ data.size | fileSizeFormatter }}</span>
                </span>
               <span>
                 <el-button type="text" size="mini" @click="preview(data)" v-if="data.showPreview">预览</el-button>
@@ -23,85 +34,80 @@
           </el-tree>
         </basic-container>
       </el-col>
-      <el-col :span="15">
-        <template v-if="content && content !== ''">
-          <basic-container v-loading="readLoading" :show-header="true">
-            <div slot="header" class="app-dir">
-              {{currentPreviewNodeData.fileName}}
-              <span class="file-size">{{ currentPreviewNodeData.size | fileSizeFormatter }}</span>
-            </div>
-            <pre>{{content}}</pre>
-          </basic-container>
-        </template>
-
-      </el-col>
-
     </el-row>
 
-
+    <drawer-preview ref="drawerPreview"></drawer-preview>
   </div>
 </template>
 <script>
-import {findFileNodes,readFileContent,downloadFile} from "@/api/system";
-
+import {findFileNodes} from "@/api/system";
+import DrawerPreview from "./drawer-preview";
 export default {
+  components:{
+    DrawerPreview
+  },
   name:'SystemFile',
   data(){
     return{
+      rootType:'1',
+      filterText:'',
       fileNodes:[],
       src:'',
-      readLoading:false,
       rootDir:'',
-      content:'',
       rootDirTotalSize:0,
-      currentPreviewNodeData:null,
       props:{
         label: 'fileName',
         isLeaf: 'leaf'
+      },
+      rootTypeMap:{
+        '1':'系统根目录',
+        '2':'BOT程序根目录'
       }
     }
   },
   created() {
 
   },
+  watch: {
+    filterText(val) {
+      this.$refs.tree.filter(val);
+    }
+  },
   mounted() {
-    //
-    // fetch('http://127.0.0.1:8090/application.yml')
-    //     .then(response => {
-    //       // 1. 强制读取为二进制数据
-    //       return response.blob();
-    //     })
-    //     .then(blob => {
-    //       // 2. 创建临时 URL
-    //       const url = URL.createObjectURL(blob);
-    //
-    //       // 3. 注入 iframe
-    //       const iframe = document.getElementById('previewFrame');
-    //       iframe.src = url;
-    //     });
   },
   methods:{
-    preview(nodeData){
-      this.readLoading = true
-      readFileContent(nodeData).then(({data:{code,data}})=>{
-        this.content = data
-        this.currentPreviewNodeData = nodeData
-      }).catch(e=>{
-        this.content = ''
-        this.currentPreviewNodeData = null
-      }).finally(()=>{
-        this.readLoading = false
-      })
+    filterNode(value, data) {
+      if (!value) return true;
+      let fn = (str)=> {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      }
+      const regex = new RegExp(fn(value), 'i');
+      return regex.test(data.fileName);
     },
-
+    preview(nodeData){
+      this.$refs.drawerPreview.open(nodeData)
+    },
+    async rootTypeChange(v){
+      let data = await this.requestNodes({},v)
+      this.rootDir = data.rootDir
+      this.fileNodes = data.nodes
+      this.rootDirTotalSize = data.rootDirTotalSize
+    },
     async loadNode(node, resolve){
-      let {data:{data,code}} = await findFileNodes(node  && node.data && node.data.length !== 0 ? node.data : {})
+      let data = await this.requestNodes(node  && node.data && node.data.length !== 0 ? node.data : {},this.rootType)
       this.rootDir = data.rootDir
       this.rootDirTotalSize = data.rootDirTotalSize
       resolve(data.nodes)
     },
+    async requestNodes(request,rootType){
+      let {data:{data,code}} = await findFileNodes(request,rootType)
+      return data
+    },
     handleNodeClick(data, node){
       console.log('handleNodeClick',data,node)
+    },
+    showSize(size){
+      return size || size === 0
     }
   },
   filters:{
@@ -140,6 +146,15 @@ export default {
   }
   .dir-label{
     color: #409EFFFF;
+  }
+  .filter-input{
+    max-width: 350px;
+    ::v-deep .el-input-group__prepend{
+      background-color: white;
+    }
+    ::v-deep .el-input {
+      width: 140px;
+    }
   }
 }
 </style>
