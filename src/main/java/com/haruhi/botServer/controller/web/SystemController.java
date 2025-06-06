@@ -1,15 +1,23 @@
 package com.haruhi.botServer.controller.web;
 
+import cn.hutool.core.io.IoUtil;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.controller.HttpResp;
 import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.vo.FileNode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,26 +36,58 @@ public class SystemController {
      * @return
      */
     @PostMapping("/fileNodes")
-    public HttpResp fileNodes(@RequestBody Map<String,String> request) {
-        String parentPath = request.get("parentPath");
+    public HttpResp fileNodes(@RequestBody FileNode request) {
+        String parentPath = request.getAbsolutePath();
         if (StringUtils.isBlank(parentPath)) {
             parentPath = FileUtil.getAppDir();
         }
-        Map<String, Object> map = new HashMap<>();
-        map.put("appDir", FileUtil.getAppDir());
-        List<FileNode> nodes = systemService.findNodesByParentPath(parentPath);
-        map.put("nodes", nodes);
-        return HttpResp.success(map);
-
+        try {
+            Map<String, Object> map = new HashMap<>();
+            map.put("appDir", FileUtil.getAppDir());
+            map.put("totalSize", FileUtils.sizeOfDirectory(new File(FileUtil.getAppDir())));
+            List<FileNode> nodes = systemService.findNodesByParentPath(parentPath);
+            map.put("nodes", nodes);
+            return HttpResp.success(map);
+        }catch (Exception e) {
+            return HttpResp.fail(e.getMessage(),null);
+        }
     }
 
     @PostMapping("/readFileContent")
-    public HttpResp<String> readFileContent(@RequestBody Map<String,String> request) {
-        String path = request.get("path");//绝对路径
+    public HttpResp<String> readFileContent(@RequestBody FileNode request) {
+        String path = request.getAbsolutePath();//绝对路径
         if (StringUtils.isBlank(path)) {
             return HttpResp.fail("缺少文件路径","");
         }
         return HttpResp.success(systemService.readFileContent(path));
+    }
+
+
+    @PostMapping("/downloadFile")
+    public void downloadFile(@RequestBody FileNode request, HttpServletResponse response) {
+        String path = request.getAbsolutePath();//绝对路径
+        if (StringUtils.isBlank(path)) {
+            return;
+        }
+
+        File file = new File(path);
+        if(!file.exists() || !file.isFile()) {
+            return;
+        }
+
+        response.setCharacterEncoding("UTF-8");
+//        response.setHeader("content-Type", "application/vnd.ms-excel");
+//        response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));
+        response.setHeader("access-control-expose-headers", "*");
+        response.setHeader("overwrite-response-data", "true");
+        response.setContentLength((int) file.length());
+
+        try (InputStream in = Files.newInputStream(file.toPath());
+             ServletOutputStream outputStream = response.getOutputStream()){
+            outputStream.write(IoUtil.readBytes(in));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

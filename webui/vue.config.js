@@ -32,8 +32,8 @@ module.exports = {
   devServer: {
     open: true,
     hot: true,
-    host: '127.0.0.1',//本地启动改为自己ip
-    port: 8080,
+    host: '127.0.0.1',
+    port: 8091,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8090',

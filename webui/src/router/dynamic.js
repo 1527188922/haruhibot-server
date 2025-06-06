@@ -241,7 +241,7 @@ const release = [{
     },
     children: []
 },{
-    label: '系统配置',
+    label: '系统信息',
     path: '/sys',
     iconBgColor: randomColor(),
     children: [{

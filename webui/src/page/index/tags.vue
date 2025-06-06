@@ -27,7 +27,7 @@
             <i class="el-icon-refresh"
                :class="{'turn':refresh}"
                @click="handleRefresh"
-               v-if="active==item.fullPath"></i>
+               v-if="active===item.fullPath"></i>
           </span>
         </el-tab-pane>
 

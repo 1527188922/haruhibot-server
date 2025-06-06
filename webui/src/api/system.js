@@ -22,3 +22,15 @@ export const readFileContent = (data) => request({
     method: 'post',
     data
 });
+
+/**
+ *
+ * @param data{path:绝对路径}
+ * @returns {AxiosPromise}
+ */
+export const downloadFile = (data) =>request({
+    url: baseUrl + '/sys/downloadFile',
+    method: 'post',
+    data,
+    responseType:'blob'
+})

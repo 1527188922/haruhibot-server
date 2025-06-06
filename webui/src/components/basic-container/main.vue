@@ -3,6 +3,9 @@
        :style="styleName"
        :class="{'basic-container--block':block}">
     <el-card class="basic-container__card">
+      <div slot="header" v-if="showHeader">
+        <slot name="header"></slot>
+      </div>
       <slot></slot>
     </el-card>
   </div>
@@ -20,6 +23,10 @@ export default {
       type: String
     },
     block: {
+      type: Boolean,
+      default: false
+    },
+    showHeader:{
       type: Boolean,
       default: false
     }

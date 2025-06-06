@@ -11,6 +11,7 @@ import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import com.haruhi.botServer.vo.FileNode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -88,8 +89,8 @@ public class SystemService {
             fileNode.setFileName(e.getName());
             fileNode.setAbsolutePath(e.getAbsolutePath());
             fileNode.setIsDirectory(e.isDirectory());
-            fileNode.setSize(e.length());
             fileNode.setShowPreview(isShowPreview(e));
+            fileNode.setSize(FileUtils.sizeOf(e));
             fixFieldLeaf(fileNode, e);
             return fileNode;
         }).collect(Collectors.toList());
@@ -103,7 +104,6 @@ public class SystemService {
         File[] files = e.listFiles();
         fileNode.setLeaf(files == null || files.length == 0);
     }
-
 
     private boolean isShowPreview(File file){
         if(!file.exists() || file.isDirectory()){
