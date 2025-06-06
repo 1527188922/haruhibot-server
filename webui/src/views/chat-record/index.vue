@@ -5,7 +5,9 @@
         <el-form :model="queryFormObj" label-width="70px" inline ref="queryForm" size="small">
           <el-form-item label="消息类型" prop="messageType">
             <el-select v-model="queryFormObj.messageType" class="form-input" clearable>
-              <el-option v-for="(value,key) in typeMap" :key="key" :value="key" :label="value"></el-option>
+              <el-option v-for="(value,key) in typeMap" :key="key" :value="key" :label="value">
+                <span :class="key === 'private' ? 'danger-text' : ''">{{ value }}</span>
+              </el-option>
             </el-select>
           </el-form-item>
           <el-form-item label="QQ号" prop="userId">
@@ -63,8 +65,13 @@
         <el-table-column label="QQ昵称" prop="nickname" min-width="90" align="center"/>
         <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow />
         <el-table-column label="群内昵称" prop="card" min-width="90" align="center" />
-        <el-table-column label="消息类型" prop="messageType" min-width="70" align="center" show-tooltip-when-overflow
-                         :formatter="(row)=>{return typeMap[row.messageType]}"/>
+        <el-table-column label="消息类型" prop="messageType" min-width="70" align="center" show-tooltip-when-overflow>
+          <template slot-scope="{row}">
+            <span :class="row.messageType === 'private' ? 'danger-text' : ''">
+              {{typeMap[row.messageType]}}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
             <div class="face-and-id">
