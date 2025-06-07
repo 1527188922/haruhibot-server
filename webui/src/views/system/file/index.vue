@@ -122,20 +122,18 @@ export default {
       //
       // return
 
-      this.$prompt(`<span style="color: red">确认删除：</span><br/><span style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;width: 100%">${nodeData.absolutePath}</span>`, '提示', {
+      let msg = '请输入WEB UI登录密码'
+      this.$prompt(`<span style="color: red">确认删除${nodeData.isDirectory ? '目录':'文件'}：</span><br/><div title="${nodeData.absolutePath}" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;min-width: 100px">${nodeData.absolutePath}</div>`, '提示', {
         type:'warning',
         dangerouslyUseHTMLString:true,
         closeOnClickModal:false,
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        inputPlaceholder:'请输入WEB UI密码',
+        inputPlaceholder:msg,
+        inputErrorMessage:msg,
         inputValidator: (value) => {
-          if (!value || !value.trim()) {
-            return '请输入WEB UI密码'
-          }
-          if(value.length > 100){
-            return '字符过长'
-          }
+          if (!value || !value.trim()) return false
+          if(value.length > 100) return '字符过长'
           return true
         },
         beforeClose:(action, instance, done)=>{
