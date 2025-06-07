@@ -11,4 +11,5 @@ public class FileNode {
     private Boolean isDirectory;
     private Long size;
     private Boolean showPreview;
+    private Boolean showDel;
 }

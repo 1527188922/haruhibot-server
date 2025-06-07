@@ -27,8 +27,10 @@
                  {{ node.label }}
                  <span class="file-size" v-if="showSize(data.size)">{{ data.size | fileSizeFormatter }}</span>
                </span>
-              <span>
-                <el-button type="text" size="mini" @click="preview(data)" v-if="data.showPreview">预览</el-button>
+              <span class="node-operation-btns">
+                <el-button type="text" size="mini" @click.stop="preview(data)" v-if="data.showPreview">预览</el-button>
+                <el-button type="text" class="danger-text-btn" size="mini" v-if="data.showDel"
+                           @click.stop="deleteFile(data,node)">删除</el-button>
               </span>
             </span>
           </el-tree>
@@ -36,11 +38,11 @@
       </el-col>
     </el-row>
 
-    <drawer-preview ref="drawerPreview"></drawer-preview>
+    <drawer-preview direction="ltr" ref="drawerPreview"></drawer-preview>
   </div>
 </template>
 <script>
-import {findFileNodes} from "@/api/system";
+import {findFileNodes,deleteFile as deleteFileApi} from "@/api/system";
 import DrawerPreview from "./drawer-preview";
 export default {
   components:{
@@ -108,6 +110,51 @@ export default {
     },
     showSize(size){
       return size || size === 0
+    },
+    deleteFile(nodeData,node){
+      //
+      // let parent = node.parent;
+      // let children = parent.data.children || parent.data;
+      // console.log('children',children)
+      // let index = children.findIndex(d => d.absolutePath === nodeData.absolutePath);
+      // children.splice(index, 1);
+      //
+      //
+      // return
+
+      this.$prompt(`<span style="color: red">确认删除：</span><br/><span style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;width: 100%">${nodeData.absolutePath}</span>`, '提示', {
+        type:'warning',
+        dangerouslyUseHTMLString:true,
+        closeOnClickModal:false,
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputPlaceholder:'请输入WEB UI密码',
+        inputValidator: (value) => {
+          if (!value || !value.trim()) {
+            return '请输入WEB UI密码'
+          }
+          if(value.length > 100){
+            return '字符过长'
+          }
+          return true
+        },
+        beforeClose:(action, instance, done)=>{
+          if('cancel' === action) {
+            done()
+            return
+          }
+          let inputValue = instance._data.inputValue
+          deleteFileApi(nodeData,this.rootType,inputValue).then(({data:{code,message}})=>{
+            if(code !== 200){
+              return this.$message.error(message)
+            }
+            this.$message.success(message)
+            done()
+          })
+        }
+      }).then(({ value }) => {
+        this.rootTypeChange(this.rootType)
+      })
     }
   },
   filters:{

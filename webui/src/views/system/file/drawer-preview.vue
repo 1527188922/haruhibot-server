@@ -46,7 +46,9 @@ export default {
     },
     closed(){
       this.content = ''
-      this.nodeData = null
+      this.nodeData = {
+        fileName:''
+      }
     },
     load(nodeData){
       this.readLoading = true

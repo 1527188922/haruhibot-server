@@ -58,13 +58,13 @@
 <!--          <top-notice></top-notice>-->
 <!--        </div>-->
 <!--      </el-tooltip>-->
-      <el-tooltip effect="dark"
-                  :content="$t('navbar.language')"
-                  placement="bottom">
-        <div class="top-bar__item top-bar__item--show">
-          <top-lang></top-lang>
-        </div>
-      </el-tooltip>
+<!--      <el-tooltip effect="dark"-->
+<!--                  :content="$t('navbar.language')"-->
+<!--                  placement="bottom">-->
+<!--        <div class="top-bar__item top-bar__item&#45;&#45;show">-->
+<!--          <top-lang></top-lang>-->
+<!--        </div>-->
+<!--      </el-tooltip>-->
       <el-tooltip v-if="setting.fullscren"
                   effect="dark"
                   :content="isFullScren?$t('navbar.screenfullF'):$t('navbar.screenfull')"

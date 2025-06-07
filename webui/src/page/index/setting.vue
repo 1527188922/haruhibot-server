@@ -111,7 +111,8 @@ export default {
 <style lang="scss" >
 .setting {
   position: fixed;
-  top: 50%;
+  //top: 90%;
+  top: calc(100vh - 40px);
   right: -2px;
   z-index: 2048;
   transition: right 0.3s;

@@ -8,7 +8,7 @@ import { baseUrl } from '@/config/env';
  * @returns {AxiosPromise}
  */
 export const findFileNodes = (data,rootType = '1') => request({
-    url: `${baseUrl}/sys/fileNodes?rootType=${rootType}`,
+    url: `${baseUrl}/sys/file/nodes?rootType=${rootType}`,
     method: 'post',
     data
 });
@@ -19,10 +19,18 @@ export const findFileNodes = (data,rootType = '1') => request({
  * @returns {AxiosPromise}
  */
 export const readFileContent = (data) => request({
-    url: baseUrl + '/sys/readFileContent',
+    url: baseUrl + '/sys/file/readContent',
     method: 'post',
     data
-});
+})
+
+
+export const deleteFile = (data,rootType,password) => request({
+    url: `${baseUrl}/sys/file/delete?rootType=${rootType}&password=${password}`,
+    method: 'post',
+    data
+})
+
 
 /**
  *
@@ -30,7 +38,7 @@ export const readFileContent = (data) => request({
  * @returns {AxiosPromise}
  */
 export const downloadFile = (data) =>request({
-    url: baseUrl + '/sys/downloadFile',
+    url: baseUrl + '/sys/file/download',
     method: 'post',
     data,
     responseType:'blob'

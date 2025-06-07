@@ -2,14 +2,14 @@ package com.haruhi.botServer.controller.web;
 
 import cn.hutool.core.io.IoUtil;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.config.WebuiConfig;
+import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.controller.HttpResp;
 import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.vo.FileNode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,13 +30,15 @@ public class SystemController {
 
     @Autowired
     private SystemService systemService;
+    @Autowired
+    private WebuiConfig webuiConfig;
 
     /**
      * 找出父级路径下的所有文件和目录
      * @param request {parentPath}
      * @return
      */
-    @PostMapping("/fileNodes")
+    @PostMapping("/file/nodes")
     public HttpResp fileNodes(@RequestBody FileNode request,@RequestParam String rootType) {
         String rootDir = systemService.calcRootPath(rootType);
 
@@ -58,7 +60,7 @@ public class SystemController {
         }
     }
 
-    @PostMapping("/readFileContent")
+    @PostMapping("/file/readContent")
     public HttpResp<String> readFileContent(@RequestBody FileNode request) {
         String path = request.getAbsolutePath();//绝对路径
         if (StringUtils.isBlank(path)) {
@@ -67,8 +69,32 @@ public class SystemController {
         return HttpResp.success(systemService.readFileContent(path));
     }
 
+    @PostMapping("/file/delete")
+    public HttpResp<String> deleteFile(@RequestBody FileNode request,
+                                       @RequestParam String rootType,
+                                       @RequestParam String password) {
+        if (!webuiConfig.getLoginPassword().equals(password)) {
+            return HttpResp.fail("密码错误",null);
+        }
+        String path = request.getAbsolutePath();//绝对路径
+        if (StringUtils.isBlank(path)) {
+            return HttpResp.fail("缺少路径",null);
+        }
 
-    @PostMapping("/downloadFile")
+        if (!RootTypeEnum.BOT_TOOT.getType().equals(rootType)
+                || !path.startsWith(FileUtil.getAppDir())) {
+            return HttpResp.fail("禁止删除",null);
+        }
+        boolean delete = new File(path).delete();
+        if (delete) {
+            return HttpResp.success("删除成功",null);
+        }
+        return HttpResp.fail("删除失败",null);
+    }
+
+
+
+    @PostMapping("/file/download")
     public void downloadFile(@RequestBody FileNode request, HttpServletResponse response) {
         String path = request.getAbsolutePath();//绝对路径
         if (StringUtils.isBlank(path)) {

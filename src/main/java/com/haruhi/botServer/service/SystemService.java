@@ -1,5 +1,6 @@
 package com.haruhi.botServer.service;
 
+import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.handlers.message.face.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.handlers.message.face.JumpHandler;
@@ -125,6 +126,7 @@ public class SystemService {
             fileNode.setAbsolutePath(e.getAbsolutePath());
             fileNode.setIsDirectory(e.isDirectory());
             fileNode.setShowPreview(isShowPreview(e));
+            fileNode.setShowDel(RootTypeEnum.BOT_TOOT.getType().equals(rootType));
             fixFieldSize(fileNode, e, rootType);
             fixFieldLeaf(fileNode, e);
             return fileNode;
