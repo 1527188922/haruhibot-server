@@ -51,7 +51,7 @@ export default {
   name:'SystemFile',
   data(){
     return{
-      rootType:'1',
+      rootType:'2',
       filterText:'',
       fileNodes:[],
       src:'',
@@ -106,22 +106,24 @@ export default {
       return data
     },
     handleNodeClick(data, node){
-      console.log('handleNodeClick',data,node)
+      // console.log('handleNodeClick',data,node)
     },
     showSize(size){
       return size || size === 0
     },
+    removeNode(nodeData,node){
+      let parent = node.parent
+      if(parent){
+        let children = parent.childNodes
+        if(children){
+          let index = children.findIndex(d => d.data.absolutePath === nodeData.absolutePath)
+          if(index !== -1){
+            children.splice(index, 1)
+          }
+        }
+      }
+    },
     deleteFile(nodeData,node){
-      //
-      // let parent = node.parent;
-      // let children = parent.data.children || parent.data;
-      // console.log('children',children)
-      // let index = children.findIndex(d => d.absolutePath === nodeData.absolutePath);
-      // children.splice(index, 1);
-      //
-      //
-      // return
-
       let msg = '请输入WEB UI登录密码'
       this.$prompt(`<span style="color: red">确认删除${nodeData.isDirectory ? '目录':'文件'}：</span><br/><div title="${nodeData.absolutePath}" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;min-width: 100px">${nodeData.absolutePath}</div>`, '提示', {
         type:'warning',
@@ -129,6 +131,7 @@ export default {
         closeOnClickModal:false,
         confirmButtonText: '确定',
         cancelButtonText: '取消',
+        inputType:'password',
         inputPlaceholder:msg,
         inputErrorMessage:msg,
         inputValidator: (value) => {
@@ -138,6 +141,7 @@ export default {
         },
         beforeClose:(action, instance, done)=>{
           if('cancel' === action) {
+            // 取消
             done()
             return
           }
@@ -146,12 +150,13 @@ export default {
             if(code !== 200){
               return this.$message.error(message)
             }
+            this.removeNode(nodeData, node)
             this.$message.success(message)
             done()
           })
         }
       }).then(({ value }) => {
-        this.rootTypeChange(this.rootType)
+        // this.rootTypeChange(this.rootType)
       })
     }
   },
