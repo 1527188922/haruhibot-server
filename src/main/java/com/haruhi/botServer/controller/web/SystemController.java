@@ -85,7 +85,7 @@ public class SystemController {
                 || !path.startsWith(FileUtil.getAppDir())) {
             return HttpResp.fail("禁止删除",null);
         }
-        boolean delete = new File(path).delete();
+        boolean delete = cn.hutool.core.io.FileUtil.del(new File(path));
         if (delete) {
             return HttpResp.success("删除成功",null);
         }
