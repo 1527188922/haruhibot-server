@@ -13,19 +13,20 @@
               </el-input>
 
             </div>
-            <span class="app-dir custom-tree-node">
+            <span class="app-dir alignment">
               <span class="">
                 {{rootDir}}
-              <span class="file-size" v-if="showSize(rootDirTotalSize)">{{rootDirTotalSize | fileSizeFormatter}}</span>
+              <span class="file-attribute" v-if="showSize(rootDirTotalSize)">{{rootDirTotalSize | fileSizeFormatter}}</span>
               </span>
             </span>
           </div>
           <el-tree ref="tree" :data="fileNodes" :props="props" :load="loadNode" node-key="absolutePath" lazy
               highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode">
-            <span class="custom-tree-node" slot-scope="{ node, data }">
+            <span class="alignment" slot-scope="{ node, data }">
                <span :class="data.isDirectory ? 'dir-label' : ''" :title="node.label">
                  {{ node.label }}
-                 <span class="file-size" v-if="showSize(data.size)">{{ data.size | fileSizeFormatter }}</span>
+                 <span class="file-attribute" v-if="showSize(data.size)">{{ data.size | fileSizeFormatter }}</span>
+                 <span class="file-attribute" v-if="showChildCount(data)">{{ data.childCount | childCountFormatter }}</span>
                </span>
               <span class="node-operation-btns">
                 <el-button type="text" size="mini" @click.stop="preview(data)" v-if="data.showPreview">预览</el-button>
@@ -111,6 +112,9 @@ export default {
     showSize(size){
       return size || size === 0
     },
+    showChildCount(nodeData){
+      return nodeData.isDirectory && nodeData.childCount && nodeData.childCount !== 0
+    },
     removeNode(nodeData,node){
       let parent = node.parent
       if(parent){
@@ -172,6 +176,9 @@ export default {
       }
       return (Math.floor(kb * 100) / 100)+'KB';
     },
+    childCountFormatter(count){
+      return `${count}个项目`
+    }
   }
 }
 </script>
@@ -181,7 +188,7 @@ export default {
     font-weight: bold;
     font-size: 14px;
   }
-  .custom-tree-node {
+  .alignment {
     flex: 1;
     display: flex;
     align-items: center;
@@ -189,7 +196,7 @@ export default {
     font-size: 14px;
     //padding-right: 8px;
   }
-  .file-size{
+  .file-attribute{
     margin-left: 10px;
     font-size: 12px;
     color: #C0C4CC;
