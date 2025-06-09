@@ -12,4 +12,8 @@ public class FileNode {
     private Long size;
     private Boolean showPreview;
     private Boolean showDel;
+    private Integer childCount;
+
+    private Long lastModified;
+    private Long createTime;
 }

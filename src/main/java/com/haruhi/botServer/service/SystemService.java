@@ -13,14 +13,17 @@ import com.haruhi.botServer.utils.system.SystemUtil;
 import com.haruhi.botServer.vo.FileNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -129,8 +132,21 @@ public class SystemService {
             fileNode.setShowDel(RootTypeEnum.BOT_TOOT.getType().equals(rootType));
             fixFieldSize(fileNode, e, rootType);
             fixFieldLeaf(fileNode, e);
+            fixFieldTime(fileNode, e);
             return fileNode;
         }).collect(Collectors.toList());
+    }
+
+    private void fixFieldTime(FileNode fileNode, File e) {
+        fileNode.setLastModified(e.lastModified());
+        try {
+            Path path = Paths.get(e.getAbsolutePath());
+            BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
+            FileTime fileTime = attrs.creationTime();
+            fileNode.setCreateTime(fileTime.toMillis());
+        }catch (IOException ex){
+
+        }
     }
 
     private void fixFieldLeaf(FileNode fileNode,File e){
@@ -139,7 +155,9 @@ public class SystemService {
             return;
         }
         File[] files = e.listFiles();
-        fileNode.setLeaf(files == null || files.length == 0);
+        boolean b = files == null || files.length == 0;
+        fileNode.setLeaf(b);
+        fileNode.setChildCount(b ? 0 : files.length);
     }
 
     private void fixFieldSize(FileNode fileNode,File e,String rootType){
