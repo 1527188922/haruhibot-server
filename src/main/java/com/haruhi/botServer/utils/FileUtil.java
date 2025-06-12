@@ -129,28 +129,13 @@ public class FileUtil {
      * @param text
      */
     public static void writeText(File file,String text) throws IOException {
-        if (file == null) {
-            throw new NullPointerException("file or text is null");
-        }
         text = text == null ? "" : text;
-        FileOutputStream fos = null;
-        try {
+
+        try (FileOutputStream fos = new FileOutputStream(file)){
             if (!file.exists()) {
                 file.createNewFile();
             }
-            fos = new FileOutputStream(file);
             fos.write(text.getBytes(StandardCharsets.UTF_8));
-        }finally {
-            try {
-                fos.flush();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-            try {
-                fos.close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
         }
     }
 
