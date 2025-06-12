@@ -7,6 +7,7 @@ import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.controller.HttpResp;
 import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.utils.FileUtil;
+import com.haruhi.botServer.vo.ContentFileNode;
 import com.haruhi.botServer.vo.FileNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -120,5 +121,23 @@ public class SystemController {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * 内容写入文件
+     * 不存在文件则创建
+     * @param request
+     * @return
+     */
+    @PostMapping("/file/write")
+    public HttpResp<String> writeFile(@RequestBody ContentFileNode request) {
+        try {
+            FileUtil.writeText(new File(request.getAbsolutePath()), request.getContent());
+            return HttpResp.success("保存成功",null);
+        } catch (IOException e) {
+            log.error("保存异常",e);
+            return HttpResp.success("保存异常："+e.getMessage(),null);
+        }
+    }
+
 
 }

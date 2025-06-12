@@ -8,10 +8,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Collections;
@@ -131,10 +128,11 @@ public class FileUtil {
      * @param file
      * @param text
      */
-    public static void writeText(File file,String text){
-        if (file == null || text == null) {
+    public static void writeText(File file,String text) throws IOException {
+        if (file == null) {
             throw new NullPointerException("file or text is null");
         }
+        text = text == null ? "" : text;
         FileOutputStream fos = null;
         try {
             if (!file.exists()) {
@@ -142,8 +140,6 @@ public class FileUtil {
             }
             fos = new FileOutputStream(file);
             fos.write(text.getBytes(StandardCharsets.UTF_8));
-        }catch (IOException e){
-            log.error("写入文本异常",e);
         }finally {
             try {
                 fos.flush();
@@ -157,9 +153,7 @@ public class FileUtil {
             }
         }
     }
-    public static void writeText(String file,String text){
-        writeText(new File(file),text);
-    }
+
     /**
      * 创建目录
      * 目录存在且是一个文件时，删除该文件再创建目录

@@ -58,7 +58,11 @@ public class SystemService {
             }
             if (Strings.isNotBlank(s)) {
                 File file = new File(FileUtil.getAppDir() + File.separator + scriptName);
-                FileUtil.writeText(file,s);
+                try {
+                    FileUtil.writeText(file,s);
+                } catch (IOException e) {
+                    log.error("生成停止脚本异常",e);
+                }
             }
             log.info("生成kill脚本完成:{}",scriptName);
         }
