@@ -33,8 +33,8 @@ public class BotContainer {
     public static Bot getBotById(Long botId){
         for (Map.Entry<String, Bot> entry : BOT_MAP.entrySet()) {
             if (entry.getValue() != null
-                    && entry.getValue().getBotId() != null
-                    && entry.getValue().getBotId().equals(botId)) {
+                    && entry.getValue().getId() != null
+                    && entry.getValue().getId().equals(botId)) {
                 return entry.getValue();
             }
         }
@@ -42,14 +42,22 @@ public class BotContainer {
     }
 
     public static void removeClient(WebSocketSession session){
-        Bot bot = BOT_MAP.remove(session.getId());
+        removeClient(session.getId());
+    }
+    public static void removeClient(String sessionId){
+        Bot bot = BOT_MAP.remove(sessionId);
         if(bot != null){
-            log.info("客户端断开 botId:{}  当前连接数：{}",bot.getBotId(),getConnections());
+            log.info("客户端断开 botId:{}  当前连接数：{}",bot.getId(),getConnections());
             try {
                 bot.close();
             }catch (Exception e){
 
             }
         }
+    }
+
+    public static void removeAllClient(){
+        BOT_MAP.keySet().forEach(BotContainer::removeClient);
+        BOT_MAP.clear();
     }
 }

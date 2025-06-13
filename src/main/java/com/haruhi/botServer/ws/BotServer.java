@@ -31,10 +31,23 @@ public class BotServer extends TextWebSocketHandler {
     @Autowired
     private MessageProcessor messageProcessor;
 
+    // 逻辑启停 实际上服务并没有停止 只是拒绝连接(握手拦截器中去拒绝)
+    private volatile boolean isRunning = true;
+
+    public boolean isRunning() {
+        return isRunning;
+    }
+    public void stop(){
+        isRunning = false;
+        BotContainer.removeAllClient();
+    }
+    public void start(){
+        isRunning = true;
+    }
+
     @Override
     public void afterConnectionEstablished(final WebSocketSession session) throws Exception {
         BotContainer.add(null,session);
-        
         log.info("客户端连接成功,sessionId:{}，客户端数量：{}", session.getId(),BotContainer.getConnections());
     }
 

@@ -66,7 +66,7 @@ public class MessageProcessor{
         if(MetaEventEnum.lifecycle.toString().equals(message.getMetaEventType())
                 && SubTypeEnum.connect.toString().equals(message.getSubType())){
             // 刚连接成功时，gocq会发一条消息给bot
-            bot.setBotId(message.getSelfId());
+            bot.setId(message.getSelfId());
             log.info("收到QQ号连接：{} sessionId：{}",message.getSelfId(),bot.getSessionId());
         }
     }

@@ -37,12 +37,12 @@ public class Bot {
 
     @Setter
     @Getter
-    private Long botId;
+    private Long id;//机器人qq号
     @Setter
     private WebSocketSession session;
 
-    public Bot(Long botId, WebSocketSession session) {
-        this.botId = botId;
+    public Bot(Long id, WebSocketSession session) {
+        this.id = id;
         this.session = session;
     }
 
@@ -116,7 +116,7 @@ public class Bot {
      */
     public void sendGroupMessage(Long groupId,String name, List<String> messages){
         if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> requestBox = createForwardMessageRequestBox(MessageTypeEnum.group,groupId,botId,name,messages);
+            RequestBox<Params> requestBox = createForwardMessageRequestBox(MessageTypeEnum.group,groupId, id,name,messages);
             sendMessage(JSONObject.toJSONString(requestBox));
         }
     }
@@ -199,7 +199,7 @@ public class Bot {
      */
     public void sendPrivateMessage(Long userId,String name, List<String> messages){
         if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageTypeEnum.privat,userId,botId,name,messages);
+            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageTypeEnum.privat,userId, id,name,messages);
             sendMessage(JSONObject.toJSONString(paramsRequestBox));
         }
     }

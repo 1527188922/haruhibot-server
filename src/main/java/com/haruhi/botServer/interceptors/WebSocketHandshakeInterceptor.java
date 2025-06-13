@@ -2,6 +2,7 @@ package com.haruhi.botServer.interceptors;
 
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.ws.BotContainer;
+import com.haruhi.botServer.ws.BotServer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpHeaders;
@@ -11,6 +12,8 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketHandler;
+import org.springframework.web.socket.handler.ExceptionWebSocketHandlerDecorator;
+import org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.util.List;
@@ -26,6 +29,9 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
         log.info("收到握手请求 {}:{}",request.getRemoteAddress().getHostString(),request.getRemoteAddress().getPort());
+        if (!checkBotServerRunning(wsHandler)) {
+            return false;
+        }
         return checkConnections();
     }
 
@@ -53,6 +59,24 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
         if(connections >= BotConfig.MAX_CONNECTIONS){
             log.info("当前连接数:{},已达到最大连接数:{},本次禁止握手",connections,BotConfig.MAX_CONNECTIONS);
             return false;
+        }
+        return true;
+    }
+
+
+    private boolean checkBotServerRunning(WebSocketHandler wsHandler){
+        if(wsHandler instanceof ExceptionWebSocketHandlerDecorator) {
+            ExceptionWebSocketHandlerDecorator exceptionWebSocketHandlerDecorator = (ExceptionWebSocketHandlerDecorator) wsHandler;
+            WebSocketHandler exceptionWebSocketHandlerDecoratorDelegate = exceptionWebSocketHandlerDecorator.getDelegate();
+
+            if(exceptionWebSocketHandlerDecoratorDelegate instanceof LoggingWebSocketHandlerDecorator) {
+                LoggingWebSocketHandlerDecorator loggingWebSocketHandlerDecorator = (LoggingWebSocketHandlerDecorator) exceptionWebSocketHandlerDecoratorDelegate;
+                WebSocketHandler loggingWebSocketHandlerDecoratorDelegate = loggingWebSocketHandlerDecorator.getDelegate();
+                if(loggingWebSocketHandlerDecoratorDelegate instanceof BotServer){
+                    BotServer botServer = (BotServer) loggingWebSocketHandlerDecoratorDelegate;
+                    return botServer.isRunning();
+                }
+            }
         }
         return true;
     }
