@@ -43,3 +43,10 @@ export const downloadFile = (data) =>request({
     data,
     responseType:'blob'
 })
+
+
+export const saveFile = (data) => request({
+    url: baseUrl + '/sys/file/save',
+    method: 'post',
+    data
+})

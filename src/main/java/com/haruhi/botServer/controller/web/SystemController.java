@@ -128,8 +128,8 @@ public class SystemController {
      * @param request
      * @return
      */
-    @PostMapping("/file/write")
-    public HttpResp<String> writeFile(@RequestBody ContentFileNode request) {
+    @PostMapping("/file/save")
+    public HttpResp<String> saveFile(@RequestBody ContentFileNode request) {
         try {
             FileUtil.writeText(new File(request.getAbsolutePath()), request.getContent());
             return HttpResp.success("保存成功",null);

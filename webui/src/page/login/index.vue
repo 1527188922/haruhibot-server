@@ -1,6 +1,6 @@
 <template>
-  <div class="login-container"
-       @keyup.enter="handleLogin">
+<!--  @keyup.enter="handleLogin"-->
+  <div class="login-container">
     <top-color v-show="false"></top-color>
     <div class="login-weaper animated bounceInDown">
 <!--      <div class="login-left">-->
