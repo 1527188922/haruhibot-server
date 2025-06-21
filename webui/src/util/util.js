@@ -291,3 +291,15 @@ export const openWindow = (url, title, w, h) => {
     newWindow.focus()
   }
 }
+
+export const fileSizeFormatter = (size) =>{
+  let kb = size / 1024
+  if(kb > 1024){
+    let mb = kb / 1024
+    if(mb > 1024){
+      return (Math.floor((mb / 1024) * 100) / 100) + 'GB';
+    }
+    return (Math.floor((kb / 1024) * 100) / 100) + 'MB';
+  }
+  return (Math.floor(kb * 100) / 100)+'KB';
+}

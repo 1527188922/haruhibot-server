@@ -23,13 +23,15 @@
           <el-tree ref="tree" :data="fileNodes" :props="props" :load="loadNode" node-key="absolutePath" lazy
               highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode">
             <span class="alignment" slot-scope="{ node, data }">
-               <span :class="data.isDirectory ? 'dir-label' : ''" :title="node.label">
-                 {{ node.label }}
+               <span :class="data.isDirectory ? 'dir-label' : ''">
+                 <div :title="node.label" class="file-name">{{ node.label }}</div>
                  <span class="file-attribute" v-if="showSize(data.size)">{{ data.size | fileSizeFormatter }}</span>
                  <span class="file-attribute" v-if="showChildCount(data)">{{ data.childCount | childCountFormatter }}</span>
                </span>
               <span class="node-operation-btns">
                 <el-button type="text" size="mini" @click.stop="preview(data)" v-if="data.showPreview">预览</el-button>
+                <el-button type="text" class="success-text-btn" size="mini"
+                           @click.stop="openDetailDialog(data,node)">详情</el-button>
                 <el-button type="text" class="danger-text-btn" size="mini" v-if="data.showDel"
                            @click.stop="deleteFile(data,node)">删除</el-button>
               </span>
@@ -39,15 +41,20 @@
       </el-col>
     </el-row>
 
+    <detail-dialog ref="DetailDialog"></detail-dialog>
     <drawer-preview direction="ltr" ref="drawerPreview"></drawer-preview>
   </div>
 </template>
 <script>
 import {findFileNodes,deleteFile as deleteFileApi} from "@/api/system";
 import DrawerPreview from "./drawer-preview";
+import DetailDialog from "./detail-dialog";
+import {fileSizeFormatter} from "@/util/util";
+
 export default {
   components:{
-    DrawerPreview
+    DrawerPreview,
+    DetailDialog
   },
   name:'SystemFile',
   data(){
@@ -127,6 +134,9 @@ export default {
         }
       }
     },
+    openDetailDialog(nodeData,node){
+      this.$refs.DetailDialog.open(nodeData)
+    },
     deleteFile(nodeData,node){
       let msg = '请输入WEB UI登录密码'
       this.$prompt(`<span style="color: red">确认删除${nodeData.isDirectory ? '目录':'文件'}：</span><br/><div title="${nodeData.absolutePath}" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;min-width: 100px">${nodeData.absolutePath}</div>`, '提示', {
@@ -166,15 +176,7 @@ export default {
   },
   filters:{
     fileSizeFormatter(size){
-      let kb = size / 1024
-      if(kb > 1024){
-        let mb = kb / 1024
-        if(mb > 1024){
-          return (Math.floor((mb / 1024) * 100) / 100) + 'GB';
-        }
-        return (Math.floor((kb / 1024) * 100) / 100) + 'MB';
-      }
-      return (Math.floor(kb * 100) / 100)+'KB';
+      return fileSizeFormatter(size)
     },
     childCountFormatter(count){
       return `${count}个项目`
@@ -195,6 +197,13 @@ export default {
     justify-content: space-between;
     font-size: 14px;
     //padding-right: 8px;
+  }
+  .file-name{
+    float: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 520px;
   }
   .file-attribute{
     margin-left: 10px;
