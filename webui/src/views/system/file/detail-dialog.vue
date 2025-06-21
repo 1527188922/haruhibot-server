@@ -5,16 +5,16 @@
         <el-form-item label="绝对路径：">
           {{nodeData.absolutePath}}
         </el-form-item>
-        <el-form-item label="大小：">
+        <el-form-item label="大小：" v-if="nodeData.size || nodeData.size === 0">
           {{nodeData.size | fileSizeFormatter}}
         </el-form-item>
-        <el-form-item label="包含项目数：" v-if="nodeData.isDirectory">
+        <el-form-item label="包含项目数：" v-if="nodeData.isDirectory && (nodeData.childCount || nodeData.childCount === 0)">
           {{ nodeData.childCount }}
         </el-form-item>
-        <el-form-item label="最近修改时间：">
+        <el-form-item label="最近修改时间：" v-if="nodeData.lastModified">
           {{ $dayjs(nodeData.lastModified).format(pattern) }}
         </el-form-item>
-        <el-form-item label="创建时间：">
+        <el-form-item label="创建时间：" v-if="nodeData.createTime">
           {{ $dayjs(nodeData.createTime).format(pattern) }}
         </el-form-item>
       </el-form>
