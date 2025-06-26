@@ -34,7 +34,7 @@ public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(botServer, BotConfig.CONTEXT_PATH+"/ws")
+        registry.addHandler(botServer, BotConfig.WEB_SOCKET_PATH)
                 .addInterceptors(webSocketHandshakeInterceptor)
                 .setAllowedOrigins("*");
     }

@@ -50,3 +50,14 @@ export const saveFile = (data) => request({
     method: 'post',
     data
 })
+
+
+export const botWsInfo = () => request({
+    url: baseUrl + '/sys/botws/info',
+    method: 'get'
+})
+
+export const botWsOperation = (command) => request({
+    url: `${baseUrl}/sys/botws/opt?command=${command}`,
+    method: 'post'
+})

@@ -1,5 +1,7 @@
 package com.haruhi.botServer.service;
 
+import cn.hutool.extra.spring.SpringUtil;
+import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.handlers.message.face.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
@@ -11,6 +13,9 @@ import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import com.haruhi.botServer.vo.FileNode;
+import com.haruhi.botServer.ws.BotContainer;
+import com.haruhi.botServer.ws.BotServer;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -41,6 +46,15 @@ public class SystemService {
     private CustomReplyService verbalTricksService;
     @Autowired
     private WordStripService wordStripService;
+
+    private BotServer botServer;
+
+    private BotServer getBotServer() {
+        if (botServer == null) {
+            botServer = SpringUtil.getBean(BotServer.class);
+        }
+        return botServer;
+    }
 
     public void writeStopScript(){
         if(SystemUtil.PROFILE_RPOD.equals(SystemInfo.PROFILE)){
@@ -194,5 +208,24 @@ public class SystemService {
         }
         String s = FileUtil.detectEncoding(file);
         return cn.hutool.core.io.FileUtil.readString(file, s);
+    }
+
+    @Data
+    public static class BotWebSocketInfo{
+        private Boolean running;
+        private Integer connections;
+        private Integer maxConnections;
+        private String path;
+        private String accessToken;
+    }
+
+    public BotWebSocketInfo getBotWebSocketInfo(){
+        BotWebSocketInfo botWebSocketInfo = new BotWebSocketInfo();
+        botWebSocketInfo.setRunning(getBotServer().isRunning());
+        botWebSocketInfo.setConnections(BotContainer.getConnections());
+        botWebSocketInfo.setMaxConnections(BotConfig.MAX_CONNECTIONS);
+        botWebSocketInfo.setPath(BotConfig.WEB_SOCKET_PATH);
+        botWebSocketInfo.setAccessToken(BotConfig.ACCESS_TOKEN);
+        return botWebSocketInfo;
     }
 }

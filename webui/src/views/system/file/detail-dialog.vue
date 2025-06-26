@@ -1,20 +1,23 @@
 <template>
   <div id="DetailDialog">
     <el-dialog :visible.sync="visible" title="文件详细信息" width="650px" @closed="dialogClosed" v-dialogDrag>
-      <el-form :model="nodeData" class="detail-form" label-width="115px">
-        <el-form-item label="绝对路径：">
+      <el-form :model="nodeData" label-width="115px">
+        <el-form-item label="绝对路径：" class="info-form-item">
           {{nodeData.absolutePath}}
         </el-form-item>
-        <el-form-item label="大小：" v-if="nodeData.size || nodeData.size === 0">
+        <el-form-item label="大小：" v-if="nodeData.size || nodeData.size === 0"  class="info-form-item">
           {{nodeData.size | fileSizeFormatter}}
         </el-form-item>
-        <el-form-item label="包含项目数：" v-if="nodeData.isDirectory && (nodeData.childCount || nodeData.childCount === 0)">
+        <el-form-item label="包含项目数：" v-if="nodeData.isDirectory && (nodeData.childCount || nodeData.childCount === 0)"
+                      class="info-form-item">
           {{ nodeData.childCount }}
         </el-form-item>
-        <el-form-item label="最近修改时间：" v-if="nodeData.lastModified">
+        <el-form-item label="最近修改时间：" v-if="nodeData.lastModified"
+                      class="info-form-item">
           {{ $dayjs(nodeData.lastModified).format(pattern) }}
         </el-form-item>
-        <el-form-item label="创建时间：" v-if="nodeData.createTime">
+        <el-form-item label="创建时间：" v-if="nodeData.createTime"
+                      class="info-form-item">
           {{ $dayjs(nodeData.createTime).format(pattern) }}
         </el-form-item>
       </el-form>
@@ -58,10 +61,5 @@ export default {
 </script>
 <style lang="scss" scoped>
 #DetailDialog{
-  .detail-form{
-    ::v-deep .el-form-item{
-      margin-bottom: 0;
-    }
-  }
 }
 </style>

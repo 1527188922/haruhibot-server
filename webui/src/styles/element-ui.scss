@@ -2,11 +2,14 @@
     font-size: 12px !important;
     line-height: 28px !important;
 }
-.el-card.is-always-shadow {
-    box-shadow: none;
-    border: none !important;
-}
+//.el-card.is-always-shadow {
+//    box-shadow: none;
+//    border: none !important;
+//}
 
+.el-card {
+  border: none !important;
+}
 .el-menu--horizontal {
     border-bottom: none !important;
 }

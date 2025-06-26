@@ -9,6 +9,7 @@ import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.vo.ContentFileNode;
 import com.haruhi.botServer.vo.FileNode;
+import com.haruhi.botServer.ws.BotServer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ public class SystemController {
     private SystemService systemService;
     @Autowired
     private WebuiConfig webuiConfig;
+
+    @Autowired
+    private BotServer botServer;
 
     /**
      * 找出父级路径下的所有文件和目录
@@ -137,6 +141,25 @@ public class SystemController {
             log.error("保存异常",e);
             return HttpResp.success("保存异常："+e.getMessage(),null);
         }
+    }
+
+    @GetMapping("/botws/info")
+    public HttpResp<SystemService.BotWebSocketInfo> botWebSocketInfo() {
+
+        return HttpResp.success(systemService.getBotWebSocketInfo());
+    }
+
+    @PostMapping("/botws/opt")
+    public HttpResp botWebSocketOperation(@RequestParam String command) {
+        if ("1".equals(command)) {
+            botServer.start();
+            return HttpResp.success("已启动",systemService.getBotWebSocketInfo());
+        }
+        if ("2".equals(command)) {
+            botServer.stop();
+            return HttpResp.success("已逻辑停止",systemService.getBotWebSocketInfo());
+        }
+        return HttpResp.fail("不支持的操作",null);
     }
 
 

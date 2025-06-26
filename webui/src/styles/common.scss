@@ -143,6 +143,9 @@ a{
 .danger-text{
   color: #F56C6CFF;
 }
+.info-form-item{
+  margin-bottom: 0;
+}
 // ele样式覆盖
 @import './element-ui.scss';
 // 顶部右侧显示

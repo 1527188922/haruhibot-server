@@ -1,8 +1,7 @@
 <template>
   <div class="basic-container"
-       :style="styleName"
        :class="{'basic-container--block':block}">
-    <el-card class="basic-container__card">
+    <el-card class="basic-container__card" :style="styleName" :shadow="shadow">
       <div slot="header" v-if="showHeader">
         <slot name="header"></slot>
       </div>
@@ -15,9 +14,14 @@
 export default {
   name: "basicContainer",
   props: {
+    shadow:{
+      type: String,
+      // never always hover
+      default: 'never'
+    },
     radius: {
       type: [String, Number],
-      default: 10
+      default: 4
     },
     background: {
       type: String
@@ -34,8 +38,8 @@ export default {
   computed: {
     styleName () {
       return {
-        borderRadius: this.setPx(this.radius),
-        background: this.background,
+        borderRadius: `${this.radius}px`,
+        background: this.background
       }
     }
   }
