@@ -144,7 +144,7 @@ a{
   color: #F56C6CFF;
 }
 .info-form-item{
-  margin-bottom: 0;
+  margin-bottom: 0 !important;
 }
 // ele样式覆盖
 @import './element-ui.scss';
