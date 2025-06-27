@@ -42,20 +42,20 @@ export default {
 
 <style scoped lang="scss">
 #index {
-  .block{
+  ::v-deep .block{
     display: inline-block;
     vertical-align: top;
     padding: 0;
     margin: 0 0 10px 15px;
     width: 300px;
-    ::v-deep .el-card{
+    .el-card{
       min-height: 350px;
       .el-card__body{
         min-height: calc(350px - 30px - 60px);
       }
     }
   }
-  .title{
+  ::v-deep .title{
     margin-bottom: 0;
     text-align: center;
     font-weight: bold;
