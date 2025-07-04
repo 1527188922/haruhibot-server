@@ -1,11 +1,14 @@
 package com.haruhi.botServer.config;
 
+import com.haruhi.botServer.utils.FileUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
+import java.io.IOException;
 import java.text.MessageFormat;
 
 @Component
@@ -19,6 +22,7 @@ public class DataBaseConfig {
     public final static String DATA_SOURCE_MASTER = "master";
     // 系统数据源名称
     public final static String DATA_SOURCE_SYSTEM = "system";
+    public final static String DATA_SOURCE_MYSQL = "mysql";
 
     // 群聊天历史
     public final static String T_CHAT_RECORD = "t_chat_record";
@@ -36,30 +40,42 @@ public class DataBaseConfig {
 
 
     // 驱动类全命名 reference
-    @Value("${spring.datasource.dynamic.datasource.master.driver-class-name}")
+//    @Value("${spring.datasource.dynamic.datasource.master.driver-class-name}")
     private String masterDriverClassName;
     // bot数据库名称
-    @Value("${mysql.dbName}")
+//    @Value("${mysql.dbName}")
     private String masterDBName;
     // 数据库用户名
-    @Value("${mysql.username}")
+//    @Value("${mysql.username}")
     private String masterUsername;
     // 数据库密码
-    @Value("${mysql.password}")
+//    @Value("${mysql.password}")
     private String masterPassword;
     //  数据库 host
-    @Value("${mysql.host}")
+//    @Value("${mysql.host}")
     private String masterHost;
     // 数据库 port
-    @Value("${mysql.port}")
+//    @Value("${mysql.port}")
     private String masterPort;
     private String masterJdbcUrl;
 
 
-    @PostConstruct
-    private void postConstruct(){
-        masterJdbcUrl = MessageFormat.format(JDBC_URL_TEMPLATE, masterHost, masterPort, masterDBName);
-        log.info("masterJdbcUrl:{}", masterJdbcUrl);
-    }
+//    @PostConstruct
+//    private void postConstruct(){
+//        File file = new File(FileUtil.getAppDir() + File.separator + "data\\haruhibot_server.db");
+//
+//        FileUtil.mkdirs(file.getParent());
+//        if (!file.exists()) {
+//            try {
+//                file.createNewFile();
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//
+//
+//        masterJdbcUrl = MessageFormat.format(JDBC_URL_TEMPLATE, masterHost, masterPort, masterDBName);
+//        log.info("masterJdbcUrl:{}", masterJdbcUrl);
+//    }
 
 }

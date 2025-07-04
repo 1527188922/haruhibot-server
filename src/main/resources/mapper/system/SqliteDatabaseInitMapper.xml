@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haruhi.botServer.mapper.system.SqliteDatabaseInitMapper">
+    <update id="createChatRecord">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+             card TEXT,
+             nickname TEXT,
+             message_id TEXT NOT NULL,
+             group_id INTEGER,
+             user_id INTEGER NOT NULL,
+             self_id INTEGER NOT NULL,
+             content TEXT,
+             deleted INTEGER NOT NULL DEFAULT 0,
+             message_type TEXT NOT NULL,
+             `time` TEXT NOT NULL
+        );
+    </update>
+    <update id="createIndex">
+        CREATE INDEX IF NOT EXISTS ${tableName}_${column}_IDX ON ${tableName} (${column});
+    </update>
+    <update id="createPokeReply">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `reply` TEXT NOT NULL
+        );
+    </update>
+    <update id="createCustomReply">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `regex` TEXT NOT NULL,
+            `reply` TEXT,
+            `deleted` INTEGER NOT NULL DEFAULT 0,
+            `is_text` INTEGER NOT NULL DEFAULT 1,
+            `relative_path` TEXT,
+            `cq_type` TEXT,
+            `url` TEXT,
+            `group_ids` TEXT,
+            `message_type` TEXT
+        );
+    </update>
+    <update id="createWordStrip">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `user_id` INTEGER NOT NULL,
+            `group_id` INTEGER NOT NULL,
+            `self_id` INTEGER NOT NULL,
+            `key_word` TEXT NOT NULL,
+            `answer` TEXT NOT NULL
+        );
+    </update>
+    <update id="createPixiv">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `pid` TEXT NOT NULL,
+            `title` TEXT NOT NULL,
+            `width` INTEGER ,
+            `height` INTEGER,
+            `view` INTEGER,
+            `bookmarks` INTEGER ,
+            `img_url` TEXT NOT NULL,
+            `img_p` TEXT ,
+            `uid` TEXT ,
+            `author` TEXT ,
+            `is_r18` INTEGER NOT NULL,
+            `tags` text NOT NULL
+        );
+    </update>
+    <update id="createSendLikeRecord">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `user_id` INTEGER NOT NULL,
+            `self_id` INTEGER NOT NULL,
+            `send_time` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `times` INTEGER NOT NULL,
+            `message_type` TEXT
+        );
+    </update>
+</mapper>

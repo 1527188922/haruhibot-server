@@ -18,13 +18,6 @@ chatgpt:
   cf-clearance:
   user-agent:
 
-mysql:
-  host: 127.0.0.1
-  port: 3306
-  dbName: haruhibot_server
-  username: root
-  password: yto123456
-
 job:
   downloadPixiv:
     cron: 0/15 * 0-7 * * ? *
@@ -66,10 +59,12 @@ spring:
     dynamic:
       datasource:
         master:
-          dbName: mysql
-          username: ${mysql.username}
-          password: ${mysql.password}
-          url: jdbc:mysql://${mysql.host}:${mysql.port}/${spring.datasource.dynamic.datasource.master.dbName}?useUnicode=true&characterEncoding=utf-8&useSSL=false
+          url: jdbc:sqlite::resource:data/haruhibot_server.db
+          driver-class-name: org.sqlite.JDBC
+        mysql:
+          username: root
+          password: yto123456
+          url: jdbc:mysql://localhost:3306/haruhibot_server?useUnicode=true&characterEncoding=utf-8&useSSL=false
           driver-class-name: com.mysql.cj.jdbc.Driver
   application:
     name: haruhi-bot-service
