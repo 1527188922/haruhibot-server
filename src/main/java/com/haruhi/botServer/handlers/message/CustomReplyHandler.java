@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.entity.CustomReply;
+import com.haruhi.botServer.entity.sqlite.CustomReplySqlite;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -34,8 +34,8 @@ public class CustomReplyHandler implements IAllMessageEvent {
         return HandlerWeightEnum.W_180.getName();
     }
 
-    private final static Map<String, List<CustomReply>> cache = new HashMap<>();
-    public static void putAllCache(Map<String, List<CustomReply>> other){
+    private final static Map<String, List<CustomReplySqlite>> cache = new HashMap<>();
+    public static void putAllCache(Map<String, List<CustomReplySqlite>> other){
         cache.putAll(other);
     }
 
@@ -51,8 +51,8 @@ public class CustomReplyHandler implements IAllMessageEvent {
             return false;
         }
 
-        List<CustomReply> replyList = null;
-        for (Map.Entry<String, List<CustomReply>> item : cache.entrySet()) {
+        List<CustomReplySqlite> replyList = null;
+        for (Map.Entry<String, List<CustomReplySqlite>> item : cache.entrySet()) {
             if (message.getText(0).trim().matches(item.getKey())) {
                 replyList = item.getValue();
                 break;
@@ -62,7 +62,7 @@ public class CustomReplyHandler implements IAllMessageEvent {
             return false;
         }
 
-        CustomReply customReply = replyList.size() == 1 ? replyList.get(0)
+        CustomReplySqlite customReply = replyList.size() == 1 ? replyList.get(0)
                 : replyList.get(CommonUtil.randomInt(0, replyList.size() - 1));
 
         boolean pass = customReply.pass(message.getMessageType(), 
@@ -72,7 +72,7 @@ public class CustomReplyHandler implements IAllMessageEvent {
         }
         
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            if (customReply.getIsText()) {
+            if (customReply.getIsText() == 1) {
                 if(StringUtils.isBlank(customReply.getReply())){
                     log.error("text类型自定义回复中，reply为空 {}", JSONObject.toJSONString(customReply));
                     return;

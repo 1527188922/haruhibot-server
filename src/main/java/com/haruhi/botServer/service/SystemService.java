@@ -7,7 +7,7 @@ import com.haruhi.botServer.handlers.message.face.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.handlers.message.face.JumpHandler;
 import com.haruhi.botServer.service.pokeReply.PokeReplyService;
-import com.haruhi.botServer.service.verbalTricks.CustomReplyService;
+import com.haruhi.botServer.service.sqlite.CustomReplySqliteService;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
@@ -43,7 +43,7 @@ public class SystemService {
     @Autowired
     private PokeReplyService pokeReplyService;
     @Autowired
-    private CustomReplyService verbalTricksService;
+    private CustomReplySqliteService customReplySqliteService;
     @Autowired
     private WordStripService wordStripService;
 
@@ -85,7 +85,7 @@ public class SystemService {
     public synchronized void loadCache(){
        try {
            pokeReplyService.loadPokeReply();
-           verbalTricksService.loadToCache();
+           customReplySqliteService.loadToCache();
            wordStripService.loadWordStrip();
            ScoldMeHandler.refreshFile();
            log.info("加载缓存完成");
@@ -96,7 +96,7 @@ public class SystemService {
     
     public synchronized void clearCache(){
         pokeReplyService.clearCache();
-        verbalTricksService.clearCache();
+        customReplySqliteService.clearCache();
         wordStripService.clearCache();
         HuaQHandler.clearHuaQFace();
         JumpHandler.clearJumpFace();
