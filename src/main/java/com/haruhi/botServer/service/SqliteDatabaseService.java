@@ -43,6 +43,8 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createWordStrip(DataBaseConfig.T_WORD_STRIP);
 
         sqliteDatabaseInitMapper.createPixiv(DataBaseConfig.T_PIXIV);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_PIXIV,"img_url");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_PIXIV,"is_r18");
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_PIXIV,"tags");
 
         sqliteDatabaseInitMapper.createSendLikeRecord(DataBaseConfig.T_SEND_LIKE_RECORD);
