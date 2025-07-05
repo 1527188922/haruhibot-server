@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.haruhi.botServer.mapper.ChatRecordMapper">
-    <select id="groupRecordCounting" resultType="com.haruhi.botServer.entity.ChatRecord">
-        SELECT group_id,t2.user_id,COUNT(t2.user_id) AS total FROM
-            ( SELECT t1.user_id,t1.group_id FROM t_chat_record t1 WHERE t1.group_id = #{groupId} AND t1.self_id = #{selfId} AND message_type = 'group' ) t2 
-        GROUP BY t2.user_id ORDER BY total DESC
-    </select>
-</mapper>

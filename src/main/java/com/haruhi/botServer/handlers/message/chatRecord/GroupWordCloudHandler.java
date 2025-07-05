@@ -4,6 +4,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
+import com.haruhi.botServer.service.sqlite.ChatRecordSqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.chatRecord.ChatRecordService;
 import com.haruhi.botServer.ws.Bot;
@@ -33,7 +34,7 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
     public static final Map<String, Integer> lock = new ConcurrentHashMap<>();
 
     @Autowired
-    private ChatRecordService groupChatHistoryService;
+    private ChatRecordSqliteService chatRecordSqliteService;
 
     private RegexEnum matching(final String command){
         String s = command.replaceAll(com.haruhi.botServer.constant.RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
@@ -61,26 +62,11 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
             lock.put(String.valueOf(message.getGroupId()) + message.getSelfId(),1);
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            groupChatHistoryService.sendWordCloudImage(bot,matching, message);
+            chatRecordSqliteService.sendWordCloudImage(bot,matching, message);
         });
         return true;
     }
-    private class Task implements Runnable{
-        private WebSocketSession session;
-        private ChatRecordService groupChatHistoryService;
-        private RegexEnum regexEnum;
-        private Message message;
-        public Task(WebSocketSession session, ChatRecordService groupChatHistoryService, RegexEnum regexEnum, Message message){
-            this.session = session;
-            this.groupChatHistoryService = groupChatHistoryService;
-            this.regexEnum = regexEnum;
-            this.message = message;
-        }
-        @Override
-        public void run() {
 
-        }
-    }
     public enum RegexEnum{
         YEAR("年度词云",TimeUnitEnum.YEAR),
         MONTH("本月词云",TimeUnitEnum.MONTH),

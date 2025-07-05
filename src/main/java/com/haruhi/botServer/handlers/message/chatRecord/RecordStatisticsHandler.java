@@ -10,11 +10,10 @@ import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
 import com.haruhi.botServer.dto.gocq.response.GroupMember;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
-import com.haruhi.botServer.entity.ChatRecord;
+import com.haruhi.botServer.entity.sqlite.ChatRecordSqlite;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.mapper.ChatRecordMapper;
+import com.haruhi.botServer.mapper.sqlite.ChatRecordSqliteMapper;
 import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
@@ -34,7 +33,7 @@ import java.util.List;
 public class RecordStatisticsHandler implements IGroupMessageEvent {
     
     @Autowired
-    private ChatRecordMapper chatRecordMapper;
+    private ChatRecordSqliteMapper chatRecordSqliteMapper;
 
     @Override
     public int weight() {
@@ -56,7 +55,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
                 long l = System.currentTimeMillis();
-                List<ChatRecord> chatRecords = chatRecordMapper.groupRecordCounting(message.getGroupId(), message.getSelfId());
+                List<ChatRecordSqlite> chatRecords = chatRecordSqliteMapper.groupRecordCounting(message.getGroupId(), message.getSelfId());
                 log.info("聊天记录分组执行sql cost:{}",System.currentTimeMillis() - l);
                 if(CollectionUtils.isEmpty(chatRecords)){
                     bot.sendGroupMessage(message.getGroupId(),"暂无聊天记录",true);
@@ -73,22 +72,22 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 
                 List<ForwardMsgItem> params = new ArrayList<>(chatRecords.size() + 1);
 
-                ChatRecord chatRecord = chatRecordMapper.selectOne(new LambdaQueryWrapper<ChatRecord>()
-                        .select(ChatRecord::getTime)
-                        .eq(ChatRecord::getGroupId, message.getGroupId())
-                        .eq(ChatRecord::getSelfId, message.getSelfId())
-                        .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
-                        .eq(ChatRecord::getDeleted, false)
-                        .orderByAsc(ChatRecord::getTime)
+                ChatRecordSqlite chatRecord = chatRecordSqliteMapper.selectOne(new LambdaQueryWrapper<ChatRecordSqlite>()
+                        .select(ChatRecordSqlite::getTime)
+                        .eq(ChatRecordSqlite::getGroupId, message.getGroupId())
+                        .eq(ChatRecordSqlite::getSelfId, message.getSelfId())
+                        .eq(ChatRecordSqlite::getMessageType, MessageTypeEnum.group.getType())
+                        .eq(ChatRecordSqlite::getDeleted, 0)
+                        .orderByAsc(ChatRecordSqlite::getTime)
                         .last("LIMIT 1"));
                 if(chatRecord != null && chatRecord.getTime() != null){
                     
                     params.add(new ForwardMsgItem(new ForwardMsgItem.Data(BotConfig.NAME, message.getSelfId(), 
-                            "从[" + DateTimeUtil.dateTimeFormat(chatRecord.getTime(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss) + "]开始统计")));
+                            "从[" + chatRecord.getTime() + "]开始统计")));
                 }
 
                 for (int i = 0; i < chatRecords.size(); i++) {
-                    ChatRecord item = chatRecords.get(i);
+                    ChatRecordSqlite item = chatRecords.get(i);
                     String name = getName(item, groupMemberList);
                     String imageCq = KQCodeUtils.getInstance().toCq(CqCodeTypeEnum.image.getType(), 
                             "file=" + CommonUtil.getAvatarUrl(item.getUserId(), false));
@@ -116,7 +115,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
         return true;
     }
 
-    private String getName(ChatRecord e, List<GroupMember> groupMemberList){
+    private String getName(ChatRecordSqlite e, List<GroupMember> groupMemberList){
         String card = null;
         String nickName = null;
         if(!CollectionUtils.isEmpty(groupMemberList)){
@@ -136,13 +135,13 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
             return nickName;
         }
 
-        ChatRecord chatRecord = chatRecordMapper.selectOne(new LambdaQueryWrapper<ChatRecord>()
-                .select(ChatRecord::getCard,ChatRecord::getNickname)
-                .eq(ChatRecord::getUserId,e.getUserId())
-                .eq(ChatRecord::getGroupId, e.getGroupId())
-                .eq(ChatRecord::getMessageType, MessageTypeEnum.group.getType())
-                .eq(ChatRecord::getDeleted, false)
-                .orderByDesc(ChatRecord::getTime)
+        ChatRecordSqlite chatRecord = chatRecordSqliteMapper.selectOne(new LambdaQueryWrapper<ChatRecordSqlite>()
+                .select(ChatRecordSqlite::getCard,ChatRecordSqlite::getNickname)
+                .eq(ChatRecordSqlite::getUserId,e.getUserId())
+                .eq(ChatRecordSqlite::getGroupId, e.getGroupId())
+                .eq(ChatRecordSqlite::getMessageType, MessageTypeEnum.group.getType())
+                .eq(ChatRecordSqlite::getDeleted, 0)
+                .orderByDesc(ChatRecordSqlite::getTime)
                 .last("LIMIT 1"));
         if(chatRecord != null){
             return StringUtils.isNotBlank(chatRecord.getCard()) ? chatRecord.getCard()

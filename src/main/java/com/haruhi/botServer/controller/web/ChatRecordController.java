@@ -3,8 +3,8 @@ package com.haruhi.botServer.controller.web;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.controller.HttpResp;
-import com.haruhi.botServer.entity.ChatRecord;
-import com.haruhi.botServer.service.chatRecord.ChatRecordService;
+import com.haruhi.botServer.entity.sqlite.ChatRecordSqlite;
+import com.haruhi.botServer.service.sqlite.ChatRecordSqliteService;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,12 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class ChatRecordController {
 
     @Autowired
-    private ChatRecordService chatRecordService;
+    private ChatRecordSqliteService chatRecordSqliteService;
 
 
     @PostMapping("/search")
-    public HttpResp<IPage<ChatRecord>> list(@RequestBody ChatRecordQueryReq request){
-        IPage<ChatRecord> list = chatRecordService.search(request, true);
+    public HttpResp<IPage<ChatRecordSqlite>> list(@RequestBody ChatRecordQueryReq request){
+        IPage<ChatRecordSqlite> list = chatRecordSqliteService.search(request, true);
         return HttpResp.success(list);
     }
 }

@@ -14,9 +14,9 @@ import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.gocq.response.DownloadFileResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
-import com.haruhi.botServer.entity.ChatRecord;
+import com.haruhi.botServer.entity.sqlite.ChatRecordSqlite;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.service.chatRecord.ChatRecordService;
+import com.haruhi.botServer.service.sqlite.ChatRecordSqliteService;
 import com.haruhi.botServer.utils.*;
 import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
 import com.haruhi.botServer.ws.Bot;
@@ -51,7 +51,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
     }
     
     @Autowired
-    private ChatRecordService chatRecordService;
+    private ChatRecordSqliteService chatRecordSqliteService;
     @Autowired
     private AbstractWebResourceConfig webResourceConfig;
     
@@ -86,10 +86,10 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
             try {
                 long l = System.currentTimeMillis();
                 List<String> atQQs = message.getAtQQs();
-                List<ChatRecord> list = chatRecordService.list(new LambdaQueryWrapper<ChatRecord>()
-                        .eq(ChatRecord::getGroupId,message.getGroupId())
-                        .in(!CollectionUtils.isEmpty(atQQs),ChatRecord::getUserId,atQQs.stream().map(Long::parseLong).collect(Collectors.toList()))
-                        .orderByDesc(ChatRecord::getTime));
+                List<ChatRecordSqlite> list = chatRecordSqliteService.list(new LambdaQueryWrapper<ChatRecordSqlite>()
+                        .eq(ChatRecordSqlite::getGroupId,message.getGroupId())
+                        .in(!CollectionUtils.isEmpty(atQQs),ChatRecordSqlite::getUserId,atQQs.stream().map(Long::parseLong).collect(Collectors.toList()))
+                        .orderByDesc(ChatRecordSqlite::getTime));
                 long l4 = System.currentTimeMillis() - l;
                 log.info("查询聊天记录完成，耗时：{} 数量：{}",l4, list.size());
                 if(CollectionUtils.isEmpty(list)){
@@ -151,16 +151,16 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
         bot.sendGroupMessage(message.getGroupId(),"开始生成Excel文件...",true);
     }
 
-    private List<ChatRecordExportBody> convertObjToExcelData(List<ChatRecord> chatRecordList){
+    private List<ChatRecordExportBody> convertObjToExcelData(List<ChatRecordSqlite> chatRecordList){
         List<ChatRecordExportBody> res = new ArrayList<>();
         long l = System.currentTimeMillis();
-        for (ChatRecord record : chatRecordList) {
+        for (ChatRecordSqlite record : chatRecordList) {
             ChatRecordExportBody exportBody = new ChatRecordExportBody();
             exportBody.setCard(record.getCard());
             exportBody.setNickName(record.getNickname());
             exportBody.setUserId(String.valueOf(record.getUserId()));
             exportBody.setContent(record.getContent());
-            exportBody.setCreateTime(DateTimeUtil.dateTimeFormat(record.getTime(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+            exportBody.setCreateTime(record.getTime());
             res.add(exportBody);
         }
         log.info("转excel实体完成 耗时：{}",System.currentTimeMillis() - l);
