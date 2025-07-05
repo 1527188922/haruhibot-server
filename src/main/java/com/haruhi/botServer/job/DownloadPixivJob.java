@@ -2,9 +2,9 @@ package com.haruhi.botServer.job;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.entity.Pixiv;
+import com.haruhi.botServer.entity.sqlite.PixivSqlite;
 import com.haruhi.botServer.job.schedule.AbstractJob;
-import com.haruhi.botServer.service.pixiv.PixivService;
+import com.haruhi.botServer.service.sqlite.PixivSqliteService;
 import com.haruhi.botServer.utils.RestUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +47,7 @@ public class DownloadPixivJob extends AbstractJob {
     }
 
     @Autowired
-    private PixivService pixivService;
+    private PixivSqliteService pixivService;
 
     private static Map<String,Object> param;
     private static Map<String,Object> paramR18;
@@ -70,10 +70,10 @@ public class DownloadPixivJob extends AbstractJob {
 
     private class DownloadTask implements Runnable{
         private Map<String,Object> param;
-        private PixivService pixivService;
+        private PixivSqliteService pixivSqliteService;
 
-        DownloadTask(PixivService pixivService, Map<String,Object> param){
-            this.pixivService = pixivService;
+        DownloadTask(PixivSqliteService pixivService, Map<String,Object> param){
+            this.pixivSqliteService = pixivService;
             this.param = param;
         }
 
@@ -92,10 +92,10 @@ public class DownloadPixivJob extends AbstractJob {
                 }
                 int total = 0;
                 for (PixivItem e : data) {
-                    int count = pixivService.count(new LambdaQueryWrapper<Pixiv>()
-                            .eq(Pixiv::getImgUrl,e.getUrls().getOriginal()));
+                    int count = pixivSqliteService.count(new LambdaQueryWrapper<PixivSqlite>()
+                            .eq(PixivSqlite::getImgUrl,e.getUrls().getOriginal()));
                     if(count == 0){
-                        Pixiv param = new Pixiv();
+                        PixivSqlite param = new PixivSqlite();
                         param.setPid(e.getPid());
                         param.setTitle(e.getTitle());
                         param.setWidth(e.getWidth());
@@ -103,14 +103,14 @@ public class DownloadPixivJob extends AbstractJob {
                         param.setImgUrl(e.getUrls().getOriginal());
                         param.setUid(e.getUid());
                         param.setAuthor(e.getAuthor());
-                        param.setIsR18(e.getR18());
+                        param.setIsR18(e.getR18() ? 1 : 0);
                         List<String> tags = e.getTags();
                         String str = "";
                         for (String tag : tags) {
                             str += tag + ",";
                         }
                         param.setTags(str.substring(0,str.length() - 1));
-                        if(pixivService.save(param)){
+                        if(pixivSqliteService.save(param)){
                             total++;
                         }
                     }

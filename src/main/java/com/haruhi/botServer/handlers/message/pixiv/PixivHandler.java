@@ -4,6 +4,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.service.sqlite.PixivSqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.pixiv.PixivService;
 import com.haruhi.botServer.ws.Bot;
@@ -30,7 +31,7 @@ public class PixivHandler implements IAllMessageEvent {
     }
 
     @Autowired
-    private PixivService pixivService;
+    private PixivSqliteService pixivSqliteService;
 
 
     @Override
@@ -64,7 +65,7 @@ public class PixivHandler implements IAllMessageEvent {
         List<String> finalTags = tags;
         String finalTag = tag;
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            pixivService.roundSend(bot,20,null, finalTags,message, finalTag);
+            pixivSqliteService.roundSend(bot,20,null, finalTags,message, finalTag);
         });
         return true;
     }

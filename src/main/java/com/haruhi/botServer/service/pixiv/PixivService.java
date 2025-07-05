@@ -10,6 +10,5 @@ import java.util.List;
 
 public interface PixivService extends IService<Pixiv> {
 
-    void roundSend(Bot bot, int num, Boolean isR18, List<String> tags, Message message, String tag);
 
 }

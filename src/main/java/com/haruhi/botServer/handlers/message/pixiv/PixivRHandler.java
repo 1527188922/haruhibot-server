@@ -4,8 +4,8 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.service.sqlite.PixivSqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.service.pixiv.PixivService;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -21,7 +21,7 @@ import java.util.List;
 public class PixivRHandler implements IAllMessageEvent {
 
     @Autowired
-    private PixivService pixivService;
+    private PixivSqliteService pixivSqliteService;
 
     @Override
     public int weight() {
@@ -57,7 +57,7 @@ public class PixivRHandler implements IAllMessageEvent {
         List<String> finalTags = tags;
         String finalTag = tag;
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            pixivService.roundSend(bot,20,true, finalTags,message, finalTag);
+            pixivSqliteService.roundSend(bot,20,true, finalTags,message, finalTag);
         });
 
         return true;
