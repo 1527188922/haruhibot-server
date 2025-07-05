@@ -1,13 +1,12 @@
 package com.haruhi.botServer.handlers.message.pixiv;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.sqlite.PixivSqlite;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
-import com.haruhi.botServer.service.sqlite.PixivSqliteService;
+import com.haruhi.botServer.service.PixivSqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;

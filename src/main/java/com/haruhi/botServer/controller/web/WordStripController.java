@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.controller.HttpResp;
 import com.haruhi.botServer.entity.sqlite.WordStripSqlite;
-import com.haruhi.botServer.service.sqlite.WordStripSqliteService;
+import com.haruhi.botServer.service.WordStripSqliteService;
 import com.haruhi.botServer.vo.WordStripQueryReq;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;

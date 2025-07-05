@@ -14,7 +14,7 @@ public class TestSubject implements CommandLineRunner {
 
     private static Set<ISpringTester> testers = new HashSet<>();
 
-    @Autowired
+    @Autowired(required = false)
     public void setTesters(Map<String, ISpringTester> testerMap){
         testers.addAll(testerMap.values());
     }

@@ -7,7 +7,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
 import com.haruhi.botServer.entity.sqlite.SendLikeRecordSqlite;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
-import com.haruhi.botServer.service.sqlite.SendLikeRecordSqliteService;
+import com.haruhi.botServer.service.SendLikeRecordSqliteService;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;

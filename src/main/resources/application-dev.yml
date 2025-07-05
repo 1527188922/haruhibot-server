@@ -61,10 +61,5 @@ spring:
         master:
           url: jdbc:sqlite::resource:data/haruhibot_server.db
           driver-class-name: org.sqlite.JDBC
-        mysql:
-          username: root
-          password: yto123456
-          url: jdbc:mysql://localhost:3306/haruhibot_server?useUnicode=true&characterEncoding=utf-8&useSSL=false
-          driver-class-name: com.mysql.cj.jdbc.Driver
   application:
     name: haruhi-bot-service

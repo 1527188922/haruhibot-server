@@ -1,7 +1,7 @@
 package com.haruhi.botServer.service;
 
 import com.haruhi.botServer.config.DataBaseConfig;
-import com.haruhi.botServer.mapper.sqlite.SqliteDatabaseInitMapper;
+import com.haruhi.botServer.mapper.SqliteDatabaseInitMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

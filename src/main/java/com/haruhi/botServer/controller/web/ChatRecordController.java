@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.controller.HttpResp;
 import com.haruhi.botServer.entity.sqlite.ChatRecordSqlite;
-import com.haruhi.botServer.service.sqlite.ChatRecordSqliteService;
+import com.haruhi.botServer.service.ChatRecordSqliteService;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;

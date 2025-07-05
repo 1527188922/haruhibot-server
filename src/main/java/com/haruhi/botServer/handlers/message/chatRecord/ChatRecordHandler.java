@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.sqlite.ChatRecordSqlite;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
-import com.haruhi.botServer.service.sqlite.ChatRecordSqliteService;
+import com.haruhi.botServer.service.ChatRecordSqliteService;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;

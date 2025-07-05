@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.entity.sqlite.PixivSqlite;
 import com.haruhi.botServer.job.schedule.AbstractJob;
-import com.haruhi.botServer.service.sqlite.PixivSqliteService;
+import com.haruhi.botServer.service.PixivSqliteService;
 import com.haruhi.botServer.utils.RestUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
