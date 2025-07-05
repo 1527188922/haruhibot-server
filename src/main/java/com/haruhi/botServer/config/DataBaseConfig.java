@@ -1,15 +1,8 @@
 package com.haruhi.botServer.config;
 
-import com.haruhi.botServer.utils.FileUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.IOException;
-import java.text.MessageFormat;
 
 @Component
 @Slf4j
@@ -20,8 +13,8 @@ public class DataBaseConfig {
 
     // bot数据源名称
     public final static String DATA_SOURCE_MASTER = "master";
-    // 系统数据源名称
-    public final static String DATA_SOURCE_SYSTEM = "system";
+    // mysql系统数据源名称
+    public final static String DATA_SOURCE_MYSQL_SYSTEM = "mysql_system";
     public final static String DATA_SOURCE_MYSQL = "mysql";
 
     // 群聊天历史
