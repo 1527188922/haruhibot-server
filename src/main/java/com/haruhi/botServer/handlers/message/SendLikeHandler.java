@@ -5,9 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
-import com.haruhi.botServer.entity.SendLikeRecord;
+import com.haruhi.botServer.entity.sqlite.SendLikeRecordSqlite;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
-import com.haruhi.botServer.service.sendLikeRecord.SendLikeRecordService;
+import com.haruhi.botServer.service.sqlite.SendLikeRecordSqliteService;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -33,7 +33,7 @@ public class SendLikeHandler implements IAllMessageEvent {
     }
 
     @Autowired
-    private SendLikeRecordService sendLikeRecordService;
+    private SendLikeRecordSqliteService sendLikeRecordService;
 
     private static final int TIMES = 10;
 
@@ -83,10 +83,10 @@ public class SendLikeHandler implements IAllMessageEvent {
     }
 
     private void record(Message message){
-        SendLikeRecord record = new SendLikeRecord();
+        SendLikeRecordSqlite record = new SendLikeRecordSqlite();
         record.setUserId(message.getUserId());
         record.setSelfId(message.getSelfId());
-        record.setSendTime(new Date());
+        record.setSendTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
         record.setTimes(TIMES);
         record.setMessageType(message.getMessageType());
         sendLikeRecordService.save(record);
@@ -94,10 +94,12 @@ public class SendLikeHandler implements IAllMessageEvent {
 
     private boolean isLiked(Long userId, Long selfId){
         Date d = new Date();
-        int count = sendLikeRecordService.count(new LambdaQueryWrapper<SendLikeRecord>()
-                .eq(SendLikeRecord::getUserId, userId)
-                .eq(SendLikeRecord::getSelfId, selfId)
-                .between(SendLikeRecord::getSendTime, DateTimeUtil.getStartOfDay(d), DateTimeUtil.getEndOfDay(d)));
+        int count = sendLikeRecordService.count(new LambdaQueryWrapper<SendLikeRecordSqlite>()
+                .eq(SendLikeRecordSqlite::getUserId, userId)
+                .eq(SendLikeRecordSqlite::getSelfId, selfId)
+                .between(SendLikeRecordSqlite::getSendTime,
+                        DateTimeUtil.dateTimeFormat(DateTimeUtil.getStartOfDay(d), DateTimeUtil.PatternEnum.yyyyMMddHHmmss),
+                        DateTimeUtil.dateTimeFormat(DateTimeUtil.getEndOfDay(d), DateTimeUtil.PatternEnum.yyyyMMddHHmmss)));
         return count > 0;
     }
 }

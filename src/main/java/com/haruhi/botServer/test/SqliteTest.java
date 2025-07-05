@@ -1,16 +1,11 @@
 package com.haruhi.botServer.test;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.haruhi.botServer.entity.SendLikeRecord;
 import com.haruhi.botServer.entity.sqlite.SendLikeRecordSqlite;
 import com.haruhi.botServer.service.sendLikeRecord.SendLikeRecordService;
 import com.haruhi.botServer.service.sqlite.SendLikeRecordSqliteService;
-import com.haruhi.botServer.utils.DateTimeUtil;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 
 @Component
 public class SqliteTest implements ISpringTester{
