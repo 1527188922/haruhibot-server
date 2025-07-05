@@ -1,5 +1,6 @@
 package com.haruhi.botServer.utils;
 
+import com.haruhi.botServer.config.DataBaseConfig;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -25,6 +26,7 @@ public class FileUtil {
     public static final String DIR_APP_TEMP = "temp";
     public static final String DIR_AUDIO = "audio";
     public static final String DIR_AUDIO_DG = "dg";
+    public static final String DIR_APP_DATA = "data";
 
     public static final String DIR_IMAGE = "image"; 
     public static final String DIR_IMAGE_BULLET_WORD_CLOUD = "bulletWordCloud";
@@ -192,6 +194,14 @@ public class FileUtil {
         } catch (IOException e) {
             return FileUtil.class.getClassLoader().getResource("").getPath();
         }
+    }
+
+    public static String getDataDir() {
+        return getAppDir() + File.separator + DIR_APP_DATA;
+    }
+
+    public static String getSqliteDatabaseFile() {
+        return getDataDir() + File.separator + DataBaseConfig.SQLITE_DATABASE_FILE_NAME;
     }
 
     /**

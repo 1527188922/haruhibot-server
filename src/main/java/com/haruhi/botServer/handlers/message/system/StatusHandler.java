@@ -2,7 +2,6 @@ package com.haruhi.botServer.handlers.message.system;
 
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.config.DataBaseConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -52,8 +51,6 @@ public class StatusHandler implements IAllMessageEvent {
 
     @Autowired
     private AbstractWebResourceConfig pathConfig;
-    @Autowired
-    private DataBaseConfig dataBaseConfig;
 
     private String getProperties(String messageType){
         StringBuilder sysPropStr = new StringBuilder("------系统信息------\n");
@@ -74,12 +71,7 @@ public class StatusHandler implements IAllMessageEvent {
             sysPropStr.append("AccessToken：" + BotConfig.ACCESS_TOKEN).append("\n");
             sysPropStr.append("识图key：" + BotConfig.SEARCH_IMAGE_KEY).append("\n");
             sysPropStr.append("超级用户：" + BotConfig.SUPERUSERS).append("\n");
-            sysPropStr.append("程序路径："+ FileUtil.getAppDir()).append("\n");
-            sysPropStr.append("------数据库信息------ \n");
-            sysPropStr.append("数据库名称：" + dataBaseConfig.getMasterDBName()).append("\n");
-            sysPropStr.append("IP:PORT：" + dataBaseConfig.getMasterHost() + ":" + dataBaseConfig.getMasterPort()).append("\n");
-            sysPropStr.append("username：" + dataBaseConfig.getMasterUsername()).append("\n");
-            sysPropStr.append("password：" + dataBaseConfig.getMasterPassword());
+            sysPropStr.append("程序路径："+ FileUtil.getAppDir());
         }
 
         return sysPropStr.toString();

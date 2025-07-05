@@ -31,7 +31,7 @@ public class SqliteDatabaseInitAspect {
         if (!DataBaseConfig.DATA_SOURCE_MASTER.equals(dataSourceProperty.getPollName())) {
             return;
         }
-        File file = new File(FileUtil.getAppDir() + File.separator + "data"+File.separator+"haruhibot_server.db");
+        File file = new File(FileUtil.getSqliteDatabaseFile());
         FileUtil.mkdirs(file.getParent());
 
         if (!file.exists()) {
