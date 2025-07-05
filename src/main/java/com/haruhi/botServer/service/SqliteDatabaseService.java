@@ -39,8 +39,20 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createPokeReply(DataBaseConfig.T_POKE_REPLY);
 
         sqliteDatabaseInitMapper.createCustomReply(DataBaseConfig.T_CUSTOM_REPLY);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"regex");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"cq_type");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"is_text");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"group_ids");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"deleted");
+
 
         sqliteDatabaseInitMapper.createWordStrip(DataBaseConfig.T_WORD_STRIP);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"user_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"group_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"key_word");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"create_time");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"modify_time");
+
 
         sqliteDatabaseInitMapper.createPixiv(DataBaseConfig.T_PIXIV);
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_PIXIV,"img_url");
@@ -48,9 +60,15 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_PIXIV,"tags");
 
         sqliteDatabaseInitMapper.createSendLikeRecord(DataBaseConfig.T_SEND_LIKE_RECORD);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_SEND_LIKE_RECORD,"message_type");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_SEND_LIKE_RECORD,"self_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_SEND_LIKE_RECORD,"user_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_SEND_LIKE_RECORD,"send_time");
+
 
         sqliteDatabaseInitMapper.createDictionary(DataBaseConfig.T_DICTIONARY);
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_DICTIONARY,"key");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_DICTIONARY,"content");
     }
 
 }

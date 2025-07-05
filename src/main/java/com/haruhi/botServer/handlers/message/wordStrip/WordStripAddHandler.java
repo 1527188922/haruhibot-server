@@ -7,6 +7,7 @@ import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.entity.sqlite.WordStripSqlite;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.service.sqlite.WordStripSqliteService;
+import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.text.MessageFormat;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -69,6 +71,7 @@ public class WordStripAddHandler implements IGroupMessageEvent {
                     if(wordStrip.getUserId().equals(message.getUserId())){
                         // 修改人为创建人
                         param.setAnswer(finalAnswer);
+                        param.setModifyTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
                         save = wordStripService.update(param,queryWrapper);
                     }else{
                         bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("已存在词条：{0}",finalKeyWord),false);
@@ -80,6 +83,9 @@ public class WordStripAddHandler implements IGroupMessageEvent {
                     param.setGroupId(message.getGroupId());
                     param.setUserId(message.getUserId());
                     param.setSelfId(message.getSelfId());
+                    Date date = new Date();
+                    param.setCreateTime(DateTimeUtil.dateTimeFormat(date, DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+                    param.setModifyTime(DateTimeUtil.dateTimeFormat(date, DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
                     save = wordStripService.save(param);
                 }
                 if(save){

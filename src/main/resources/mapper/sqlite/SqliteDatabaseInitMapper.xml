@@ -46,7 +46,9 @@
             `group_id` INTEGER NOT NULL,
             `self_id` INTEGER NOT NULL,
             `key_word` TEXT NOT NULL,
-            `answer` TEXT NOT NULL
+            `answer` TEXT NOT NULL,
+            `create_time` DATETIME,
+            `modify_time` DATETIME
         );
     </update>
     <update id="createPixiv">
