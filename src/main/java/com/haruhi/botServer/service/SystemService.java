@@ -8,6 +8,7 @@ import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.handlers.message.face.JumpHandler;
 import com.haruhi.botServer.service.sqlite.CustomReplySqliteService;
 import com.haruhi.botServer.service.sqlite.PokeReplySqliteService;
+import com.haruhi.botServer.service.sqlite.WordStripSqliteService;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
@@ -45,7 +46,7 @@ public class SystemService {
     @Autowired
     private CustomReplySqliteService customReplySqliteService;
     @Autowired
-    private WordStripService wordStripService;
+    private WordStripSqliteService wordStripService;
 
     private BotServer botServer;
 

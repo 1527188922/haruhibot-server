@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.entity.WordStrip;
+import com.haruhi.botServer.entity.sqlite.WordStripSqlite;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
+import com.haruhi.botServer.service.sqlite.WordStripSqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.service.wordStrip.WordStripService;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -30,7 +30,7 @@ public class WordStripDeleteHandler implements IGroupMessageEvent {
     }
 
     @Autowired
-    private WordStripService wordStripService;
+    private WordStripSqliteService wordStripService;
 
     @Override
     public boolean onGroup(Bot bot, Message message) {
@@ -45,9 +45,11 @@ public class WordStripDeleteHandler implements IGroupMessageEvent {
 
         final String finalKeyWord = keyWord;
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            LambdaQueryWrapper<WordStrip> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(WordStrip::getGroupId,message.getGroupId()).eq(WordStrip::getSelfId,message.getSelfId()).eq(WordStrip::getKeyWord, finalKeyWord);
-            WordStrip one = wordStripService.getOne(queryWrapper);
+            LambdaQueryWrapper<WordStripSqlite> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(WordStripSqlite::getGroupId,message.getGroupId())
+                    .eq(WordStripSqlite::getSelfId,message.getSelfId())
+                    .eq(WordStripSqlite::getKeyWord, finalKeyWord);
+            WordStripSqlite one = wordStripService.getOne(queryWrapper);
             if(one == null){
                 bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("词条不存在：{0}",finalKeyWord),false);
                 return;

@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.entity.WordStrip;
+import com.haruhi.botServer.entity.sqlite.WordStripSqlite;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
+import com.haruhi.botServer.service.sqlite.WordStripSqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.service.wordStrip.WordStripService;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +31,7 @@ public class WordStripShowHandler implements IGroupMessageEvent {
     }
 
     @Autowired
-    private WordStripService wordStripService;
+    private WordStripSqliteService wordStripService;
 
     @Override
     public boolean onGroup(Bot bot, final Message message) {
@@ -39,9 +39,9 @@ public class WordStripShowHandler implements IGroupMessageEvent {
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            LambdaQueryWrapper<WordStrip> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(WordStrip::getGroupId,message.getGroupId()).eq(WordStrip::getSelfId,message.getSelfId());
-            List<WordStrip> list = wordStripService.list(queryWrapper);
+            LambdaQueryWrapper<WordStripSqlite> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(WordStripSqlite::getGroupId,message.getGroupId()).eq(WordStripSqlite::getSelfId,message.getSelfId());
+            List<WordStripSqlite> list = wordStripService.list(queryWrapper);
             if(CollectionUtils.isEmpty(list)){
                 bot.sendGroupMessage(message.getGroupId(),"本群没有词条",true);
                 return;
@@ -51,9 +51,9 @@ public class WordStripShowHandler implements IGroupMessageEvent {
         return true;
     }
 
-    private String processWordStrip(List<WordStrip> list){
+    private String processWordStrip(List<WordStripSqlite> list){
         StringBuilder stringBuilder = new StringBuilder("本群词条：\n");
-        for (WordStrip wordStrip : list) {
+        for (WordStripSqlite wordStrip : list) {
             stringBuilder.append(MessageFormat.format("[{0}]-[{1}] 创建人：{2}\n",wordStrip.getKeyWord(),wordStrip.getAnswer(),String.valueOf(wordStrip.getUserId())));
         }
         return stringBuilder.toString();

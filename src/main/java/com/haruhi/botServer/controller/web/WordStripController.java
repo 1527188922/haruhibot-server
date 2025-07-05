@@ -4,8 +4,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.controller.HttpResp;
-import com.haruhi.botServer.entity.WordStrip;
-import com.haruhi.botServer.service.wordStrip.WordStripService;
+import com.haruhi.botServer.entity.sqlite.WordStripSqlite;
+import com.haruhi.botServer.service.sqlite.WordStripSqliteService;
 import com.haruhi.botServer.vo.WordStripQueryReq;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -26,19 +26,19 @@ public class WordStripController {
 
 
     @Autowired
-    private WordStripService wordStripService;
+    private WordStripSqliteService wordStripService;
 
 
     @PostMapping("/search")
-    public HttpResp<IPage<WordStrip>> search(@RequestBody WordStripQueryReq request) {
-        IPage<WordStrip> list = wordStripService.search(request, true);
+    public HttpResp<IPage<WordStripSqlite>> search(@RequestBody WordStripQueryReq request) {
+        IPage<WordStripSqlite> list = wordStripService.search(request, true);
         return HttpResp.success(list);
     }
 
     @PostMapping("/deleteBatch")
-    public HttpResp search(@RequestBody List<WordStrip> request) {
+    public HttpResp search(@RequestBody List<WordStripSqlite> request) {
         List<Long> ids = request.stream()
-                .map(WordStrip::getId)
+                .map(WordStripSqlite::getId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
