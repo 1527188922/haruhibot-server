@@ -98,8 +98,7 @@ public class DateTimeUtil {
         return df.format(date);
     }
     public static String dateTimeFormat(long timestamp, PatternEnum patternEnum){
-        SimpleDateFormat df = new SimpleDateFormat(patternEnum.pattern);
-        return df.format(new Date(timestamp));
+        return dateTimeFormat(new Date(timestamp), patternEnum);
     }
 
     public static Date parseDate(String dateStr,PatternEnum patternEnum){

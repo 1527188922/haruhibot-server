@@ -74,6 +74,11 @@ public class ChatRecordHandler implements IAllMessageEvent {
             record.setTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
             return;
         }
-        record.setTime(DateTimeUtil.dateTimeFormat(message.getTime(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+
+        if(String.valueOf(message.getTime()).length() == 10){
+            record.setTime(DateTimeUtil.dateTimeFormat(new Date(message.getTime() * 1000), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+        }else{
+            record.setTime(DateTimeUtil.dateTimeFormat(message.getTime(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+        }
     }
 }
