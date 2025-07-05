@@ -1,4 +1,4 @@
-package com.haruhi.botServer.mapper.system;
+package com.haruhi.botServer.mapper;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.haruhi.botServer.config.DataBaseConfig;

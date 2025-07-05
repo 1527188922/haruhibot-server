@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.haruhi.botServer.mapper.system.SqliteDatabaseInitMapper">
+<mapper namespace="com.haruhi.botServer.mapper.sqlite.SqliteDatabaseInitMapper">
     <update id="createChatRecord">
         CREATE TABLE IF NOT EXISTS `${tableName}` (
              id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -13,7 +13,7 @@
              content TEXT,
              deleted INTEGER NOT NULL DEFAULT 0,
              message_type TEXT NOT NULL,
-             `time` TEXT NOT NULL
+             `time` DATETIME NOT NULL
         );
     </update>
     <update id="createIndex">
@@ -71,9 +71,18 @@
             `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             `user_id` INTEGER NOT NULL,
             `self_id` INTEGER NOT NULL,
-            `send_time` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `send_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
             `times` INTEGER NOT NULL,
             `message_type` TEXT
+        );
+    </update>
+    <update id="createDictionary">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `key` TEXT NOT NULL,
+            `content` TEXT NOT NULL,
+            `create_time` DATETIME,
+            `modify_time` DATETIME
         );
     </update>
 </mapper>

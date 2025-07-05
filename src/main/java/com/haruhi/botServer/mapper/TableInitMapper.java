@@ -1,12 +1,13 @@
-package com.haruhi.botServer.mapper.system;
+package com.haruhi.botServer.mapper;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.haruhi.botServer.config.DataBaseConfig;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface SqliteDatabaseInitMapper {
-
-    int createIndex(@Param("tableName") String tableName, @Param("column") String column);
+@DS(DataBaseConfig.DATA_SOURCE_MYSQL)
+public interface TableInitMapper {
 
     /**
      * 群聊天记录表

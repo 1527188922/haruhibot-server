@@ -4,8 +4,8 @@
 //import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 //import com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DataSourceProperty;
 //import com.haruhi.botServer.config.DataBaseConfig;
-//import com.haruhi.botServer.mapper.system.TableInitMapper;
-//import com.haruhi.botServer.mapper.system.DataBaseInitMapper;
+//import com.haruhi.botServer.mapper.TableInitMapper;
+//import com.haruhi.botServer.mapper.DataBaseInitMapper;
 //import com.zaxxer.hikari.HikariDataSource;
 //import lombok.extern.slf4j.Slf4j;
 //import org.springframework.stereotype.Service;
