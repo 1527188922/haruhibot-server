@@ -6,8 +6,8 @@ import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.handlers.message.face.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.handlers.message.face.JumpHandler;
-import com.haruhi.botServer.service.pokeReply.PokeReplyService;
 import com.haruhi.botServer.service.sqlite.CustomReplySqliteService;
+import com.haruhi.botServer.service.sqlite.PokeReplySqliteService;
 import com.haruhi.botServer.service.wordStrip.WordStripService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 public class SystemService {
 
     @Autowired
-    private PokeReplyService pokeReplyService;
+    private PokeReplySqliteService pokeReplyService;
     @Autowired
     private CustomReplySqliteService customReplySqliteService;
     @Autowired
