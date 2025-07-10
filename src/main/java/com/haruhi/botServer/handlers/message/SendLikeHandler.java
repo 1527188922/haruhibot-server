@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
-import com.haruhi.botServer.entity.sqlite.SendLikeRecordSqlite;
+import com.haruhi.botServer.entity.SendLikeRecordSqlite;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.SendLikeRecordSqliteService;
 import com.haruhi.botServer.utils.DateTimeUtil;

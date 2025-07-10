@@ -3,7 +3,7 @@ package com.haruhi.botServer.service;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.entity.sqlite.PixivSqlite;
+import com.haruhi.botServer.entity.PixivSqlite;
 import com.haruhi.botServer.mapper.PixivSqliteMapper;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.ws.Bot;

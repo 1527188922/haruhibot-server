@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.haruhi.botServer.entity.sqlite.WordStripSqlite;
+import com.haruhi.botServer.entity.WordStripSqlite;
 import com.haruhi.botServer.handlers.message.wordStrip.WordStripHandler;
 import com.haruhi.botServer.mapper.WordStripSqliteMapper;
 import com.haruhi.botServer.utils.CommonUtil;

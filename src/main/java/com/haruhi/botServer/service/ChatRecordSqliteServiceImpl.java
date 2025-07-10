@@ -9,7 +9,7 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.entity.sqlite.ChatRecordSqlite;
+import com.haruhi.botServer.entity.ChatRecordSqlite;
 import com.haruhi.botServer.handlers.message.chatRecord.FindGroupChatHandler;
 import com.haruhi.botServer.handlers.message.chatRecord.GroupWordCloudHandler;
 import com.haruhi.botServer.mapper.ChatRecordSqliteMapper;

@@ -3,7 +3,7 @@ package com.haruhi.botServer.handlers.message.chatRecord;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.entity.sqlite.ChatRecordSqlite;
+import com.haruhi.botServer.entity.ChatRecordSqlite;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.ChatRecordSqliteService;
 import com.haruhi.botServer.utils.DateTimeUtil;

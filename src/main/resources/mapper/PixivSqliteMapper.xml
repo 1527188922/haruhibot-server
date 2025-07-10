@@ -8,7 +8,7 @@
     <sql id="baseCol">
         id,pid,title,width,height,`view`,bookmarks,img_url,img_p,uid,author,is_r18,tags
     </sql>
-    <select id="roundByTagLimit" resultType="com.haruhi.botServer.entity.sqlite.PixivSqlite">
+    <select id="roundByTagLimit" resultType="com.haruhi.botServer.entity.PixivSqlite">
         SELECT <include refid="baseCol"/> FROM `t_pixiv` WHERE id >= ( SELECT floor( RAND() * ( SELECT MAX( id ) FROM `t_pixiv` ) ) )
         <if test="isR18 != null">
             AND is_r18 = #{isR18}
@@ -19,7 +19,7 @@
         ORDER BY id  LIMIT #{num}
 
     </select>
-    <select id="roundByTagAll" resultType="com.haruhi.botServer.entity.sqlite.PixivSqlite">
+    <select id="roundByTagAll" resultType="com.haruhi.botServer.entity.PixivSqlite">
         SELECT <include refid="baseCol"/> FROM `t_pixiv`
         <where>
             <if test="isR18 != null">
@@ -30,7 +30,7 @@
             </if>
         </where>
     </select>
-    <select id="roundByTagsAll" resultType="com.haruhi.botServer.entity.sqlite.PixivSqlite">
+    <select id="roundByTagsAll" resultType="com.haruhi.botServer.entity.PixivSqlite">
         SELECT <include refid="baseCol"/> FROM `t_pixiv`
         <where>
             <if test="isR18 != null">

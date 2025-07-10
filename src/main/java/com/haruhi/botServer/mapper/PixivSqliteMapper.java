@@ -1,7 +1,7 @@
 package com.haruhi.botServer.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.haruhi.botServer.entity.sqlite.PixivSqlite;
+import com.haruhi.botServer.entity.PixivSqlite;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

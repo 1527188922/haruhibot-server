@@ -2,7 +2,7 @@ package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.config.DataBaseConfig;
-import com.haruhi.botServer.entity.sqlite.PokeReplySqlite;
+import com.haruhi.botServer.entity.PokeReplySqlite;
 import com.haruhi.botServer.handlers.notice.PokeMeHandler;
 import com.haruhi.botServer.mapper.PokeReplySqliteMapper;
 import lombok.extern.slf4j.Slf4j;

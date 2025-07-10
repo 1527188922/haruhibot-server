@@ -14,7 +14,7 @@ import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.gocq.response.DownloadFileResp;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.gocq.response.SyncResponse;
-import com.haruhi.botServer.entity.sqlite.ChatRecordSqlite;
+import com.haruhi.botServer.entity.ChatRecordSqlite;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.service.ChatRecordSqliteService;
 import com.haruhi.botServer.utils.*;

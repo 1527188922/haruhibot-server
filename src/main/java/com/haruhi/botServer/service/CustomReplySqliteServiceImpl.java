@@ -2,7 +2,7 @@ package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.haruhi.botServer.entity.sqlite.CustomReplySqlite;
+import com.haruhi.botServer.entity.CustomReplySqlite;
 import com.haruhi.botServer.handlers.message.CustomReplyHandler;
 import com.haruhi.botServer.mapper.CustomReplySqliteMapper;
 import lombok.extern.slf4j.Slf4j;

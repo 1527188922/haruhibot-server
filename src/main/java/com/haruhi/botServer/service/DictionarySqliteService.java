@@ -1,7 +1,7 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.haruhi.botServer.entity.sqlite.DictionarySqlite;
+import com.haruhi.botServer.entity.DictionarySqlite;
 import com.haruhi.botServer.mapper.DictionarySqliteMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;

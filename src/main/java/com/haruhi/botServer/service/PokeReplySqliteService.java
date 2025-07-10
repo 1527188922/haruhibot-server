@@ -1,7 +1,7 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.haruhi.botServer.entity.sqlite.PokeReplySqlite;
+import com.haruhi.botServer.entity.PokeReplySqlite;
 
 public interface PokeReplySqliteService extends IService<PokeReplySqlite> {
 

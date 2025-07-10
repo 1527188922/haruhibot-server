@@ -1,4 +1,4 @@
-package com.haruhi.botServer.entity.sqlite;
+package com.haruhi.botServer.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

@@ -6,17 +6,11 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.config.DataBaseConfig;
 import lombok.Data;
 
-import java.util.Date;
-
 @Data
-@TableName(value = DataBaseConfig.T_SEND_LIKE_RECORD)
-public class SendLikeRecord {
+@TableName(value = DataBaseConfig.T_POKE_REPLY)
+public class PokeReplySqlite {
 
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "id",type = IdType.AUTO)
     private Long id;
-    private Long userId;
-    private Long selfId;
-    private Date sendTime;
-    private Integer times;
-    private String messageType;
+    private String reply;
 }

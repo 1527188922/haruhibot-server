@@ -1,7 +1,7 @@
 package com.haruhi.botServer.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.haruhi.botServer.entity.sqlite.PokeReplySqlite;
+import com.haruhi.botServer.entity.PokeReplySqlite;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
