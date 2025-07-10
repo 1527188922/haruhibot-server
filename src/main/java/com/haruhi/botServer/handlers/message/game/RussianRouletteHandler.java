@@ -51,7 +51,9 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
     public boolean onGroup(Bot bot, final Message message) {
         KQCodeUtils instance = KQCodeUtils.getInstance();
         // 对发起游戏的判断
-        if(RegexEnum.GAME_RUSSIAN_ROULETTE.getValue().equals(message.getRawMessage())){
+        String startCmd = message.getText(-1);
+        if(StringUtils.isNotBlank(startCmd)
+                && startCmd.trim().matches(RegexEnum.GAME_RUSSIAN_ROULETTE.getValue())){
             final String cacheKey = cacheKey(message);
             RussianRouletteGame game = cache.get(cacheKey);
             if (game != null) {
