@@ -1,6 +1,6 @@
 package com.haruhi.botServer.aop;
 
-import com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DataSourceProperty;
+import com.baomidou.dynamic.datasource.creator.DataSourceProperty;
 import com.haruhi.botServer.config.DataBaseConfig;
 import com.haruhi.botServer.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import java.io.IOException;
 @Slf4j
 public class SqliteDatabaseInitAspect {
 
-    @Before("execution(* com.baomidou.dynamic.datasource.DynamicDataSourceCreator.createDataSource(*))")
+    @Before("execution(* com.baomidou.dynamic.datasource.creator.DefaultDataSourceCreator.createDataSource(*))")
     public void checkDatabaseBeforeMethod(JoinPoint joinPoint) throws IOException {
         Object[] args = joinPoint.getArgs();
         if (args == null || args.length == 0) {
@@ -28,13 +28,15 @@ public class SqliteDatabaseInitAspect {
             return;
         }
         DataSourceProperty dataSourceProperty = (DataSourceProperty) arg;
-        if (!DataBaseConfig.DATA_SOURCE_MASTER.equals(dataSourceProperty.getPollName())) {
+        if (!DataBaseConfig.DATA_SOURCE_MASTER.equals(dataSourceProperty.getPoolName())) {
             return;
         }
         File file = new File(FileUtil.getSqliteDatabaseFile());
         FileUtil.mkdirs(file.getParent());
 
-        if (!file.exists()) {
+        if (file.exists()) {
+            log.info("sqlite db文件路径：{}", file.getAbsolutePath());
+        }else {
             try {
                 file.createNewFile();
                 log.info("sqlite db文件创建成功：{}", file.getAbsolutePath());

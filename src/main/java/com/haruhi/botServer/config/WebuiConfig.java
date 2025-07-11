@@ -15,4 +15,10 @@ public class WebuiConfig {
 
     @Value("${login.password}")
     private String loginPassword;
+
+    @Value("${druid.loginUsername}")
+    private String druidLoginUsername;
+
+    @Value("${druid.loginPassword}")
+    private String druidLoginPassword;
 }

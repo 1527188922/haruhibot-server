@@ -61,5 +61,11 @@ spring:
         master:
           url: jdbc:sqlite::resource:data/haruhibot_server.db
           driver-class-name: org.sqlite.JDBC
+          druid:
+            validation-query: SELECT 1
+            test-on-return: false
+            test-on-borrow: false
+            pool-prepared-statements: false
+            filters: stat
   application:
     name: haruhi-bot-service
