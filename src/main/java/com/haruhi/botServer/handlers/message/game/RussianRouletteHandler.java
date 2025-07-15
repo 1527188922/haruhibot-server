@@ -51,9 +51,9 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
     public boolean onGroup(Bot bot, final Message message) {
         KQCodeUtils instance = KQCodeUtils.getInstance();
         // 对发起游戏的判断
-        String startCmd = message.getText(-1);
-        if(StringUtils.isNotBlank(startCmd)
-                && startCmd.trim().matches(RegexEnum.GAME_RUSSIAN_ROULETTE.getValue())){
+        String cmd = message.getText(-1);
+        if(message.isTextMsgOnly() && StringUtils.isNotBlank(cmd)
+                && cmd.trim().matches(RegexEnum.GAME_RUSSIAN_ROULETTE.getValue())){
             final String cacheKey = cacheKey(message);
             RussianRouletteGame game = cache.get(cacheKey);
             if (game != null) {
@@ -82,8 +82,7 @@ public class RussianRouletteHandler implements IGroupMessageEvent {
         }
         
         // 对参加游戏的判断
-        String s = message.getText(-1);
-        if(StringUtils.isNotBlank(s) && s.trim().matches("参加|参与|加入")){
+        if(StringUtils.isNotBlank(cmd) && cmd.trim().matches("参加|参与|加入")){
 //            if (!message.isReplyMsg()) {
 //                return false;
 //            }
