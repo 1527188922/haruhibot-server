@@ -5,9 +5,11 @@ public class DataBaseConfig {
 
     public static final String JDBC_URL_TEMPLATE = "jdbc:mysql://{0}:{1}/{2}?useUnicode=true&characterEncoding=utf-8&useSSL=false";
 
+
     // bot数据源名称
     public final static String DATA_SOURCE_MASTER = "master";
     public final static String SQLITE_DATABASE_FILE_NAME = "haruhibot_server.db";
+    public static final String SQLITE_DEFAULT_JDBC_URL = "jdbc:sqlite::resource:data/"+SQLITE_DATABASE_FILE_NAME;
     // mysql系统数据源名称
     public final static String DATA_SOURCE_MYSQL_SYSTEM = "mysql_system";
     public final static String DATA_SOURCE_MYSQL = "mysql";

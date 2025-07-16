@@ -8,12 +8,16 @@ import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.mozilla.universalchardet.UniversalDetector;
 import org.springframework.core.io.ClassPathResource;
+import org.sqlite.SQLiteConfig;
 
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.Collections;
-import java.util.List;
+import java.sql.SQLException;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -200,6 +204,7 @@ public class FileUtil {
         return getAppDir() + File.separator + DIR_APP_DATA;
     }
 
+    // 默认sql db文件位置
     public static String getSqliteDatabaseFile() {
         return getDataDir() + File.separator + DataBaseConfig.SQLITE_DATABASE_FILE_NAME;
     }
@@ -376,6 +381,94 @@ public class FileUtil {
         String encoding = detector.getDetectedCharset();
         detector.reset();
         return encoding != null ? encoding : "UTF-8"; // 默认值
+    }
+
+    public static boolean isValidSqliteURL(String url) {
+        return url != null && url.toLowerCase().startsWith("jdbc:sqlite:");
+    }
+    public static File getSqliteDatabaseFile(String url) throws SQLException {
+        if (!isValidSqliteURL(url)) {
+            throw new SQLException("Invalid jdbc url: " + url);
+        }
+        String origFileName = url.substring("jdbc:sqlite:".length());
+        Properties newProps = new Properties();
+        String fileName = extractPragmasFromFilename(url, origFileName, newProps);
+        File databaseFile = null;
+        if (!fileName.isEmpty() && !":memory:".equals(fileName) && !fileName.startsWith("file:") && !fileName.contains("mode=memory")) {
+            if (fileName.startsWith(":resource:")) {
+                String resourceName = fileName.substring(":resource:".length());
+                ClassLoader contextCL = Thread.currentThread().getContextClassLoader();
+                URL resourceAddr = contextCL.getResource(resourceName);
+                if (resourceAddr == null) {
+                    try {
+                        resourceAddr = new URL(resourceName);
+                    } catch (MalformedURLException e) {
+                        throw new SQLException(String.format("resource %s not found: %s", resourceName, e));
+                    }
+                }
+                try {
+                    databaseFile = extractResource(resourceAddr);
+                } catch (IOException e) {
+                    throw new SQLException(String.format("failed to load %s: %s", resourceName, e));
+                }
+            } else {
+                databaseFile = new File(fileName);
+            }
+        }
+        return databaseFile;
+    }
+
+    protected static String extractPragmasFromFilename(String url, String filename, Properties prop) throws SQLException {
+        int parameterDelimiter = filename.indexOf(63);
+        if (parameterDelimiter == -1) {
+            return filename;
+        } else {
+            StringBuilder sb = new StringBuilder();
+            sb.append(filename.substring(0, parameterDelimiter));
+            int nonPragmaCount = 0;
+            String[] parameters = filename.substring(parameterDelimiter + 1).split("&");
+
+            for(int i = 0; i < parameters.length; ++i) {
+                String parameter = parameters[parameters.length - 1 - i].trim();
+                if (!parameter.isEmpty()) {
+                    String[] kvp = parameter.split("=");
+                    String key = kvp[0].trim().toLowerCase();
+                    HashSet<String> pragmaSet = new HashSet<>();
+                    for (SQLiteConfig.Pragma value : SQLiteConfig.Pragma.values()) {
+                        pragmaSet.add(value.pragmaName);
+                    }
+                    if (pragmaSet.contains(key)) {
+                        if (kvp.length == 1) {
+                            throw new SQLException(String.format("Please specify a value for PRAGMA %s in URL %s", key, url));
+                        }
+                        String value = kvp[1].trim();
+                        if (!value.isEmpty() && !prop.containsKey(key)) {
+                            prop.setProperty(key, value);
+                        }
+                    } else {
+                        sb.append((char)(nonPragmaCount == 0 ? '?' : '&'));
+                        sb.append(parameter);
+                        ++nonPragmaCount;
+                    }
+                }
+            }
+            return sb.toString();
+        }
+    }
+
+    private static File extractResource(URL resourceAddr) throws IOException {
+        if (resourceAddr.getProtocol().equals("file")) {
+            try {
+                return new File(resourceAddr.toURI());
+            } catch (URISyntaxException e) {
+                throw new IOException(e.getMessage());
+            }
+        } else {
+            String tempFolder = (new File(System.getProperty("java.io.tmpdir"))).getAbsolutePath();
+            String dbFileName = String.format("sqlite-jdbc-tmp-%s.db", UUID.randomUUID());
+            File dbFile = new File(tempFolder, dbFileName);
+            return dbFile;
+        }
     }
 
 }
