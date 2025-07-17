@@ -29,6 +29,7 @@ public class FileUtil {
 
     public static final String DIR_APP_TEMP = "temp";
     public static final String DIR_AUDIO = "audio";
+    public static final String DIR_VIDEO = "video";
     public static final String DIR_AUDIO_DG = "dg";
     public static final String DIR_APP_DATA = "data";
 
@@ -227,6 +228,18 @@ public class FileUtil {
     }
     public static String getAudioDir(){
         return getAppDir() + File.separator + DIR_AUDIO;
+    }
+
+    public static String getVideoDir(){
+        return getAppDir() + File.separator + DIR_VIDEO;
+    }
+    public static String getBilibiliVideoDir(){
+        return getVideoDir() + File.separator + "bilibili";
+    }
+
+    public static String getBilibiliVideoFileName(String bvid, Long cid, String suffix){
+        String fileName = bvid + "_" + cid + "." + suffix;
+        return getBilibiliVideoDir() + File.separator + fileName;
     }
 
     /**
