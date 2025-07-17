@@ -104,6 +104,7 @@ public class BilibiliVideoParseService{
     }
 
     public ParseResult parse(String text) {
+        text = text.replace("\\/","/");
         String matchedKeyword = matchKeyword(text);
         if (matchedKeyword != null) {
             Matcher matcher = PATTERNS.get(matchedKeyword).matcher(text);

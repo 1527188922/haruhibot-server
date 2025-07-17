@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 public enum CqCodeTypeEnum {
     at("at"),
     image("image"),
+    video("video"),
     face("face"),
     forward("forward"),
     reply("reply"),
