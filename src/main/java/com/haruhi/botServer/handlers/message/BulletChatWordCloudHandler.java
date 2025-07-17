@@ -7,6 +7,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.gocq.response.Message;
 import com.haruhi.botServer.dto.xml.bilibili.PlayerInfoResp;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.utils.BilibiliIdConverter;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.thread.WordSlicesTask;
 import com.haruhi.botServer.utils.FileUtil;
@@ -51,14 +52,19 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
             return false;
         }
 
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(bot,message,param));
+        ThreadPoolUtil.getHandleCommandPool().execute(new Task(bot,message,param.trim()));
         return true;
     }
     private String getBv(String param){
         String bv = null;
-        if(param.startsWith("av") || param.startsWith("AV")){
-            bv = WordCloudUtil.getBvByAv(param);
-        }else if(param.startsWith("bv") || param.startsWith("BV")){
+        String lowerCase = param.toLowerCase();
+        if(lowerCase.startsWith("av")){
+            try {
+                long l = Long.parseLong(lowerCase.replaceFirst("av", ""));
+                bv = BilibiliIdConverter.aid2bvid(l);
+            }catch (NumberFormatException e){
+            }
+        }else if(lowerCase.startsWith("bv")){
             bv = param;
         }
         return bv;
@@ -80,7 +86,7 @@ public class BulletChatWordCloudHandler implements IAllMessageEvent {
             try {
                 String bv = getBv(param);
                 if(Strings.isBlank(bv)){
-                    log.error("bv号获取失败");
+                    log.error("bv号获取失败 param:{}",param);
                     return;
                 }
                 PlayerInfoResp playerInfoResp = WordCloudUtil.getPlayerInfo(bv);

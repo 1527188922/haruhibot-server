@@ -14,7 +14,7 @@ import { Message } from 'element-ui'
 import website from '@/config/website';
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
-axios.defaults.timeout = 10000;
+axios.defaults.timeout = 10 * 1000;
 //返回其他状态吗
 axios.defaults.validateStatus = function (status) {
   return status >= 200 && status <= 500; // 默认的

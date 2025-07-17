@@ -212,23 +212,6 @@ public class WordCloudUtil {
     }
 
     /**
-     * 根据av号获取bv号
-     * @param av
-     * @return
-     */
-    public static String getBvByAv(String av){
-
-        String responseSre = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(10 * 1000),ThirdPartyURL.BILIBILI_URL+"/" + av,null);
-        if (Strings.isNotBlank(responseSre)) {
-            Pattern compile = Pattern.compile("<meta data-vue-meta=\"true\" itemprop=\"url\" content=\"https://www.bilibili.com/video/(.*?)/\">");
-            Matcher matcher = compile.matcher(responseSre);
-            if (matcher.find()) {
-                return matcher.group(1);
-            }
-        }
-        return null;
-    }
-    /**
      * mmseg4j 分词
      * https://www.jianshu.com/p/8ac06d2eef0d
      * https://blog.csdn.net/weixin_45248225/article/details/120847907
