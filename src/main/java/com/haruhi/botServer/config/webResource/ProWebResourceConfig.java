@@ -114,4 +114,9 @@ public class ProWebResourceConfig extends AbstractWebResourceConfig {
     public String webExcelPath() {
         return webHomePath() + "/" + FileUtil.DIR_EXCEL;
     }
+
+    @Override
+    public String webVideoBiliPath() {
+        return webHomePath() + "/" + FileUtil.DIR_VIDEO + "/" + FileUtil.DIR_VIDEO_BILIBILI;
+    }
 }

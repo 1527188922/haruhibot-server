@@ -30,4 +30,6 @@ public abstract class AbstractWebResourceConfig {
     
     public abstract String webExcelPath();
 
+    public abstract String webVideoBiliPath();
+
 }

@@ -12,6 +12,7 @@ bot:
   default-user: 1234567890
   superusers: 9876543210,1234567890
   max-connections: 5
+  same-machine-qqclient: false
 
 bilibili:
   SESSDATA:

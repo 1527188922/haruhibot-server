@@ -30,6 +30,7 @@ public class FileUtil {
     public static final String DIR_APP_TEMP = "temp";
     public static final String DIR_AUDIO = "audio";
     public static final String DIR_VIDEO = "video";
+    public static final String DIR_VIDEO_BILIBILI = "bilibili";
     public static final String DIR_AUDIO_DG = "dg";
     public static final String DIR_APP_DATA = "data";
 
@@ -234,13 +235,18 @@ public class FileUtil {
         return getAppDir() + File.separator + DIR_VIDEO;
     }
     public static String getBilibiliVideoDir(){
-        return getVideoDir() + File.separator + "bilibili";
+        return getVideoDir() + File.separator + DIR_VIDEO_BILIBILI;
     }
 
     public static String getBilibiliVideoFileName(String bvid, Long cid, String suffix){
         String fileName = bvid + "_" + cid + "." + suffix;
-        return getBilibiliVideoDir() + File.separator + fileName;
+        return getBilibiliVideoFileName(fileName);
     }
+
+    public static String getBilibiliVideoFileName(String filename){
+        return getBilibiliVideoDir() + File.separator + filename;
+    }
+
 
     /**
      * 钉宫音频文件路径

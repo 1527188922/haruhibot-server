@@ -22,6 +22,7 @@ public class BotConfig {
     public final static String CONTEXT_PATH = "/api";
     public final static String WEB_SOCKET_PATH = CONTEXT_PATH + "/ws";
     public static int MAX_CONNECTIONS;
+    public static boolean SAME_MACHINE_QQCLIENT;
     public static List<Long> SUPERUSERS;
     // 是否启用公网ip 0否 1是 若程序和gocq都在同一台主机上 可以不启用
     public static String ENABLE_INTERNET_HOST;
@@ -76,6 +77,11 @@ public class BotConfig {
     @Autowired
     public void setMaxConnections(@Value("${bot.max-connections}") int maxConnections){
         MAX_CONNECTIONS = maxConnections;
+    }
+
+    @Autowired
+    public void setSameMachineQqClient(@Value("${bot.same-machine-qqclient}") boolean sameMachineQqClient){
+        SAME_MACHINE_QQCLIENT = sameMachineQqClient;
     }
 
     @Autowired
