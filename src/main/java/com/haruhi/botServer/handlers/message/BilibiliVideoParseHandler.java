@@ -44,14 +44,20 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
 
     @Override
     public boolean onMessage(Bot bot, Message message) {
-        String rawMessage = message.getRawMessage();
-        String bvid = bilibiliVideoParseService.getBvidInText(rawMessage);
+        String bvid = null;
+        if (message.isJsonMsg()) {
+            bvid = bilibiliVideoParseService.getBvidInText(message.getJsons().get(0));
+        }else if(message.isTextMsg()){
+            bvid = bilibiliVideoParseService.getBvidInText(message.getText(-1));
+        }
+
         if (StringUtils.isBlank(bvid)) {
             return false;
         }
+        final String finalBvid = bvid;
         ThreadPoolUtil.getHandleCommandPool().execute(() -> {
             try {
-                BilibiliBaseResp<VideoDetail> videoDetail = bilibiliVideoParseService.getVideoDetail(bvid);
+                BilibiliBaseResp<VideoDetail> videoDetail = bilibiliVideoParseService.getVideoDetail(finalBvid);
                 VideoDetail videoDetailData = videoDetail.getData();
                 Long cid = videoDetailData.getCidFirst();
                 VideoDetail.View videoDetailDataView = videoDetailData.getView();
@@ -61,7 +67,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                 PlayUrlInfo playUrlInfoData = playUrlInfo.getData();
                 String url = playUrlInfoData.getDurlFirst();
 
-                File bilibiliVideoFile = new File(FileUtil.getBilibiliVideoFileName(bvid, cid,"mp4"));
+                File bilibiliVideoFile = new File(FileUtil.getBilibiliVideoFileName(videoDetailDataView.getBvid(), cid,"mp4"));
                 if (!bilibiliVideoFile.exists()) {
                     log.info("开始下载b站视频 {}",url);
                     long l = System.currentTimeMillis();

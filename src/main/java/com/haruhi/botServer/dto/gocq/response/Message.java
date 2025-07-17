@@ -3,10 +3,7 @@ package com.haruhi.botServer.dto.gocq.response;
 import com.haruhi.botServer.constant.event.ElementTypeEnum;
 import com.haruhi.botServer.constant.event.MessageHolderTypeEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.util.CollectionUtils;
@@ -114,6 +111,10 @@ public class Message implements Serializable {
     private final Long interval;
     private final Status status;
 
+    @Getter
+    @Setter
+    private String rawWsMsg;
+
 
     @Data
     @AllArgsConstructor
@@ -155,6 +156,9 @@ public class Message implements Serializable {
         private String text;
         // at
         private String qq;
+
+        // json
+        private String data;//json格式字符串
     }
 
     @Data
@@ -255,6 +259,10 @@ public class Message implements Serializable {
         return isMsg(MessageHolderTypeEnum.at);
     }
 
+    public boolean isJsonMsg(){
+        return isMsg(MessageHolderTypeEnum.json);
+    }
+
     public boolean isMsg(MessageHolderTypeEnum holderTypeEnum){
         if(!CollectionUtils.isEmpty(this.message)){
             return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(holderTypeEnum.name());
@@ -323,6 +331,16 @@ public class Message implements Serializable {
             return this.message.stream().filter(e -> MessageHolderTypeEnum.image.name().equals(e.getType()))
                     .map(MessageHolder::getData)
                     .map(MessageData::getUrl)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    public List<String> getJsons(){
+        if(isJsonMsg()){
+            return this.message.stream().filter(e -> MessageHolderTypeEnum.json.name().equals(e.getType()))
+                    .map(MessageHolder::getData)
+                    .map(MessageData::getData)
                     .collect(Collectors.toList());
         }
         return Collections.emptyList();

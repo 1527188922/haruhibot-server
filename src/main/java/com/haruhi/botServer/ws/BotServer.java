@@ -70,6 +70,7 @@ public class BotServer extends TextWebSocketHandler {
                 return;
             }
             final Message bean = JSONObject.parseObject(s, Message.class);
+            bean.setRawWsMsg(s);
             messageProcessor.execute(bot, bean);
         }catch (Exception e){
             log.error("解析payload异常:{}",s,e);
