@@ -62,13 +62,19 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
 
                 File bilibiliVideoFile = new File(FileUtil.getBilibiliVideoFileName(bvid, cid,"mp4"));
                 String fileName = bilibiliVideoFile.getName();
+                log.info("开始下载b站视频 {}",url);
+                long l = System.currentTimeMillis();
                 bilibiliVideoParseService.downloadVideo(url, bilibiliVideoFile,-1);
+                log.info("下载b站视频完成 cost:{}",(System.currentTimeMillis()-l));
                 if (BotConfig.SAME_MACHINE_QQCLIENT) {
                     uploadFileToQq(bot, message, bilibiliVideoFile);
                 }else{
                     // 先让qq客户端下载文件，再上传
                     String fileUrl = abstractPathConfig.webVideoBiliPath() + "/" + fileName;
+                    log.info("qq客户端开始下载视频 {}", fileUrl);
+                    long l1 = System.currentTimeMillis();
                     SyncResponse<DownloadFileResp> downloadFileRes = bot.downloadFile(fileUrl, 1, null, -1);
+                    log.info("qq客户端下载视频完成 cost:{}", System.currentTimeMillis()-l1);
                     if (downloadFileRes == null || downloadFileRes.getData() == null
                             || StringUtils.isBlank(downloadFileRes.getData().getFile())) {
                         return;
@@ -84,11 +90,15 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
 
     private void uploadFileToQq(Bot bot, Message message,File bilibiliVideoFile) {
         String fileName = bilibiliVideoFile.getName();
+        String absolutePath = bilibiliVideoFile.getAbsolutePath();
+        log.info("qq客户端开始上传视频 {}", absolutePath);
+        long l = System.currentTimeMillis();
         if (message.isPrivateMsg()) {
-            bot.uploadPrivateFile(message.getUserId(),bilibiliVideoFile.getAbsolutePath(), fileName,-1);
+            bot.uploadPrivateFile(message.getUserId(), absolutePath, fileName,-1);
         }else{
-            bot.uploadGroupFile(message.getGroupId(),bilibiliVideoFile.getAbsolutePath(), fileName,null,-1);
+            bot.uploadGroupFile(message.getGroupId(), absolutePath, fileName,null,-1);
         }
+        log.info("qq客户端上传视频完成 cost:{}", System.currentTimeMillis()-l);
     }
 
 }
