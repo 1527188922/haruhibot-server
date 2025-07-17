@@ -11,12 +11,10 @@ bot:
   superusers: 1527188922,1234567890
   max-connections: 5
 
-chatgpt:
-  email:
-  password:
-  session-token:
-  cf-clearance:
-  user-agent:
+
+bilibili:
+  SESSDATA:
+  bili_jct:
 
 job:
   downloadPixiv:

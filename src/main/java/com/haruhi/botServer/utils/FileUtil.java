@@ -397,19 +397,12 @@ public class FileUtil {
         if (!fileName.isEmpty() && !":memory:".equals(fileName) && !fileName.startsWith("file:") && !fileName.contains("mode=memory")) {
             if (fileName.startsWith(":resource:")) {
                 String resourceName = fileName.substring(":resource:".length());
-                ClassLoader contextCL = Thread.currentThread().getContextClassLoader();
-                URL resourceAddr = contextCL.getResource(resourceName);
-                if (resourceAddr == null) {
-                    try {
-                        resourceAddr = new URL(resourceName);
-                    } catch (MalformedURLException e) {
-                        throw new SQLException(String.format("resource %s not found: %s", resourceName, e));
-                    }
-                }
-                try {
-                    databaseFile = extractResource(resourceAddr);
-                } catch (IOException e) {
-                    throw new SQLException(String.format("failed to load %s: %s", resourceName, e));
+                if(resourceName.startsWith("."+File.separator)) {
+                    databaseFile = new File(FileUtil.getAppDir() + resourceName.replaceFirst(".",""));
+                }else if(resourceName.startsWith(File.separator)) {
+                    databaseFile = new File(FileUtil.getAppDir() + resourceName);
+                }else{
+                    databaseFile = new File(FileUtil.getAppDir() + File.separator + resourceName);
                 }
             } else {
                 databaseFile = new File(fileName);
@@ -453,21 +446,6 @@ public class FileUtil {
                 }
             }
             return sb.toString();
-        }
-    }
-
-    private static File extractResource(URL resourceAddr) throws IOException {
-        if (resourceAddr.getProtocol().equals("file")) {
-            try {
-                return new File(resourceAddr.toURI());
-            } catch (URISyntaxException e) {
-                throw new IOException(e.getMessage());
-            }
-        } else {
-            String tempFolder = (new File(System.getProperty("java.io.tmpdir"))).getAbsolutePath();
-            String dbFileName = String.format("sqlite-jdbc-tmp-%s.db", UUID.randomUUID());
-            File dbFile = new File(tempFolder, dbFileName);
-            return dbFile;
         }
     }
 

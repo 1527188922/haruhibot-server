@@ -1,7 +1,6 @@
 package com.haruhi.botServer.service;
 
 import cn.hutool.core.collection.ConcurrentHashSet;
-import cn.hutool.core.util.ZipUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSONObject;
