@@ -8,6 +8,7 @@ import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
 import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
 import com.haruhi.botServer.dto.bilibili.VideoDetail;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.BilibiliVideoParseService;
 import com.haruhi.botServer.utils.FileUtil;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -65,12 +67,16 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                     log.error("未查询到视频信息 bvid:{} resp:{}", finalBvid, videoDetail.getRaw());
                     return;
                 }
-                String pic = videoDetailDataView.getPic();
                 BilibiliBaseResp<PlayUrlInfo> playUrlInfo = bilibiliVideoParseService.getPlayUrlInfo(videoDetailDataView.getBvid(),videoDetailDataView.getAid(),cid);
 
                 PlayUrlInfo playUrlInfoData = playUrlInfo.getData();
-                String url = playUrlInfoData.getDurlFirst();
+                if (playUrlInfoData == null) {
+                    log.error("未查询到视频下载链接信息 bvid:{} resp:{}", finalBvid, playUrlInfo.getRaw());
+                    return;
+                }
+                sendInfoMessage(videoDetailDataView, message, bot);
 
+                String url = playUrlInfoData.getDurlFirst();
                 File bilibiliVideoFile = new File(FileUtil.getBilibiliVideoFileName(videoDetailDataView.getBvid(), cid,"mp4"));
                 if (!bilibiliVideoFile.exists()) {
                     log.info("开始下载b站视频 {}",url);
@@ -78,12 +84,30 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                     bilibiliVideoParseService.downloadVideo(url, bilibiliVideoFile,-1);
                     log.info("下载b站视频完成 cost:{}",(System.currentTimeMillis()-l));
                 }
-                uploadFileToQq(bot, message, bilibiliVideoFile, pic);
+                uploadFileToQq(bot, message, bilibiliVideoFile, videoDetailDataView.getPic());
             }catch (Exception e) {
                 log.error("解析b站视频异常", e);
             }
         });
         return true;
+    }
+
+    private void sendInfoMessage(VideoDetail.View videoDetailDataView, Message message, Bot bot){
+        String pic = videoDetailDataView.getPic();
+        MessageHolder imageMessageHolder = MessageHolder.instanceImage(System.currentTimeMillis() + ".jpg", pic, null);
+
+        StringBuilder infoBuilder = new StringBuilder();
+        infoBuilder.append("标题：").append(videoDetailDataView.getTitle()).append("\n");
+        infoBuilder.append("简介：").append(videoDetailDataView.getDesc()).append("\n");
+        VideoDetail.View.Owner owner = videoDetailDataView.getOwner();
+        if (owner != null) {
+            infoBuilder.append("UP主：").append(owner.getName()).append("\n");
+        }
+        infoBuilder.append("https://www.bilibili.com/video/").append(videoDetailDataView.getBvid());
+        List<MessageHolder> textMessageHolder = MessageHolder.instanceText(infoBuilder.toString());
+        textMessageHolder.add(0, imageMessageHolder);
+
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), textMessageHolder);
     }
 
     private void uploadFileToQq(Bot bot, Message message,File bilibiliVideoFile,String pic) {
