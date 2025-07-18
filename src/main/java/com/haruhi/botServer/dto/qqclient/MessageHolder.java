@@ -37,11 +37,9 @@ public class MessageHolder{
     }
 
 
-    public static MessageHolder instanceImage(String file,String url,String fileSize){
+    public static MessageHolder instanceImage(String file){
         MessageData messageData = new MessageData();
         messageData.setFile(file);
-        messageData.setUrl(url);
-        messageData.setFileSize(fileSize);
         return new MessageHolder(MessageHolderTypeEnum.image.name(),messageData);
     }
 

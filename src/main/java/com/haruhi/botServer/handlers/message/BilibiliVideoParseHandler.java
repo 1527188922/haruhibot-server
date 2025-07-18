@@ -1,9 +1,7 @@
 package com.haruhi.botServer.handlers.message;
 
-import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
-import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
 import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
@@ -13,12 +11,11 @@ import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.qqclient.SendMsgResp;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
-import com.haruhi.botServer.service.BilibiliVideoParseService;
+import com.haruhi.botServer.service.BilibiliService;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
-import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 public class BilibiliVideoParseHandler implements IAllMessageEvent {
 
     @Autowired
-    private BilibiliVideoParseService bilibiliVideoParseService;
+    private BilibiliService bilibiliService;
 
     @Autowired
     private AbstractWebResourceConfig abstractPathConfig;
@@ -54,9 +51,9 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
     public boolean onMessage(Bot bot, Message message) {
         String bvid = null;
         if (message.isJsonMsg()) {
-            bvid = bilibiliVideoParseService.getBvidInText(message.getJsons().get(0));
+            bvid = bilibiliService.getBvidInText(message.getJsons().get(0));
         }else if(message.isTextMsg()){
-            bvid = bilibiliVideoParseService.getBvidInText(message.getText(-1));
+            bvid = bilibiliService.getBvidInText(message.getText(-1));
         }
 
         if (StringUtils.isBlank(bvid)) {
@@ -65,7 +62,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
         final String finalBvid = bvid;
         ThreadPoolUtil.getHandleCommandPool().execute(() -> {
             try {
-                BilibiliBaseResp<VideoDetail> videoDetail = bilibiliVideoParseService.getVideoDetail(finalBvid);
+                BilibiliBaseResp<VideoDetail> videoDetail = bilibiliService.getVideoDetail(finalBvid);
                 VideoDetail videoDetailData = videoDetail.getData();
                 Long cid = videoDetailData.getCidFirst();
                 VideoDetail.View videoDetailDataView = videoDetailData.getView();
@@ -74,7 +71,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                     return;
                 }
 
-                BilibiliBaseResp<PlayUrlInfo> playUrlInfo = bilibiliVideoParseService.getPlayUrlInfo(videoDetailDataView.getBvid(),videoDetailDataView.getAid(),cid);
+                BilibiliBaseResp<PlayUrlInfo> playUrlInfo = bilibiliService.getPlayUrlInfo(videoDetailDataView.getBvid(),videoDetailDataView.getAid(),cid);
 
                 PlayUrlInfo playUrlInfoData = playUrlInfo.getData();
                 if (playUrlInfoData == null) {
@@ -88,7 +85,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                 if (!bilibiliVideoFile.exists()) {
                     log.info("开始下载b站视频 {}",url);
                     long l = System.currentTimeMillis();
-                    bilibiliVideoParseService.downloadVideo(url, bilibiliVideoFile,-1);
+                    bilibiliService.downloadVideo(url, bilibiliVideoFile,-1);
                     log.info("下载b站视频完成 cost:{}",(System.currentTimeMillis()-l));
                 }
                 uploadFileToQq(bot, message, bilibiliVideoFile);
@@ -100,8 +97,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
     }
 
     private void sendInfoMessage(VideoDetail.View videoDetailDataView, Message message, Bot bot){
-        String pic = videoDetailDataView.getPic();
-        MessageHolder imageMessageHolder = MessageHolder.instanceImage(System.currentTimeMillis() + ".jpg", pic, null);
+        MessageHolder imageMessageHolder = MessageHolder.instanceImage(videoDetailDataView.getPic());
 
         StringBuilder infoBuilder = new StringBuilder();
         infoBuilder.append("标题：").append(videoDetailDataView.getTitle()).append("\n");
@@ -133,7 +129,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
         MessageHolder messageHolder = MessageHolder.instanceVideo(BotConfig.SAME_MACHINE_QQCLIENT ? "file://" + absolutePath : abstractPathConfig.webVideoBiliPath() + "/" + fileName);
         SyncResponse<SendMsgResp> response = bot.sendSyncMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), Arrays.asList(messageHolder), 5 * 60 * 1000);
 
-        log.info("qq客户端上传视频完成 resp:{} cost:{}", response.getRaw(), System.currentTimeMillis()-l);
+        log.info("qq客户端上传视频完成 cost:{} resp:{}", System.currentTimeMillis()-l,response.getRaw());
     }
 
 }
