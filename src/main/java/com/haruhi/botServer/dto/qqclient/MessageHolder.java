@@ -43,6 +43,12 @@ public class MessageHolder{
         return new MessageHolder(MessageHolderTypeEnum.image.name(),messageData);
     }
 
+    public static MessageHolder instanceRecord(String file){
+        MessageData messageData = new MessageData();
+        messageData.setFile(file);
+        return new MessageHolder(MessageHolderTypeEnum.record.name(),messageData);
+    }
+
 
     public static MessageHolder instanceVideo(String file){
         MessageData messageData = new MessageData();

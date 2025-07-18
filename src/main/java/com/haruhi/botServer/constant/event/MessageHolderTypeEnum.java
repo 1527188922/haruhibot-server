@@ -5,6 +5,7 @@ public enum MessageHolderTypeEnum {
     reply,
     image,
     video,
+    record,
     at,
     json
 }
