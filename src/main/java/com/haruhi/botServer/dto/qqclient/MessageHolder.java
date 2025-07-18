@@ -45,6 +45,13 @@ public class MessageHolder{
         return new MessageHolder(MessageHolderTypeEnum.image.name(),messageData);
     }
 
+
+    public static MessageHolder instanceVideo(String file){
+        MessageData messageData = new MessageData();
+        messageData.setFile(file);
+        return new MessageHolder(MessageHolderTypeEnum.video.name(),messageData);
+    }
+
     public static List<MessageHolder> instanceAt(String ...qqs){
         List<MessageHolder> messageHolders = new ArrayList<>();
         for (String s : qqs) {

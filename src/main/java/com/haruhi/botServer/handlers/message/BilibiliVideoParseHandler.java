@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
+import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
@@ -9,6 +10,8 @@ import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
 import com.haruhi.botServer.dto.bilibili.VideoDetail;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
+import com.haruhi.botServer.dto.qqclient.SendMsgResp;
+import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.BilibiliVideoParseService;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -22,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -87,7 +91,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                     bilibiliVideoParseService.downloadVideo(url, bilibiliVideoFile,-1);
                     log.info("下载b站视频完成 cost:{}",(System.currentTimeMillis()-l));
                 }
-                uploadFileToQq(bot, message, bilibiliVideoFile, videoDetailDataView.getPic());
+                uploadFileToQq(bot, message, bilibiliVideoFile);
             }catch (Exception e) {
                 log.error("解析b站视频异常", e);
             }
@@ -120,18 +124,16 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
         bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), textMessageHolder);
     }
 
-    private void uploadFileToQq(Bot bot, Message message,File bilibiliVideoFile,String pic) {
+    private void uploadFileToQq(Bot bot, Message message,File bilibiliVideoFile) {
         String fileName = bilibiliVideoFile.getName();
         String absolutePath = bilibiliVideoFile.getAbsolutePath();
         log.info("qq客户端开始上传视频 {}", absolutePath);
         long l = System.currentTimeMillis();
-        String fileParam = BotConfig.SAME_MACHINE_QQCLIENT ?
-                "url=file:///"+absolutePath :
-                "url="+abstractPathConfig.webVideoBiliPath() + "/" + fileName;
 
-        String cq = KQCodeUtils.getInstance().toCq(CqCodeTypeEnum.video.getType(), fileParam, "cover=" + pic,"file=" + fileName,"file_size="+bilibiliVideoFile.length());
-        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);
-        log.info("qq客户端上传视频完成 cost:{}", System.currentTimeMillis()-l);
+        MessageHolder messageHolder = MessageHolder.instanceVideo(BotConfig.SAME_MACHINE_QQCLIENT ? "file://" + absolutePath : abstractPathConfig.webVideoBiliPath() + "/" + fileName);
+        SyncResponse<SendMsgResp> response = bot.sendSyncMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), Arrays.asList(messageHolder), 5 * 60 * 1000);
+
+        log.info("qq客户端上传视频完成 resp:{} cost:{}", response.getRaw(), System.currentTimeMillis()-l);
     }
 
 }

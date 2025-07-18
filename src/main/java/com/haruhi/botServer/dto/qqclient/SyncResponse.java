@@ -1,5 +1,6 @@
 package com.haruhi.botServer.dto.qqclient;
 
+import com.alibaba.fastjson.JSONObject;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,12 +19,16 @@ public class SyncResponse<T> {
     private String wording;
     private String message;
     private T data;
+
+    private JSONObject raw;
     
     public boolean isSuccess(){
         return retcode != null && retcode == 0 && STATUS_OK.equals(status);
     }
     
     public static SyncResponse failed(){
-        return new SyncResponse(500,STATUS_FAILED,null,"无响应","无响应",null);
+        SyncResponse syncResponse = new SyncResponse(500, STATUS_FAILED, null, "无响应", "无响应", null, null);
+        syncResponse.setRaw(JSONObject.parseObject(JSONObject.toJSONString(syncResponse)));
+        return syncResponse;
     }
 }

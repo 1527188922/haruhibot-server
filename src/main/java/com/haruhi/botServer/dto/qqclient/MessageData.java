@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MessageData{
         // image
-        private String file;
+        private String file;// video
         private String url;
         private String fileSize;
 

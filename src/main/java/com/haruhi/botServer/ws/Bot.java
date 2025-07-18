@@ -242,10 +242,10 @@ public class Bot {
     }
 
     public void sendMessage(Long userId,Long groupId,String messageType, List<MessageHolder> message){
-        RequestBox<Params> paramsRequestBox = new RequestBox<>();
+        RequestBox<Params<List<MessageHolder>>> paramsRequestBox = new RequestBox<>();
         paramsRequestBox.setAction(GocqActionEnum.SEND_MSG.getAction());
 
-        Params params = new Params();
+        Params<List<MessageHolder>> params = new Params<>();
         params.setMessageType(messageType);
         params.setUserId(userId);
         params.setGroupId(groupId);
@@ -254,6 +254,15 @@ public class Bot {
         paramsRequestBox.setParams(params);
 
         sendMessage(JSONObject.toJSONString(paramsRequestBox));
+    }
+
+    public SyncResponse<SendMsgResp> sendSyncMessage(Long userId, Long groupId, String messageType, List<MessageHolder> message, long timeout){
+        Params<List<MessageHolder>> params = new Params<>();
+        params.setMessageType(messageType);
+        params.setUserId(userId);
+        params.setGroupId(groupId);
+        params.setMessage(message);
+        return sendSyncRequest(GocqActionEnum.SEND_MSG, params, timeout, new TypeReference<SyncResponse<SendMsgResp>>(){});
     }
 
     /**
@@ -520,7 +529,9 @@ public class Bot {
                 res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
             }
             log.debug("echo: {},result: {}",echo,res);
-            return res.toJavaObject(typeReference);
+            SyncResponse<R> resJavaObject = res.toJavaObject(typeReference);
+            resJavaObject.setRaw(res);
+            return resJavaObject;
         }catch (InterruptedException e){
             log.error("发送同步消息线程中断异常,echo:{}",echo,e);
         } catch (ExecutionException e) {
@@ -533,7 +544,7 @@ public class Bot {
             futureTask.cancel(true);
             resultMap.remove(echo);
         }
-        return new SyncResponse<R>(500,SyncResponse.STATUS_FAILED,null,"无响应","无响应",(R) null);
+        return SyncResponse.failed();
     }
 
     private static class Task implements Callable<JSONObject> {
