@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto.gocq.request;
+package com.haruhi.botServer.dto.qqclient;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;

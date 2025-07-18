@@ -1,7 +1,7 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.entity.PixivSqlite;
 import com.haruhi.botServer.ws.Bot;
 

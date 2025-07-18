@@ -7,7 +7,7 @@ import com.alibaba.dashscope.common.Role;
 import com.alibaba.dashscope.exception.InputRequiredException;
 import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.fastjson.JSONObject;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.thread.MessageProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;

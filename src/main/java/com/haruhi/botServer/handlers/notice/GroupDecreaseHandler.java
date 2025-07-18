@@ -1,7 +1,7 @@
 package com.haruhi.botServer.handlers.notice;
 
 import com.haruhi.botServer.config.SwitchConfig;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.notice.IGroupDecreaseEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;

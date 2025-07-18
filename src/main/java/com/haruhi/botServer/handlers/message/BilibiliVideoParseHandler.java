@@ -7,7 +7,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
 import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
 import com.haruhi.botServer.dto.bilibili.VideoDetail;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.BilibiliVideoParseService;
 import com.haruhi.botServer.utils.FileUtil;
@@ -61,6 +61,10 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                 VideoDetail videoDetailData = videoDetail.getData();
                 Long cid = videoDetailData.getCidFirst();
                 VideoDetail.View videoDetailDataView = videoDetailData.getView();
+                if (videoDetailDataView == null) {
+                    log.error("未查询到视频信息 bvid:{} resp:{}", finalBvid, videoDetail.getRaw());
+                    return;
+                }
                 String pic = videoDetailDataView.getPic();
                 BilibiliBaseResp<PlayUrlInfo> playUrlInfo = bilibiliVideoParseService.getPlayUrlInfo(videoDetailDataView.getBvid(),videoDetailDataView.getAid(),cid);
 

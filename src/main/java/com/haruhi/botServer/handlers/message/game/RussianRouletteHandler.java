@@ -4,7 +4,7 @@ import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;

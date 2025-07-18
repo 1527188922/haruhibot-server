@@ -3,7 +3,7 @@ package com.haruhi.botServer.dispenser;
 import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.event.NoticeTypeEnum;
 import com.haruhi.botServer.constant.event.SubTypeEnum;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.notice.IGroupDecreaseEvent;
 import com.haruhi.botServer.event.notice.IGroupIncreaseEvent;
 import com.haruhi.botServer.event.notice.INoticeEvent;

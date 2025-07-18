@@ -19,10 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -54,11 +51,42 @@ public class BilibiliVideoParseService{
     private String jct;
 
 
+    /**
+     * 获取视频详情
+     * @param bvid
+     * @return
+     */
     public BilibiliBaseResp<VideoDetail> getVideoDetail(String bvid){
         HashMap<String, Object> param = new HashMap<String, Object>() {{
             put("bvid", bvid);
         }};
         return sendGetRequest("https://api.bilibili.com/x/web-interface/wbi/view/detail", param,  new TypeReference<BilibiliBaseResp<VideoDetail>>(){});
+    }
+    /**
+     * 获取视频下载链接
+     * bvid avid 2传1即可
+     * @param bvid
+     * @param avid
+     * @param cid
+     * @return
+     */
+    public BilibiliBaseResp<PlayUrlInfo> getPlayUrlInfo(String bvid, Long avid, Long cid){
+        HashMap<String, Object> param = new HashMap<String, Object>() {{
+            put("bvid", bvid);
+            put("avid", avid);
+            put("cid", cid);
+            put("qn", 127);
+            put("otype", "json");
+            put("fnver", 0);
+            put("from_client", "BROWSER");
+            put("is_main_page", false);
+            put("need_fragment", false);
+            put("isGaiaAvoided", true);
+            put("web_location", 1315873);
+            put("voice_balance", 1);
+//            put("fnval", 1024);
+        }};
+        return sendGetRequest("https://api.bilibili.com/x/player/wbi/playurl", param, new TypeReference<BilibiliBaseResp<PlayUrlInfo>>(){});
     }
 
     public String getCookie(){
@@ -144,32 +172,6 @@ public class BilibiliVideoParseService{
     }
 
 
-    /**
-     * bvid avid 2传1即可
-     * @param bvid
-     * @param avid
-     * @param cid
-     * @return
-     */
-    public BilibiliBaseResp<PlayUrlInfo> getPlayUrlInfo(String bvid, Long avid, Long cid){
-        HashMap<String, Object> param = new HashMap<String, Object>() {{
-            put("bvid", bvid);
-            put("avid", avid);
-            put("cid", cid);
-            put("qn", 127);
-            put("otype", "json");
-            put("fnver", 0);
-            put("from_client", "BROWSER");
-            put("is_main_page", false);
-            put("need_fragment", false);
-            put("isGaiaAvoided", true);
-            put("web_location", 1315873);
-            put("voice_balance", 1);
-//            put("fnval", 1024);
-        }};
-        return sendGetRequest("https://api.bilibili.com/x/player/wbi/playurl", param, new TypeReference<BilibiliBaseResp<PlayUrlInfo>>(){});
-    }
-
 
     public <T> BilibiliBaseResp<T> sendGetRequest(String url, HashMap<String, Object> urlParam, TypeReference<BilibiliBaseResp<T>> responseType){
         String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
@@ -183,6 +185,9 @@ public class BilibiliVideoParseService{
             }
             String body = execute.body();
             BilibiliBaseResp<T> bilibiliBaseResp = JSONObject.parseObject(body,responseType);
+            if (Objects.isNull(bilibiliBaseResp.getCode()) || bilibiliBaseResp.getCode() != BilibiliBaseResp.SUCCESS_CODE) {
+                log.error("b站接口响应异常 url:{} body:{}", s, body);
+            }
             bilibiliBaseResp.setRaw(body);
             return bilibiliBaseResp;
         }

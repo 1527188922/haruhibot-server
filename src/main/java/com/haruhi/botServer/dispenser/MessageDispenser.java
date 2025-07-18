@@ -1,7 +1,7 @@
 package com.haruhi.botServer.dispenser;
 
 import com.haruhi.botServer.config.SwitchConfig;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.event.message.IMessageEvent;
@@ -12,7 +12,6 @@ import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Comparator;
 import java.util.HashSet;

@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto.gocq.response;
+package com.haruhi.botServer.dto.qqclient;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;

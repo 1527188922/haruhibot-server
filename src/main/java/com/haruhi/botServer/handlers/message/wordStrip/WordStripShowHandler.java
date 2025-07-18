@@ -3,7 +3,7 @@ package com.haruhi.botServer.handlers.message.wordStrip;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.entity.WordStripSqlite;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.service.WordStripSqliteService;

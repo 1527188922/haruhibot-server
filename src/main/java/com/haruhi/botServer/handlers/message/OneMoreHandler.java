@@ -1,7 +1,7 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.constant.HandlerWeightEnum;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;

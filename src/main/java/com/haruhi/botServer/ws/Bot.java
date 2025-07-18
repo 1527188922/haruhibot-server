@@ -4,10 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.constant.GocqActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
-import com.haruhi.botServer.dto.gocq.request.ForwardMsgItem;
-import com.haruhi.botServer.dto.gocq.request.Params;
-import com.haruhi.botServer.dto.gocq.request.RequestBox;
-import com.haruhi.botServer.dto.gocq.response.*;
+import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import lombok.Getter;
@@ -235,6 +232,21 @@ public class Bot {
         Params params = new Params();
         params.setMessageType(messageType);
         params.setAutoEscape(autoEscape);
+        params.setUserId(userId);
+        params.setGroupId(groupId);
+        params.setMessage(message);
+
+        paramsRequestBox.setParams(params);
+
+        sendMessage(JSONObject.toJSONString(paramsRequestBox));
+    }
+
+    public void sendMessage(Long userId,Long groupId,String messageType, List<MessageHolder> message){
+        RequestBox<Params> paramsRequestBox = new RequestBox<>();
+        paramsRequestBox.setAction(GocqActionEnum.SEND_MSG.getAction());
+
+        Params params = new Params();
+        params.setMessageType(messageType);
         params.setUserId(userId);
         params.setGroupId(groupId);
         params.setMessage(message);

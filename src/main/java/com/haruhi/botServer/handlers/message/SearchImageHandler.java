@@ -6,17 +6,15 @@ import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.cache.CacheSet;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.SwitchConfig;
-import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.dto.gocq.response.SyncResponse;
+import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageData;
 import com.haruhi.botServer.dto.searchImage.response.Results;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
-import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -65,7 +63,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             return true;
         }
 
-        List<Message.MessageData> picMessageData = message.getPicMessageData();
+        List<MessageData> picMessageData = message.getPicMessageData();
         String key = getKey(String.valueOf(message.getSelfId()), String.valueOf(message.getUserId()), String.valueOf(message.getGroupId()));
         if(cache.contains(key) && !CollectionUtils.isEmpty(picMessageData)){
             // 存在缓存 并且 图片路径不为空

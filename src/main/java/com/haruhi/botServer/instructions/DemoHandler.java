@@ -1,7 +1,7 @@
 package com.haruhi.botServer.instructions;
 
 import com.haruhi.botServer.cache.CacheMap;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;

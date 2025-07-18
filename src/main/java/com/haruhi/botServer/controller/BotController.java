@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
-import com.haruhi.botServer.dto.gocq.response.SyncResponse;
+import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.BotContainer;
 import lombok.extern.slf4j.Slf4j;

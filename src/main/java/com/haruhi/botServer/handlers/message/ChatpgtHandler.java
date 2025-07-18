@@ -4,7 +4,7 @@
 //import com.haruhi.botServer.config.ChatgptConfig;
 //import com.haruhi.botServer.constant.RegexEnum;
 //import com.haruhi.botServer.constant.event.MessageTypeEnum;
-//import com.haruhi.botServer.dto.gocq.response.Message;
+//import com.haruhi.botServer.dto.gocq.Message;
 //import com.haruhi.botServer.event.message.IAllMessageEvent;
 //import com.haruhi.botServer.utils.CommonUtil;
 //import com.haruhi.botServer.utils.ThreadPoolUtil;

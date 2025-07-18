@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto.gocq.response;
+package com.haruhi.botServer.dto.qqclient;
 
 import com.haruhi.botServer.constant.event.ElementTypeEnum;
 import com.haruhi.botServer.constant.event.MessageHolderTypeEnum;
@@ -55,7 +55,7 @@ public class Message implements Serializable {
     public Message(String postType, String metaEventType, String messageType, String noticeType, Long operatorId,
                    Long time, Long selfId, String subType, Long userId, Long senderId, Long groupId, Long targetId,
                    List<MessageHolder> message, String rawMessage, Integer font, Sender sender, String messageId, Integer messageSeq, String anonymous,
-                   Raw raw,Long interval,Status status) {
+                   Raw raw, Long interval, Status status) {
         this.postType = postType;
         this.metaEventType = metaEventType;
         this.noticeType = noticeType;
@@ -131,35 +131,6 @@ public class Message implements Serializable {
         private List<Element> elements;
         private List<Record> records;
     }
-    
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class MessageHolder{
-        private String type;
-        private MessageData data;
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class MessageData{
-        // image
-        private String file; 
-        private String url;
-        private String fileSize;
-        
-        // reply
-        private String id;
-        
-        // text
-        private String text;
-        // at
-        private String qq;
-
-        // json
-        private String data;//json格式字符串
-    }
 
     @Data
     @AllArgsConstructor
@@ -173,7 +144,7 @@ public class Message implements Serializable {
         private String sendMemberName;
         private List<Element> elements;
     }
-    
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -183,7 +154,7 @@ public class Message implements Serializable {
         private PicElement picElement;
         private ReplyElement replyElement;
         private TextElement textElement;
-        
+
     }
 
     @Data
@@ -195,7 +166,7 @@ public class Message implements Serializable {
         private String fileSize;
         private Long picWidth;
         private Long picHeight;
-        
+
     }
     @Data
     @AllArgsConstructor
@@ -223,7 +194,7 @@ public class Message implements Serializable {
         private Integer needNotify;
 
     }
-    
+
     public boolean isGroupMsg(){
         return MessageTypeEnum.group.getType().equals(this.messageType);
     }
@@ -231,7 +202,7 @@ public class Message implements Serializable {
     public boolean isPrivateMsg(){
         return MessageTypeEnum.privat.getType().equals(this.messageType);
     }
-    
+
     public boolean isReplyMsg(){
         if(!CollectionUtils.isEmpty(this.message)){
             return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.reply.name());
@@ -300,7 +271,7 @@ public class Message implements Serializable {
     public boolean isAtQQ(String qq){
         return getAtQQs().contains(qq);
     }
-    
+
     public List<String> getTexts(){
         if (isTextMsg()) {
             return this.message.stream().filter(e -> MessageHolderTypeEnum.text.name().equals(e.getType()))
@@ -325,7 +296,7 @@ public class Message implements Serializable {
         }
         return StringUtils.join(texts,"");
     }
-    
+
     public List<String> getPicUrls(){
         if(isPicMsg()){
             return this.message.stream().filter(e -> MessageHolderTypeEnum.image.name().equals(e.getType()))

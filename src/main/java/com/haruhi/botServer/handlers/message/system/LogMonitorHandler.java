@@ -6,7 +6,7 @@ import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;

@@ -2,9 +2,9 @@ package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.dto.gocq.response.GroupMember;
-import com.haruhi.botServer.dto.gocq.response.Message;
-import com.haruhi.botServer.dto.gocq.response.SyncResponse;
+import com.haruhi.botServer.dto.qqclient.GroupMember;
+import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;

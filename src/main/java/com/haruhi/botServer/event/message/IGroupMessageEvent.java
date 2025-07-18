@@ -1,6 +1,6 @@
 package com.haruhi.botServer.event.message;
 
-import com.haruhi.botServer.dto.gocq.response.Message;
+import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.ws.Bot;
 
 /**
