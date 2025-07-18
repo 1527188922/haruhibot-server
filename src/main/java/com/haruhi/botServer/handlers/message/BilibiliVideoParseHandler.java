@@ -88,10 +88,10 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
         log.info("qq客户端开始上传视频 {}", absolutePath);
         long l = System.currentTimeMillis();
         String fileParam = BotConfig.SAME_MACHINE_QQCLIENT ?
-                "file=file:///"+absolutePath :
-                "file="+abstractPathConfig.webVideoBiliPath() + "/" + fileName;
+                "url=file:///"+absolutePath :
+                "url="+abstractPathConfig.webVideoBiliPath() + "/" + fileName;
 
-        String cq = KQCodeUtils.getInstance().toCq(CqCodeTypeEnum.video.getType(), fileParam, "cover=" + pic);
+        String cq = KQCodeUtils.getInstance().toCq(CqCodeTypeEnum.video.getType(), fileParam, "cover=" + pic,"file=" + fileName,"file_size="+bilibiliVideoFile.length());
         bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);
         log.info("qq客户端上传视频完成 cost:{}", System.currentTimeMillis()-l);
     }
