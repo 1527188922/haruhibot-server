@@ -11,20 +11,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.util.CollectionUtils;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -32,6 +27,7 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -224,7 +220,11 @@ public class CommonUtil {
     public static void main(String[] args) {
 //        sss();
 //        ss();
-        System.out.println(isValidMagnetLink("magnet:?xt=urn:btih:GHTGWJOAMHKQNBO5PA7HPAGWW3GINTVD"));
+//        System.out.println(isValidMagnetLink("magnet:?xt=urn:btih:GHTGWJOAMHKQNBO5PA7HPAGWW3GINTVD"));
+
+        String s = formatDuration(124124000L, TimeUnit.MILLISECONDS);
+        System.out.println(s);
+
     }
 
     private static void sss(){
@@ -430,6 +430,47 @@ public class CommonUtil {
      */
     public static String replaceIgnoreCase(String str, String oldStr, String newStr) {
         return str.replaceAll("(?i)" + Pattern.quote(oldStr), Matcher.quoteReplacement(newStr));
+    }
+
+    public static String formatDuration(long duration, TimeUnit unit) {
+        long totalMillis = TimeUnit.MILLISECONDS.convert(duration, unit);
+
+        long days = totalMillis / TimeUnit.DAYS.toMillis(1);
+        long remaining = totalMillis % TimeUnit.DAYS.toMillis(1);
+
+        long hours = remaining / TimeUnit.HOURS.toMillis(1);
+        remaining %= TimeUnit.HOURS.toMillis(1);
+
+        long minutes = remaining / TimeUnit.MINUTES.toMillis(1);
+        remaining %= TimeUnit.MINUTES.toMillis(1);
+
+        long seconds = remaining / TimeUnit.SECONDS.toMillis(1);
+        long millis = remaining % TimeUnit.SECONDS.toMillis(1);
+
+        List<String> parts = new ArrayList<>();
+        addIfPositive(parts, days, "天");
+        addIfPositive(parts, hours, "小时");
+        addIfPositive(parts, minutes, "分钟");
+        addIfPositive(parts, seconds, "秒");
+        addIfPositive(parts, millis, "毫秒");
+
+        if (parts.isEmpty()) {
+            parts.add("0毫秒");
+        }
+        return String.join("", parts);
+    }
+
+    private static void addIfPositive(List<String> parts, long value, String unit) {
+        if (value > 0) {
+            parts.add(value + unit);
+        }
+    }
+
+    public static String substring(String str, int endIndex){
+        if(StringUtils.isEmpty(str) || endIndex <= 0){
+            return str;
+        }
+        return str.length() > endIndex ? str.substring(0,endIndex) : str;
     }
 
 }

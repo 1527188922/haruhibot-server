@@ -11,6 +11,7 @@ import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.BilibiliVideoParseService;
+import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -67,6 +69,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                     log.error("未查询到视频信息 bvid:{} resp:{}", finalBvid, videoDetail.getRaw());
                     return;
                 }
+
                 BilibiliBaseResp<PlayUrlInfo> playUrlInfo = bilibiliVideoParseService.getPlayUrlInfo(videoDetailDataView.getBvid(),videoDetailDataView.getAid(),cid);
 
                 PlayUrlInfo playUrlInfoData = playUrlInfo.getData();
@@ -98,12 +101,19 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
 
         StringBuilder infoBuilder = new StringBuilder();
         infoBuilder.append("标题：").append(videoDetailDataView.getTitle()).append("\n");
-        infoBuilder.append("简介：").append(videoDetailDataView.getDesc()).append("\n");
+        String desc = videoDetailDataView.getDesc();
+        if (StringUtils.isNotBlank(desc)) {
+            int endIndex = 100;
+            infoBuilder.append("简介：").append(CommonUtil.substring(desc, endIndex))
+                    .append(desc.length() > endIndex ? "..." : "")
+                    .append("\n");
+        }
+        infoBuilder.append("时长：").append(CommonUtil.formatDuration(videoDetailDataView.getDuration(), TimeUnit.SECONDS)).append("\n");
         VideoDetail.View.Owner owner = videoDetailDataView.getOwner();
         if (owner != null) {
             infoBuilder.append("UP主：").append(owner.getName()).append("\n");
         }
-        infoBuilder.append("https://www.bilibili.com/video/").append(videoDetailDataView.getBvid());
+        infoBuilder.append("视频链接：https://www.bilibili.com/video/").append(videoDetailDataView.getBvid());
         List<MessageHolder> textMessageHolder = MessageHolder.instanceText(infoBuilder.toString());
         textMessageHolder.add(0, imageMessageHolder);
 

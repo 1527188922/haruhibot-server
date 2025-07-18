@@ -52,6 +52,7 @@ public class VideoDetail {
         private Long ctime;
         private String desc;
 
+        //视频时长 单位：s
         private Long duration;
 
         private Owner owner;
