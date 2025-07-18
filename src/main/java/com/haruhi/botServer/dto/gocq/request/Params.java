@@ -6,14 +6,14 @@ import lombok.Data;
 import java.util.Collection;
 
 @Data
-public class Params {
+public class Params<T> {
     @JSONField(name = "message_type")
     private String messageType;
     @JSONField(name = "user_id")
     private Long userId;
     @JSONField(name = "group_id")
     private Long groupId;
-    private String message;
+    private T message;
     private Collection messages;
     @JSONField(name = "auto_escape")
     private boolean autoEscape;
