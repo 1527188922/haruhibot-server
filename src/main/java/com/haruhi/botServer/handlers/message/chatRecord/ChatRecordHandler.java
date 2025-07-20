@@ -33,7 +33,7 @@ public class ChatRecordHandler implements IAllMessageEvent {
         return true;
     }
     @Autowired
-    private ChatRecordSqliteService ChatRecordSqliteService;
+    private ChatRecordSqliteService chatRecordSqliteService;
 
 
     /**
@@ -60,7 +60,7 @@ public class ChatRecordHandler implements IAllMessageEvent {
                 record.setMessageId(message.getMessageId());
                 record.setMessageType(message.getMessageType());
                 setTime(message, record);
-                ChatRecordSqliteService.save(record);
+                chatRecordSqliteService.save(record);
             }catch (Exception e){
                 log.error("保存聊天记录异常 {}", JSONObject.toJSONString(record),e);
             }
