@@ -72,8 +72,8 @@ public class JmcomicHandler implements IAllMessageEvent {
 
                 ArrayList<String> forwardMsgs = new ArrayList<>();
                 forwardMsgs.add(MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...\n也可通过浏览器打开下方链接进行下载", finalAid));
-                String fileUrl = isPdf ? webResourceConfig.webHomePath()+"/jmcomic/download/pdf/"+finalAid
-                        : webResourceConfig.webHomePath()+"/jmcomic/download/"+finalAid;
+                String fileUrl = isPdf ? webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/pdf/"+finalAid
+                        : webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/"+finalAid;
                 forwardMsgs.add(fileUrl);
                 forwardMsgs.add(isPdf ? "PDF保护密码："+JmcomicService.JM_PASSWORD : "ZIP解压密码："+JmcomicService.JM_PASSWORD);
 
