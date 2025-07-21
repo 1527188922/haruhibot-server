@@ -78,7 +78,7 @@ public class JmcomicHandler implements IAllMessageEvent {
                 forwardMsgs.add(isPdf ? "PDF保护密码："+JmcomicService.JM_PASSWORD : "ZIP解压密码："+JmcomicService.JM_PASSWORD);
 
                 bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
-                uploadFile(bot, message, resp.getData().getName(),fileUrl,isPdf);
+                uploadFile(bot, message, resp.getData(),fileUrl,isPdf);
             } catch (Exception e) {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         MessageFormat.format("下载【JM{0}】异常"+e.getMessage(), finalAid),true);
@@ -87,21 +87,27 @@ public class JmcomicHandler implements IAllMessageEvent {
         return true;
     }
 
-    private void uploadFile(Bot bot,Message message,String fileName, String fileUrl, boolean isPdf){
-        log.info("qq客户端开始下载文件：{}",fileUrl);
-        long l1 = System.currentTimeMillis();
-        SyncResponse<DownloadFileResp> downloadFileRes = bot.downloadFile(fileUrl, 1, null, -1);
-        log.info("qq客户端下载文件完成 cost:{} resp:{}",(System.currentTimeMillis() - l1),JSONObject.toJSONString(downloadFileRes));
-        if (downloadFileRes == null || downloadFileRes.getData() == null || StringUtils.isBlank(downloadFileRes.getData().getFile())) {
-            return;
+    private void uploadFile(Bot bot,Message message,File file, String fileUrl, boolean isPdf){
+        String absolutePath = null;
+        if (BotConfig.SAME_MACHINE_QQCLIENT) {
+            absolutePath = file.getAbsolutePath();
+        }else{
+            log.info("qq客户端开始下载文件：{}",fileUrl);
+            long l1 = System.currentTimeMillis();
+            SyncResponse<DownloadFileResp> downloadFileRes = bot.downloadFile(fileUrl, 1, null, -1);
+            log.info("qq客户端下载文件完成 cost:{} resp:{}",(System.currentTimeMillis() - l1),JSONObject.toJSONString(downloadFileRes));
+            if (downloadFileRes == null || downloadFileRes.getData() == null || StringUtils.isBlank(downloadFileRes.getData().getFile())) {
+                return;
+            }
+            absolutePath = downloadFileRes.getData().getFile();
         }
         SyncResponse<String> response = null;
-        log.info("qq客户端开始上传文件 {}",downloadFileRes.getData().getFile());
+        log.info("qq客户端开始上传文件 {}",absolutePath);
         long l = System.currentTimeMillis();
         if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
-            response = bot.uploadGroupFile(message.getGroupId(), downloadFileRes.getData().getFile(), fileName, null, -1);
+            response = bot.uploadGroupFile(message.getGroupId(), absolutePath, file.getName(), null, -1);
         }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
-            response = bot.uploadPrivateFile(message.getUserId(), downloadFileRes.getData().getFile(), fileName, -1);
+            response = bot.uploadPrivateFile(message.getUserId(), absolutePath, file.getName(), -1);
         }
         log.info(isPdf ? "上传本子pdf完成 cost:{} 响应：{}" : "上传本子zip完成 cost:{} 响应：{}"
                 ,(System.currentTimeMillis() - l), JSONObject.toJSONString(response));

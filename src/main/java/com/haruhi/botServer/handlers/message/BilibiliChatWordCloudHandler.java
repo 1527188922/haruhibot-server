@@ -59,7 +59,7 @@ public class BilibiliChatWordCloudHandler implements IAllMessageEvent {
         String bvid = bilibiliService.getBvidInText(text);
 
         if (StringUtils.isBlank(bvid)) {
-            log.error("为获取到bvid");
+            log.error("未获取到bvid");
             return false;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
