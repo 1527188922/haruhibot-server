@@ -2,7 +2,7 @@ package com.haruhi.botServer.ws;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
-import com.haruhi.botServer.constant.GocqActionEnum;
+import com.haruhi.botServer.constant.QqClientActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -59,7 +59,7 @@ public class Bot {
      */
     public void sendGroupMessage(Long groupId, String message, boolean autoEscape){
         RequestBox<Params> requestBox = new RequestBox<>();
-        requestBox.setAction(GocqActionEnum.SEND_GROUP_MSG.getAction());
+        requestBox.setAction(QqClientActionEnum.SEND_GROUP_MSG.getAction());
 
         Params params = new Params();
         params.setMessageType(MessageTypeEnum.group.getType());
@@ -80,7 +80,7 @@ public class Bot {
     public void sendGroupMessage(Long groupId, List<ForwardMsgItem> messages){
         if (!CollectionUtils.isEmpty(messages)) {
             RequestBox<Params> requestBox = new RequestBox<>();
-            requestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
+            requestBox.setAction(QqClientActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
             Params params = new Params();
             params.setMessages(messages);
             params.setMessageType(MessageTypeEnum.group.getType());
@@ -129,7 +129,7 @@ public class Bot {
      */
     public SyncResponse<String> sendSyncGroupMessage(Long groupId, Long uin, String name, List<String> messages, long timeout){
         Params params = createForwardMessageParams(MessageTypeEnum.group,groupId,uin,name,messages);
-        return sendSyncRequest(GocqActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout, new TypeReference<SyncResponse<String>>(){});
+        return sendSyncRequest(QqClientActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout, new TypeReference<SyncResponse<String>>(){});
     }
 
 
@@ -141,7 +141,7 @@ public class Bot {
      */
     public void sendPrivateMessage(Long userId, String message, boolean autoEscape){
         RequestBox<Params> paramsRequestBox = new RequestBox<>();
-        paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_MSG.getAction());
+        paramsRequestBox.setAction(QqClientActionEnum.SEND_PRIVATE_MSG.getAction());
 
         Params params = new Params();
         params.setMessageType(MessageTypeEnum.privat.getType());
@@ -163,7 +163,7 @@ public class Bot {
     public void sendPrivateMessage(Long userId,List<ForwardMsgItem> messages){
         if (!CollectionUtils.isEmpty(messages)) {
             RequestBox<Params> paramsRequestBox = new RequestBox<>();
-            paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
+            paramsRequestBox.setAction(QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
             Params params = new Params();
             params.setMessages(messages);
             params.setMessageType(MessageTypeEnum.privat.getType());
@@ -212,7 +212,7 @@ public class Bot {
      */
     public SyncResponse<String> sendSyncPrivateMessage(Long userId, Long uin, String name, List<String> messages, long timeout){
         Params params = createForwardMessageParams(MessageTypeEnum.privat,userId,uin,name,messages);
-        return sendSyncRequest(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG, params, timeout,new TypeReference<SyncResponse<String>>() {});
+        return sendSyncRequest(QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG, params, timeout,new TypeReference<SyncResponse<String>>() {});
     }
 
 
@@ -227,7 +227,7 @@ public class Bot {
      */
     public void sendMessage(Long userId,Long groupId,String messageType, String message, boolean autoEscape){
         RequestBox<Params> paramsRequestBox = new RequestBox<>();
-        paramsRequestBox.setAction(GocqActionEnum.SEND_MSG.getAction());
+        paramsRequestBox.setAction(QqClientActionEnum.SEND_MSG.getAction());
 
         Params params = new Params();
         params.setMessageType(messageType);
@@ -243,7 +243,7 @@ public class Bot {
 
     public void sendMessage(Long userId,Long groupId,String messageType, List<MessageHolder> message){
         RequestBox<Params<List<MessageHolder>>> paramsRequestBox = new RequestBox<>();
-        paramsRequestBox.setAction(GocqActionEnum.SEND_MSG.getAction());
+        paramsRequestBox.setAction(QqClientActionEnum.SEND_MSG.getAction());
 
         Params<List<MessageHolder>> params = new Params<>();
         params.setMessageType(messageType);
@@ -262,7 +262,7 @@ public class Bot {
         params.setUserId(userId);
         params.setGroupId(groupId);
         params.setMessage(message);
-        return sendSyncRequest(GocqActionEnum.SEND_MSG, params, timeout, new TypeReference<SyncResponse<SendMsgResp>>(){});
+        return sendSyncRequest(QqClientActionEnum.SEND_MSG, params, timeout, new TypeReference<SyncResponse<SendMsgResp>>(){});
     }
 
     /**
@@ -279,10 +279,10 @@ public class Bot {
         RequestBox<Params> paramsRequestBox = new RequestBox<>();
         Params params = new Params();
         if (MessageTypeEnum.privat.getType().equals(messageType)) {
-            paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
+            paramsRequestBox.setAction(QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
             params.setUserId(userId);
         }else if (MessageTypeEnum.group.getType().equals(messageType)) {
-            paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
+            paramsRequestBox.setAction(QqClientActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
             params.setGroupId(groupId);
         }
         params.setMessageType(messageType);
@@ -310,12 +310,12 @@ public class Bot {
      */
     public SyncResponse<String> sendSyncMessage(Long userId,Long groupId,String messageType,Long uin,String name, List<String> messages,long timeout){
         Params params = new Params();
-        GocqActionEnum actionEnum = null;
+        QqClientActionEnum actionEnum = null;
         if (MessageTypeEnum.privat.getType().equals(messageType)) {
-            actionEnum = GocqActionEnum.SEND_PRIVATE_FORWARD_MSG;
+            actionEnum = QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG;
             params.setUserId(userId);
         }else if (MessageTypeEnum.group.getType().equals(messageType)) {
-            actionEnum = GocqActionEnum.SEND_GROUP_FORWARD_MSG;
+            actionEnum = QqClientActionEnum.SEND_GROUP_FORWARD_MSG;
             params.setGroupId(groupId);
         }
         params.setMessageType(messageType);
@@ -347,10 +347,10 @@ public class Bot {
         params.setMessages(forwardMsgs);
         params.setMessageType(messageType.getType());
         if (MessageTypeEnum.group.getType().equals(messageType.getType())) {
-            paramsRequestBox.setAction(GocqActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
+            paramsRequestBox.setAction(QqClientActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
             params.setGroupId(id);
         }else if(MessageTypeEnum.privat.getType().equals(messageType.getType())){
-            paramsRequestBox.setAction(GocqActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
+            paramsRequestBox.setAction(QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
             params.setUserId(id);
         }
         paramsRequestBox.setParams(params);
@@ -405,7 +405,7 @@ public class Bot {
         Map<String, Object> map = new HashMap<>(2);
         map.put("user_id",userId);
         map.put("times",times);
-        return sendSyncRequest(GocqActionEnum.SEND_LIKE, map, timeout,new TypeReference<SyncResponse<String>>() {});
+        return sendSyncRequest(QqClientActionEnum.SEND_LIKE, map, timeout,new TypeReference<SyncResponse<String>>() {});
     }
 
     /**
@@ -417,12 +417,12 @@ public class Bot {
     public SyncResponse<Message> getMsg(String messageId, long timeout){
         Map<String, Object> map = new HashMap<>(1);
         map.put("message_id",Long.parseLong(messageId));
-        return sendSyncRequest(GocqActionEnum.GET_MSG, map, timeout,new TypeReference<SyncResponse<Message>>() {});
+        return sendSyncRequest(QqClientActionEnum.GET_MSG, map, timeout,new TypeReference<SyncResponse<Message>>() {});
     }
 
 
     public SyncResponse<SelfInfo> getLoginInfo(long timeout){
-        return sendSyncRequest(GocqActionEnum.GET_LOGIN_INGO, null, timeout, new TypeReference<SyncResponse<SelfInfo>>() {});
+        return sendSyncRequest(QqClientActionEnum.GET_LOGIN_INGO, null, timeout, new TypeReference<SyncResponse<SelfInfo>>() {});
     }
 
     /**
@@ -433,7 +433,14 @@ public class Bot {
     public SyncResponse<List<GroupMember>> getGroupMemberList(Long groupId, long timeout){
         Map<String, Object> params = new HashMap<>(1);
         params.put("group_id",groupId);
-        return sendSyncRequest(GocqActionEnum.GET_GROUP_MEMBER_LIST, params, timeout, new TypeReference<SyncResponse<List<GroupMember>>>() {
+        return sendSyncRequest(QqClientActionEnum.GET_GROUP_MEMBER_LIST, params, timeout, new TypeReference<SyncResponse<List<GroupMember>>>() {
+        });
+    }
+
+    public SyncResponse<List<GroupInfo>> getGroupList(boolean noCache,long timeout){
+        Map<String, Object> params = new HashMap<>(1);
+        params.put("no_cache",noCache);
+        return sendSyncRequest(QqClientActionEnum.GET_GROUP_LIST, params, timeout, new TypeReference<SyncResponse<List<GroupInfo>>>() {
         });
     }
 
@@ -450,7 +457,7 @@ public class Bot {
         param.put("user_id",userId);
         param.put("file",filePath);
         param.put("name",fileName);
-        return sendSyncRequest(GocqActionEnum.UPLOAD_PRIVATE_FILE, param, timeout, new TypeReference<SyncResponse<String>>() {});
+        return sendSyncRequest(QqClientActionEnum.UPLOAD_PRIVATE_FILE, param, timeout, new TypeReference<SyncResponse<String>>() {});
     }
 
     /**
@@ -468,7 +475,7 @@ public class Bot {
         param.put("file",filePath);
         param.put("name",fileName);
         param.put("folder",folderId);
-        return sendSyncRequest(GocqActionEnum.UPLOAD_GROUP_FILE, param, timeout, new TypeReference<SyncResponse<String>>() {});
+        return sendSyncRequest(QqClientActionEnum.UPLOAD_GROUP_FILE, param, timeout, new TypeReference<SyncResponse<String>>() {});
     }
 
     /**
@@ -497,7 +504,7 @@ public class Bot {
             param.put("headers",JSONObject.toJSONString(headStrs));
 
         }
-        return sendSyncRequest(GocqActionEnum.DOWNLOAD_FILE, param, timeout, new TypeReference<SyncResponse<DownloadFileResp>>() { });
+        return sendSyncRequest(QqClientActionEnum.DOWNLOAD_FILE, param, timeout, new TypeReference<SyncResponse<DownloadFileResp>>() { });
     }
 
 
@@ -509,7 +516,7 @@ public class Bot {
      * @param <T>
      * @return
      */
-    public <T,R> SyncResponse<R> sendSyncRequest(GocqActionEnum action, T params, long timeout,TypeReference<SyncResponse<R>> typeReference){
+    public <T,R> SyncResponse<R> sendSyncRequest(QqClientActionEnum action, T params, long timeout, TypeReference<SyncResponse<R>> typeReference){
         RequestBox<T> requestBox = new RequestBox<>();
         if(params != null){
             requestBox.setParams(params);
@@ -545,6 +552,22 @@ public class Bot {
             resultMap.remove(echo);
         }
         return SyncResponse.failed();
+    }
+
+    public <R> SyncResponse<R> sendSyncRequest(String text,String echo, long timeout, TypeReference<SyncResponse<R>> typeReference)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        sendMessage(text);
+        FutureTask<JSONObject> futureTask = new FutureTask<>(new Bot.Task(echo, resultMap));
+        ThreadPoolUtil.getSharePool().submit(futureTask);
+        JSONObject res;
+        if(timeout <= sleep){
+            res = futureTask.get();
+        }else{
+            res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
+        }
+        SyncResponse<R> resJavaObject = res.toJavaObject(typeReference);
+        resJavaObject.setRaw(res);
+        return resJavaObject;
     }
 
     private static class Task implements Callable<JSONObject> {

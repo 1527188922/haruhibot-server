@@ -1,6 +1,11 @@
 package com.haruhi.botServer.constant;
 
-public enum GocqActionEnum {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@AllArgsConstructor
+@Getter
+public enum QqClientActionEnum {
 
     SEND_MSG("send_msg","发送消息"),
     SEND_PRIVATE_MSG("send_private_msg","发送私聊消息"),
@@ -22,14 +27,15 @@ public enum GocqActionEnum {
 
     private String action;
     private String remarks;
-    GocqActionEnum(String action, String remarks){
-        this.action = action;
-        this.remarks = remarks;
+
+
+    public static QqClientActionEnum getActionEnum(String action) {
+        for (QqClientActionEnum value : QqClientActionEnum.values()) {
+            if (value.action.equals(action)) {
+                return value;
+            }
+        }
+        return null;
     }
-    public String getAction(){
-        return action;
-    }
-    public String getRemarks(){
-        return remarks;
-    }
+
 }
