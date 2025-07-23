@@ -117,7 +117,7 @@ a{
   cursor: pointer;
   //color: #4395ff;
 }
-// table cell中显示头像和userId
+// table cell中显示头像和userId和qq昵称
 .face-and-id{
   display: flex;
   align-items: center;
@@ -125,6 +125,12 @@ a{
     margin-right: 5px;
     width: 40px;
     border-radius: 50%
+  }
+  .el-row{
+    text-align: left;
+    &:first-child {
+      border-bottom: 1px solid #d5dce8;
+    }
   }
 }
 .danger-text-btn{

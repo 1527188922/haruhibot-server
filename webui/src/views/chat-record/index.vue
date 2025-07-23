@@ -3,22 +3,22 @@
     <basic-container>
       <el-row>
         <el-form :model="queryFormObj" label-width="70px" inline ref="queryForm" size="small">
-          <el-form-item label="消息类型" prop="messageType">
-            <el-select v-model="queryFormObj.messageType" class="form-input" clearable>
-              <el-option v-for="(value,key) in typeMap" :key="key" :value="key" :label="value">
-                <span :class="key === 'private' ? 'danger-text' : ''">{{ value }}</span>
-              </el-option>
-            </el-select>
+          <el-form-item label="消息内容" prop="content">
+            <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
           </el-form-item>
-          <el-form-item label="QQ号" prop="userId">
+          <el-form-item label="发送人" prop="userId">
             <number-input v-model.trim="queryFormObj.userId" class="form-input" clearable
                           placeholder="消息发送人QQ"></number-input>
           </el-form-item>
           <el-form-item label="群号" prop="groupId">
             <number-input v-model.trim="queryFormObj.groupId" class="form-input" clearable></number-input>
           </el-form-item>
-          <el-form-item label="消息内容" prop="content">
-            <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
+          <el-form-item label="消息类型" prop="messageType">
+            <el-select v-model="queryFormObj.messageType" class="form-input" clearable>
+              <el-option v-for="(value,key) in typeMap" :key="key" :value="key" :label="value">
+                <span :class="key === 'private' ? 'danger-text' : ''">{{ value }}</span>
+              </el-option>
+            </el-select>
           </el-form-item>
           <el-form-item label="QQ昵称" prop="nickName">
             <el-input v-model="queryFormObj.nickName" class="form-input" maxlength="30" clearable
@@ -53,18 +53,23 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="QQ号" prop="userId" min-width="130" align="center" show-tooltip-when-overflow >
+        <el-table-column label="发送人" prop="userId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
             <div class="face-and-id">
               <img :src="row.userAvatarUrl">
-              {{row.userId}}
+              <div>
+                <el-row :title="`QQ：${row.userId}`">
+                  {{row.userId}}
+                </el-row>
+                <el-row :title="`QQ昵称：${row.nickname}`">
+                  {{row.nickname}}
+                </el-row>
+              </div>
             </div>
 
           </template>
         </el-table-column>
-        <el-table-column label="QQ昵称" prop="nickname" min-width="90" align="center"/>
-        <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow />
-        <el-table-column label="群内昵称" prop="card" min-width="90" align="center" />
+        <el-table-column label="发送人群昵称" prop="card" min-width="100" align="center" />
         <el-table-column label="消息类型" prop="messageType" min-width="70" align="center" show-tooltip-when-overflow>
           <template slot-scope="{row}">
             <span :class="row.messageType === 'private' ? 'danger-text' : ''">
@@ -72,6 +77,7 @@
             </span>
           </template>
         </el-table-column>
+        <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow />
         <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
             <div class="face-and-id">
