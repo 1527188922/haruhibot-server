@@ -77,7 +77,20 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow />
+<!--        <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow />-->
+        <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow >
+          <template slot-scope="{row}">
+            <div class="group-cell">
+              <el-row :title="`群号：${row.groupId}`">
+                {{row.groupId}}
+              </el-row>
+              <el-row :title="`群名：${row.groupName}`">
+                {{row.groupName}}
+              </el-row>
+            </div>
+
+          </template>
+        </el-table-column>
         <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
             <div class="face-and-id">
@@ -186,6 +199,14 @@ export default {
 </script>
 <style lang="scss" scoped>
 #ChatRecord{
-
+  .group-cell{
+    width: fit-content;
+    .el-row{
+      text-align: left;
+      &:first-child {
+        border-bottom: 1px solid #d5dce8;
+      }
+    }
+  }
 }
 </style>

@@ -22,11 +22,11 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
     /**
      * 获取机器人所有群 存入数据库
      * @param bot
-     * @return
+     * @return 返回本次请求qq客户端获取的群
      */
     @Override
     public List<GroupInfoSqlite> loadGroupInfo(Bot bot) {
-        SyncResponse<List<GroupInfo>> syncResponse = bot.getGroupList(false, 10 * 1000);
+        SyncResponse<List<GroupInfo>> syncResponse = bot.getGroupList(true, 10 * 1000);
         if (!syncResponse.isSuccess()) {
             return Collections.emptyList();
         }
@@ -76,14 +76,13 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
             needUpd.forEach(groupInfoSqlite -> groupInfoSqlite.setId(null));
             this.saveBatch(needUpd);
         }
-//        needAdd.addAll(needUpd);
+        needAdd.addAll(needUpd);
 //        List<Long> groupIds = needAdd.stream().map(GroupInfoSqlite::getGroupId).distinct().collect(Collectors.toList());
 //        List<GroupInfoSqlite> groupInfoSqlites1 = dbList.stream().filter(e -> !groupIds.contains(e.getGroupId())).collect(Collectors.toList());
 //        if (CollectionUtils.isNotEmpty(groupInfoSqlites1)) {
 //            needAdd.addAll(groupInfoSqlites1);
 //        }
-        return this.list(new LambdaQueryWrapper<GroupInfoSqlite>()
-                .eq(GroupInfoSqlite::getSelfId, selfId));
+        return needAdd;
     }
 
     private GroupInfoSqlite findByGroupId(Long groupId, List<GroupInfoSqlite> dbList) {
