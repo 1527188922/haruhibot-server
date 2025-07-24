@@ -35,6 +35,8 @@ public class ChatRecordSqlite {
     private String userAvatarUrl;
     @TableField(exist = false)
     private String selfAvatarUrl;
+    @TableField(exist = false)
+    private String groupName;
 
 
     public Date timeParsed(){

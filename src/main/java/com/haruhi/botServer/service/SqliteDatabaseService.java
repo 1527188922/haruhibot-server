@@ -69,6 +69,12 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createDictionary(DataBaseConfig.T_DICTIONARY);
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_DICTIONARY,"key");
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_DICTIONARY,"content");
+
+
+        sqliteDatabaseInitMapper.createGroupInfo(DataBaseConfig.T_GROUP_INFO);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_GROUP_INFO,"self_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_GROUP_INFO,"group_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_GROUP_INFO,"group_name");
     }
 
 }

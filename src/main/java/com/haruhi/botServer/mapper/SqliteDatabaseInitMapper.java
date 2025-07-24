@@ -46,4 +46,6 @@ public interface SqliteDatabaseInitMapper {
     int createSendLikeRecord(@Param("tableName") String tableName);
 
     int createDictionary(@Param("tableName") String tableName);
+
+    int createGroupInfo(@Param("tableName") String tableName);
 }

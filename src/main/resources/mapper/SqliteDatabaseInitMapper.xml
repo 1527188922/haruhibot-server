@@ -87,4 +87,19 @@
             `modify_time` DATETIME
         );
     </update>
+    <update id="createGroupInfo">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          `self_id` INTEGER NOT NULL,
+          `group_id` INTEGER NOT NULL,
+          `group_name` TEXT,
+          `member_count` INTEGER,
+          `max_member_count` INTEGER,
+          `group_all_shut` INTEGER,
+          `group_remark` TEXT,
+          `group_memo` TEXT,
+          `group_create_time` DATETIME,
+          `group_level` INTEGER
+        );
+    </update>
 </mapper>

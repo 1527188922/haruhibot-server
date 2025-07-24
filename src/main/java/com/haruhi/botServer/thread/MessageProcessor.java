@@ -6,6 +6,7 @@ import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dispenser.MessageDispenser;
 import com.haruhi.botServer.dispenser.NoticeDispenser;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.service.GroupInfoSqliteService;
 import com.haruhi.botServer.thread.pool.policy.ShareRunsPolicy;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,8 @@ public class MessageProcessor{
     private MessageDispenser messageDispenser;
     @Autowired
     private NoticeDispenser noticeDispenser;
+    @Autowired
+    private GroupInfoSqliteService groupInfoSqliteService;
     static {
         threadPool = new ThreadPoolExecutor(6, 10, 10L * 60L, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(100), new CustomizableThreadFactory("pool-processMessage-"), new ShareRunsPolicy("pool-processMessage"));
@@ -68,6 +71,9 @@ public class MessageProcessor{
             // 刚连接成功时，gocq会发一条消息给bot
             bot.setId(message.getSelfId());
             log.info("收到QQ号连接：{} sessionId：{}",message.getSelfId(),bot.getSessionId());
+
+            // 加载群信息
+            groupInfoSqliteService.loadGroupInfo(bot);
         }
     }
 }

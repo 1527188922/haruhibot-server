@@ -21,4 +21,8 @@ public class WebuiConfig {
 
     @Value("${druid.loginPassword}")
     private String druidLoginPassword;
+
+    @Value("${login.expire:30}")
+    private Long loginExpire;
+
 }

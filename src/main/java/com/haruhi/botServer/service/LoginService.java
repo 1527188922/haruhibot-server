@@ -5,7 +5,6 @@ import com.haruhi.botServer.config.WebuiConfig;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.utils.CommonUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
@@ -13,17 +12,19 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class LoginService {
 
-    @Autowired
-    private WebuiConfig webuiConfig;
+    private final WebuiConfig webuiConfig;
 
     public static final String HEADER_KEY_USER_NAME = "UserName";
     public static final String HEADER_KEY_AUTHORIZATION = "Authorization";
 
-    public static final long LOGIN_TIMEOUT = 15;
     public static final TimeUnit LOGIN_TIMEOUT_UNIT = TimeUnit.MINUTES;
 
-    public static final CacheMap<String,String> WEB_TOKEN_CACHE = new CacheMap<>(LOGIN_TIMEOUT, LOGIN_TIMEOUT_UNIT,1);
+    public final CacheMap<String,String> WEB_TOKEN_CACHE;
 
+    public LoginService(WebuiConfig webuiConfig) {
+        this.webuiConfig = webuiConfig;
+        this.WEB_TOKEN_CACHE = new CacheMap<>(webuiConfig.getLoginExpire(), LOGIN_TIMEOUT_UNIT,1);
+    }
 
     public BaseResp<String> login(String username, String password) {
         if(StringUtils.isBlank(webuiConfig.getLoginUserName())

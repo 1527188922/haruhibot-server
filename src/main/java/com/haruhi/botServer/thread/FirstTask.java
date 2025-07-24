@@ -18,15 +18,13 @@ public class FirstTask implements CommandLineRunner {
     private SystemService systemService;
 
     public synchronized void execute(){
-        new Thread(() -> {
-            try {
-                systemService.loadCache();
-                // 创建stop脚本
-                systemService.writeStopScript();
-            }catch (Exception e){
-                log.error("初始任务执行异常",e);
-            }
-        }).start();
+        try {
+            systemService.loadCache();
+            // 创建stop脚本
+            systemService.writeStopScript();
+        }catch (Exception e){
+            log.error("初始任务执行异常",e);
+        }
     }
 
     @Override

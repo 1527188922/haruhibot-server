@@ -10,6 +10,7 @@ import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.entity.ChatRecordSqlite;
+import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.handlers.message.chatRecord.FindGroupChatHandler;
 import com.haruhi.botServer.handlers.message.chatRecord.GroupWordCloudHandler;
 import com.haruhi.botServer.mapper.ChatRecordSqliteMapper;
@@ -47,6 +48,8 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
 
     @Autowired
     private AbstractWebResourceConfig abstractPathConfig;
+    @Autowired
+    private GroupInfoSqliteService groupInfoSqliteService;
 
     public static int poolSize = SystemInfo.AVAILABLE_PROCESSORS + 1;
     private static final Executor pool =  new ThreadPoolExecutor(poolSize,poolSize * 2,60L,
@@ -268,9 +271,19 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
             pageInfo.setTotal(list.size());
         }
         if (pageInfo != null && CollectionUtils.isNotEmpty(pageInfo.getRecords())) {
-            pageInfo.getRecords().forEach(e -> {
+            List<ChatRecordSqlite> records = pageInfo.getRecords();
+            List<Long> groupIds = records.stream().map(ChatRecordSqlite::getGroupId).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+            Map<Long, List<GroupInfoSqlite>> groupMap = groupInfoSqliteService.selectMapByGroupIds(groupIds);
+
+            records.forEach(e -> {
                 e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(),false));
                 e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(e.getSelfId(),false));
+                if (Objects.nonNull(e.getGroupId())) {
+                    List<GroupInfoSqlite> groupInfo = groupMap.get(e.getGroupId());
+                    if (groupInfo != null) {
+                        e.setGroupName(groupInfo.get(0).getGroupName());
+                    }
+                }
             });
         }
         return pageInfo;

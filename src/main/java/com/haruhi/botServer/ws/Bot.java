@@ -443,6 +443,13 @@ public class Bot {
         return sendSyncRequest(QqClientActionEnum.GET_GROUP_LIST, params, timeout, new TypeReference<SyncResponse<List<GroupInfo>>>() {
         });
     }
+    public SyncResponse<GroupInfo> getGroupInfo(Long groupId, boolean noCache,long timeout){
+        Map<String, Object> params = new HashMap<>(2);
+        params.put("group_id",groupId);
+        params.put("no_cache",noCache);
+        return sendSyncRequest(QqClientActionEnum.GET_GROUP_INFO, params, timeout, new TypeReference<SyncResponse<GroupInfo>>() {
+        });
+    }
 
     /**
      * 发送私聊文件
