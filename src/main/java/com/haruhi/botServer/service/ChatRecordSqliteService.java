@@ -22,5 +22,5 @@ public interface ChatRecordSqliteService extends IService<ChatRecordSqlite> {
 
     void sendWordCloudImage(Bot bot, GroupWordCloudHandler.RegexEnum regexEnum, Message message);
 
-    IPage<ChatRecordSqlite> search(ChatRecordQueryReq request, boolean page);
+    IPage<ChatRecordSqlite> search(ChatRecordQueryReq request, boolean isPage);
 }

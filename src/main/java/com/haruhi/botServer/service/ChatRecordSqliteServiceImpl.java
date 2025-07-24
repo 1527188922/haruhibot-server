@@ -250,7 +250,7 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
 
 
     @Override
-    public IPage<ChatRecordSqlite> search(ChatRecordQueryReq request, boolean page) {
+    public IPage<ChatRecordSqlite> search(ChatRecordQueryReq request, boolean isPage) {
 
         LambdaQueryWrapper<ChatRecordSqlite> queryWrapper = new LambdaQueryWrapper<ChatRecordSqlite>()
                 .eq(StringUtils.isNotBlank(request.getMessageType()),ChatRecordSqlite::getMessageType,request.getMessageType())
@@ -262,7 +262,7 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
                 .orderByDesc(ChatRecordSqlite::getTime);
 
         IPage<ChatRecordSqlite> pageInfo = null;
-        if (page) {
+        if (isPage) {
             pageInfo = this.page(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
         }else{
             pageInfo = new Page<>(request.getCurrentPage(), request.getPageSize());

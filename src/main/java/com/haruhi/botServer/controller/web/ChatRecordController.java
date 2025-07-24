@@ -22,7 +22,7 @@ public class ChatRecordController {
 
     @PostMapping("/search")
     public HttpResp<IPage<ChatRecordSqlite>> list(@RequestBody ChatRecordQueryReq request){
-        IPage<ChatRecordSqlite> list = chatRecordSqliteService.search(request, true);
-        return HttpResp.success(list);
+        IPage<ChatRecordSqlite> page = chatRecordSqliteService.search(request, true);
+        return HttpResp.success(page);
     }
 }

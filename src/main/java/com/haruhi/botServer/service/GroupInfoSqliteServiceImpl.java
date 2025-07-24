@@ -1,6 +1,8 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.dto.qqclient.GroupInfo;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
@@ -9,6 +11,7 @@ import com.haruhi.botServer.mapper.GroupInfoSqliteMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.ws.Bot;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -97,5 +100,24 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
         List<GroupInfoSqlite> list = this.list(new LambdaQueryWrapper<GroupInfoSqlite>()
                 .in(GroupInfoSqlite::getGroupId, groupIds));
         return list.stream().collect(Collectors.groupingBy(GroupInfoSqlite::getGroupId,Collectors.toList()));
+    }
+
+    @Override
+    public IPage<GroupInfoSqlite> search(GroupInfoSqlite request, boolean isPage) {
+
+        LambdaQueryWrapper<GroupInfoSqlite> queryWrapper = new LambdaQueryWrapper<GroupInfoSqlite>()
+                .eq(Objects.nonNull(request.getGroupId()),GroupInfoSqlite::getGroupId, request.getGroupId())
+                .like(StringUtils.isNotBlank(request.getGroupName()),GroupInfoSqlite::getGroupName, request.getGroupName())
+                .orderByDesc(GroupInfoSqlite::getId);
+        IPage<GroupInfoSqlite> pageInfo = null;
+        if (isPage) {
+            pageInfo = this.page(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
+        }else{
+            pageInfo = new Page<>(request.getCurrentPage(), request.getPageSize());
+            List<GroupInfoSqlite> list = this.list(queryWrapper);
+            pageInfo.setRecords(list);
+            pageInfo.setTotal(list.size());
+        }
+        return pageInfo;
     }
 }

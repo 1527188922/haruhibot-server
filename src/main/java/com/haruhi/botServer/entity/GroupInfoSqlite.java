@@ -4,11 +4,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.config.DataBaseConfig;
+import com.haruhi.botServer.vo.PageReq;
 import lombok.Data;
 
 @Data
 @TableName(value = DataBaseConfig.T_GROUP_INFO)
-public class GroupInfoSqlite {
+public class GroupInfoSqlite extends PageReq {
 
     @TableId(value = "id",type = IdType.AUTO)
     private Long id;

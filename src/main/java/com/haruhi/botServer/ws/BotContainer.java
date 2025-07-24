@@ -3,6 +3,7 @@ package com.haruhi.botServer.ws;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,6 +29,9 @@ public class BotContainer {
 
     public static Bot getBotBySession(WebSocketSession session){
         return BOT_MAP.get(session.getId());
+    }
+    public static Collection<Bot> getBots(){
+        return BOT_MAP.values();
     }
 
     public static Bot getBotById(Long botId){
