@@ -5,16 +5,14 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.controller.HttpResp;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.service.GroupInfoSqliteService;
+import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.BotContainer;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -53,6 +51,17 @@ public class GroupController {
                 }
             }
         }
-        return HttpResp.success(groupInfoList);
+
+        List<Map<String,Object>> list = new ArrayList<>();
+        groupInfoList.stream()
+                .collect(Collectors.groupingBy(GroupInfoSqlite::getSelfId,Collectors.toList()))
+                .forEach((k,v)->{
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("selfId",k);
+                    item.put("selfAvatarUrl", CommonUtil.getAvatarUrl(k,false));
+                    item.put("groupList",v);
+                    list.add(item);
+                });
+        return HttpResp.success("刷新完成",list);
     }
 }
