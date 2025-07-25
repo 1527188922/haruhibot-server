@@ -1,14 +1,22 @@
 package com.haruhi.botServer.controller.web;
 
 import cn.hutool.core.io.IoUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
+import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.WebuiConfig;
 import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.controller.HttpResp;
+import com.haruhi.botServer.dto.qqclient.RequestBox;
+import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.service.SystemService;
+import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.vo.ContentFileNode;
 import com.haruhi.botServer.vo.FileNode;
+import com.haruhi.botServer.ws.Bot;
+import com.haruhi.botServer.ws.BotContainer;
 import com.haruhi.botServer.ws.BotServer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -24,6 +32,9 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 @Slf4j
@@ -37,6 +48,48 @@ public class SystemController {
 
     @Autowired
     private BotServer botServer;
+
+
+    @IgnoreAuthentication
+    @PostMapping("/bot/action/{action}")
+    public HttpResp sendMessage(@RequestBody JSONObject params,
+                                @RequestParam(value = "botId",required = false) Long botId,
+                                @RequestParam(value = "async",required = false) String async,
+                                @RequestParam(value = "echo",required = false) String echo,
+                                @RequestParam(value = "timeout",required = false,defaultValue = "10000") Long timeout,
+                                @PathVariable(value = "action") String action) {
+        RequestBox<JSONObject> request = new RequestBox<>();
+        request.setAction(action);
+        request.setParams(params);
+        request.setEcho(echo);
+
+        Bot bot = null;
+        if (Objects.isNull(botId)) {
+            bot = BotContainer.getBotFirst();
+        }else{
+            bot = BotContainer.getBotById(botId);
+        }
+        if (bot == null) {
+            return HttpResp.fail("无连接",null);
+        }
+        if("1".equals(async)){
+            // 异步发送
+            request.setEcho(null);
+            bot.sendMessage(JSONObject.toJSONString(request));
+            return HttpResp.success("已发送",null);
+        }
+
+        try {
+            request.setEcho(StringUtils.isNotBlank(request.getEcho()) ? request.getEcho() : CommonUtil.uuid());
+            SyncResponse<Object> syncResponse = bot.sendSyncRequest(JSONObject.toJSONString(request),request.getEcho(), timeout, new TypeReference<SyncResponse<Object>>() {
+            });
+            return HttpResp.success("发送成功",syncResponse);
+        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+            return HttpResp.fail("发送异常",e.getMessage());
+        }
+
+    }
+
 
     /**
      * 找出父级路径下的所有文件和目录

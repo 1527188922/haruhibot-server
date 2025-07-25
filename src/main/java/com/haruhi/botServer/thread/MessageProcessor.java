@@ -72,8 +72,13 @@ public class MessageProcessor{
             bot.setId(message.getSelfId());
             log.info("收到QQ号连接：{} sessionId：{}",message.getSelfId(),bot.getSessionId());
 
-            // 加载群信息
-            groupInfoSqliteService.loadGroupInfo(bot);
+            try {
+                // 加载群信息
+                groupInfoSqliteService.loadGroupInfo(bot);
+            }catch (Exception e){
+                log.error("初始加载机器人群聊异常 bot：{}",message.getSelfId(),e);
+            }
+
         }
     }
 }

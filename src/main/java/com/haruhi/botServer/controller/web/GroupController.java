@@ -6,6 +6,7 @@ import com.haruhi.botServer.controller.HttpResp;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.service.GroupInfoSqliteService;
 import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.vo.GroupInfoQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.BotContainer;
 import org.apache.commons.collections4.CollectionUtils;
@@ -24,7 +25,7 @@ public class GroupController {
     private GroupInfoSqliteService groupInfoSqliteService;
 
     @PostMapping("/search")
-    public HttpResp<IPage<GroupInfoSqlite>> search(@RequestBody GroupInfoSqlite request){
+    public HttpResp<IPage<GroupInfoSqlite>> search(@RequestBody GroupInfoQueryReq request){
         IPage<GroupInfoSqlite> page = groupInfoSqliteService.search(request, false);
         return HttpResp.success(page);
     }

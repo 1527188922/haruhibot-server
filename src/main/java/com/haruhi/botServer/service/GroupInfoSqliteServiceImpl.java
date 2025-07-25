@@ -9,6 +9,7 @@ import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.mapper.GroupInfoSqliteMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
+import com.haruhi.botServer.vo.GroupInfoQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -103,10 +104,11 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
     }
 
     @Override
-    public IPage<GroupInfoSqlite> search(GroupInfoSqlite request, boolean isPage) {
+    public IPage<GroupInfoSqlite> search(GroupInfoQueryReq request, boolean isPage) {
 
         LambdaQueryWrapper<GroupInfoSqlite> queryWrapper = new LambdaQueryWrapper<GroupInfoSqlite>()
                 .eq(Objects.nonNull(request.getGroupId()),GroupInfoSqlite::getGroupId, request.getGroupId())
+                .eq(Objects.nonNull(request.getSelfId()),GroupInfoSqlite::getSelfId, request.getSelfId())
                 .like(StringUtils.isNotBlank(request.getGroupName()),GroupInfoSqlite::getGroupName, request.getGroupName())
                 .orderByDesc(GroupInfoSqlite::getId);
         IPage<GroupInfoSqlite> pageInfo = null;
