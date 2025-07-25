@@ -60,8 +60,8 @@
         <el-table-column label="最大群员数量" prop="maxMemberCount" min-width="100" align="center" show-tooltip-when-overflow/>
         <el-table-column label="群等级" prop="groupLevel" min-width="80" align="center" show-tooltip-when-overflow/>
         <el-table-column label="建群时间" prop="groupCreateTime" min-width="140" align="center" show-tooltip-when-overflow/>
-        <el-table-column label="GroupAllShut" prop="groupAllShut" min-width="100" align="center" show-tooltip-when-overflow/>
-        <el-table-column label="GroupRemark" prop="groupRemark" min-width="100" align="center" show-tooltip-when-overflow/>
+        <el-table-column label="GroupAllShut" prop="groupAllShut" min-width="110" align="center" show-tooltip-when-overflow/>
+        <el-table-column label="GroupRemark" prop="groupRemark" min-width="110" align="center" show-tooltip-when-overflow/>
         <el-table-column label="GroupMemo" prop="groupMemo" min-width="100" align="center" show-tooltip-when-overflow/>
       </el-table>
       <div class="pagination-box">
@@ -145,7 +145,7 @@ export default {
         ...this.queryFormObj,
         currentPage:this.pagination.currentPage,
         pageSize:this.pagination.pageSize
-      }).then(({data:{data,code,message}})=>{
+      }).then(({data:{data}})=>{
         this.tableData = data.records || []
         this.pagination.total = data.total
       }).finally(()=>{

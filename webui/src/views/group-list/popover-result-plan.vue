@@ -9,7 +9,7 @@
             placement="right"
             :disabled="!item.groupList || item.groupList.length === 0"
             trigger="click">
-          <div v-for="group in item.groupList">
+          <div v-for="group in item.groupList" :key="`current-${group.groupId}`">
             {{`${group.groupName}(${group.groupId})`}}
           </div>
           <div class="reference" slot="reference">
@@ -23,7 +23,7 @@
             placement="right"
             :disabled="!item.addedGroupList || item.addedGroupList.length === 0"
             trigger="click">
-          <div v-for="group in item.addedGroupList">
+          <div v-for="group in item.addedGroupList" :key="`added-${group.groupId}`">
             {{`${group.groupName}(${group.groupId})`}}
           </div>
           <div class="reference" slot="reference">
@@ -37,7 +37,7 @@
             placement="right"
             :disabled="!item.removedGroupList || item.removedGroupList.length === 0"
             trigger="click">
-          <div v-for="group in item.removedGroupList">
+          <div v-for="group in item.removedGroupList" :key="`removed-${group.groupId}`">
             {{`${group.groupName}(${group.groupId})`}}
           </div>
           <div class="reference" slot="reference">

@@ -13,7 +13,7 @@
           <template slot="title">
             <span>当前群数量：{{item.groupList.length}}</span>
           </template>
-          <div v-for="group in item.groupList">
+          <div v-for="group in item.groupList" :key="`current-${group.groupId}`">
             {{`${group.groupName}（${group.groupId}）`}}
           </div>
         </el-collapse-item>
@@ -21,7 +21,7 @@
           <template slot="title">
             <span class="success-text">新增群数量：{{item.addedGroupList.length}}</span>
           </template>
-          <div v-for="group in item.addedGroupList" class="success-text">
+          <div v-for="group in item.addedGroupList" class="success-text" :key="`added-${group.groupId}`">
             {{`${group.groupName}（${group.groupId}）`}}
           </div>
         </el-collapse-item>
@@ -29,7 +29,7 @@
           <template slot="title">
             <span class="danger-text">离群数量：{{item.removedGroupList.length}}</span>
           </template>
-          <div v-for="group in item.removedGroupList" class="danger-text">
+          <div v-for="group in item.removedGroupList" class="danger-text" :key="`removed-${group.groupId}`">
             {{`${group.groupName}（${group.groupId}）`}}
           </div>
         </el-collapse-item>
