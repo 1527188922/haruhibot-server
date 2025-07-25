@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message.system;
 
+import cn.hutool.core.util.RuntimeUtil;
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
@@ -64,7 +65,7 @@ public class StatusHandler implements IAllMessageEvent {
         sysPropStr.append("CPU核心数："+ SystemInfo.AVAILABLE_PROCESSORS);
 
         if(MessageTypeEnum.privat.getType().equals(messageType)){
-            sysPropStr.append("\nPID："+ SystemInfo.PID).append("\n");
+            sysPropStr.append("\nPID："+ RuntimeUtil.getPid()).append("\n");
             sysPropStr.append("profile："+ SystemInfo.PROFILE).append("\n");
             sysPropStr.append("WEB Path："+ pathConfig.webHomePath()).append("\n");
             sysPropStr.append("ContextPath：" + BotConfig.CONTEXT_PATH).append("\n");

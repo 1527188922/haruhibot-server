@@ -37,6 +37,7 @@ module.exports = {
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8090',
+        // target: 'http://115.29.215.124:8090',
         changeOrigin: true,
       }
     }

@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.sun.management.OperatingSystemMXBean;
 import org.apache.commons.lang3.SystemUtils;
 
-import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 

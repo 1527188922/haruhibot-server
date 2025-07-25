@@ -10,6 +10,7 @@ import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.controller.HttpResp;
 import com.haruhi.botServer.dto.qqclient.RequestBox;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
+import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
@@ -90,6 +91,16 @@ public class SystemController {
 
     }
 
+//    @IgnoreAuthentication
+    @GetMapping("/bot/restart")
+    public HttpResp restartBot() {
+        try {
+            systemService.restartBot();
+            return HttpResp.success("重启命令已执行",null);
+        }catch (BusinessException e){
+            return HttpResp.fail(e.getErrorMsg(),null);
+        }
+    }
 
     /**
      * 找出父级路径下的所有文件和目录

@@ -1,5 +1,6 @@
 package com.haruhi.botServer.utils.system;
 
+import cn.hutool.core.util.RuntimeUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,6 @@ public class SystemInfo {
 
 
     public static String PROFILE;
-    public static String PID;
     public static String OS_NAME;
     public static String OS_VERSION;
     public static int AVAILABLE_PROCESSORS;
@@ -36,7 +36,6 @@ public class SystemInfo {
     }
     private static void init(){
         PROFILE = SystemUtil.PROFILE_RPOD;
-        getPID();
         getOsName();
         getOsVersion();
         getAvailableProcessors();
@@ -44,11 +43,6 @@ public class SystemInfo {
         getDisk();
         getTotalSpace();
         getTotalPhysicalMemorySize();
-    }
-
-    private static void getPID(){
-        PID = SystemUtil.getPID();
-        log.info("haruhi-bot pid : {}",PID);
     }
 
     private static void getOsName(){
@@ -77,25 +71,6 @@ public class SystemInfo {
 
     private static void getTotalPhysicalMemorySize(){
         TOTAL_PHYSICAL_MEMORY_SIZE = SystemUtil.getTotalPhysicalMemorySize();
-    }
-
-
-
-    public static String toJson(){
-        String s = "{\"PROFILE\":\"" + PROFILE + "\",\"PID\":\"" + PID + "\",\"OS_NAME\":\"" + OS_NAME + "\",\"OS_VERSION\":\"" + OS_VERSION
-                + "\",\"AVAILABLE_PROCESSORS\":" + AVAILABLE_PROCESSORS
-                + ",\"DISK\":\"" + DISK
-                + "\",\"TOTAL_SPACE\":" + TOTAL_SPACE
-                + ",\"TOTAL_SPACE_GB\":" + (TOTAL_SPACE_GB = Double.parseDouble(String.format("%.2f",TOTAL_SPACE_GB)))
-                + ",\"FREE_SPACE\":" + (FREE_SPACE = SystemUtil.getFreeSpace())
-                + ",\"FREE_SPACE_GB\":" + (FREE_SPACE_GB = Double.parseDouble(String.format("%.2f",FREE_SPACE / 1024 / 1024 / 1024)))
-                + ",\"TOTAL_PHYSICAL_MEMORY_SIZE\":" + TOTAL_PHYSICAL_MEMORY_SIZE
-                + ",\"TOTAL_PHYSICAL_MEMORY_SIZE_GB\":" + (TOTAL_PHYSICAL_MEMORY_SIZE_GB = Double.parseDouble(String.format("%.2f",TOTAL_PHYSICAL_MEMORY_SIZE / 1024 / 1024 / 1024)))
-                + ",\"FREE_PHYSICAL_MEMORY_SIZE\":" + (FREE_PHYSICAL_MEMORY_SIZE = SystemUtil.getFreePhysicalMemorySize())
-                + ",\"FREE_PHYSICAL_MEMORY_SIZE_GB\":" + (FREE_PHYSICAL_MEMORY_SIZE_GB = Double.parseDouble((String.format("%.2f",FREE_PHYSICAL_MEMORY_SIZE / 1024 / 1024 / 1024))))
-                + ",\"CPU_LOAD\":" + (CPU_LOAD = (Double.parseDouble(String.format("%.2f",SystemUtil.getOperatingSystemMXBeanJson().getDoubleValue(SystemUtil.OSXMB_KEY_SYSTEM_LOAD)))))
-                + "}";
-        return s.replace("\\","/");
     }
 
 }

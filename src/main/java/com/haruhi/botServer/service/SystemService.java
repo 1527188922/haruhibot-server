@@ -1,21 +1,23 @@
 package com.haruhi.botServer.service;
 
+import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.RootTypeEnum;
+import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.handlers.message.face.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.handlers.message.face.JumpHandler;
+import com.haruhi.botServer.utils.CMDUtil;
 import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.system.SystemInfo;
-import com.haruhi.botServer.utils.system.SystemUtil;
 import com.haruhi.botServer.vo.FileNode;
 import com.haruhi.botServer.ws.BotContainer;
 import com.haruhi.botServer.ws.BotServer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.util.Strings;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -54,29 +56,23 @@ public class SystemService {
     }
 
     public void writeStopScript(){
-        if(SystemUtil.PROFILE_RPOD.equals(SystemInfo.PROFILE)){
-            String s = null;
-            String scriptName = null;
-            if(SystemUtil.IS_OS_LINUX || SystemUtil.IS_OS_MAC){
-                s = MessageFormat.format("kill -9 {0}",SystemInfo.PID);
-                scriptName = "kill.sh";
-            }else if (SystemUtil.IS_OS_WINDOWS){
-                s = MessageFormat.format("taskkill /pid {0} -t -f",SystemInfo.PID);
-                scriptName = "kill.bat";
-            }else {
-                log.warn("当前系统不支持生成停止脚本:{}",SystemInfo.OS_NAME);
-                return;
-            }
-            if (Strings.isNotBlank(s)) {
-                File file = new File(FileUtil.getAppDir() + File.separator + scriptName);
-                try {
-                    FileUtil.writeText(file,s);
-                } catch (IOException e) {
-                    log.error("生成停止脚本异常",e);
-                }
-            }
-            log.info("生成kill脚本完成:{}",scriptName);
+        String s = null;
+        String scriptName = null;
+        String pidStr = String.valueOf(RuntimeUtil.getPid());
+        if (SystemUtils.IS_OS_WINDOWS){
+            s = MessageFormat.format("taskkill /pid {0} -t -f",pidStr);
+            scriptName = FileUtil.FILE_NAME_KILL_SCRIPT_BAT;
+        }else {
+            s = MessageFormat.format("kill -9 {0}",pidStr);
+            scriptName = FileUtil.FILE_NAME_KILL_SCRIPT_SH;
         }
+        File file = new File(FileUtil.getAppDir() + File.separator + scriptName);
+        try {
+            FileUtil.writeText(file,s);
+        } catch (IOException e) {
+            log.error("生成停止脚本异常",e);
+        }
+        log.info("生成kill脚本完成:{}",file.getAbsolutePath());
     }
 
     public synchronized void loadCache(){
@@ -224,5 +220,34 @@ public class SystemService {
         botWebSocketInfo.setPath(BotConfig.WEB_SOCKET_PATH);
         botWebSocketInfo.setAccessToken(BotConfig.ACCESS_TOKEN);
         return botWebSocketInfo;
+    }
+
+    public void restartBot(){
+        String restartScript = FileUtil.getRestartScript();
+        if (StringUtils.isBlank(restartScript)) {
+            throw new BusinessException("未获取到重启脚本 os："+ SystemUtils.OS_NAME);
+        }
+        File file = new File(restartScript);
+        if (!file.exists()) {
+            throw new BusinessException("重启脚本不存在："+ restartScript);
+        }
+        new Thread(()->{
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+            }
+
+            if (SystemUtils.IS_OS_WINDOWS) {
+                String s = CMDUtil.executeBatFile(restartScript, String.valueOf(BotConfig.PORT), FileUtil.getAppDir() + File.separator);
+                log.info("执行bat结果：{}", s);
+            }else{
+                String s = CMDUtil.executeShFile(restartScript, SystemUtils.getJavaHome().getAbsolutePath());
+                log.info("执行sh结果：{}", s);
+            }
+        }).start();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(SystemUtils.getJavaHome().getAbsolutePath());
     }
 }

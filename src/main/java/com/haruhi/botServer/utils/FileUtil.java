@@ -11,9 +11,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.sqlite.SQLiteConfig;
 
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.sql.SQLException;
@@ -46,6 +43,21 @@ public class FileUtil {
     
     public static final String FILE_NAME_HUAQ_TEMPLATE = "huaQTemplate.gif";
     public static final String FILE_NAME_JUMP_TEMPLATE = "jumpTemplate.gif";
+
+    public static final String FILE_NAME_RESTART_SCRIPT_SH = "restart.sh";
+    public static final String FILE_NAME_RESTART_SCRIPT_BAT = "restart.bat";
+    public static final String FILE_NAME_KILL_SCRIPT_BAT = "kill.bat";
+    public static final String FILE_NAME_KILL_SCRIPT_SH = " kill.sh";
+
+
+
+    public static String getRestartScript() {
+        if (SystemUtils.IS_OS_WINDOWS) {
+            return getAppDir() + File.separator + FILE_NAME_RESTART_SCRIPT_BAT;
+        }else{
+            return getAppDir() + File.separator + FILE_NAME_RESTART_SCRIPT_SH;
+        }
+    }
 
     public static void deleteFile(String path){
         if(Strings.isNotBlank(path)){
