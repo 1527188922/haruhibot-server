@@ -7,11 +7,11 @@
             <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
           </el-form-item>
           <el-form-item label="发送人" prop="userId">
-            <number-input v-model.trim="queryFormObj.userId" class="form-input" clearable
+            <number-input v-model.trim="queryFormObj.userId" class="form-input" maxlength="20" clearable
                           placeholder="消息发送人QQ"></number-input>
           </el-form-item>
           <el-form-item label="群号" prop="groupId">
-            <number-input v-model.trim="queryFormObj.groupId" class="form-input" clearable></number-input>
+            <number-input v-model.trim="queryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>
           </el-form-item>
           <el-form-item label="消息类型" prop="messageType">
             <el-select v-model="queryFormObj.messageType" class="form-input" clearable>
@@ -199,14 +199,5 @@ export default {
 </script>
 <style lang="scss" scoped>
 #ChatRecord{
-  .group-cell{
-    width: fit-content;
-    .el-row{
-      text-align: left;
-      &:first-child {
-        border-bottom: 1px solid #d5dce8;
-      }
-    }
-  }
 }
 </style>

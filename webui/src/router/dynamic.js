@@ -230,6 +230,17 @@ const release = [{
     },
     children: []
 },{
+    label: "群聊查询",
+    path: '/group-list',
+    component: 'views/group-list/index',
+    icon: 'icon-caidan',
+    iconBgColor: randomColor(),
+    meta: {
+        // i18n: 'group-list',
+        keepAlive: true
+    },
+    children: []
+},{
     label: "群词条",
     path: '/word-strip',
     component: 'views/word-strip/index',

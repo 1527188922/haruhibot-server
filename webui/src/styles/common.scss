@@ -133,6 +133,15 @@ a{
     }
   }
 }
+.group-cell{
+  width: fit-content;
+  .el-row{
+    text-align: left;
+    &:first-child {
+      border-bottom: 1px solid #d5dce8;
+    }
+  }
+}
 .danger-text-btn{
   span{
     color: #F56C6CFF;
