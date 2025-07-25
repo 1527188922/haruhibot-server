@@ -1,6 +1,7 @@
 package com.haruhi.botServer.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.config.DataBaseConfig;
@@ -25,4 +26,7 @@ public class GroupInfoSqlite {
     private String groupMemo;
     private String groupCreateTime;
     private Integer groupLevel;
+
+    @TableField(exist = false)
+    private String selfAvatarUrl;
 }

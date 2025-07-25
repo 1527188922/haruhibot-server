@@ -26,7 +26,7 @@ public class GroupController {
 
     @PostMapping("/search")
     public HttpResp<IPage<GroupInfoSqlite>> search(@RequestBody GroupInfoQueryReq request){
-        IPage<GroupInfoSqlite> page = groupInfoSqliteService.search(request, false);
+        IPage<GroupInfoSqlite> page = groupInfoSqliteService.search(request, true);
         return HttpResp.success(page);
     }
 
@@ -61,6 +61,13 @@ public class GroupController {
                     item.put("selfId",k);
                     item.put("selfAvatarUrl", CommonUtil.getAvatarUrl(k,false));
                     item.put("groupList",v);
+                    List<GroupInfoSqlite> oldGroupInfoList = groupInfoSqliteService.selectBySelfId(k);
+
+                    List<GroupInfoSqlite> added = CommonUtil.findAdded(v, oldGroupInfoList, GroupInfoSqlite::getGroupId);
+                    item.put("addedGroupList",added);
+                    List<GroupInfoSqlite> removed = CommonUtil.findRemoved(v, oldGroupInfoList, GroupInfoSqlite::getGroupId);
+                    item.put("removedGroupList",removed);
+
                     list.add(item);
                 });
         return HttpResp.success("刷新完成",list);

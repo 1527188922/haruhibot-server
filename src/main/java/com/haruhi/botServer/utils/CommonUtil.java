@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class CommonUtil {
     private CommonUtil(){}
@@ -473,4 +474,31 @@ public class CommonUtil {
         return str.length() > endIndex ? str.substring(0,endIndex) : str;
     }
 
+    // 找出新增元素（newList有但oldList没有）
+    public static <T, K> List<T> findAdded(List<T> newList, List<T> oldList, FieldExtractor<T, K> extractor) {
+        Set<K> oldKeys = oldList.stream()
+                .map(extractor::extract)
+                .collect(Collectors.toSet());
+
+        return newList.stream()
+                .filter(item -> !oldKeys.contains(extractor.extract(item)))
+                .collect(Collectors.toList());
+    }
+
+    // 找出减少元素（oldList有但newList没有）
+    public static <T, K> List<T> findRemoved(List<T> newList, List<T> oldList, FieldExtractor<T, K> extractor) {
+        Set<K> newKeys = newList.stream()
+                .map(extractor::extract)
+                .collect(Collectors.toSet());
+
+        return oldList.stream()
+                .filter(item -> !newKeys.contains(extractor.extract(item)))
+                .collect(Collectors.toList());
+    }
+
+    // 字段提取接口
+    @FunctionalInterface
+    public interface FieldExtractor<T, K> {
+        K extract(T item);
+    }
 }

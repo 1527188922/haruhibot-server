@@ -16,4 +16,6 @@ public interface GroupInfoSqliteService extends IService<GroupInfoSqlite> {
     Map<Long,List<GroupInfoSqlite>> selectMapByGroupIds(List<Long> groupIds);
 
     IPage<GroupInfoSqlite> search(GroupInfoQueryReq request, boolean isPage);
+
+    List<GroupInfoSqlite> selectBySelfId(Long selfId);
 }

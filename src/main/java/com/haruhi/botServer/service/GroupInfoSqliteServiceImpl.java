@@ -8,6 +8,7 @@ import com.haruhi.botServer.dto.qqclient.GroupInfo;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.mapper.GroupInfoSqliteMapper;
+import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.vo.GroupInfoQueryReq;
 import com.haruhi.botServer.ws.Bot;
@@ -120,6 +121,22 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
             pageInfo.setRecords(list);
             pageInfo.setTotal(list.size());
         }
+
+        List<GroupInfoSqlite> records = pageInfo.getRecords();
+        if (CollectionUtils.isNotEmpty(records)) {
+            records.forEach(e->{
+                e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(e.getSelfId(), false));
+            });
+        }
         return pageInfo;
+    }
+
+    @Override
+    public List<GroupInfoSqlite> selectBySelfId(Long selfId) {
+        if(Objects.isNull(selfId)){
+            return Collections.emptyList();
+        }
+        return this.list(new LambdaQueryWrapper<GroupInfoSqlite>().eq(GroupInfoSqlite::getSelfId, selfId));
+
     }
 }
