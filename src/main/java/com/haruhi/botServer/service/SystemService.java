@@ -233,7 +233,7 @@ public class SystemService {
         }
         new Thread(()->{
             try {
-                Thread.sleep(1000);
+                Thread.sleep(1500);
             } catch (InterruptedException e) {
             }
 
