@@ -7,10 +7,10 @@ import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -205,7 +205,7 @@ public class Bot {
         }
     }
 
-    private static long sleep = 1L;
+    private final static long GET_SYNC_RESP_PERIOD = 1L;
 
     private final Map<String,JSONObject> resultMap = new ConcurrentHashMap<>();
     public void putEchoResult(String key, JSONObject val){
@@ -344,27 +344,13 @@ public class Bot {
      */
     public <T,R> SyncResponse<R> sendSyncRequest(QqClientActionEnum action, T params, long timeout, TypeReference<SyncResponse<R>> typeReference){
         RequestBox<T> requestBox = new RequestBox<>();
-        if(params != null){
-            requestBox.setParams(params);
-        }
+        requestBox.setParams(params);
         requestBox.setAction(action.getAction());
         String echo = CommonUtil.uuid();
         requestBox.setEcho(echo);
-        sendMessage(JSONObject.toJSONString(requestBox));
-        log.debug("echo: {}",echo);
-        FutureTask<JSONObject> futureTask = new FutureTask<>(new Bot.Task(echo, resultMap));
-        ThreadPoolUtil.getSharePool().submit(futureTask);
+
         try {
-            JSONObject res;
-            if(timeout <= sleep){
-                res = futureTask.get();
-            }else{
-                res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
-            }
-            log.debug("echo: {},result: {}",echo,res);
-            SyncResponse<R> resJavaObject = res.toJavaObject(typeReference);
-            resJavaObject.setRaw(res);
-            return resJavaObject;
+            return sendSyncRequest(JSONObject.toJSONString(requestBox), echo, timeout, typeReference);
         }catch (InterruptedException e){
             log.error("发送同步消息线程中断异常,echo:{}",echo,e);
         } catch (ExecutionException e) {
@@ -373,9 +359,6 @@ public class Bot {
             log.error("发送同步消息超时,echo:{}",echo,e);
         } catch (Exception e) {
             log.error("发送同步消息异常,echo:{}",echo,e);
-        }finally {
-            futureTask.cancel(true);
-            resultMap.remove(echo);
         }
         return SyncResponse.failed();
     }
@@ -383,30 +366,32 @@ public class Bot {
     public <R> SyncResponse<R> sendSyncRequest(String text,String echo, long timeout, TypeReference<SyncResponse<R>> typeReference)
             throws ExecutionException, InterruptedException, TimeoutException {
         sendMessage(text);
-        FutureTask<JSONObject> futureTask = new FutureTask<>(new Bot.Task(echo, resultMap));
+
+        log.debug("echo: {}",echo);
+        FutureTask<JSONObject> futureTask = new FutureTask<>(new GetSyncRespTask(echo, resultMap));
         ThreadPoolUtil.getSharePool().submit(futureTask);
-        JSONObject res;
-        if(timeout <= sleep){
-            res = futureTask.get();
-        }else{
-            res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
+        try {
+            JSONObject res;
+            if(timeout <= GET_SYNC_RESP_PERIOD){
+                res = futureTask.get();
+            }else{
+                res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
+            }
+            SyncResponse<R> resJavaObject = res.toJavaObject(typeReference);
+            resJavaObject.setRaw(res);
+            log.debug("echo: {},result: {}",echo,res);
+            return resJavaObject;
+        }finally {
+            futureTask.cancel(true);
+            resultMap.remove(echo);
         }
-        SyncResponse<R> resJavaObject = res.toJavaObject(typeReference);
-        resJavaObject.setRaw(res);
-        return resJavaObject;
     }
 
-    private static class Task implements Callable<JSONObject> {
+    @AllArgsConstructor
+    private static class GetSyncRespTask implements Callable<JSONObject> {
         private final String echo;
         private final Map<String,JSONObject> resultMap;
 
-        Task(String echo,Map<String,JSONObject> resultMap){
-            if (Strings.isBlank(echo)) {
-                throw new IllegalArgumentException("echo is blank");
-            }
-            this.resultMap = resultMap;
-            this.echo = echo;
-        }
         @Override
         public JSONObject call() {
             JSONObject res = null;
@@ -416,7 +401,7 @@ public class Bot {
                     break;
                 }else {
                     try {
-                        Thread.sleep(Bot.sleep);
+                        Thread.sleep(Bot.GET_SYNC_RESP_PERIOD);
                     } catch (InterruptedException e) {
                         break;
                     }
