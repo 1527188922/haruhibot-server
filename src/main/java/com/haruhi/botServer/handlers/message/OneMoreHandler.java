@@ -47,7 +47,7 @@ public class OneMoreHandler implements IGroupMessageEvent {
 
             if (pair.getLeft().equals(message.getRawMessage())) {
                 if (!pair.getRight()) {
-                    bot.sendGroupMessage(message.getGroupId(),message.getRawMessage(),false);
+                    bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getMessage());
                     pair.setValue(true);
                 }
             }else{

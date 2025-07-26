@@ -54,7 +54,8 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 List<ChatRecordSqlite> chatRecords = chatRecordSqliteMapper.groupRecordCounting(message.getGroupId(), message.getSelfId());
                 log.info("聊天记录分组执行sql cost:{}",System.currentTimeMillis() - l);
                 if(CollectionUtils.isEmpty(chatRecords)){
-                    bot.sendGroupMessage(message.getGroupId(),"暂无聊天记录",true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                            MessageHolder.instanceText("暂无聊天记录"));
                     return;
                 }
 
@@ -105,7 +106,8 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 }
             }catch (Exception e){
                 log.error("聊天统计异常",e);
-                bot.sendGroupMessage(message.getGroupId(), "聊天统计异常\n"+e.getMessage(),true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        MessageHolder.instanceText("聊天统计异常\n"+e.getMessage()));
             }
             
         });

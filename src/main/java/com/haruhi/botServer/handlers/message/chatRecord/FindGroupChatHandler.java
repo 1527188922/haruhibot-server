@@ -3,6 +3,7 @@ package com.haruhi.botServer.handlers.message.chatRecord;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.service.ChatRecordSqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -62,7 +63,8 @@ public class FindGroupChatHandler implements IGroupMessageEvent {
                     args = matcher.group(1);
                     num = Integer.valueOf(args);
                 }catch (Exception e){
-                    bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("错误的参数[{0}],请输入整数...",args),true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                            MessageHolder.instanceText(MessageFormat.format("错误的参数[{0}],请输入整数...",args)));
                     return null;
                 }
                 return new Param(num,item.timeUnit,item.messageType);

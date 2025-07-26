@@ -3,6 +3,7 @@ package com.haruhi.botServer.handlers.message.chatRecord;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.service.ChatRecordSqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -54,7 +55,8 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
             return false;
         }
         if(lock.containsKey(String.valueOf(message.getGroupId()) + message.getSelfId())){
-            bot.sendGroupMessage(message.getGroupId(),"词云正在生成中...莫着急",true);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                    MessageHolder.instanceText("词云正在生成中...莫着急"));
             return true;
         }else{
             lock.put(String.valueOf(message.getGroupId()) + message.getSelfId(),1);

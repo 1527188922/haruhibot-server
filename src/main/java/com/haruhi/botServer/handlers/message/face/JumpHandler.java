@@ -2,17 +2,18 @@ package com.haruhi.botServer.handlers.message.face;
 
 import cn.hutool.core.img.gif.AnimatedGifEncoder;
 import cn.hutool.core.img.gif.GifDecoder;
+import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
-import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
-import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -94,7 +96,7 @@ public class JumpHandler implements IGroupMessageEvent {
                     makeHuaQFace(Long.valueOf(data.getRight()), out);
                 }
                 log.info("jump表情图片地址：{}",out);
-                sendFaceMsg(bot,message.getGroupId(),fileName);
+                sendFaceMsg(bot,message.getGroupId(),file);
             }catch (Exception e){
                 log.error("发送jump表情异常",e);
             }
@@ -102,12 +104,13 @@ public class JumpHandler implements IGroupMessageEvent {
         return true;
     }
 
-    private void sendFaceMsg(Bot bot,Long groupId, String fileName){
-        KQCodeUtils instance = KQCodeUtils.getInstance();
-        String imageUrl = abstractPathConfig.webFacePath() + "/" + fileName + "?t=" + System.currentTimeMillis();
+    private void sendFaceMsg(Bot bot,Long groupId, File file){
+        String imageUrl = BotConfig.SAME_MACHINE_QQCLIENT ? "file://"+file.getAbsolutePath()
+                : abstractPathConfig.webFacePath() + "/" + file.getName() + "?t=" + System.currentTimeMillis();
         log.info("jump图片url ：{}",imageUrl);
-        String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + imageUrl);
-        bot.sendGroupMessage(groupId,imageCq,false);
+
+        MessageHolder messageHolder = MessageHolder.instanceImage(imageUrl);
+        bot.sendMessage(null,groupId, MessageTypeEnum.group.getType(), Collections.singletonList(messageHolder));
     }
 
     private MatchResult<Pair<String,String>> matches(Message message){

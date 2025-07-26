@@ -71,7 +71,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
             return true;
         }
         if(!lock.compareAndSet(false,true)){
-            bot.sendGroupMessage(message.getGroupId(),"正在生成Excel中，请稍等...",true);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("正在生成Excel中，请稍等..."));
             return true;
         }
         exportExcel(bot, message, lock);
@@ -91,7 +91,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
                 long l4 = System.currentTimeMillis() - l;
                 log.info("查询聊天记录完成，耗时：{} 数量：{}",l4, list.size());
                 if(CollectionUtils.isEmpty(list)){
-                    bot.sendGroupMessage(message.getGroupId(),"未查到聊天记录",true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("未查到聊天记录"));
                     return;
                 }
 
@@ -139,7 +139,9 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
 
             }catch (Exception e){
                 log.info("导出群聊记录异常 groupId:{} exportGroupId:{}",message.getGroupId(),message.getGroupId(), e);
-                bot.sendGroupMessage(message.getGroupId(),"导出群聊记录异常\n"+ "群号："+ message.getGroupId() + "\n"+e.getMessage(),true);
+                String err = "导出群聊记录异常\n"+ "群号："+ message.getGroupId() + "\n"+e.getMessage();
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        MessageHolder.instanceText(err));
             }finally {
                 lock.set(false);
                 if(excelWriter != null){
@@ -147,7 +149,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
                 }
             }
         });
-        bot.sendGroupMessage(message.getGroupId(),"开始生成Excel文件...",true);
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("开始生成Excel文件..."));
     }
 
     private List<ChatRecordExportBody> convertObjToExcelData(List<ChatRecordSqlite> chatRecordList){

@@ -1,21 +1,22 @@
 package com.haruhi.botServer.handlers.message.face;
 
+import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
-import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.ws.Bot;
-import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Collections;
 
 @Component
 @Slf4j
@@ -42,15 +43,18 @@ public class NieHandler implements IGroupMessageEvent {
             return false;
         }
         File[] data = result.getData();
-        String fileName = null;
+        File file = null;
         if(data.length == 1){
-            fileName = data[0].getName();
+            file = data[0];
         }else{
-            fileName = data[CommonUtil.randomInt(0, data.length - 1)].getName();
+            file = data[CommonUtil.randomInt(0, data.length - 1)];
         }
-        String s = webResourceConfig.webFacePath() + "/" + fileName + "?t=" + System.currentTimeMillis();
-        String imageCq = KQCodeUtils.getInstance().toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
-        bot.sendGroupMessage(message.getGroupId(),imageCq,false);
+        String imageUrl = BotConfig.SAME_MACHINE_QQCLIENT ? "file://"+file.getAbsolutePath()
+                : webResourceConfig.webFacePath() + "/" + file.getName() + "?t=" + System.currentTimeMillis();
+
+        MessageHolder messageHolder = MessageHolder.instanceImage(imageUrl);
+
+        bot.sendMessage(message.getUserId(),message.getGroupId(), message.getMessageType(), Collections.singletonList(messageHolder));
         return true;
     }
 
