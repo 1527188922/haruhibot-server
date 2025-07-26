@@ -7,6 +7,7 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Bot;
@@ -52,37 +53,36 @@ public class NewsServiceImpl implements NewsService {
         }
     }
 
-    @Override
-    public void sendGroup(Bot bot, List<NewsBy163Resp> list, Long... groupIds) {
-        if(groupIds != null){
-            List<String> newsGroupMessage = createNewsMessage(list);
-            for (Long groupId : groupIds) {
-                bot.sendGroupMessage(groupId,BotConfig.NAME,newsGroupMessage);
-            }
-        }
-    }
 
-    private List<String> createNewsMessage(List<NewsBy163Resp> list){
-        List<String> forwardMsgs = new ArrayList<>(list.size() + 1);
-        KQCodeUtils instance = KQCodeUtils.getInstance();
-        forwardMsgs.add("今日新闻");
+    @Override
+    public List<List<MessageHolder>> createNewsMessage(List<NewsBy163Resp> list){
+        List<List<MessageHolder>> forwardMsgs = new ArrayList<>(list.size() + 1);
+        forwardMsgs.add(MessageHolder.instanceText("今日新闻"));
+
         for (NewsBy163Resp e : list) {
-            String newsItemMessage = createNewsItemMessage(e, instance);
+            List<MessageHolder> newsItemMessage = createNewsItemMessage(e);
             forwardMsgs.add(newsItemMessage);
         }
         return forwardMsgs;
     }
-    private String createNewsItemMessage(NewsBy163Resp e,KQCodeUtils instance){
-        StringBuilder stringBuilder = new StringBuilder("【");
-        stringBuilder.append(e.getTitle()).append("】\n[");
-        stringBuilder.append(DateTimeUtil.dateTimeFormat(e.getLmodify(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss)).append("]\n");
-        stringBuilder.append(e.getDigest()).append("\n");
+
+    private List<MessageHolder> createNewsItemMessage(NewsBy163Resp e){
+
+
+        String stringBuilder = "【" + e.getTitle() + "】\n[" +
+                DateTimeUtil.dateTimeFormat(e.getLmodify(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss) + "]\n" +
+                e.getDigest();
+
+        List<MessageHolder> messageHolders = MessageHolder.instanceText(stringBuilder);
+
         if(Strings.isNotBlank(e.getImgsrc())){
-            String cq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + e.getImgsrc());
-            stringBuilder.append(cq).append("\n");
+            String imgsrc = e.getImgsrc().replaceFirst("http,","http:");
+            messageHolders.add(MessageHolder.instanceImage(imgsrc));
         }
+
+        StringBuilder stringBuilder2 = new StringBuilder();
         if(Strings.isNotBlank(e.getUrl())){
-            stringBuilder.append("详情:").append(e.getUrl());
+            stringBuilder2.append("详情:").append(e.getUrl());
         }else{
             boolean hasUrl = false;
             if(Strings.isNotBlank(e.getPostid())){
@@ -93,20 +93,10 @@ public class NewsServiceImpl implements NewsService {
                 e.setUrl("https://3g.163.com/dy/article/" + e.getDocid() + ".html");
             }
             if(hasUrl){
-                stringBuilder.append("详情:").append(e.getUrl());
+                stringBuilder2.append("详情:").append(e.getUrl());
             }
         }
-        return stringBuilder.toString();
-    }
-
-    @Override
-    public void sendPrivate(Bot bot,List<NewsBy163Resp> list,Long... userIds) {
-        if(userIds != null){
-            List<String> newsMessage = createNewsMessage(list);
-            for (Long userId : userIds) {
-                bot.sendPrivateMessage(userId,BotConfig.NAME,newsMessage);
-            }
-        }
-
+        messageHolders.addAll(MessageHolder.instanceText(stringBuilder2.toString()));
+        return messageHolders;
     }
 }

@@ -2,22 +2,21 @@ package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.dto.qqclient.GroupMember;
-import com.haruhi.botServer.dto.qqclient.Message;
-import com.haruhi.botServer.dto.qqclient.SyncResponse;
+import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-//@Component
+@Component
 @Slf4j
 public class FriendSaidHandler implements IGroupMessageEvent {
     
@@ -56,12 +55,9 @@ public class FriendSaidHandler implements IGroupMessageEvent {
                 }
                 int i = CommonUtil.randomInt(0, groupMemberList.size() - 1);
                 GroupMember friend = groupMemberList.get(i);
-                bot.sendGroupMessage(message.getGroupId(),friend.getUserId(),friend.getNickname(),Collections.singletonList(finalWord));
-//                RequestBox<ForwardMsg> requestBox = new RequestBox<>();
-//                ForwardMsg instance = ForwardMsg.instance(message.getMessageType(), message.getGroupId(), friend.getUserId(), friend.getNickname(), Collections.singletonList(word));
-//                requestBox.setParams(instance);
-//                requestBox.setAction(GocqActionEnum.SEND_FORWARD_MSG.getAction());
-//                Server.sendMessage(session, JSONObject.toJSONString(requestBox));
+
+                ForwardMsgItem instance = ForwardMsgItem.instance(friend.getUserId(), friend.getNickname(), MessageHolder.instanceText(finalWord));
+                bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), Collections.singletonList(instance));
             }catch (Exception e){
                 log.error("朋友说发生异常",e);
             }

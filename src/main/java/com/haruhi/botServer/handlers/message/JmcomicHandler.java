@@ -7,9 +7,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.BaseResp;
-import com.haruhi.botServer.dto.qqclient.DownloadFileResp;
-import com.haruhi.botServer.dto.qqclient.Message;
-import com.haruhi.botServer.dto.qqclient.SyncResponse;
+import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.JmcomicService;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -24,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -70,14 +69,27 @@ public class JmcomicHandler implements IAllMessageEvent {
                     return;
                 }
 
-                ArrayList<String> forwardMsgs = new ArrayList<>();
-                forwardMsgs.add(MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...\n也可通过浏览器打开下方链接进行下载", finalAid));
+                List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
+
+                ForwardMsgItem instance1 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
+                        MessageHolder.instanceText(
+                                MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...\n也可通过浏览器打开下方链接进行下载", finalAid)
+                        ));
+                forwardMsgs.add(instance1);
+
                 String fileUrl = isPdf ? webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/pdf/"+finalAid
                         : webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/"+finalAid;
-                forwardMsgs.add(fileUrl);
-                forwardMsgs.add(isPdf ? "PDF保护密码："+JmcomicService.JM_PASSWORD : "ZIP解压密码："+JmcomicService.JM_PASSWORD);
+                ForwardMsgItem instance2 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(fileUrl));
+                forwardMsgs.add(instance2);
 
-                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
+
+                ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
+                        MessageHolder.instanceText(
+                                isPdf ? "PDF保护密码："+JmcomicService.JM_PASSWORD : "ZIP解压密码："+JmcomicService.JM_PASSWORD)
+                        );
+                forwardMsgs.add(instance3);
+
+                bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
                 uploadFile(bot, message, resp.getData(),fileUrl,isPdf);
             } catch (Exception e) {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),

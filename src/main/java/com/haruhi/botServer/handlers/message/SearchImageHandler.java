@@ -9,8 +9,10 @@ import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
+import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageData;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.searchImage.response.Results;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -184,11 +186,12 @@ public class SearchImageHandler implements IAllMessageEvent {
     }
 
     private void sendResult(Bot bot, List<Results> resultList, Message replyMessage, Message message){
-        List<String> forwardMsgs = new ArrayList<>();
+        List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
         for (Results results : resultList) {
-            forwardMsgs.add(getItemMsg(results));
+            String itemMsg = getItemMsg(results);
+            forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(itemMsg)));
         }
-        bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
+        bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
     }
 
 //    private void sendResult(Bot bot, List<Results> resultList, Message replyMessage, Message message){

@@ -9,6 +9,7 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.entity.ChatRecordSqlite;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.handlers.message.chatRecord.FindGroupChatHandler;
@@ -103,11 +104,12 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
         }
     }
     private void partSend(Bot bot, List<ChatRecordSqlite> chatList, Message message){
-        List<ForwardMsgItem> params = new ArrayList<>(chatList.size());
+        List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(chatList.size());
         for (ChatRecordSqlite e : chatList) {
-            params.add(new ForwardMsgItem(new ForwardMsgItem.Data(getName(e),e.getUserId(),e.getContent())));
+            ForwardMsgItem instance = ForwardMsgItem.instance(e.getUserId(), getName(e), MessageHolder.instanceText(e.getContent()));
+            forwardMsgItems.add(instance);
         }
-        bot.sendGroupMessage(message.getGroupId(),params);
+        bot.sendForwardMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),forwardMsgItems);
 
     }
     private String getName(ChatRecordSqlite e){

@@ -6,10 +6,7 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
-import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
-import com.haruhi.botServer.dto.qqclient.GroupMember;
-import com.haruhi.botServer.dto.qqclient.Message;
-import com.haruhi.botServer.dto.qqclient.SyncResponse;
+import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.entity.ChatRecordSqlite;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.mapper.ChatRecordSqliteMapper;
@@ -70,7 +67,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 //                    groupMemberList.removeIf(next -> longs.contains(next.getUserId()));
 //                }
 
-                List<ForwardMsgItem> params = new ArrayList<>(chatRecords.size() + 1);
+                List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(chatRecords.size() + 1);
 
                 ChatRecordSqlite chatRecord = chatRecordSqliteMapper.selectOne(new LambdaQueryWrapper<ChatRecordSqlite>()
                         .select(ChatRecordSqlite::getTime)
@@ -81,9 +78,9 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                         .orderByAsc(ChatRecordSqlite::getTime)
                         .last("LIMIT 1"));
                 if(chatRecord != null && chatRecord.getTime() != null){
-                    
-                    params.add(new ForwardMsgItem(new ForwardMsgItem.Data(BotConfig.NAME, message.getSelfId(), 
-                            "从[" + chatRecord.getTime() + "]开始统计")));
+                    ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
+                            MessageHolder.instanceText("从[" + chatRecord.getTime() + "]开始统计"));
+                    forwardMsgItems.add(instance);
                 }
 
                 for (int i = 0; i < chatRecords.size(); i++) {
@@ -95,11 +92,15 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                             + (i + 1) + "\n" 
                             + name + "(" +item.getUserId() + ")"
                             + "\n发言数：" + item.getTotal();
-                    params.add(new ForwardMsgItem(new ForwardMsgItem.Data(name,item.getUserId(), msg)));
+
+                    ForwardMsgItem instance = ForwardMsgItem.instance(item.getUserId(), BotConfig.NAME, MessageHolder.instanceText(msg));
+                    forwardMsgItems.add(instance);
                 }
-                List<List<ForwardMsgItem>> lists = CommonUtil.averageAssignList(params, 70);
+                List<List<ForwardMsgItem>> lists = CommonUtil.averageAssignList(forwardMsgItems, 70);
                 for (int i = 0; i < lists.size(); i++) {
-                    bot.sendGroupMessage(message.getGroupId(), lists.get(i));
+
+                    bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), lists.get(i));
+
                     if(i < lists.size() - 1){
                         try {
                             Thread.sleep(1200);

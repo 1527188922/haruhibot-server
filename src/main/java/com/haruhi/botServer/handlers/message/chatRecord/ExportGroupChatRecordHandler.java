@@ -11,9 +11,7 @@ import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.BaseResp;
-import com.haruhi.botServer.dto.qqclient.DownloadFileResp;
-import com.haruhi.botServer.dto.qqclient.Message;
-import com.haruhi.botServer.dto.qqclient.SyncResponse;
+import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.entity.ChatRecordSqlite;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.service.ChatRecordSqliteService;
@@ -124,10 +122,11 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
                 strBuilder.append("总耗时：").append(l2).append("ms").append("\n");
                 strBuilder.append("浏览器打开下方链接可下载Excel");
 
-                ArrayList<String> forwardMsgs = new ArrayList<>();
-                forwardMsgs.add(strBuilder.toString());
-                forwardMsgs.add(url);
-                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getSelfId(), BotConfig.NAME, forwardMsgs);
+                List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
+                forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(strBuilder.toString())));
+                forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(url)));
+
+                bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
                 long l6 = System.currentTimeMillis();
                 SyncResponse<DownloadFileResp> downloadFileRes = bot.downloadFile(url, 1, null, -1);
                 log.info("qq客户端下载群聊excel文件完成 cost:{} resp:{}",(System.currentTimeMillis()-l6),JSONObject.toJSONString(downloadFileRes));

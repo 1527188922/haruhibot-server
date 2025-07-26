@@ -5,7 +5,9 @@ import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
+import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.HttpClientUtil;
@@ -164,7 +166,9 @@ public class BtSearchHandler implements IAllMessageEvent {
                     noData(bot,message,keyword);
                     return;
                 }
-                List<String> res = new ArrayList<>(list.size());
+
+                List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(list.size());
+
                 for (Element element : list) {
                     Elements a = element.getElementsByTag("a");
                     if (CollectionUtils.isEmpty(a)) {
@@ -185,17 +189,17 @@ public class BtSearchHandler implements IAllMessageEvent {
                         log.error("bt获取详情异常:{}",s,e);
                         continue;
                     }
-                    res.add(strBuilder.toString());
+
+                    ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(strBuilder.toString()));
+                    forwardMsgItems.add(instance);
                 }
-                if(res.size() == 0){
+                if(forwardMsgItems.isEmpty()){
                     noData(bot,message,keyword);
                     return;
                 }
-                if(message.isGroupMsg()){
-                    bot.sendGroupMessage(message.getGroupId(),message.getSelfId(),BotConfig.NAME,res);
-                }else if(message.isPrivateMsg()){
-                    bot.sendPrivateMessage(message.getUserId(),message.getSelfId(),BotConfig.NAME,res);
-                }
+
+                bot.sendForwardMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),forwardMsgItems);
+
             }catch (Exception e){
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageFormat.format("bt搜索异常:{0}",e.getMessage()),true);
                 log.error("bt搜索异常",e);

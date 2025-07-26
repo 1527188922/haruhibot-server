@@ -4,8 +4,10 @@ import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
+import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.music.response.Song;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.service.music.AbstractMusicService;
@@ -138,13 +140,21 @@ public class MusicCardHandler implements IAllMessageEvent {
 
     private void sendGroup(Bot bot,Message message,List<Song> songs,String songName){
         int size = songs.size();
-        List<String> forwardMsgs = new ArrayList<>(size + 1);
-        forwardMsgs.add(MessageFormat.format("搜索【{0}】成功！接下来请在{1}秒内发送纯数字序号选择歌曲",songName,expireTime));
+        List<ForwardMsgItem> forwardMsgs = new ArrayList<>(size + 1);
+
+        ForwardMsgItem instance0 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(
+                MessageFormat.format("搜索【{0}】成功！接下来请在{1}秒内发送纯数字序号选择歌曲", songName, expireTime)
+        ));
+        forwardMsgs.add(instance0);
+
         for (int i = 0; i < size; i++) {
             Song e = songs.get(i);
-            forwardMsgs.add(MessageFormat.format("{0}：{1}\n歌手：{2}\n专辑：{3}",(i + 1),e.getName(),e.getArtists(),e.getAlbumName()));
+            ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(
+                    MessageFormat.format("{0}：{1}\n歌手：{2}\n专辑：{3}",(i + 1),e.getName(),e.getArtists(),e.getAlbumName())
+            ));
+            forwardMsgs.add(instance);
         }
-        bot.sendGroupMessage(message.getGroupId(),message.getSelfId(),BotConfig.NAME,forwardMsgs);
+        bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
     }
     private void sendPrivate(Bot bot,Message message,List<Song> songs,String songName){
         StringBuilder stringBuilder = new StringBuilder(MessageFormat.format("搜索【{0}】成功！接下来请在{1}秒内发送纯数字序号选择歌曲\n\n",songName,expireTime));

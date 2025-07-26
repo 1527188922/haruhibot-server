@@ -6,7 +6,9 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.agefans.response.NewAnimationTodayResp;
+import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.HttpClientUtil;
@@ -78,15 +80,17 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
                         bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "今日还没有番剧更新",true);
                         return;
                     }
-                    List<String> param = new ArrayList<>(data.size());
+                    List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(data.size());
                     for (NewAnimationTodayResp datum : data) {
-                        param.add(splicingParam(datum));
+                        String splicingParam = splicingParam(datum);
+                        ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(splicingParam));
+                        forwardMsgItems.add(instance);
                     }
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),message.getSelfId(),BotConfig.NAME,param);
+                    bot.sendForwardMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), forwardMsgItems);
                 }
             }catch (Exception e){
                 log.error("解析新番数据异常",e);
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("今日新番异常",e.getMessage()),true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("今日新番异常:{0}",e.getMessage()),true);
             }
 
         }

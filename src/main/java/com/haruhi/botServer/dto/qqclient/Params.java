@@ -3,7 +3,6 @@ package com.haruhi.botServer.dto.qqclient;
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 
-import java.util.Collection;
 
 @Data
 public class Params<T> {
@@ -14,7 +13,7 @@ public class Params<T> {
     @JSONField(name = "group_id")
     private Long groupId;
     private T message;
-    private Collection messages;
+
     @JSONField(name = "auto_escape")
     private boolean autoEscape;
 }

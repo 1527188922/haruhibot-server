@@ -12,16 +12,13 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpHeaders;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -72,68 +69,6 @@ public class Bot {
     }
 
     /**
-     * 发送群聊合并消息
-     * 自定义单条消息的uin和name
-     * @param groupId
-     * @param messages
-     */
-    public void sendGroupMessage(Long groupId, List<ForwardMsgItem> messages){
-        if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> requestBox = new RequestBox<>();
-            requestBox.setAction(QqClientActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
-            Params params = new Params();
-            params.setMessages(messages);
-            params.setMessageType(MessageTypeEnum.group.getType());
-            params.setGroupId(groupId);
-            requestBox.setParams(params);
-            sendMessage(JSONObject.toJSONString(requestBox));
-        }
-    }
-
-    /**
-     * 发送群合并消息
-     * @param groupId 群号
-     * @param uin 合并卡片内的消息发送人qq
-     * @param name 合并卡片内的消息发送人名称
-     * @param messages 消息集合
-     */
-    public void sendGroupMessage(Long groupId,Long uin,String name, List<String> messages){
-        if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> requestBox = createForwardMessageRequestBox(MessageTypeEnum.group,groupId,uin,name,messages);
-            sendMessage(JSONObject.toJSONString(requestBox));
-        }
-    }
-
-    /**
-     * 发送群合并消息
-     * 自动获取uin
-     * @param groupId 群号
-     * @param name 合并卡片内的消息发送人名称
-     * @param messages 消息集合
-     */
-    public void sendGroupMessage(Long groupId,String name, List<String> messages){
-        if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> requestBox = createForwardMessageRequestBox(MessageTypeEnum.group,groupId, id,name,messages);
-            sendMessage(JSONObject.toJSONString(requestBox));
-        }
-    }
-
-    /**
-     * 发送群同步合并消息
-     * @param groupId
-     * @param uin
-     * @param name
-     * @param messages
-     * @param timeout
-     * @return
-     */
-    public SyncResponse<String> sendSyncGroupMessage(Long groupId, Long uin, String name, List<String> messages, long timeout){
-        Params params = createForwardMessageParams(MessageTypeEnum.group,groupId,uin,name,messages);
-        return sendSyncRequest(QqClientActionEnum.SEND_GROUP_FORWARD_MSG, params, timeout, new TypeReference<SyncResponse<String>>(){});
-    }
-
-
-    /**
      * 发送私聊消息
      * @param userId 对方qq
      * @param message 消息
@@ -153,68 +88,6 @@ public class Bot {
 
         sendMessage(JSONObject.toJSONString(paramsRequestBox));
     }
-
-    /**
-     * 发送私聊合并消息
-     * 自定义单条消息的uin和name
-     * @param userId
-     * @param messages
-     */
-    public void sendPrivateMessage(Long userId,List<ForwardMsgItem> messages){
-        if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> paramsRequestBox = new RequestBox<>();
-            paramsRequestBox.setAction(QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
-            Params params = new Params();
-            params.setMessages(messages);
-            params.setMessageType(MessageTypeEnum.privat.getType());
-            params.setUserId(userId);
-            paramsRequestBox.setParams(params);
-            sendMessage(JSONObject.toJSONString(paramsRequestBox));
-        }
-    }
-
-    /**
-     * 发送私聊合并消息
-     * @param userId 对方qq
-     * @param uin
-     * @param name
-     * @param messages
-     */
-    public void sendPrivateMessage(Long userId,Long uin,String name, List<String> messages){
-        if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageTypeEnum.privat,userId,uin,name,messages);
-            sendMessage(JSONObject.toJSONString(paramsRequestBox));
-        }
-    }
-
-    /**
-     * 发送私聊合并消息
-     * 自动获取uin
-     * @param userId 对方qq
-     * @param name
-     * @param messages
-     */
-    public void sendPrivateMessage(Long userId,String name, List<String> messages){
-        if (!CollectionUtils.isEmpty(messages)) {
-            RequestBox<Params> paramsRequestBox = createForwardMessageRequestBox(MessageTypeEnum.privat,userId, id,name,messages);
-            sendMessage(JSONObject.toJSONString(paramsRequestBox));
-        }
-    }
-
-    /**
-     * 发送私聊同步合并消息
-     * @param userId
-     * @param uin
-     * @param name
-     * @param messages
-     * @param timeout
-     * @return
-     */
-    public SyncResponse<String> sendSyncPrivateMessage(Long userId, Long uin, String name, List<String> messages, long timeout){
-        Params params = createForwardMessageParams(MessageTypeEnum.privat,userId,uin,name,messages);
-        return sendSyncRequest(QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG, params, timeout,new TypeReference<SyncResponse<String>>() {});
-    }
-
 
     /**
      * 发送消息
@@ -266,67 +139,62 @@ public class Bot {
     }
 
     /**
-     * 合并发送消息
-     * 根据messageType发送群还是私聊
+     * 发送合并转消息
+     * 异步
      * @param userId
      * @param groupId
      * @param messageType
-     * @param uin
-     * @param name
      * @param messages
      */
-    public void sendMessage(Long userId,Long groupId,String messageType,Long uin,String name, List<String> messages){
-        RequestBox<Params> paramsRequestBox = new RequestBox<>();
-        Params params = new Params();
-        if (MessageTypeEnum.privat.getType().equals(messageType)) {
-            paramsRequestBox.setAction(QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
-            params.setUserId(userId);
-        }else if (MessageTypeEnum.group.getType().equals(messageType)) {
-            paramsRequestBox.setAction(QqClientActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
-            params.setGroupId(groupId);
-        }
-        params.setMessageType(messageType);
-        List<ForwardMsgItem> forwardMsgs = new ArrayList<>(messages.size());
-        for (String s : messages) {
-            forwardMsgs.add(createForwardMsgItem(uin,name,s));
-        }
-        params.setMessages(forwardMsgs);
-        paramsRequestBox.setParams(params);
+    public void sendForwardMessage(Long userId,Long groupId,String messageType, List<ForwardMsgItem> messages){
+        RequestBox<ForwardMsgParams> forwardRequest = new RequestBox<>();
+        forwardRequest.setAction(QqClientActionEnum.SEND_FORWARD_MSG.getAction());
 
-        sendMessage(JSONObject.toJSONString(paramsRequestBox));
+        ForwardMsgParams params = new ForwardMsgParams();
+        params.setUserId(userId);
+        params.setGroupId(groupId);
+        params.setMessageType(messageType);
+        params.setMessages(messages);
+        forwardRequest.setParams(params);
+
+        sendMessage(JSONObject.toJSONString(forwardRequest));
     }
 
     /**
-     * 合并同步发送消息
-     * 根据messageType发送群还是私聊
+     * 发送合并转消息 增强
+     * 异步
      * @param userId
      * @param groupId
      * @param messageType
-     * @param uin
-     * @param name
      * @param messages
-     * @param timeout
-     * @return
+     * @param source 消息卡片顶部 和 打开消息框的标题 文案
+     * @param news 消息卡片中间文案
+     * @param summary 消息卡片底部文案
+     * @param prompt 暂未发现用处 napcat文档解释：外显
      */
-    public SyncResponse<String> sendSyncMessage(Long userId,Long groupId,String messageType,Long uin,String name, List<String> messages,long timeout){
-        Params params = new Params();
-        QqClientActionEnum actionEnum = null;
-        if (MessageTypeEnum.privat.getType().equals(messageType)) {
-            actionEnum = QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG;
-            params.setUserId(userId);
-        }else if (MessageTypeEnum.group.getType().equals(messageType)) {
-            actionEnum = QqClientActionEnum.SEND_GROUP_FORWARD_MSG;
-            params.setGroupId(groupId);
-        }
-        params.setMessageType(messageType);
+    public void sendForwardMessageEnhance(Long userId,Long groupId,String messageType, List<ForwardMsgItem> messages,
+                                          String source,List<String> news,String summary,String prompt){
+        RequestBox<ForwardMsgParams> forwardRequest = new RequestBox<>();
+        forwardRequest.setAction(QqClientActionEnum.SEND_FORWARD_MSG.getAction());
 
-        List<ForwardMsgItem> forwardMsgs = new ArrayList<>(messages.size());
-        for (String s : messages) {
-            forwardMsgs.add(createForwardMsgItem(uin,name,s));
+        ForwardMsgParams params = new ForwardMsgParams();
+        params.setUserId(userId);
+        params.setGroupId(groupId);
+        params.setMessageType(messageType);
+        params.setMessages(messages);
+
+        params.setSource(source);
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(news)) {
+            params.setNews(
+                    news.stream().map(ForwardMsgParams.News::new).collect(Collectors.toList())
+            );
         }
-        params.setMessages(forwardMsgs);
-        return sendSyncRequest(actionEnum, params, timeout,new TypeReference<SyncResponse<String>>() {});
+        params.setSummary(summary);
+        params.setPrompt(prompt);
+        forwardRequest.setParams(params);
+        sendMessage(JSONObject.toJSONString(forwardRequest));
     }
+
 
     public void sendMessage(String text){
         try {
@@ -336,55 +204,6 @@ public class Bot {
             log.error("发送消息发生异常,session:{},消息：{}",session,text,e);
         }
     }
-
-    private RequestBox<Params> createForwardMessageRequestBox(MessageTypeEnum messageType, Long id, Long uin, String name, List<String> messages){
-        RequestBox<Params> paramsRequestBox = new RequestBox<>();
-        Params params = new Params();
-        List<ForwardMsgItem> forwardMsgs = new ArrayList<>(messages.size());
-        for (String message : messages) {
-            forwardMsgs.add(createForwardMsgItem(uin,name,message));
-        }
-        params.setMessages(forwardMsgs);
-        params.setMessageType(messageType.getType());
-        if (MessageTypeEnum.group.getType().equals(messageType.getType())) {
-            paramsRequestBox.setAction(QqClientActionEnum.SEND_GROUP_FORWARD_MSG.getAction());
-            params.setGroupId(id);
-        }else if(MessageTypeEnum.privat.getType().equals(messageType.getType())){
-            paramsRequestBox.setAction(QqClientActionEnum.SEND_PRIVATE_FORWARD_MSG.getAction());
-            params.setUserId(id);
-        }
-        paramsRequestBox.setParams(params);
-        return paramsRequestBox;
-    }
-
-    private Params createForwardMessageParams(MessageTypeEnum messageType, Long id, Long uin, String name, List<String> messages){
-        Params params = new Params();
-        if (MessageTypeEnum.privat.getType().equals(messageType.getType())) {
-            params.setUserId(id);
-        }else if(MessageTypeEnum.group.getType().equals(messageType.getType())){
-            params.setGroupId(id);
-        }
-        params.setMessageType(messageType.getType());
-        List<ForwardMsgItem> forwardMsgs = new ArrayList<>(messages.size());
-        for (String s : messages) {
-            forwardMsgs.add(createForwardMsgItem(uin,name,s));
-        }
-        params.setMessages(forwardMsgs);
-        return params;
-    }
-
-    private ForwardMsgItem createForwardMsgItem(Long uin, String name, String context){
-        ForwardMsgItem item = new ForwardMsgItem();
-        ForwardMsgItem.Data data = new ForwardMsgItem.Data();
-        data.setUin(uin);
-        data.setName(name);
-        data.setContent(context);
-        item.setData(data);
-        return item;
-    }
-
-
-
 
     private static long sleep = 1L;
 
