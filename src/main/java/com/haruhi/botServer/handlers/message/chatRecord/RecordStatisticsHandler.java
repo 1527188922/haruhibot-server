@@ -2,7 +2,6 @@ package com.haruhi.botServer.handlers.message.chatRecord;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -13,7 +12,6 @@ import com.haruhi.botServer.mapper.ChatRecordSqliteMapper;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
-import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -23,6 +21,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 @Component
@@ -86,14 +85,11 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 for (int i = 0; i < chatRecords.size(); i++) {
                     ChatRecordSqlite item = chatRecords.get(i);
                     String name = getName(item, groupMemberList);
-                    String imageCq = KQCodeUtils.getInstance().toCq(CqCodeTypeEnum.image.getType(), 
-                            "file=" + CommonUtil.getAvatarUrl(item.getUserId(), false));
-                    String msg = imageCq
-                            + (i + 1) + "\n" 
+                    String msg =(i + 1) + "\n"
                             + name + "(" +item.getUserId() + ")"
                             + "\n发言数：" + item.getTotal();
 
-                    ForwardMsgItem instance = ForwardMsgItem.instance(item.getUserId(), BotConfig.NAME, MessageHolder.instanceText(msg));
+                    ForwardMsgItem instance = ForwardMsgItem.instance(item.getUserId(), name, MessageHolder.instanceText(msg));
                     forwardMsgItems.add(instance);
                 }
                 List<List<ForwardMsgItem>> lists = CommonUtil.averageAssignList(forwardMsgItems, 70);
@@ -117,6 +113,9 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
     }
 
     private String getName(ChatRecordSqlite e, List<GroupMember> groupMemberList){
+        if(Objects.isNull(e.getUserId()) || e.getUserId() == 0){
+            return "匿名";
+        }
         String card = null;
         String nickName = null;
         if(!CollectionUtils.isEmpty(groupMemberList)){
