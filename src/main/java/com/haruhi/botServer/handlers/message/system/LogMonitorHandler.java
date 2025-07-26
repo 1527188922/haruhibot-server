@@ -6,7 +6,9 @@ import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -47,9 +49,10 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 			ThreadPoolUtil.getHandleCommandPool().execute(()->{
 				if(tailer == null){
 					startTailer(true,StandardCharsets.UTF_8, new LogFileLineHandler(bot));
-					bot.sendPrivateMessage(message.getUserId(),"已开启\n日志将实时发送给第一个超级用户",true);
+					bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageHolder.instanceText("已开启\n日志将实时发送给第一个超级用户"));
+
 				}else {
-					bot.sendPrivateMessage(message.getUserId(),"已处于开启状态",true);
+					bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageHolder.instanceText("已处于开启状态"));
 				}
 
 			});
@@ -59,9 +62,9 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 			ThreadPoolUtil.getHandleCommandPool().execute(()->{
 				if(tailer != null){
 					stopTailer();
-					bot.sendPrivateMessage(message.getUserId(),"已关闭",true);
+					bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageHolder.instanceText("已关闭"));
 				}else {
-					bot.sendPrivateMessage(message.getUserId(),"已处于关闭状态",true);
+					bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageHolder.instanceText("已处于关闭状态"));
 				}
 			});
 			return true;
@@ -101,7 +104,7 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 		@Override
 		public void handle(String s) {
 			// 这里不用抓异常 如果发发生异常就让这个线程中断
-			bot.sendPrivateMessage(BotConfig.SUPERUSERS.get(0),s,true);
+			bot.sendMessage(BotConfig.SUPERUSERS.get(0),null, MessageTypeEnum.privat.getType(),MessageHolder.instanceText(s));
 		}
 	}
 }

@@ -69,27 +69,6 @@ public class Bot {
     }
 
     /**
-     * 发送私聊消息
-     * @param userId 对方qq
-     * @param message 消息
-     * @param autoEscape 是否以纯文本发送 true:以纯文本发送，不解析cq码
-     */
-    public void sendPrivateMessage(Long userId, String message, boolean autoEscape){
-        RequestBox<Params> paramsRequestBox = new RequestBox<>();
-        paramsRequestBox.setAction(QqClientActionEnum.SEND_PRIVATE_MSG.getAction());
-
-        Params params = new Params();
-        params.setMessageType(MessageTypeEnum.privat.getType());
-        params.setAutoEscape(autoEscape);
-        params.setUserId(userId);
-        params.setMessage(message);
-
-        paramsRequestBox.setParams(params);
-
-        sendMessage(JSONObject.toJSONString(paramsRequestBox));
-    }
-
-    /**
      * 发送消息
      * 根据messageType来发送群还是私聊
      * @param userId 对方qq
@@ -112,6 +91,25 @@ public class Bot {
         paramsRequestBox.setParams(params);
 
         sendMessage(JSONObject.toJSONString(paramsRequestBox));
+    }
+
+
+    /**
+     * 发送戳一戳
+     * @param userId 必填
+     * @param groupId 选填 不填时则：私发戳一戳
+     */
+    public void sendPoke(Long userId, Long groupId){
+        RequestBox<PokeParams> pokeRequest = new RequestBox<>();
+        pokeRequest.setAction(QqClientActionEnum.SEND_POKE.getAction());
+
+        PokeParams params = new PokeParams();
+        params.setUserId(userId);
+        params.setTargetId(userId);
+        params.setGroupId(groupId);
+        pokeRequest.setParams(params);
+
+        sendMessage(JSONObject.toJSONString(pokeRequest));
     }
 
     public void sendMessage(Long userId,Long groupId,String messageType, List<MessageHolder> message){

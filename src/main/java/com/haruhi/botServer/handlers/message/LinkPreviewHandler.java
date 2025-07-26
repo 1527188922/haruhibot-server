@@ -4,6 +4,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.AnalysisMagnetLinkResp;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.RestUtil;
@@ -45,18 +46,14 @@ public class LinkPreviewHandler implements IPrivateMessageEvent {
             String link = message.getText(-1);
             AnalysisMagnetLinkResp resp = request(link);
             if(resp == null || resp.getCount() == null || resp.getCount() == 0){
-                bot.sendPrivateMessage(message.getUserId(),
-                        "磁力未解析出结果\n"+link,
-                        true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("磁力未解析出结果\n"+link));
                 return;
             }
             if(StringUtils.isNotBlank(resp.getError())){
-                bot.sendPrivateMessage(message.getUserId(),
-                        "磁力解析异常\n"+resp.getError(),
-                        true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("磁力解析异常\n"+resp.getError()));
                 return;
             }
-            bot.sendPrivateMessage(message.getUserId(), formatterResp(resp),true);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(formatterResp(resp)));
         });
         return true;
     }

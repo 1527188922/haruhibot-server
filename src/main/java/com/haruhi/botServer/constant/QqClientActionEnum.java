@@ -14,6 +14,7 @@ public enum QqClientActionEnum {
     SEND_GROUP_FORWARD_MSG("send_group_forward_msg","转发群合并消息"),
     SEND_PRIVATE_FORWARD_MSG("send_private_forward_msg","转发私聊合并消息"),
     SEND_LIKE("send_like","发送好友赞"),
+    SEND_POKE("send_poke","发送戳一戳"),
 
     GET_GROUP_MEMBER_LIST("get_group_member_list","获取群成员列表"),
     GET_FORWARD_MSG("get_forward_msg","获取合并转发内容"),

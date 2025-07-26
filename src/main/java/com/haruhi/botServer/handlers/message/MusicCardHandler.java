@@ -163,7 +163,7 @@ public class MusicCardHandler implements IAllMessageEvent {
             Song e = songs.get(i);
             stringBuilder.append(MessageFormat.format("{0}：{1}\n歌手：{2}\n专辑：{3}\n\n",(i + 1),e.getName(),e.getArtists(),e.getAlbumName()));
         }
-        bot.sendPrivateMessage(message.getUserId(),stringBuilder.toString(),true);
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(stringBuilder.toString()));
     }
 
     private class SendMusicCardTask implements Runnable{

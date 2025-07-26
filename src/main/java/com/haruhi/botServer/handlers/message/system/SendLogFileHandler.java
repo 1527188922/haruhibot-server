@@ -8,6 +8,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.qqclient.DownloadFileResp;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.FileUtil;
@@ -83,9 +84,9 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
                                 .append("\n" + String.format("%.2f",(double)files1[i].length() / 1024 / 1024) + "MB").append("\n");
                     }
                     cacheMap.put(key(message),files1);
-                    bot.sendPrivateMessage(message.getUserId(),builder.toString(),true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageHolder.instanceText(builder.toString()));
                 }else {
-                    bot.sendPrivateMessage(message.getUserId(),"没有日志文件",true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageHolder.instanceText("没有日志文件"));
                 }
             });
 
@@ -115,12 +116,13 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
         public void run() {
             try {
                 if(index < 0 || index >= files.length){
-                    bot.sendPrivateMessage(message.getUserId(),"请输入范围内序号",true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("请输入范围内序号"));
+
                     return;
                 }
                 File file = files[index];
                 if(file == null || !file.exists() || file.isDirectory()){
-                    bot.sendPrivateMessage(message.getUserId(),"文件不存在\n"+file,true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("文件不存在\n"+file));
                     return;
                 }
                 // 注意该路径可能不存在与bot程序所在的主机上
@@ -129,12 +131,12 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
                         1, null, 30 * 1000);
 
                 if(syncResponse.getData() == null || Strings.isBlank(syncResponse.getData().getFile())){
-                    bot.sendPrivateMessage(message.getUserId(),"上传日志失败，napcat下载文件失败",true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("上传日志失败，napcat下载文件失败"));
                     return;
                 }
                 SyncResponse<String> response = bot.uploadPrivateFile(message.getUserId(), syncResponse.getData().getFile(), file.getName(), 60 * 1000);
                 if (!response.isSuccess()) {
-                    bot.sendPrivateMessage(message.getUserId(),"上传日志失败\n"+response.getMessage(),true);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("上传日志失败\n"+response.getMessage()));
                 }
             }catch (Exception e){
                 log.error("上传日志文件异常",e);
