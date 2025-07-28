@@ -15,12 +15,13 @@ import com.haruhi.botServer.dto.qqclient.MessageData;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.searchImage.response.Results;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -51,6 +52,10 @@ public class SearchImageHandler implements IAllMessageEvent {
     private String getKey(String selfId,String userId,String groupId){
         return  selfId + "-" + userId + "-" + groupId;
     }
+
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
+
     @Override
     public boolean onMessage(final Bot bot, final Message message) {
 
@@ -103,41 +108,15 @@ public class SearchImageHandler implements IAllMessageEvent {
 
     private void startSearch(Bot bot,Message message, Message replyMessage,String url, String key){
         bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜图...",true);
-        ThreadPoolUtil.getHandleCommandPool().execute(new SearchImageTask(bot,message,replyMessage,url));
-        if(key != null){
-            cache.remove(key);
-        }
-    }
-    private Message replySearch(Bot bot, Message message){
-        if (message.isGroupMsg() && message.isReplyMsg() && message.isTextMsg()) {
-            if (message.getText(0).trim().matches(RegexEnum.SEARCH_IMAGE.getValue())) {
-                List<String> replyMsgIds = message.getReplyMsgIds();
-                Message msg = bot.getMsg(replyMsgIds.get(0),2L * 1000L).getData();
-                log.debug("回复式识图，根据msgId获取消息 {} {}",replyMsgIds.get(0), JSONObject.toJSONString(msg));
-                if(msg != null && msg.isPicMsg()){
-                    return msg;
-                }
-            }
-        }
-        return null;
-    }
-
-    @AllArgsConstructor
-    private class SearchImageTask implements Runnable{
-        private Bot bot;
-        private Message message;
-        private Message replyMessage;
-        private String url;
-        
-        
-        @Override
-        public void run() {
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
 //            KQCodeUtils instance = KQCodeUtils.getInstance();
 //            String imageUrl = instance.getParam(this.cq, "url",CqCodeTypeEnum.image.getType(),0);
 
+            String apiKey = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.SAUCENAO_SEARCH_IMAGE__KEY.getKey(), null);
+
             Map<String,Object> param = new HashMap<>();
             param.put("output_type",2);
-            param.put("api_key",BotConfig.SEARCH_IMAGE_KEY);
+            param.put("api_key",apiKey);
             param.put("testmode",1);
             param.put("numres",6);
             param.put("db",99);
@@ -163,8 +142,23 @@ public class SearchImageHandler implements IAllMessageEvent {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "搜图异常："+e.getMessage(),true);
                 log.error("搜图异常",e);
             }
-
+        });
+        if(key != null){
+            cache.remove(key);
         }
+    }
+    private Message replySearch(Bot bot, Message message){
+        if (message.isGroupMsg() && message.isReplyMsg() && message.isTextMsg()) {
+            if (message.getText(0).trim().matches(RegexEnum.SEARCH_IMAGE.getValue())) {
+                List<String> replyMsgIds = message.getReplyMsgIds();
+                Message msg = bot.getMsg(replyMsgIds.get(0),2L * 1000L).getData();
+                log.debug("回复式识图，根据msgId获取消息 {} {}",replyMsgIds.get(0), JSONObject.toJSONString(msg));
+                if(msg != null && msg.isPicMsg()){
+                    return msg;
+                }
+            }
+        }
+        return null;
     }
 
     private void sort(List<Results> resultList){

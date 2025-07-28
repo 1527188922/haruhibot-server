@@ -14,7 +14,6 @@ import java.util.List;
 public class BotConfig {
 
     public static String NAME = "";
-    public static String SEARCH_IMAGE_KEY = "";
     public static String ACCESS_TOKEN = "";
     public static Long DEFAULT_USER = null;
     public static String INTERNET_HOST;
@@ -37,14 +36,6 @@ public class BotConfig {
         ACCESS_TOKEN = accessToken;
         if (Strings.isBlank(ACCESS_TOKEN)) {
             log.warn("未配置access-token！");
-        }
-    }
-
-    @Autowired
-    public void setSearchImageKey(@Value("${bot.search-image-key}") String searchImageKey) {
-        SEARCH_IMAGE_KEY = searchImageKey;
-        if (Strings.isBlank(SEARCH_IMAGE_KEY)) {
-            log.warn("未配置识图key,无法使用识图功能");
         }
     }
 

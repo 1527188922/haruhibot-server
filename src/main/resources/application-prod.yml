@@ -7,16 +7,11 @@ bot:
   enable-internet-host: 1
   # 公网ip(程序自动获取公网ip失败情况下将采用该配置) enable-internet-host为1情况下 尽量配置该项
   internet-host:
-  search-image-key:
   access-token:
   default-user: 1234567890
   superusers: 9876543210,1234567890
   max-connections: 5
   same-machine-qqclient: false
-
-bilibili:
-  SESSDATA:
-  bili_jct:
 
 job:
   downloadPixiv:
@@ -34,9 +29,6 @@ switch:
   group-increase: 1
   search-bt-allow-group: 1
   disableGroup: 0
-
-qianwen:
-  api-key: 
 
 server:
   port: ${bot.port}

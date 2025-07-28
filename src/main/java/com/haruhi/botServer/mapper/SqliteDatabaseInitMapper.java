@@ -1,12 +1,19 @@
 package com.haruhi.botServer.mapper;
 
+import com.haruhi.botServer.entity.TableInfoSqlite;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 @Mapper
 public interface SqliteDatabaseInitMapper {
 
+    List<TableInfoSqlite> pragmaTableInfo(@Param("tableName") String tableName);
+
     int createIndex(@Param("tableName") String tableName, @Param("column") String column);
+
+    int addColumn(@Param("tableName") String tableName, @Param("column") String column,@Param("type") String type,@Param("notNull") boolean notNull,@Param("default") String defaultValue);
 
     /**
      * 群聊天记录表

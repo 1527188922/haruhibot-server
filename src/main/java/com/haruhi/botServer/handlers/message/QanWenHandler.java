@@ -7,12 +7,13 @@ import com.alibaba.dashscope.common.Role;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.service.DictionarySqliteService;
+import com.haruhi.botServer.utils.ApplicationContextProvider;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -23,13 +24,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Component
 public class QanWenHandler implements IAllMessageEvent {
-    
-    @Value("${qianwen.api-key}")
-    private String apiKey;
-    
+
     private static final ConcurrentHashMap<String, QianWen> CACHE = new ConcurrentHashMap<>();
     private static final String MODEL = "qwen1.5-72b-chat";
-    
+
     private String key(Message message){
         if (message.isGroupMsg()) {
             return String.valueOf(message.getSelfId()) + message.getGroupId();
@@ -61,7 +59,7 @@ public class QanWenHandler implements IAllMessageEvent {
             String key = key(message);
             QianWen qianWen = CACHE.get(key(message));
             if(qianWen == null){
-                qianWen = new QianWen(apiKey, MODEL);
+                qianWen = new QianWen(MODEL);
                 CACHE.put(key,qianWen);
             }
             String res = qianWen.call(data);
@@ -69,7 +67,6 @@ public class QanWenHandler implements IAllMessageEvent {
         });
         return true;
     }
-    
     private MatchResult<String> matches(Message message){
         if(!message.isTextMsg()){
             return MatchResult.unmatched();
@@ -88,15 +85,13 @@ public class QanWenHandler implements IAllMessageEvent {
     
     
     public static class QianWen{
-        private final String apiKey;
         private final String model;
         private final AtomicBoolean lock;
         private final List<com.alibaba.dashscope.common.Message> history;
         private final Generation gen;
         
-        public QianWen(String apiKey,String model){
+        public QianWen(String model){
             this.model = model;
-            this.apiKey = apiKey;
             lock = new AtomicBoolean(false);
             history = new ArrayList<>();
             gen = new Generation();
@@ -129,6 +124,10 @@ public class QanWenHandler implements IAllMessageEvent {
         }
 
         private GenerationParam createGenerationParam(List<com.alibaba.dashscope.common.Message> messages) {
+
+            String apiKey = ApplicationContextProvider.getBean(DictionarySqliteService.class)
+                    .getInCache(DictionarySqliteService.DictionaryEnum.QIANWEN_API_KEY.getKey(), null);
+
             return GenerationParam.builder()
                     .model(model)
                     .messages(messages)

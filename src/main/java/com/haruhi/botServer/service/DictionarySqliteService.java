@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.entity.DictionarySqlite;
 import com.haruhi.botServer.mapper.DictionarySqliteMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -20,6 +22,20 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class DictionarySqliteService {
+
+    @AllArgsConstructor
+    @Getter
+    public enum DictionaryEnum{
+
+        BILIBILI_COOKIES_SESSDATA("bilibili.cookies.sessdata","b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
+        BILIBILI_COOKIES_BILI_JCT("bilibili.cookies.bili_jct","b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
+        SAUCENAO_SEARCH_IMAGE__KEY("saucenao.search_image_key","用于请求识图接口认证,从https://saucenao.com获取"),
+        QIANWEN_API_KEY("qianwen.api_key","请求阿里巴巴千问模型认证"),
+
+        ;
+        private String key;
+        private String remark;
+    }
 
     @Autowired
     private DictionarySqliteMapper dictionarySqliteMapper;
@@ -40,6 +56,34 @@ public class DictionarySqliteService {
                     )));
             CACHE.putAll(collect);
         }
+    }
+
+    public void initData(boolean refreshCache){
+        boolean changed = false;
+        for (DictionaryEnum value : DictionaryEnum.values()) {
+            if (!containsKey(value.getKey())) {
+                DictionarySqlite dictionary = new DictionarySqlite();
+                dictionary.setKey(value.getKey());
+                dictionary.setContent("");
+                dictionary.setRemark(value.getRemark());
+                String date = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+                dictionary.setCreateTime(date);
+                dictionary.setModifyTime(date);
+                dictionarySqliteMapper.insert(dictionary);
+                changed = true;
+            }
+        }
+        if (changed && refreshCache) {
+            refreshCache();
+        }
+    }
+
+    public String getInCache(String key, String defaultValue){
+        List<String> values = CACHE.get(key);
+        if(CollectionUtils.isNotEmpty(values)){
+            return values.get(0);
+        }
+        return defaultValue;
     }
 
 
@@ -70,7 +114,11 @@ public class DictionarySqliteService {
         return list.stream().map(DictionarySqlite::getContent).collect(Collectors.toList());
     }
 
-
+    /**
+     * 存在则更新 不存在则新增
+     * @param key
+     * @param content
+     */
     public void put(String key,String content){
         LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
                 .eq(DictionarySqlite::getKey, key);
@@ -91,7 +139,11 @@ public class DictionarySqliteService {
         }
     }
 
-
+    /**
+     * 新增一条数据
+     * @param key
+     * @param content
+     */
     public void add(String key,String content){
         DictionarySqlite dictionary = new DictionarySqlite();
         dictionary.setKey(key);

@@ -14,7 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -44,11 +44,8 @@ public class BilibiliService {
         put("bilibili", Pattern.compile("https?://(?:space|www|live|m|t)?\\.?bilibili\\.com/[A-Za-z\\d\\._?%&+\\-=/#]+()()"));
     }};
 
-    @Value("${bilibili.SESSDATA:}")
-    private String sessdata;
-
-    @Value("${bilibili.bili_jct:}")
-    private String jct;
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
 
     /**
@@ -90,6 +87,8 @@ public class BilibiliService {
     }
 
     public String getCookie(){
+        String sessdata = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.BILIBILI_COOKIES_SESSDATA.getKey(), null);
+        String jct = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.BILIBILI_COOKIES_BILI_JCT.getKey(), null);
         if(StringUtils.isBlank(sessdata) || StringUtils.isBlank(jct)){
             return null;
         }

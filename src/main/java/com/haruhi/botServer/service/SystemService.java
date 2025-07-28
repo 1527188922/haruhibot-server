@@ -45,6 +45,8 @@ public class SystemService {
     private CustomReplySqliteService customReplySqliteService;
     @Autowired
     private WordStripSqliteService wordStripService;
+    @Autowired
+    private DictionarySqliteService dictionaryService;
 
     private BotServer botServer;
 
@@ -77,6 +79,7 @@ public class SystemService {
 
     public synchronized void loadCache(){
        try {
+           dictionaryService.refreshCache();
            pokeReplyService.loadPokeReply();
            customReplySqliteService.loadToCache();
            wordStripService.loadWordStrip();

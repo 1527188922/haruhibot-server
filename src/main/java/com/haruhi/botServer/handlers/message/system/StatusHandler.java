@@ -70,7 +70,6 @@ public class StatusHandler implements IAllMessageEvent {
             sysPropStr.append("WEB Path："+ pathConfig.webHomePath()).append("\n");
             sysPropStr.append("ContextPath：" + BotConfig.CONTEXT_PATH).append("\n");
             sysPropStr.append("AccessToken：" + BotConfig.ACCESS_TOKEN).append("\n");
-            sysPropStr.append("识图key：" + BotConfig.SEARCH_IMAGE_KEY).append("\n");
             sysPropStr.append("超级用户：" + BotConfig.SUPERUSERS).append("\n");
             sysPropStr.append("程序路径："+ FileUtil.getAppDir());
         }

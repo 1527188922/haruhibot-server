@@ -17,6 +17,7 @@ public class DictionarySqlite {
     private Long id;
     private String key;
     private String content;
+    private String remark;
     private String createTime;
     private String modifyTime;
 

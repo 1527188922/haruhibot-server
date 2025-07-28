@@ -1,5 +1,6 @@
 package com.haruhi.botServer.thread;
 
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.SystemService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +17,12 @@ public class FirstTask implements CommandLineRunner {
 
     @Autowired
     private SystemService systemService;
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
     public synchronized void execute(){
         try {
+            dictionarySqliteService.initData(false);
             systemService.loadCache();
             // 创建stop脚本
             systemService.writeStopScript();

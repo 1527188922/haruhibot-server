@@ -1,12 +1,16 @@
 package com.haruhi.botServer.service;
 
 import com.haruhi.botServer.config.DataBaseConfig;
+import com.haruhi.botServer.entity.TableInfoSqlite;
 import com.haruhi.botServer.mapper.SqliteDatabaseInitMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -67,6 +71,7 @@ public class SqliteDatabaseService{
 
 
         sqliteDatabaseInitMapper.createDictionary(DataBaseConfig.T_DICTIONARY);
+        addColumnIfNotExists(DataBaseConfig.T_DICTIONARY,"remark","TEXT",false,null);
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_DICTIONARY,"key");
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_DICTIONARY,"content");
 
@@ -75,6 +80,17 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_GROUP_INFO,"self_id");
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_GROUP_INFO,"group_id");
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_GROUP_INFO,"group_name");
+    }
+
+    public int addColumnIfNotExists(String tableName, String columnName, String columnType,boolean notNull,String defaultValue) {
+        List<TableInfoSqlite> tableInfo = sqliteDatabaseInitMapper.pragmaTableInfo(tableName);
+        if (CollectionUtils.isEmpty(tableInfo)) {
+            return 0;
+        }
+        if (tableInfo.stream().map(TableInfoSqlite::getName).collect(Collectors.toList()).contains(columnName)) {
+            return 0;
+        }
+        return sqliteDatabaseInitMapper.addColumn(tableName,columnName,columnType,notNull,defaultValue);
     }
 
 }

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.haruhi.botServer.mapper.SqliteDatabaseInitMapper">
+    <insert id="addColumn">
+        ALTER TABLE ${tableName} ADD COLUMN ${column} ${type}<if test="notNull"> NOT NULL </if><if test="default != null"> DEFAULT ${default} </if>
+    </insert>
     <update id="createChatRecord">
         CREATE TABLE IF NOT EXISTS `${tableName}` (
              id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -102,4 +105,7 @@
           `group_level` INTEGER
         );
     </update>
+    <select id="pragmaTableInfo" resultType="com.haruhi.botServer.entity.TableInfoSqlite">
+        PRAGMA table_info(`${tableName}`)
+    </select>
 </mapper>

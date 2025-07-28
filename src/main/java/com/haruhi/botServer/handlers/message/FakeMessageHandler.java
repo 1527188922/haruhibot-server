@@ -18,7 +18,7 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class FriendSaidHandler implements IGroupMessageEvent {
+public class FakeMessageHandler implements IGroupMessageEvent {
     
 
     @Override
@@ -59,7 +59,7 @@ public class FriendSaidHandler implements IGroupMessageEvent {
                 ForwardMsgItem instance = ForwardMsgItem.instance(friend.getUserId(), friend.getNickname(), MessageHolder.instanceText(finalWord));
                 bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), Collections.singletonList(instance));
             }catch (Exception e){
-                log.error("朋友说发生异常",e);
+                log.error("发送假消息异常",e);
             }
         });
         return true;
