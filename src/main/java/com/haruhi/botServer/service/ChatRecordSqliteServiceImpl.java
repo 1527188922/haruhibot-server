@@ -66,7 +66,7 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
      */
     @Override
     public void sendGroupChatList(Bot bot, Message message, FindGroupChatHandler.Param param) {
-        Date date = limitDate(param);
+        String date = DateTimeUtil.dateTimeFormat(limitDate(param), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
         LambdaQueryWrapper<ChatRecordSqlite> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ChatRecordSqlite::getDeleted,0)
                 .eq(ChatRecordSqlite::getGroupId,message.getGroupId())
@@ -156,7 +156,7 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
     public void sendWordCloudImage(Bot bot, GroupWordCloudHandler.RegexEnum regexEnum, Message message) {
         // 解析查询条件
         log.info("群[{}]开始生成词云图...",message.getGroupId());
-        Date date = limitDate(regexEnum);
+        String date = DateTimeUtil.dateTimeFormat(limitDate(regexEnum), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
         LambdaQueryWrapper<ChatRecordSqlite> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ChatRecordSqlite::getDeleted,0)
                 .eq(ChatRecordSqlite::getGroupId,message.getGroupId())
