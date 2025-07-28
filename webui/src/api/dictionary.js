@@ -13,3 +13,21 @@ export const refresh = () => request({
     method: 'post',
     timeout:60 * 1000
 });
+
+export const deleteBatch = (data) => request({
+    url: baseUrl + '/dict/deleteBatch',
+    method: 'post',
+    data
+});
+
+export const add = (data) => request({
+    url: baseUrl + '/dict/add',
+    method: 'post',
+    data
+});
+
+export const update = (data) => request({
+    url: baseUrl + '/dict/update',
+    method: 'post',
+    data
+});
