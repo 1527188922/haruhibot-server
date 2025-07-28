@@ -1,9 +1,12 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.haruhi.botServer.entity.DictionarySqlite;
 import com.haruhi.botServer.mapper.DictionarySqliteMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
+import com.haruhi.botServer.vo.DictQueryReq;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -12,10 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -177,5 +177,25 @@ public class DictionarySqliteService {
         LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
                 .eq(DictionarySqlite::getContent, content);
         return dictionarySqliteMapper.selectCount(queryWrapper) > 0;
+    }
+
+
+    public IPage<DictionarySqlite> search(DictQueryReq request, boolean isPage) {
+        LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
+                .like(StringUtils.isNotBlank(request.getKey()),DictionarySqlite::getKey,request.getKey())
+                .like(StringUtils.isNotBlank(request.getContent()),DictionarySqlite::getContent,request.getContent())
+                .like(StringUtils.isNotBlank(request.getRemark()),DictionarySqlite::getRemark,request.getRemark())
+                .orderByDesc(DictionarySqlite::getModifyTime);
+
+        IPage<DictionarySqlite> pageInfo = null;
+        if (isPage) {
+            pageInfo = dictionarySqliteMapper.selectPage(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
+        }else{
+            pageInfo = new Page<>(request.getCurrentPage(), request.getPageSize());
+            List<DictionarySqlite> list = dictionarySqliteMapper.selectList(queryWrapper);
+            pageInfo.setRecords(list);
+            pageInfo.setTotal(list.size());
+        }
+        return pageInfo;
     }
 }
