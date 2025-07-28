@@ -33,9 +33,14 @@
       <div class="data-table-option-buts">
         <el-button @click="refreshCache" type="primary" size="small" plain
                    icon="el-icon-refresh">刷新缓存</el-button>
+        <el-button @click="deleteData" type="danger" size="small" plain
+                   :disabled="deleteBatchDisabled"
+                   icon="el-icon-delete">删除</el-button>
       </div>
       <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
-                stripe max-height="800" size="small" ref="dataTable" highlight-current-row >
+                stripe max-height="800" size="small" ref="dataTable" highlight-current-row
+                @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column fixed label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
@@ -63,12 +68,6 @@
               <img :src="row.selfAvatarUrl">
               {{row.selfId}}
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100" align="center" >
-          <template slot-scope="{row}">
-            <el-button class="danger-text-btn" type="text"
-                       size="small" @click="deleteData(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -103,6 +102,7 @@ export default {
         selfId:''
       },
       tableData:[],
+      multipleSelection: [],
       pagination:{
         currentPage: 1,
         pageSizes: [5, 10, 30, 50, 100, 500],
@@ -115,17 +115,28 @@ export default {
   },
   created() {
   },
+  computed:{
+    deleteBatchDisabled(){
+      return !this.multipleSelection || this.multipleSelection.length === 0
+    }
+  },
   mounted() {
     this.search()
   },
   methods:{
-    deleteData(row){
+    handleSelectionChange(val){
+      this.multipleSelection = val
+    },
+    deleteData(){
+      if(this.deleteBatchDisabled){
+        return
+      }
       this.$confirm('确认删除？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(()=>{
-        deleteBatch([row]).then(({data:{code,message}})=>{
+        deleteBatch(this.multipleSelection).then(({data:{code,message}})=>{
           if(code !== 200){
             return this.$message.error(message)
           }

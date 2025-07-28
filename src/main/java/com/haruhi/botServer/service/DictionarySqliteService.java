@@ -157,6 +157,28 @@ public class DictionarySqliteService {
         dictionarySqliteMapper.insert(dictionary);
     }
 
+    public int add(DictionarySqlite request){
+        request.setId(null);
+        request.setContent(request.getContent() != null ? request.getContent() : "");
+        String date = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+        request.setCreateTime(date);
+        request.setModifyTime(date);
+        return dictionarySqliteMapper.insert(request);
+    }
+
+    public int update(DictionarySqlite request) {
+        request.setContent(request.getContent() != null ? request.getContent() : "");
+        request.setModifyTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+        return dictionarySqliteMapper.updateById(request);
+    }
+
+    public int deleteBatch(List<DictionarySqlite> request) {
+        if (CollectionUtils.isEmpty(request)) {
+            return 0;
+        }
+        return dictionarySqliteMapper.deleteBatchIds(request.stream().map(DictionarySqlite::getId).collect(Collectors.toList()));
+    }
+
     public int remove(String key){
         return dictionarySqliteMapper.delete(new LambdaQueryWrapper<DictionarySqlite>()
                 .eq(DictionarySqlite::getKey, key));
