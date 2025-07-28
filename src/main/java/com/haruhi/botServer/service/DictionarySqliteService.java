@@ -27,14 +27,17 @@ public class DictionarySqliteService {
     @Getter
     public enum DictionaryEnum{
 
-        BILIBILI_COOKIES_SESSDATA("bilibili.cookies.sessdata","b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
-        BILIBILI_COOKIES_BILI_JCT("bilibili.cookies.bili_jct","b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
-        SAUCENAO_SEARCH_IMAGE__KEY("saucenao.search_image_key","用于请求识图接口认证,从https://saucenao.com获取"),
-        QIANWEN_API_KEY("qianwen.api_key","请求阿里巴巴千问模型认证"),
+        BILIBILI_COOKIES_SESSDATA("bilibili.cookies.sessdata",null,"b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
+        BILIBILI_COOKIES_BILI_JCT("bilibili.cookies.bili_jct",null,"b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
+        BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT("bilibili.upload_video.duration_limit","10","上传b站视频时长限制，单位分钟"),
+        BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT("bilibili.download_video.duration_limit","10","下载b站视频时长限制，单位分钟"),
+        SAUCENAO_SEARCH_IMAGE__KEY("saucenao.search_image_key",null,"用于请求识图接口认证,从https://saucenao.com获取"),
+        QIANWEN_API_KEY("qianwen.api_key",null,"请求阿里巴巴千问模型认证"),
 
         ;
-        private String key;
-        private String remark;
+        private final String key;
+        private final String defaultValue;
+        private final String remark;
     }
 
     @Autowired
@@ -64,7 +67,7 @@ public class DictionarySqliteService {
             if (!containsKey(value.getKey())) {
                 DictionarySqlite dictionary = new DictionarySqlite();
                 dictionary.setKey(value.getKey());
-                dictionary.setContent("");
+                dictionary.setContent(value.getDefaultValue() != null ? value.getDefaultValue() : "");
                 dictionary.setRemark(value.getRemark());
                 String date = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
                 dictionary.setCreateTime(date);

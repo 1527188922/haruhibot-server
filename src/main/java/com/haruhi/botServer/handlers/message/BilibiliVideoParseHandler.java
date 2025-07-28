@@ -12,6 +12,7 @@ import com.haruhi.botServer.dto.qqclient.SendMsgResp;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.BilibiliService;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -35,6 +36,8 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
 
     @Autowired
     private AbstractWebResourceConfig abstractPathConfig;
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
     @Override
     public int weight() {
@@ -83,10 +86,23 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                 String url = playUrlInfoData.getDurlFirst();
                 File bilibiliVideoFile = new File(FileUtil.getBilibiliVideoFileName(videoDetailDataView.getBvid(), cid,"mp4"));
                 if (!bilibiliVideoFile.exists()) {
+                    // 判断视频时长是否超过下载限制
+                    long downloadDurationLimit = getDurationLimit(DictionarySqliteService.DictionaryEnum.BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT);
+                    if (videoDetailDataView.getDuration() > downloadDurationLimit) {
+                        log.error("视频时长超过下载限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),downloadDurationLimit);
+                        return;
+                    }
+
                     log.info("开始下载b站视频 {}",url);
                     long l = System.currentTimeMillis();
                     bilibiliService.downloadVideo(url, bilibiliVideoFile,-1);
                     log.info("下载b站视频完成 cost:{}",(System.currentTimeMillis()-l));
+                }
+
+                long uploadDurationLimit = getDurationLimit(DictionarySqliteService.DictionaryEnum.BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT);
+                if (videoDetailDataView.getDuration() > uploadDurationLimit) {
+                    log.error("视频时长超过上传限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),uploadDurationLimit);
+                    return;
                 }
                 uploadFileToQq(bot, message, bilibiliVideoFile);
             }catch (Exception e) {
@@ -94,6 +110,17 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
             }
         });
         return true;
+    }
+
+    public long getDurationLimit(DictionarySqliteService.DictionaryEnum dictionaryEnum) {
+        Long durationLimit = null;
+        try {
+            durationLimit = Long.parseLong(dictionarySqliteService.getInCache(dictionaryEnum.getKey(),
+                    dictionaryEnum.getDefaultValue()));
+        }catch (NumberFormatException e){
+            durationLimit = Long.parseLong(dictionaryEnum.getDefaultValue());
+        }
+        return durationLimit.longValue();
     }
 
     private void sendInfoMessage(VideoDetail.View videoDetailDataView, Message message, Bot bot){
