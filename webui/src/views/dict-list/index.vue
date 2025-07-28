@@ -28,9 +28,16 @@
       <div class="data-table-option-buts">
         <el-button @click="refreshCache" type="primary" size="small" plain
                    icon="el-icon-refresh" :loading="refreshLoading">刷新缓存</el-button>
+        <el-button @click="add" type="primary" size="small" plain
+                   icon="el-icon-plus">新增</el-button>
+        <el-button @click="deleteData" type="danger" size="small" plain
+                   :disabled="deleteBatchDisabled"
+                   icon="el-icon-delete">删除</el-button>
       </div>
       <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
-                stripe max-height="800" size="small" ref="dataTable" highlight-current-row >
+                stripe max-height="800" size="small" ref="dataTable" highlight-current-row
+                @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="50" align="center"></el-table-column>
         <el-table-column fixed label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
@@ -39,19 +46,27 @@
         <el-table-column label="备注" prop="remark" min-width="200" ></el-table-column>
         <el-table-column label="修改时间" prop="modifyTime" min-width="140" align="center" show-tooltip-when-overflow/>
         <el-table-column label="创建时间" prop="createTime" min-width="140" align="center" show-tooltip-when-overflow/>
+        <el-table-column label="操作" width="100" align="center" >
+          <template slot-scope="{row}">
+            <el-button type="text" size="small" @click="edit(row)">修改</el-button>
+          </template>
+        </el-table-column>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
       </div>
     </basic-container>
+    <edit-dialog ref="editDialog"></edit-dialog>
   </div>
 </template>
 <script>
-import {search as searchApi,refresh as refreshApi} from "@/api/dictionary";
+import {search as searchApi,refresh as refreshApi,deleteBatch} from "@/api/dictionary";
+import EditDialog from "./edit-dialog";
 
 export default {
   name:'DictList',
   components:{
+    EditDialog
   },
   data(){
     return{
@@ -72,15 +87,49 @@ export default {
         background: true,
         total: 0
       },
+      multipleSelection: [],
     }
   },
   created() {
 
   },
+  computed:{
+    deleteBatchDisabled(){
+      return !this.multipleSelection || this.multipleSelection.length === 0
+    }
+  },
   mounted() {
     this.search()
   },
   methods:{
+    handleSelectionChange(val){
+      this.multipleSelection = val
+    },
+    add(){
+      this.$refs.editDialog.open(null)
+    },
+    edit(row){
+      this.$refs.editDialog.open(row)
+    },
+    deleteData(){
+      if(this.deleteBatchDisabled){
+        return
+      }
+      this.$confirm('确认删除？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(()=>{
+        deleteBatch(this.multipleSelection).then(({data:{code,message}})=>{
+          if(code !== 200){
+            return this.$message.error(message)
+          }
+          this.search()
+          this.$message.success(message)
+        }).finally(()=>{
+        })
+      })
+    },
     refreshCache(){
       this.refreshLoading = true
       refreshApi().then(({data:{code,message}})=>{

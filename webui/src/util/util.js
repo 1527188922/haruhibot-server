@@ -35,8 +35,8 @@ export const getViewDom = () => {
  * 对象深拷贝
  */
 export const deepClone = data => {
-  var type = getObjType(data);
-  var obj;
+  let type = getObjType(data);
+  let obj;
   if (type === 'array') {
     obj = [];
   } else if (type === 'object') {
@@ -46,11 +46,11 @@ export const deepClone = data => {
     return data;
   }
   if (type === 'array') {
-    for (var i = 0, len = data.length; i < len; i++) {
+    for (let i = 0, len = data.length; i < len; i++) {
       obj.push(deepClone(data[i]));
     }
   } else if (type === 'object') {
-    for (var key in data) {
+    for (let key in data) {
       obj[key] = deepClone(data[key]);
     }
   }
