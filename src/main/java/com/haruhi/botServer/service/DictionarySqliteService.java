@@ -29,8 +29,8 @@ public class DictionarySqliteService {
 
         BILIBILI_COOKIES_SESSDATA("bilibili.cookies.sessdata",null,"b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
         BILIBILI_COOKIES_BILI_JCT("bilibili.cookies.bili_jct",null,"b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
-        BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT("bilibili.upload_video.duration_limit","10","上传b站视频时长限制，单位分钟"),
-        BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT("bilibili.download_video.duration_limit","10","下载b站视频时长限制，单位分钟"),
+        BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT("bilibili.upload_video.duration_limit","600","上传b站视频时长限制，单位秒"),
+        BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT("bilibili.download_video.duration_limit","600","下载b站视频时长限制，单位秒"),
         SAUCENAO_SEARCH_IMAGE__KEY("saucenao.search_image_key",null,"用于请求识图接口认证,从https://saucenao.com获取"),
         QIANWEN_API_KEY("qianwen.api_key",null,"请求阿里巴巴千问模型认证"),
 
