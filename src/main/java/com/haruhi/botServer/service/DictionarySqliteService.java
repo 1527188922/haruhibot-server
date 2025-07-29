@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -39,14 +38,24 @@ public class DictionarySqliteService {
         JM_PASSWORD_ZIP("jm.password.zip",JmcomicService.JM_DEFAULT_PASSWORD,"jm本子zip包解压密码,注意：修改密码不会改变之前已经存在的zip包密码，重复下载可重新生成使用新密码的zip包"),
         JM_PASSWORD_PDF("jm.password.pdf",JmcomicService.JM_DEFAULT_PASSWORD,"jm本子pdf保护密码,注意：修改密码不会改变之前已经存在的pdf文件密码，重复下载可重新生成使用新密码的pdf文件"),
 
+        BOT_ACCESS_TOKEN("bot.access_token",null,"机器人Websocket服务，建立连接握手时认证token"),
+        BOT_SUPERUSERS("bot.superusers","1527188922","机器人超级管理员qq号，多个qq号逗号分割,注意：未配置超级用户则一些超级用户功能不可使用"),
+
+
         ;
         private final String key;
         private final String defaultValue;
         private final String remark;
     }
 
-    @Autowired
-    private DictionarySqliteMapper dictionarySqliteMapper;
+    private final DictionarySqliteMapper dictionarySqliteMapper;
+
+
+    public DictionarySqliteService(DictionarySqliteMapper dictionarySqliteMapper) {
+        this.dictionarySqliteMapper = dictionarySqliteMapper;
+        initData(false);
+    }
+
 
     public static final Map<String, List<String>> CACHE = new HashMap<>();
 
@@ -64,6 +73,15 @@ public class DictionarySqliteService {
                     )));
             CACHE.putAll(collect);
         }
+    }
+
+
+    public List<Long> getSuperUsers(){
+        String superusers = this.getInCache(DictionarySqliteService.DictionaryEnum.BOT_SUPERUSERS.getKey(),null);
+        if (StringUtils.isBlank(superusers)) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(superusers.split("[,，]")).distinct().map(Long::valueOf).collect(Collectors.toList());
     }
 
     public void initData(boolean refreshCache){

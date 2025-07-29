@@ -1,10 +1,7 @@
 package com.haruhi.botServer.thread;
 
-import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.SystemService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 
@@ -13,16 +10,17 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class FirstTask implements CommandLineRunner {
+public class FirstTask {
 
-    @Autowired
-    private SystemService systemService;
-    @Autowired
-    private DictionarySqliteService dictionarySqliteService;
+    private final SystemService systemService;
+
+    public FirstTask(SystemService systemService) {
+        this.systemService = systemService;
+        execute();
+    }
 
     public synchronized void execute(){
         try {
-            dictionarySqliteService.initData(false);
             systemService.loadCache();
             // 创建stop脚本
             systemService.writeStopScript();
@@ -31,10 +29,4 @@ public class FirstTask implements CommandLineRunner {
         }
     }
 
-    @Override
-    public void run(String... args) throws Exception {
-        execute();
-    }
-    
-    
 }

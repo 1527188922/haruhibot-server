@@ -6,15 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Slf4j
 @Component
 public class BotConfig {
 
     public static String NAME = "";
-    public static String ACCESS_TOKEN = "";
     public static Long DEFAULT_USER = null;
     public static String INTERNET_HOST;
     public static int PORT;
@@ -22,21 +18,12 @@ public class BotConfig {
     public final static String WEB_SOCKET_PATH = CONTEXT_PATH + "/ws";
     public static int MAX_CONNECTIONS;
     public static boolean SAME_MACHINE_QQCLIENT;
-    public static List<Long> SUPERUSERS;
     // 是否启用公网ip 0否 1是 若程序和gocq都在同一台主机上 可以不启用
     public static String ENABLE_INTERNET_HOST;
 
     @Autowired
     public void setName(@Value("${bot.name}") String name) {
         NAME = Strings.isBlank(name) ? "春日酱" : name;
-    }
-
-    @Autowired
-    public void setAccessToken(@Value("${bot.access-token}") String accessToken) {
-        ACCESS_TOKEN = accessToken;
-        if (Strings.isBlank(ACCESS_TOKEN)) {
-            log.warn("未配置access-token！");
-        }
     }
 
     @Autowired
@@ -78,24 +65,6 @@ public class BotConfig {
     @Autowired
     public void setEnableInternetHost(@Value("${bot.enable-internet-host}") String enableInternetHost){
         ENABLE_INTERNET_HOST = enableInternetHost;
-    }
-    @Autowired
-    public void setSuperusers(@Value("${bot.superusers}") String superusers){
-        SUPERUSERS = new ArrayList<>();
-        if(Strings.isNotBlank(superusers)){
-            String[] split = superusers.split(",");
-            if (split.length > 0) {
-                for (String s : split) {
-                    if (Strings.isNotBlank(s)) {
-                        SUPERUSERS.add(Long.valueOf(s));
-                    }
-                }
-            }
-        }
-        
-        if(SUPERUSERS.size() == 0){
-            log.warn("未设置超级用户，某些超级用户命令/功能无法使用");
-        }
     }
 }
 

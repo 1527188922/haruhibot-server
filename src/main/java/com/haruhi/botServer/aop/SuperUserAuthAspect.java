@@ -1,9 +1,9 @@
 package com.haruhi.botServer.aop;
 
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +11,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -20,6 +21,11 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class SuperUserAuthAspect {
+
+
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
+
     @Pointcut(value = "@annotation(com.haruhi.botServer.annotation.SuperuserAuthentication)")
     public void pointcut(){
     }
@@ -61,7 +67,7 @@ public class SuperUserAuthAspect {
             return Arrays.stream(annotation.superUsers()).boxed().collect(Collectors.toList()).contains(message.getUserId()) 
                     ? joinPoint.proceed() : false;
         }
-        return BotConfig.SUPERUSERS.contains(message.getUserId()) ?
+        return dictionarySqliteService.getSuperUsers().contains(message.getUserId()) ?
                 joinPoint.proceed() : false;
     }
 

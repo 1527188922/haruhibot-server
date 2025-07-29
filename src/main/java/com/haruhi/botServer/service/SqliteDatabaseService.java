@@ -5,10 +5,8 @@ import com.haruhi.botServer.entity.TableInfoSqlite;
 import com.haruhi.botServer.mapper.SqliteDatabaseInitMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,10 +14,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SqliteDatabaseService{
 
-    @Autowired
-    private SqliteDatabaseInitMapper sqliteDatabaseInitMapper;
+    private final SqliteDatabaseInitMapper sqliteDatabaseInitMapper;
 
-    @PostConstruct
+    public SqliteDatabaseService(SqliteDatabaseInitMapper sqliteDatabaseInitMapper) {
+        this.sqliteDatabaseInitMapper = sqliteDatabaseInitMapper;
+        this.firstInit();
+    }
+
     private void firstInit(){
         try {
             tableInit();

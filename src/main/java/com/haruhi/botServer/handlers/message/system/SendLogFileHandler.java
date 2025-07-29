@@ -2,7 +2,6 @@ package com.haruhi.botServer.handlers.message.system;
 
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.cache.CacheMap;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -11,16 +10,15 @@ import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
@@ -48,12 +46,10 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
     private static File logDir;
 
 
-    @Autowired
-    private AbstractWebResourceConfig pathConfig;
-
-    @PostConstruct
-    private void initCache(){
-        cacheMap = new CacheMap<>(expireTime, TimeUnit.SECONDS, BotConfig.SUPERUSERS.size() == 0 ? 1 : BotConfig.SUPERUSERS.size());
+    private final AbstractWebResourceConfig pathConfig;
+    public SendLogFileHandler(AbstractWebResourceConfig pathConfig, DictionarySqliteService dictionarySqliteService) {
+        this.pathConfig = pathConfig;
+        cacheMap = new CacheMap<>(expireTime, TimeUnit.SECONDS, dictionarySqliteService.getSuperUsers().isEmpty() ? 1 : dictionarySqliteService.getSuperUsers().size());
         logDir = new File(FileUtil.getLogsDir());
     }
 
