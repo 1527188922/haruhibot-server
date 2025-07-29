@@ -31,8 +31,13 @@ public class DictionarySqliteService {
         BILIBILI_COOKIES_BILI_JCT("bilibili.cookies.bili_jct",null,"b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
         BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT("bilibili.upload_video.duration_limit","600","上传b站视频时长限制，单位秒"),
         BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT("bilibili.download_video.duration_limit","600","下载b站视频时长限制，单位秒"),
+
         SAUCENAO_SEARCH_IMAGE__KEY("saucenao.search_image_key",null,"用于请求识图接口认证,从https://saucenao.com获取"),
+
         QIANWEN_API_KEY("qianwen.api_key",null,"请求阿里巴巴千问模型认证"),
+
+        JM_PASSWORD_ZIP("jm.password.zip",JmcomicService.JM_DEFAULT_PASSWORD,"jm本子zip包解压密码,注意：修改密码不会改变之前已经存在的zip包密码，重复下载可重新生成使用新密码的zip包"),
+        JM_PASSWORD_PDF("jm.password.pdf",JmcomicService.JM_DEFAULT_PASSWORD,"jm本子pdf保护密码,注意：修改密码不会改变之前已经存在的pdf文件密码，重复下载可重新生成使用新密码的pdf文件"),
 
         ;
         private final String key;

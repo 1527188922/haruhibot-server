@@ -32,6 +32,7 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPa
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageFitWidthDestination;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -67,9 +68,12 @@ public class JmcomicService {
     private static final String IMAGE_DOMAIN = "cdn-msp2.jmapiproxy2.cc";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
 
-    public static final String JM_PASSWORD = "1234";
+    public static final String JM_DEFAULT_PASSWORD = "1234";
 
     private static final ConcurrentHashSet<String> LOCK = new ConcurrentHashSet<>();
+
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
 
     public UserProfile login(String username, String password) throws Exception {
@@ -88,6 +92,22 @@ public class JmcomicService {
         return JSONObject.parseObject(data, UserProfile.class);
     }
 
+    public String getZipPassword(){
+        String inCache = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.JM_PASSWORD_ZIP.getKey(), null);
+        return StringUtils.isNotBlank(inCache) ? inCache : JM_DEFAULT_PASSWORD;
+    }
+    public String getPdfPassword(){
+        String inCache = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.JM_PASSWORD_PDF.getKey(), null);
+        return StringUtils.isNotBlank(inCache) ? inCache : JM_DEFAULT_PASSWORD;
+    }
+
+
+    /**
+     * 下载并转zip
+     * @param aid
+     * @return zip文件绝对路径
+     * @throws Exception
+     */
     public BaseResp<File> downloadAlbumAsZip(String aid) throws Exception {
         BaseResp<String> baseResp = downloadAlbum(aid);
         if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
@@ -105,17 +125,23 @@ public class JmcomicService {
         }
 //        ZipUtil.zip(albumDir,zipFilePath,StandardCharsets.UTF_8,false);
 
-        ZipFile zip = new ZipFile(zipFile, JM_PASSWORD.toCharArray());
-        ZipParameters parameters = new ZipParameters();
-        parameters.setEncryptFiles(true);
-        parameters.setEncryptionMethod(EncryptionMethod.AES);
-        parameters.setIncludeRootFolder(false);
-        zip.addFolder(file, parameters);
-        zip.setCharset(StandardCharsets.UTF_8);
-
+        try (ZipFile zip = new ZipFile(zipFile, getZipPassword().toCharArray())){
+            ZipParameters parameters = new ZipParameters();
+            parameters.setEncryptFiles(true);
+            parameters.setEncryptionMethod(EncryptionMethod.AES);
+            parameters.setIncludeRootFolder(false);
+            zip.setCharset(StandardCharsets.UTF_8);
+            zip.addFolder(file, parameters);
+        }
         return BaseResp.success(zipFile);
     }
 
+    /**
+     * 下载并转pdf
+     * @param aid
+     * @return pdf文件绝对路径
+     * @throws Exception
+     */
     public BaseResp<File> downloadAlbumAsPdf(String aid) throws Exception {
         BaseResp<String> baseResp = downloadAlbum(aid);
         if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
@@ -129,12 +155,12 @@ public class JmcomicService {
         String pdfFileName = baseResp.getData() + ".pdf";
         String pdfFilePath = FileUtil.getJmcomicDir() + File.separator + pdfFileName;
         File pdfFile = new File(pdfFilePath);
-        if(!pdfFile.exists()){
-            log.info("pdf文件不存在，开始生成：{}",pdfFileName);
-            long l = System.currentTimeMillis();
-            albumToPdf(file,pdfFile);
-            log.info("pdf文件生成完成 cost:{} {}",(System.currentTimeMillis() - l),pdfFilePath);
+        if(pdfFile.exists()){
+            pdfFile.delete();
         }
+        long l = System.currentTimeMillis();
+        albumToPdf(file,pdfFile);
+        log.info("pdf文件生成完成 cost:{} {}",(System.currentTimeMillis() - l),pdfFilePath);
         return BaseResp.success(pdfFile);
     }
 
@@ -152,7 +178,8 @@ public class JmcomicService {
             // 是否可以复制和提取内容
             permission.setCanExtractContent(false);
             permission.setCanExtractForAccessibility(false);
-            StandardProtectionPolicy standardProtectionPolicy = new StandardProtectionPolicy(JM_PASSWORD, JM_PASSWORD, permission);
+            String password = getPdfPassword();
+            StandardProtectionPolicy standardProtectionPolicy = new StandardProtectionPolicy(password, password, permission);
             SecurityHandler securityHandler = new StandardSecurityHandler(standardProtectionPolicy);
             securityHandler.prepareDocumentForEncryption(document);
             PDEncryption encryptionOptions = new PDEncryption();
@@ -238,6 +265,12 @@ public class JmcomicService {
         return n;
     }
 
+    /**
+     * 返回本子文件夹名称
+     * @param aid
+     * @return 文件夹名称
+     * @throws Exception
+     */
     public BaseResp<String> downloadAlbum(String aid) throws Exception {
         synchronized (JmcomicService.class){
             if (LOCK.contains(aid)) {

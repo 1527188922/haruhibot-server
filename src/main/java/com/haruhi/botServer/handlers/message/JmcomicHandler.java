@@ -85,7 +85,7 @@ public class JmcomicHandler implements IAllMessageEvent {
 
                 ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
                         MessageHolder.instanceText(
-                                isPdf ? "PDF保护密码："+JmcomicService.JM_PASSWORD : "ZIP解压密码："+JmcomicService.JM_PASSWORD)
+                                isPdf ? "PDF保护密码："+jmcomicService.getPdfPassword() : "ZIP解压密码："+jmcomicService.getZipPassword())
                         );
                 forwardMsgs.add(instance3);
 
