@@ -3,6 +3,7 @@ package com.haruhi.botServer.service;
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.*;
@@ -313,25 +314,7 @@ public class JmcomicService {
             return CompletableFuture.runAsync(() -> {
                 list.forEach(param -> {
                     String imgUrl = param.getImgUrl();
-                    byte[] bytes = null;
-                    try {
-                        log.info("开始下载图片：{}", imgUrl);
-                        long l = System.currentTimeMillis();
-                        bytes = HttpRequest.get(imgUrl)
-                                .setConnectionTimeout(4 * 1000)
-                                .setReadTimeout(10 * 1000)
-                                .execute()
-                                .bodyBytes();
-                        log.info("下载图片完成：{} cost:{}", imgUrl, (System.currentTimeMillis() - l));
-                    }catch (HttpException e){
-                        if (e.getCause() instanceof SocketTimeoutException) {
-                            log.error("下载jm图片超时 {}", imgUrl, e);
-                        }else{
-                            log.error("下载jm图片网络异常 {}", imgUrl, e);
-                        }
-                    }catch (Exception e) {
-                        log.error("下载jm图片异常 {}", JSONObject.toJSONString(param), e);
-                    }
+                    byte[] bytes = downloadImage(imgUrl);
                     if (bytes == null) {
                         return;
                     }
@@ -356,6 +339,28 @@ public class JmcomicService {
         }
     }
 
+    public byte[] downloadImage(String imgUrl) {
+        log.info("开始下载图片：{}", imgUrl);
+        long l = System.currentTimeMillis();
+        HttpRequest httpRequest = HttpRequest.get(imgUrl)
+                .setConnectionTimeout(4 * 1000)
+                .setReadTimeout(10 * 1000);
+        try (HttpResponse execute = httpRequest.execute()){
+            byte[] res = execute.bodyBytes();
+            log.info("下载图片完成：{} cost:{}", imgUrl, (System.currentTimeMillis() - l));
+            return res;
+        }catch (HttpException e){
+            if (e.getCause() instanceof SocketTimeoutException) {
+                log.error("下载jm图片超时 {}", imgUrl, e);
+            }else{
+                log.error("下载jm图片网络异常 {}", imgUrl, e);
+            }
+        }catch (Exception e) {
+            log.error("下载jm图片异常 {}", imgUrl, e);
+        }
+        return null;
+    }
+
     public int calculateBlockNum(long scrambleId, long chapterId, String filename) {
         if (chapterId < scrambleId) {
             return 0;
@@ -372,9 +377,11 @@ public class JmcomicService {
     }
 
     private void saveImg(int blockNum,byte[] bytes,File file) throws Exception {
-        BufferedImage srcImg = ImageIO.read(new ByteArrayInputStream(bytes));
-        BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
-        ImageIO.write(dstImg, "webp", file);
+        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes)){
+            BufferedImage srcImg = ImageIO.read(byteArrayInputStream);
+            BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
+            ImageIO.write(dstImg, "webp", file);
+        }
     }
 
     private BufferedImage stitchImg(BufferedImage srcImg, int blockNum) {

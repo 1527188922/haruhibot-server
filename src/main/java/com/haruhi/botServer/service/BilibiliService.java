@@ -196,7 +196,7 @@ public class BilibiliService {
         HttpRequest httpRequest = HttpUtil.createGet(url, true)
                 .addHeaders(getHeaders(false))
                 .timeout(timeout);
-        try (HttpResponse response = httpRequest.executeAsync()){
+        try (HttpResponse response = httpRequest.execute()){
             response.writeBody(file, null);
         }
     }
