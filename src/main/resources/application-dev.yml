@@ -5,7 +5,6 @@ bot:
   port: 8090
   enable-internet-host: 0
   internet-host:
-  default-user: 1234567890
   same-machine-qqclient: true
 
 job:

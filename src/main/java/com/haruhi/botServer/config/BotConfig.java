@@ -11,8 +11,7 @@ import org.springframework.stereotype.Component;
 public class BotConfig {
 
     public static String NAME = "";
-    public static Long DEFAULT_USER = null;
-    public static String INTERNET_HOST;
+    public static String INTERNET_HOST;//公网ip
     public static int PORT;
     public final static String CONTEXT_PATH = "/api";
     public final static String WEB_SOCKET_PATH = CONTEXT_PATH + "/ws";
@@ -23,14 +22,6 @@ public class BotConfig {
     @Autowired
     public void setName(@Value("${bot.name}") String name) {
         NAME = Strings.isBlank(name) ? "春日酱" : name;
-    }
-
-    @Autowired
-    public void setDefaultUser(@Value("${bot.default-user}") Long defaultUser) {
-        DEFAULT_USER = defaultUser;
-        if (DEFAULT_USER == null || 0L == DEFAULT_USER) {
-            DEFAULT_USER = 1527188922L;
-        }
     }
 
     @Autowired
