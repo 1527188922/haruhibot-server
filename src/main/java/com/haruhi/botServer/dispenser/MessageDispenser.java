@@ -1,12 +1,12 @@
 package com.haruhi.botServer.dispenser;
 
-import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.event.message.IMessageEvent;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.handlers.message.chatRecord.ChatRecordHandler;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,11 @@ import java.util.stream.Collectors;
 @Component
 public class MessageDispenser {
 
-    public MessageDispenser(Map<String, IMessageEvent> map) {
+
+    private final DictionarySqliteService dictionarySqliteService;
+
+    public MessageDispenser(Map<String, IMessageEvent> map, DictionarySqliteService dictionarySqliteService) {
+        this.dictionarySqliteService = dictionarySqliteService;
         loadEvent(map);
     }
 
@@ -188,12 +192,19 @@ public class MessageDispenser {
         log.info("[{}][{}][UID:{}][GID:{}] {}",messageType,fnName,message.getUserId(),message.getGroupId(),message.getRawMessage());
     }
 
+    /**
+     *
+     * @param event
+     * @param message
+     * @return true:跳过当前handler不执行
+     */
     private boolean toContinue(IMessageEvent event, Message message){
         if(message.isSelfMsg() && !event.handleSelfMsg()){
             // 机器人self消息 且 handler类不处理self消息
             return true;
         }
-        if(message.isGroupMsg() && SwitchConfig.DISABLE_GROUP && event.getClass() != ChatRecordHandler.class){
+        boolean disableGroup = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
+        if(message.isGroupMsg() && disableGroup && event.getClass() != ChatRecordHandler.class){
             // 本次为群消息 且开了禁用群功能 则只让聊天记录保存handler类生效
             return true;
         }

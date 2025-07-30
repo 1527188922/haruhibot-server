@@ -14,17 +14,12 @@ job:
     cron: 0/15 * 0-7 * * ? *
     enable: 0
     
-url-conf:
-  agefans: https://www.agemys.vip
-  bt-search: http://www.eclzz.bio
-  
 switch:
   ai-chat: 1
   search-image-allow-group: 1
   group-decrease: 1
   group-increase: 1
   search-bt-allow-group: 1
-  disableGroup: 0
 
 server:
   port: ${bot.port}
