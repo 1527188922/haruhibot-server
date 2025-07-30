@@ -2,7 +2,6 @@ package com.haruhi.botServer.handlers.message.system;
 
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.cache.CacheMap;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -11,16 +10,15 @@ import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
-@DependsOn("botConfig")
+//@DependsOn("botConfig")
 public class SendLogFileHandler implements IPrivateMessageEvent {
     @Override
     public int weight() {
@@ -44,24 +42,30 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
         return HandlerWeightEnum.W_350.getName();
     }
     private static CacheMap<String, File[]> cacheMap = null;
-    private static int expireTime = 20;
-    private static File logDir;
-
+    private static final int EXPIRE_TIME = 20;
 
     @Autowired
     private AbstractWebResourceConfig pathConfig;
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
-    @PostConstruct
-    private void initCache(){
-        cacheMap = new CacheMap<>(expireTime, TimeUnit.SECONDS, BotConfig.SUPERUSERS.size() == 0 ? 1 : BotConfig.SUPERUSERS.size());
-        logDir = new File(FileUtil.getLogsDir());
+
+    private void initCacheMap() {
+        if (cacheMap != null) {
+          return;
+        }
+        synchronized (SendLogFileHandler.class) {
+            if (cacheMap != null) {
+                return;
+            }
+            cacheMap = new CacheMap<>(EXPIRE_TIME, TimeUnit.SECONDS, dictionarySqliteService.getSuperUsers().isEmpty() ? 1 : dictionarySqliteService.getSuperUsers().size());
+        }
     }
-
-
 
     @SuperuserAuthentication
     @Override
     public boolean onPrivate(final Bot bot, final Message message) {
+        initCacheMap();
         File[] files = cacheMap.get(key(message));
         if (files != null) {
             try {
@@ -76,7 +80,7 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
 
             ThreadPoolUtil.getHandleCommandPool().execute(()->{
 
-                File[] files1 = logDir.listFiles(pathname -> pathname.isFile() && pathname.getName().endsWith(".log"));
+                File[] files1 = new File(FileUtil.getLogsDir()).listFiles(pathname -> pathname.isFile() && pathname.getName().endsWith(".log"));
                 if(files1 != null && files1.length > 0){
                     StringBuilder builder = new StringBuilder();
                     for (int i = 0; i < files1.length; i++) {

@@ -5,9 +5,7 @@ bot:
   port: 8090
   enable-internet-host: 0
   internet-host:
-  access-token:
   default-user: 1234567890
-  superusers: 1527188922,1234567890
   max-connections: 5
   same-machine-qqclient: true
 

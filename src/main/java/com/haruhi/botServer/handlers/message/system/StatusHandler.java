@@ -9,6 +9,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
@@ -33,6 +34,8 @@ public class StatusHandler implements IAllMessageEvent {
         return HandlerWeightEnum.W_300.getName();
     }
 
+    @Autowired
+    private DictionarySqliteService dictionaryService;
 
     @SuperuserAuthentication
     @Override
@@ -52,6 +55,8 @@ public class StatusHandler implements IAllMessageEvent {
 
     @Autowired
     private AbstractWebResourceConfig pathConfig;
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
     private String getProperties(String messageType){
         StringBuilder sysPropStr = new StringBuilder("------系统信息------\n");
@@ -69,8 +74,8 @@ public class StatusHandler implements IAllMessageEvent {
             sysPropStr.append("profile："+ SystemInfo.PROFILE).append("\n");
             sysPropStr.append("WEB Path："+ pathConfig.webHomePath()).append("\n");
             sysPropStr.append("ContextPath：" + BotConfig.CONTEXT_PATH).append("\n");
-            sysPropStr.append("AccessToken：" + BotConfig.ACCESS_TOKEN).append("\n");
-            sysPropStr.append("超级用户：" + BotConfig.SUPERUSERS).append("\n");
+            sysPropStr.append("AccessToken：" + dictionaryService.getBotAccessToken()).append("\n");
+            sysPropStr.append("超级用户：" + dictionarySqliteService.getSuperUsers()).append("\n");
             sysPropStr.append("程序路径："+ FileUtil.getAppDir());
         }
 

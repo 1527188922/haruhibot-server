@@ -1,10 +1,12 @@
 package com.haruhi.botServer.interceptors;
 
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.ws.BotContainer;
 import com.haruhi.botServer.ws.BotServer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
@@ -25,6 +27,9 @@ import java.util.Map;
 @Slf4j
 @Component
 public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
+
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
@@ -87,21 +92,23 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
      * @return
      */
     private boolean checkAuthorization(ServerHttpRequest request){
-        if (Strings.isNotBlank(BotConfig.ACCESS_TOKEN)) {
-            HttpHeaders headers = request.getHeaders();
-            List<String> authorization = headers.get("Authorization");
-            if (CollectionUtils.isEmpty(authorization)) {
-                return false;
-            }
-            boolean hasToken = false;
-            for (String s : authorization) {
-                if(s.contains("Token " + BotConfig.ACCESS_TOKEN)){
-                    hasToken = true;
-                    break;
-                }
-            }
-            return hasToken;
+        String botAccessToken = dictionarySqliteService.getBotAccessToken();
+        if (Strings.isBlank(botAccessToken)) {
+            // 未配置 则无需认证 直接通过
+            return true;
         }
-        return true;
+        HttpHeaders headers = request.getHeaders();
+        List<String> authorization = headers.get("Authorization");
+        if (CollectionUtils.isEmpty(authorization)) {
+            return false;
+        }
+        boolean hasToken = false;
+        for (String s : authorization) {
+            if(s.contains("Token " + botAccessToken)){
+                hasToken = true;
+                break;
+            }
+        }
+        return hasToken;
     }
 }

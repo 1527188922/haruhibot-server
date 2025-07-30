@@ -221,7 +221,7 @@ public class SystemService {
         botWebSocketInfo.setConnections(BotContainer.getConnections());
         botWebSocketInfo.setMaxConnections(BotConfig.MAX_CONNECTIONS);
         botWebSocketInfo.setPath(BotConfig.WEB_SOCKET_PATH);
-        botWebSocketInfo.setAccessToken(BotConfig.ACCESS_TOKEN);
+        botWebSocketInfo.setAccessToken(dictionaryService.getBotAccessToken());
         return botWebSocketInfo;
     }
 
