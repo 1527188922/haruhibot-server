@@ -66,7 +66,7 @@ public class SuperUserAuthAspect {
             return Arrays.stream(annotation.superUsers()).boxed().collect(Collectors.toList()).contains(message.getUserId()) 
                     ? joinPoint.proceed() : false;
         }
-        return dictionarySqliteService.getSuperUsers().contains(message.getUserId()) ?
+        return dictionarySqliteService.getBotSuperUsers().contains(message.getUserId()) ?
                 joinPoint.proceed() : false;
     }
 

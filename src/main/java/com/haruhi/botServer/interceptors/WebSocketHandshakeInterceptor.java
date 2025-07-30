@@ -57,12 +57,13 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
      * @return
      */
     private boolean checkConnections(){
-        if(BotConfig.MAX_CONNECTIONS < 0){
+        int botMaxConnections = dictionarySqliteService.getBotMaxConnections();
+        if(botMaxConnections < 0){
             return true;
         }
         int connections = BotContainer.getConnections();
-        if(connections >= BotConfig.MAX_CONNECTIONS){
-            log.info("当前连接数:{},已达到最大连接数:{},本次禁止握手",connections,BotConfig.MAX_CONNECTIONS);
+        if(connections >= botMaxConnections){
+            log.info("当前连接数:{},已达到最大连接数:{},本次禁止握手",connections, botMaxConnections);
             return false;
         }
         return true;

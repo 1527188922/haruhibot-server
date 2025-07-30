@@ -6,7 +6,6 @@ bot:
   enable-internet-host: 0
   internet-host:
   default-user: 1234567890
-  max-connections: 5
   same-machine-qqclient: true
 
 job:

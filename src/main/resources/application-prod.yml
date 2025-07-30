@@ -8,7 +8,6 @@ bot:
   # 公网ip(程序自动获取公网ip失败情况下将采用该配置) enable-internet-host为1情况下 尽量配置该项
   internet-host:
   default-user: 1234567890
-  max-connections: 5
   same-machine-qqclient: false
 
 job:

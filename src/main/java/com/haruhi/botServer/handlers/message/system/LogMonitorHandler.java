@@ -53,7 +53,7 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 				if(tailer == null){
 					startTailer(true, StandardCharsets.UTF_8, s -> {
                         // 这里不用抓异常 如果发发生异常就让这个线程中断
-                        bot.sendMessage(dictionarySqliteService.getSuperUsers().get(0),null, MessageTypeEnum.privat.getType(),MessageHolder.instanceText(s));
+                        bot.sendMessage(dictionarySqliteService.getBotSuperUsers().get(0),null, MessageTypeEnum.privat.getType(),MessageHolder.instanceText(s));
                     });
 					bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageHolder.instanceText("已开启\n日志将实时发送给第一个超级用户"));
 
@@ -82,7 +82,7 @@ public class LogMonitorHandler implements IPrivateMessageEvent {
 
 	private void startTailer(boolean async, Charset charset,LineHandler handler){
 		synchronized (LogMonitorHandler.class){
-			if(tailer == null && !dictionarySqliteService.getSuperUsers().isEmpty()){
+			if(tailer == null && !dictionarySqliteService.getBotSuperUsers().isEmpty()){
 				tailer = new Tailer(new File(FileUtil.getLogsDir() + File.separator + filename), charset, handler);
 				tailer.start(async);
 			}

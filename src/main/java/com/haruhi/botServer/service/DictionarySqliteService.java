@@ -41,6 +41,8 @@ public class DictionarySqliteService {
 
         BOT_ACCESS_TOKEN("bot.access_token",null,"机器人Websocket服务，建立连接握手时认证token，未配置表示无需认证"),
         BOT_SUPERUSERS("bot.superusers","1527188922","机器人超级管理员qq号，多个qq号逗号分割,注意：未配置超级用户则一些超级用户功能不可使用"),
+        BOT_MAX_CONNECTIONS("bot.max_connections","5","机器人Websocket服务最大连接数，小于0表示无限制，0表示禁止连接（改成0不会断开已有连接）"),
+
 
         ;
         private final String key;
@@ -69,7 +71,7 @@ public class DictionarySqliteService {
         }
     }
 
-    public List<Long> getSuperUsers(){
+    public List<Long> getBotSuperUsers(){
         String superusers = this.getInCache(DictionarySqliteService.DictionaryEnum.BOT_SUPERUSERS.getKey(),null);
         if (StringUtils.isBlank(superusers)) {
             return Collections.emptyList();
@@ -79,6 +81,13 @@ public class DictionarySqliteService {
 
     public String getBotAccessToken(){
         return this.getInCache(DictionarySqliteService.DictionaryEnum.BOT_ACCESS_TOKEN.getKey(),null);
+    }
+    public int getBotMaxConnections(){
+        try {
+            return Integer.parseInt(this.getInCache(DictionaryEnum.BOT_MAX_CONNECTIONS.getKey(),null));
+        }catch (NumberFormatException e){
+            return 0;
+        }
     }
 
     public void initData(boolean refreshCache){

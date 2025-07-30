@@ -58,7 +58,7 @@ public class SendLogFileHandler implements IPrivateMessageEvent {
             if (cacheMap != null) {
                 return;
             }
-            cacheMap = new CacheMap<>(EXPIRE_TIME, TimeUnit.SECONDS, dictionarySqliteService.getSuperUsers().isEmpty() ? 1 : dictionarySqliteService.getSuperUsers().size());
+            cacheMap = new CacheMap<>(EXPIRE_TIME, TimeUnit.SECONDS, dictionarySqliteService.getBotSuperUsers().isEmpty() ? 1 : dictionarySqliteService.getBotSuperUsers().size());
         }
     }
 
