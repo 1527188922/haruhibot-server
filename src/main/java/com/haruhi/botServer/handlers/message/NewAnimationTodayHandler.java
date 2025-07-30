@@ -44,7 +44,7 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
 
     @Override
     public boolean onMessage(Bot bot, Message message) {
-        if(!message.getText(-1).matches(RegexEnum.NEW_ANIMATION_TODAY.getValue())){
+        if(!(message.isTextMsg() && message.getText(-1).matches(RegexEnum.NEW_ANIMATION_TODAY.getValue()))){
             return false;
         }
         String urlAgefans = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.URL_CONF_AGEFANS.getKey(), null);
