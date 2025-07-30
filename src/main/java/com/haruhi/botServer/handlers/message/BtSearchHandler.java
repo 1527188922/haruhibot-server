@@ -1,7 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
@@ -56,7 +55,8 @@ public class BtSearchHandler implements IAllMessageEvent {
     @Override
     public boolean onMessage(Bot bot, final Message message) {
 
-        if (message.isGroupMsg() && !SwitchConfig.SEARCH_BT_ALLOW_GROUP){
+        boolean searchBtAllowGroup = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_SEARCH_BT_ALLOW_GROUP.getKey(), false);
+        if (message.isGroupMsg() && !searchBtAllowGroup){
             return false;
         }
 

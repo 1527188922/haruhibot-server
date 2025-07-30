@@ -5,7 +5,6 @@ import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.cache.CacheSet;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
@@ -59,7 +58,8 @@ public class SearchImageHandler implements IAllMessageEvent {
     @Override
     public boolean onMessage(final Bot bot, final Message message) {
 
-        if(!SwitchConfig.SEARCH_IMAGE_ALLOW_GROUP && message.isGroupMsg()){
+        boolean searchImageAllowGroup = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_SEARCH_IMAGE_ALLOW_GROUP.getKey(), false);
+        if(!searchImageAllowGroup && message.isGroupMsg()){
             return false;
         }
 

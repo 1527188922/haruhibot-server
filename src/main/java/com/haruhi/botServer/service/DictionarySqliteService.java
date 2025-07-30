@@ -44,6 +44,11 @@ public class DictionarySqliteService {
         BOT_MAX_CONNECTIONS("bot.max_connections","5","机器人Websocket服务最大连接数，小于0表示无限制，0表示禁止连接（改成0不会断开已有连接）"),
 
         SWITCH_DISABLE_GROUP("switch.disable_group","false","是否禁用所有群功能（对有所有群消息不予理睬，但会保留保存聊天记录功能），true:禁用"),
+        SWITCH_QINGYUNKE_CHAT("switch.qingyunke_chat","true","是否启用青云可聊天api，当at机器人或私聊机器人任何命令都未触发时，会触发该api，true:启用"),
+        SWITCH_SEARCH_IMAGE_ALLOW_GROUP("switch.search_image_allow_group","true","是否允许群聊中使用识图功能，true:允许"),
+        SWITCH_SEARCH_BT_ALLOW_GROUP("switch.search_bt_allow_group","true","是否允许群聊中使用bt搜索功能，true:允许"),
+        SWITCH_GROUP_INCREASE("switch.group_increase","true","是否开启加群提示，true:开启"),
+        SWITCH_GROUP_DECREASE("switch.group_decrease","true","是否开启群成员离群提示，true:开启"),
 
         URL_CONF_AGEFANS("url_conf.agefans","https://www.agemys.vip","agefans网站地址，用于今日新番功能，末尾不需斜杠，备用：https://www.age.tv，https://www.agemys.net，https://www.agemys.cc"),
         URL_CONF_BT_SEARCH("url_conf.bt_search","http://www.eclzz.bio","磁力搜索网站地址，用于bt搜索功能，末尾不需斜杠，备用：http://www.eclzz.art\n" +
@@ -102,12 +107,12 @@ public class DictionarySqliteService {
     }
 
     public boolean getBoolean(String key, boolean defaultValue){
-        return Boolean.parseBoolean(this.getInCache(key, String.valueOf(defaultValue)));
+        return Boolean.parseBoolean(this.getInCache(key, String.valueOf(defaultValue)).trim());
     }
 
     public int getInt(String key, int defaultValue){
         try {
-            return Integer.parseInt(this.getInCache(key, String.valueOf(defaultValue)));
+            return Integer.parseInt(this.getInCache(key, String.valueOf(defaultValue)).trim());
         }catch (NumberFormatException e){
             return defaultValue;
         }

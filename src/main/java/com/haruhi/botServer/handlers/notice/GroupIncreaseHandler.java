@@ -1,13 +1,14 @@
 package com.haruhi.botServer.handlers.notice;
 
-import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.notice.IGroupIncreaseEvent;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.text.MessageFormat;
@@ -15,11 +16,14 @@ import java.text.MessageFormat;
 @Slf4j
 @Component
 public class GroupIncreaseHandler implements IGroupIncreaseEvent {
-
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
     @Override
-    public void onGroupIncrease(final Bot bot, final Message message) {
-        if(!SwitchConfig.GROUP_INCREASE || message.getSelfId().longValue() == message.getUserId().longValue()){
+    public void onGroupIncrease(Bot bot, Message message) {
+
+        boolean groupIncrease = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_GROUP_INCREASE.getKey(), false);
+        if(!groupIncrease || message.isSelfMsg()){
             return;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{

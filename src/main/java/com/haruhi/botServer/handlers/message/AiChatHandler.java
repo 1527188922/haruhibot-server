@@ -1,13 +1,13 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.config.SwitchConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.aiChat.response.ChatResp;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.RestUtil;
@@ -15,6 +15,7 @@ import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.text.MessageFormat;
@@ -42,6 +43,8 @@ public class AiChatHandler implements IAllMessageEvent {
     public String funName() {
         return HandlerWeightEnum.W_160.getName();
     }
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
     public MatchResult<String> matching(Message message) {
         if(message.isPrivateMsg()){
@@ -62,7 +65,9 @@ public class AiChatHandler implements IAllMessageEvent {
 
     @Override
     public boolean onMessage(Bot bot, Message message) {
-        if(!SwitchConfig.ENABLE_AI_CHAT){
+
+        boolean qingyunkeChat = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_QINGYUNKE_CHAT.getKey(), false);
+        if(!qingyunkeChat){
             return false;
         }
         MatchResult<String> matchResult = matching(message);
