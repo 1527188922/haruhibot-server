@@ -4,16 +4,17 @@ import com.alibaba.fastjson.JSONArray;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.agefans.response.NewAnimationTodayResp;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.HttpClientUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -38,31 +39,23 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
         return HandlerWeightEnum.W_450.getName();
     }
 
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
+
     @Override
-    public boolean onMessage(final Bot bot, final Message message) {
-        if(!message.getRawMessage().matches(RegexEnum.NEW_ANIMATION_TODAY.getValue())){
+    public boolean onMessage(Bot bot, Message message) {
+        if(!message.getText(-1).matches(RegexEnum.NEW_ANIMATION_TODAY.getValue())){
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(new Task(bot,message));
-        return true;
-    }
-
-    private class Task implements Runnable{
-        private Message message;
-        private Bot bot;
-
-        Task(Bot bot,Message message){
-            this.bot = bot;
-            this.message = message;
-        }
-        @Override
-        public void run() {
+        String urlAgefans = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.URL_CONF_AGEFANS.getKey(), null);
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
+
                 String responseHtml = null;
                 try {
-                    responseHtml = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(10 * 1000),ThirdPartyURL.AGEFANSTV, null);
+                    responseHtml = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(10 * 1000),urlAgefans, null);
                 }catch (Exception e){
-                    log.error("获取新番请求异常 {}",ThirdPartyURL.AGEFANSTV,e);
+                    log.error("获取新番请求异常 {}",urlAgefans,e);
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "获取新番异常\n"+e.getMessage(),true);
                     return;
                 }
@@ -82,7 +75,7 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
                     }
                     List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(data.size());
                     for (NewAnimationTodayResp datum : data) {
-                        String splicingParam = splicingParam(datum);
+                        String splicingParam = splicingParam(datum, urlAgefans);
                         ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(splicingParam));
                         forwardMsgItems.add(instance);
                     }
@@ -92,15 +85,15 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
                 log.error("解析新番数据异常",e);
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("今日新番异常:{0}",e.getMessage()),true);
             }
-
-        }
+        });
+        return true;
     }
 
-    private String splicingParam(NewAnimationTodayResp datum){
+    private String splicingParam(NewAnimationTodayResp datum,String urlAgefans){
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(datum.getName()).append("\n");
         stringBuilder.append("更新集：").append(datum.getNamefornew()).append("\n");
-        stringBuilder.append(MessageFormat.format("链接：{0}/detail/{1}", ThirdPartyURL.AGEFANSTV,datum.getId()));
+        stringBuilder.append(MessageFormat.format("链接：{0}/detail/{1}", urlAgefans,datum.getId()));
         return stringBuilder.toString();
     }
 

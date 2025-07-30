@@ -43,6 +43,19 @@ public class DictionarySqliteService {
         BOT_SUPERUSERS("bot.superusers","1527188922","机器人超级管理员qq号，多个qq号逗号分割,注意：未配置超级用户则一些超级用户功能不可使用"),
         BOT_MAX_CONNECTIONS("bot.max_connections","5","机器人Websocket服务最大连接数，小于0表示无限制，0表示禁止连接（改成0不会断开已有连接）"),
 
+        URL_CONF_AGEFANS("url_conf.agefans","https://www.agemys.vip","agefans网站地址，用于今日新番功能，末尾不需斜杠，备用：https://www.age.tv，https://www.agemys.net，https://www.agemys.cc"),
+        URL_CONF_BT_SEARCH("url_conf.bt_search","http://www.eclzz.bio","磁力搜索网站地址，用于bt搜索功能，末尾不需斜杠，备用：http://www.eclzz.art\n" +
+                "http://www.eclzz.win\n" +
+                "http://www.eclzz.love\n" +
+                "http://www.eclzz.guru\n" +
+                "http://www.eclzz.city\n" +
+                "http://www.eclzz.me\n" +
+                "http://www.eclzz.ink\n" +
+                "http://www.eclzz.mobi\n" +
+                "http://www.eclzz.wiki\n" +
+                "http://www.eclzz.bio\n" +
+                "http://www.eclzz.lat"),
+
 
         ;
         private final String key;
