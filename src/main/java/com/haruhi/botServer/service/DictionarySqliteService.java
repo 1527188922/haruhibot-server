@@ -83,10 +83,18 @@ public class DictionarySqliteService {
         return this.getInCache(DictionarySqliteService.DictionaryEnum.BOT_ACCESS_TOKEN.getKey(),null);
     }
     public int getBotMaxConnections(){
+        return getInt(DictionarySqliteService.DictionaryEnum.BOT_MAX_CONNECTIONS.getKey(),0);
+    }
+
+    public boolean getBoolean(String key, boolean defaultValue){
+        return Boolean.parseBoolean(this.getInCache(key, String.valueOf(defaultValue)));
+    }
+
+    public int getInt(String key, int defaultValue){
         try {
-            return Integer.parseInt(this.getInCache(DictionaryEnum.BOT_MAX_CONNECTIONS.getKey(),null));
+            return Integer.parseInt(this.getInCache(key, String.valueOf(defaultValue)));
         }catch (NumberFormatException e){
-            return 0;
+            return defaultValue;
         }
     }
 
