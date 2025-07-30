@@ -31,6 +31,7 @@ import java.nio.file.attribute.FileTime;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -148,7 +149,7 @@ public class SystemService {
             fixFieldLeaf(fileNode, e);
             fixFieldTime(fileNode, e);
             return fileNode;
-        }).collect(Collectors.toList());
+        }).sorted(Comparator.comparing(FileNode::getFileName)).collect(Collectors.toList());
     }
 
     private void fixFieldTime(FileNode fileNode, File e) {

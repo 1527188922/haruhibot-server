@@ -14,13 +14,6 @@ job:
     cron: 0/15 * 0-7 * * ? *
     enable: 0
     
-switch:
-  ai-chat: 1
-  search-image-allow-group: 1
-  group-decrease: 1
-  group-increase: 1
-  search-bt-allow-group: 1
-
 server:
   port: ${bot.port}
 
