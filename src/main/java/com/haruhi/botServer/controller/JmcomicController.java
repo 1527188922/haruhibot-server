@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.BaseResp;
+import com.haruhi.botServer.dto.jmcomic.Album;
 import com.haruhi.botServer.service.JmcomicService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,8 @@ public class JmcomicController {
     @GetMapping("/download/{aid}")
     public ResponseEntity<Object> download(@PathVariable("aid") String aid) {
         try {
-            BaseResp<File> fileBaseResp = jmcomicService.downloadAlbumAsZip(aid);
+            Album album = jmcomicService.requestAlbum(aid);
+            BaseResp<File> fileBaseResp = jmcomicService.downloadAlbumAsZip(album);
             if (!BaseResp.SUCCESS_CODE.equals(fileBaseResp.getCode())) {
                 return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(fileBaseResp.getMsg())));
             }
@@ -49,7 +51,8 @@ public class JmcomicController {
     @GetMapping("/download/pdf/{aid}")
     public ResponseEntity<Object> downloadPdf(@PathVariable("aid") String aid) {
         try {
-            BaseResp<File> fileBaseResp = jmcomicService.downloadAlbumAsPdf(aid);
+            Album album = jmcomicService.requestAlbum(aid);
+            BaseResp<File> fileBaseResp = jmcomicService.downloadAlbumAsPdf(album);
             if (!BaseResp.SUCCESS_CODE.equals(fileBaseResp.getCode())) {
                 return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(fileBaseResp.getMsg())));
             }

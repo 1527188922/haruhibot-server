@@ -106,12 +106,12 @@ public class JmcomicService {
 
     /**
      * 下载并转zip
-     * @param aid
+     * @param album
      * @return zip文件绝对路径
      * @throws Exception
      */
-    public BaseResp<File> downloadAlbumAsZip(String aid) throws Exception {
-        BaseResp<String> baseResp = downloadAlbum(aid);
+    public BaseResp<File> downloadAlbumAsZip(Album album) throws Exception {
+        BaseResp<String> baseResp = downloadAlbum(album);
         if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
             return BaseResp.fail(baseResp.getMsg());
         }
@@ -140,12 +140,12 @@ public class JmcomicService {
 
     /**
      * 下载并转pdf
-     * @param aid
+     * @param album
      * @return pdf文件绝对路径
      * @throws Exception
      */
-    public BaseResp<File> downloadAlbumAsPdf(String aid) throws Exception {
-        BaseResp<String> baseResp = downloadAlbum(aid);
+    public BaseResp<File> downloadAlbumAsPdf(Album album) throws Exception {
+        BaseResp<String> baseResp = downloadAlbum(album);
         if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
             return BaseResp.fail(baseResp.getMsg());
         }
@@ -269,11 +269,12 @@ public class JmcomicService {
 
     /**
      * 返回本子文件夹名称
-     * @param aid
+     * @param album
      * @return 文件夹名称
      * @throws Exception
      */
-    public BaseResp<String> downloadAlbum(String aid) throws Exception {
+    public BaseResp<String> downloadAlbum(Album album) throws Exception {
+        String aid = String.valueOf(album.getId());
         synchronized (JmcomicService.class){
             if (LOCK.contains(aid)) {
                 return BaseResp.fail("【JM"+aid+"】正在下载中...");
@@ -281,7 +282,6 @@ public class JmcomicService {
             LOCK.add(aid);
         }
         try {
-            Album album = requestAlbum(aid);
             if (CollectionUtils.isEmpty(album.getSeries())) {
                 Series series = new Series();
                 series.setSort("1");
@@ -298,6 +298,7 @@ public class JmcomicService {
                     String chapterPath = albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
                     Chapter chapter = requestChapter(series.getId());
                     downloadChapter(chapter,chapterPath,series.getTitle(),-1);
+                    System.gc();
                 }catch (Exception e) {
                     log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                 }
@@ -541,7 +542,11 @@ public class JmcomicService {
         JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
         String data = decryptData(ts, jsonObject.getString("data"));
         Album album = JSONObject.parseObject(data, Album.class);
-        album.setName(StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : album.getName());
+        String name = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
+        if (name.getBytes().length >= 255) {
+            name = name.substring(0,100);
+        }
+        album.setName(name);
         return album;
     }
 
@@ -649,7 +654,8 @@ public class JmcomicService {
 //            System.out.println("chapter = " + chapter);
 
 //            jmcomicService.downloadAlbum("517158");
-            jmcomicService.downloadAlbumAsZip("517158");
+            Album album = jmcomicService.requestAlbum("517158");
+            jmcomicService.downloadAlbumAsZip(album);
 //            jmcomicService.downloadAlbumAsPdf("517158");
 
 

@@ -7,6 +7,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.BaseResp;
+import com.haruhi.botServer.dto.jmcomic.Album;
 import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.JmcomicService;
@@ -62,15 +63,22 @@ public class JmcomicHandler implements IAllMessageEvent {
             String finalAid = pair.getKey();
             boolean isPdf = pair.getRight();
             try {
-                BaseResp<File> resp = isPdf ? jmcomicService.downloadAlbumAsPdf(finalAid) : jmcomicService.downloadAlbumAsZip(finalAid);
+                Album album = jmcomicService.requestAlbum(finalAid);
+                if (album == null || album.getId() == null) {
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                            MessageHolder.instanceText("未查询到本子：JM"+finalAid));
+                    return;
+                }
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        MessageHolder.instanceText("开始下载本子本子：JM"+finalAid+"\n"+album.getName()));
+                BaseResp<File> resp = isPdf ? jmcomicService.downloadAlbumAsPdf(album) : jmcomicService.downloadAlbumAsZip(album);
                 if(!BaseResp.SUCCESS_CODE.equals(resp.getCode())){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                            resp.getMsg(),true);
+                            MessageHolder.instanceText(resp.getMsg()));
                     return;
                 }
 
                 List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
-
                 ForwardMsgItem instance1 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
                         MessageHolder.instanceText(
                                 MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...\n也可通过浏览器打开下方链接进行下载", finalAid)
@@ -93,7 +101,7 @@ public class JmcomicHandler implements IAllMessageEvent {
                 uploadFile(bot, message, resp.getData(),fileUrl,isPdf);
             } catch (Exception e) {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                        MessageFormat.format("下载【JM{0}】异常"+e.getMessage(), finalAid),true);
+                        MessageHolder.instanceText(MessageFormat.format("下载【JM{0}】异常"+e.getMessage(), finalAid)));
             }
         });
         return true;
