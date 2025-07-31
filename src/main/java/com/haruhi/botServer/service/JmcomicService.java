@@ -535,12 +535,14 @@ public class JmcomicService {
 
         HashMap<String, Object> urlParam = new HashMap<>();
         urlParam.put("id", aid);
-        ResponseEntity<String> responseEntity = RestUtil.sendGetRequest(RestUtil.getRestTemplate(5000),
+        ResponseEntity<String> responseEntity = RestUtil.sendGetRequest(RestUtil.getRestTemplate(10000),
                 url,  urlParam, headerParam, new ParameterizedTypeReference<String>() {
                 });
         JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
         String data = decryptData(ts, jsonObject.getString("data"));
-        return JSONObject.parseObject(data,Album.class);
+        Album album = JSONObject.parseObject(data, Album.class);
+        album.setName(StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : album.getName());
+        return album;
     }
 
 
@@ -551,7 +553,7 @@ public class JmcomicService {
 
         HashMap<String, Object> urlParam = new HashMap<>();
         urlParam.put("id", chapterId);
-        ResponseEntity<String> responseEntity = RestUtil.sendGetRequest(RestUtil.getRestTemplate(5000),
+        ResponseEntity<String> responseEntity = RestUtil.sendGetRequest(RestUtil.getRestTemplate(10000),
                 url,  urlParam, headerParam, new ParameterizedTypeReference<String>() {
                 });
         JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
