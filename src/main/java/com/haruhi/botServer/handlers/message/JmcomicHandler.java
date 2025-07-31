@@ -57,8 +57,7 @@ public class JmcomicHandler implements IAllMessageEvent {
         if(pair == null){
             return false;
         }
-        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                MessageFormat.format("开始下载【JM{0}】", pair.getKey()),true);
+
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             String finalAid = pair.getKey();
             boolean isPdf = pair.getRight();

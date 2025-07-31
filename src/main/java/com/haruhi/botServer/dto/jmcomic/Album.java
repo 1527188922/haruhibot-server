@@ -11,6 +11,7 @@ public class Album {
 
     private Long id;
     private String name;
+    private String albumFolderName;// 本子文件夹名称 非接口响应字段
     private List<Object> images;
     private String addTime;
     private String description;

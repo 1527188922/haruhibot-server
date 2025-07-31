@@ -289,8 +289,7 @@ public class JmcomicService {
                 series.setId(aid);
                 album.setSeries(Collections.singletonList(series));
             }
-            String albumName = album.getName() + "_JM" + aid;
-            String albumPath = FileUtil.getJmcomicDir() + File.separator + albumName;
+            String albumPath = FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName();
             log.info("开始下载：jm{} 共{}话", aid, album.getSeries().size());
             for (Series series : album.getSeries()) {
                 series.setTitle("第" + series.getSort() +"话");
@@ -303,7 +302,7 @@ public class JmcomicService {
                     log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                 }
             }
-            return BaseResp.success(albumName);
+            return BaseResp.success(album.getAlbumFolderName());
         }finally {
             LOCK.remove(aid);
         }
@@ -542,11 +541,12 @@ public class JmcomicService {
         JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
         String data = decryptData(ts, jsonObject.getString("data"));
         Album album = JSONObject.parseObject(data, Album.class);
-        String name = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
-        if (name.getBytes().length >= 255) {
-            name = name.substring(0,100);
+
+        String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
+        if (albumFolderName.getBytes().length >= 255) {
+            albumFolderName = albumFolderName.substring(0,100);
         }
-        album.setName(name);
+        album.setAlbumFolderName(albumFolderName + "_JM" + aid);
         return album;
     }
 
