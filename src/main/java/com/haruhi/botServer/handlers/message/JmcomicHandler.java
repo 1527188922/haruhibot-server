@@ -69,7 +69,7 @@ public class JmcomicHandler implements IAllMessageEvent {
                     return;
                 }
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                        MessageHolder.instanceText("开始下载本子本子：JM"+finalAid+"\n"+album.getName()));
+                        MessageHolder.instanceText("开始下载本子：JM"+finalAid+"\n"+album.getName()));
                 BaseResp<File> resp = isPdf ? jmcomicService.downloadAlbumAsPdf(album) : jmcomicService.downloadAlbumAsZip(album);
                 if(!BaseResp.SUCCESS_CODE.equals(resp.getCode())){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
