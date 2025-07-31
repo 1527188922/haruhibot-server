@@ -4,6 +4,7 @@ import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.*;
@@ -47,6 +48,7 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
@@ -347,16 +349,20 @@ public class JmcomicService {
             return CompletableFuture.runAsync(() -> {
                 list.forEach(param -> {
                     String imgUrl = param.getImgUrl();
-                    byte[] bytes = downloadImage(imgUrl);
-                    if (bytes == null) {
+                    File tmpImgFile = new File(param.getImgFile().getAbsolutePath() + ".tmp");
+
+                    downloadImage(imgUrl,tmpImgFile);
+                    if (!tmpImgFile.exists()) {
                         return;
                     }
                     try {
-                        saveImg(param.getBlockNum(), bytes, param.getImgFile());
+                        saveImg(param.getBlockNum(), tmpImgFile, param.getImgFile());
                         log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
                         countDownLatch.countDown();
                     }catch (Exception e) {
                         log.error("保存图片异常：{}", JSONObject.toJSONString(param),e);
+                    }finally {
+                        tmpImgFile.delete();
                     }
                 });
             }, ThreadPoolUtil.getCommonExecutor());
@@ -372,6 +378,11 @@ public class JmcomicService {
         }
     }
 
+    /**
+     * 下载图片返回字节数组
+     * @param imgUrl
+     * @return
+     */
     public byte[] downloadImage(String imgUrl) {
         log.info("开始下载图片：{}", imgUrl);
         long l = System.currentTimeMillis();
@@ -394,6 +405,34 @@ public class JmcomicService {
         return null;
     }
 
+    /**
+     * 将图片下载 并且保存到指定文件
+     * @param imgUrl
+     * @param tmpImgFile
+     */
+    public void downloadImage(String imgUrl, File tmpImgFile) {
+        log.info("开始下载图片：{}", imgUrl);
+        long l = System.currentTimeMillis();
+        HttpRequest httpRequest = HttpUtil.createGet(imgUrl, true)
+                .setConnectionTimeout(4 * 1000)
+                .setReadTimeout(10 * 1000);
+        try (HttpResponse response = httpRequest.executeAsync()){
+            if (!response.isOk()) {
+                return;
+            }
+            response.writeBody(tmpImgFile);
+            log.info("下载图片完成：{} cost:{}", imgUrl, (System.currentTimeMillis() - l));
+        }catch (HttpException e){
+            if (e.getCause() instanceof SocketTimeoutException) {
+                log.error("下载jm图片超时 {}", imgUrl, e);
+            }else{
+                log.error("下载jm图片网络异常 {}", imgUrl, e);
+            }
+        }catch (Exception e) {
+            log.error("下载jm图片异常 {}", imgUrl, e);
+        }
+    }
+
     public int calculateBlockNum(long scrambleId, long chapterId, String filename) {
         if (chapterId < scrambleId) {
             return 0;
@@ -412,6 +451,14 @@ public class JmcomicService {
     private void saveImg(int blockNum,byte[] bytes,File file) throws Exception {
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes)){
             BufferedImage srcImg = ImageIO.read(byteArrayInputStream);
+            BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
+            ImageIO.write(dstImg, "webp", file);
+        }
+    }
+
+    private void saveImg(int blockNum,File tmpImgFile,File file) throws Exception {
+        try (FileInputStream fileInputStream = new FileInputStream(tmpImgFile)){
+            BufferedImage srcImg = ImageIO.read(fileInputStream);
             BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
             ImageIO.write(dstImg, "webp", file);
         }
