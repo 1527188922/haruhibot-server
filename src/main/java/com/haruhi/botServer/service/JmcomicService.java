@@ -294,7 +294,7 @@ public class JmcomicService {
             for (Series series : album.getSeries()) {
                 series.setTitle("第" + series.getSort() +"话");
                 try {
-                    String chapterPath = albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
+                    String chapterPath = getChapterPath(albumPath, series);
                     Chapter chapter = requestChapter(series.getId());
                     downloadChapter(chapter,chapterPath,series.getTitle(),-1);
                     System.gc();
@@ -302,12 +302,25 @@ public class JmcomicService {
                     log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                 }
             }
+
+            String chapterPath = getChapterPath(albumPath, album.getSeries().get(0));
+            File chapterPathFile = new File(chapterPath);
+            File[] files = null;
+            if(!chapterPathFile.exists()
+                    || (files = chapterPathFile.listFiles(File::isFile)) == null
+                    || files.length == 0) {
+                return BaseResp.fail("【JM"+aid+"】下载失败");
+            }
             return BaseResp.success(album.getAlbumFolderName());
         }finally {
             LOCK.remove(aid);
         }
     }
 
+
+    private String getChapterPath(String albumPath, Series series){
+        return albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
+    }
 
     public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle,int lastCount) {
         List<String> images = chapter.getImages();
