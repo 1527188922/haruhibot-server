@@ -556,8 +556,9 @@ public class JmcomicService {
         Album album = JSONObject.parseObject(data, Album.class);
 
         String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
-        if (albumFolderName.getBytes().length >= 255) {
-            albumFolderName = albumFolderName.substring(0,100);
+        int filenameLength = dictionarySqliteService.getInt(DictionarySqliteService.DictionaryEnum.JM_ALBUM_NAME_MAX_LENGTH.getKey(), 215);
+        if (albumFolderName.getBytes().length >= filenameLength) {
+            albumFolderName = albumFolderName.substring(0,50);
         }
         album.setAlbumFolderName(albumFolderName + "_JM" + aid);
         return album;

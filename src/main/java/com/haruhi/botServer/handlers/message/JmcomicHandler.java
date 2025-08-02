@@ -101,6 +101,7 @@ public class JmcomicHandler implements IAllMessageEvent {
             } catch (Exception e) {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         MessageHolder.instanceText(MessageFormat.format("下载【JM{0}】异常"+e.getMessage(), finalAid)));
+                log.error("处理本子下载命令异常 【{}】",finalAid,e);
             }
         });
         return true;
