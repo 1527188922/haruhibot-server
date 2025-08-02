@@ -78,7 +78,7 @@ public class JmcomicHandler implements IAllMessageEvent {
                 }
 
                 List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
-                ForwardMsgItem instance1 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
+                ForwardMsgItem instance1 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
                         MessageHolder.instanceText(
                                 MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...\n也可通过浏览器打开下方链接进行下载", finalAid)
                         ));
@@ -86,11 +86,11 @@ public class JmcomicHandler implements IAllMessageEvent {
 
                 String fileUrl = isPdf ? webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/pdf/"+finalAid
                         : webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/"+finalAid;
-                ForwardMsgItem instance2 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(fileUrl));
+                ForwardMsgItem instance2 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(fileUrl));
                 forwardMsgs.add(instance2);
 
 
-                ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
+                ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
                         MessageHolder.instanceText(
                                 isPdf ? "PDF保护密码："+jmcomicService.getPdfPassword() : "ZIP解压密码："+jmcomicService.getZipPassword())
                         );

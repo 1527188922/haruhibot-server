@@ -60,7 +60,6 @@ public class StatusHandler implements IAllMessageEvent {
 
     private String getProperties(String messageType){
         StringBuilder sysPropStr = new StringBuilder("------系统信息------\n");
-        sysPropStr.append(BotConfig.NAME).append("\n");
         sysPropStr.append("CPU负载：" + (Double.parseDouble(String.format("%.2f",SystemUtil.getOperatingSystemMXBeanJson().getDoubleValue(SystemUtil.OSXMB_KEY_SYSTEM_LOAD))) * 100d) + "%").append("\n");
         sysPropStr.append("可用内存："+ String.format("%.2f",SystemUtil.getFreePhysicalMemorySize() / 1024 / 1024 / 1024)).append("GB").append("\n");
         sysPropStr.append("总内存："+ String.format("%.2f",SystemUtil.getTotalPhysicalMemorySize() / 1024 / 1024 / 1024)).append("GB").append("\n");

@@ -6,7 +6,6 @@ import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -123,8 +122,8 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
                 strBuilder.append("浏览器打开下方链接可下载Excel");
 
                 List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
-                forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(strBuilder.toString())));
-                forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(url)));
+                forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(strBuilder.toString())));
+                forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(url)));
 
                 bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
                 long l6 = System.currentTimeMillis();

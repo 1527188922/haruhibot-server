@@ -2,6 +2,7 @@ package com.haruhi.botServer.ws;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
+import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.QqClientActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.*;
@@ -11,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -34,6 +36,8 @@ public class Bot {
     private Long id;//机器人qq号
     @Setter
     private WebSocketSession session;
+    @Getter
+    private SelfInfo selfInfo;
 
     public Bot(Long id, WebSocketSession session) {
         this.id = id;
@@ -46,6 +50,20 @@ public class Bot {
 
     public String getSessionId(){
         return session != null ? session.getId() : null;
+    }
+
+    public String getBotName(){
+        if (selfInfo != null) {
+            return StringUtils.isNotBlank(selfInfo.getNickname()) ? selfInfo.getNickname() : BotConfig.DEFAULT_NAME;
+        }
+        return BotConfig.DEFAULT_NAME;
+    }
+
+    public void refreshSelfInfo(){
+        SyncResponse<SelfInfo> response = getLoginInfo(10 * 1000);
+        if (response.isSuccess() && response.getData() != null) {
+            selfInfo = response.getData();
+        }
     }
 
     /**

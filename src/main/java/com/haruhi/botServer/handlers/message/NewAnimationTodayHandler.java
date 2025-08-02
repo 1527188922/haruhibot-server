@@ -1,7 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.alibaba.fastjson.JSONArray;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.agefans.response.NewAnimationTodayResp;
@@ -76,7 +75,7 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
                     List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(data.size());
                     for (NewAnimationTodayResp datum : data) {
                         String splicingParam = splicingParam(datum, urlAgefans);
-                        ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(splicingParam));
+                        ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(splicingParam));
                         forwardMsgItems.add(instance);
                     }
                     bot.sendForwardMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), forwardMsgItems);

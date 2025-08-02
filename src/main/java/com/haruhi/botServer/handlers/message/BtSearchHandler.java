@@ -1,6 +1,5 @@
 package com.haruhi.botServer.handlers.message;
 
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
@@ -155,7 +154,7 @@ public class BtSearchHandler implements IAllMessageEvent {
                         continue;
                     }
 
-                    ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(strBuilder.toString()));
+                    ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(strBuilder.toString()));
                     forwardMsgItems.add(instance);
                 }
                 if(forwardMsgItems.isEmpty()){

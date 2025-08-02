@@ -72,6 +72,8 @@ public class MessageProcessor{
             bot.setId(message.getSelfId());
             log.info("收到QQ号连接：{} sessionId：{}",message.getSelfId(),bot.getSessionId());
 
+            // 刷新bot信息
+            bot.refreshSelfInfo();
             try {
                 // 加载群信息
                 groupInfoSqliteService.loadGroupInfo(bot);

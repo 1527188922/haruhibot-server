@@ -4,7 +4,6 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.cache.CacheSet;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
@@ -183,7 +182,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
         for (Results results : resultList) {
             String itemMsg = getItemMsg(results);
-            forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(itemMsg)));
+            forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(itemMsg)));
         }
         bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
     }

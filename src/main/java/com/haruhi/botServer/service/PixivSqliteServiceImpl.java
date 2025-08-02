@@ -1,7 +1,6 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
@@ -59,7 +58,7 @@ public class PixivSqliteServiceImpl extends ServiceImpl<PixivSqliteMapper, Pixiv
         if (!CollectionUtils.isEmpty(messages)) {
 
             List<ForwardMsgItem> forwardMsgItems = messages.stream()
-                    .map(e -> ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(e)))
+                    .map(e -> ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(e)))
                     .collect(Collectors.toList());
 
             bot.sendForwardMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),forwardMsgItems);

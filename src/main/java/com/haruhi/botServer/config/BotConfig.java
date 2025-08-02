@@ -1,7 +1,6 @@
 package com.haruhi.botServer.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -10,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class BotConfig {
 
-    public static String NAME = "";
+    public static String DEFAULT_NAME = "春日酱";
     public static String INTERNET_HOST;//公网ip
     public static int PORT;
     public final static String CONTEXT_PATH = "/api";
@@ -18,11 +17,6 @@ public class BotConfig {
     public static boolean SAME_MACHINE_QQCLIENT;
     // 是否启用公网ip 0否 1是 若程序和gocq都在同一台主机上 可以不启用
     public static String ENABLE_INTERNET_HOST;
-
-    @Autowired
-    public void setName(@Value("${bot.name}") String name) {
-        NAME = Strings.isBlank(name) ? "春日酱" : name;
-    }
 
     @Autowired
     public void setPort(@Value("${bot.port}") int port) {
