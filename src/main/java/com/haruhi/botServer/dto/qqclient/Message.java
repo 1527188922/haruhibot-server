@@ -113,7 +113,7 @@ public class Message implements Serializable {
 
     @Getter
     @Setter
-    private String rawWsMsg;
+    private String rawWsMsg;//非qq客户端接口协议字段
 
 
     @Data

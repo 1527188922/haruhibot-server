@@ -40,6 +40,11 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"nickname");
         sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"message_type");
 
+        sqliteDatabaseInitMapper.createChatRecordExtend(DataBaseConfig.T_CHAT_RECORD_EXTEND);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD_EXTEND,"chat_record_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD_EXTEND,"message_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD_EXTEND,"time");
+
         sqliteDatabaseInitMapper.createPokeReply(DataBaseConfig.T_POKE_REPLY);
 
         sqliteDatabaseInitMapper.createCustomReply(DataBaseConfig.T_CUSTOM_REPLY);
