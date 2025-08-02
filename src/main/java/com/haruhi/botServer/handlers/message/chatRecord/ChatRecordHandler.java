@@ -67,6 +67,7 @@ public class ChatRecordHandler implements IAllMessageEvent {
                 if (chatRecordSqliteService.save(record)) {
                     ChatRecordExtendSqlite chatRecordExtendSqlite = new ChatRecordExtendSqlite();
                     chatRecordExtendSqlite.setChatRecordId(record.getId());
+                    chatRecordExtendSqlite.setMessageId(record.getMessageId());
                     chatRecordExtendSqlite.setRawWsMessage(message.getRawWsMsg());
                     chatRecordExtendSqlite.setTime(record.getTime());
                     chatRecordExtendSqliteMapper.insert(chatRecordExtendSqlite);

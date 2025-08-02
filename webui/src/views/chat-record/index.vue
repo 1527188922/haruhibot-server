@@ -100,6 +100,11 @@
           </template>
         </el-table-column>
         <el-table-column label="发送时间" prop="time" min-width="140" align="center" show-tooltip-when-overflow/>
+        <el-table-column label="操作" width="100" align="center" >
+          <template slot-scope="{row}">
+            <el-button type="text" size="small" @click="showRaw(row)">原始报文</el-button>
+          </template>
+        </el-table-column>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
@@ -111,7 +116,7 @@
 <script>
 import ChatView from "@/components/dialog/chat-view";
 import numberInput from "@/components/input/numberInput.vue"
-import {search as searchApi} from "@/api/chat-record";
+import {search as searchApi,selectExtend} from "@/api/chat-record";
 
 export default {
   name:'ChatRecord',
@@ -163,6 +168,14 @@ export default {
     search(){
       this.pagination.currentPage = 1
       this.selectTableData()
+    },
+    showRaw(row){
+      selectExtend(row).then(({data:{data}})=>{
+        this.$alert(data.rawWsMessage)
+        console.log(data.rawWsMessage)
+      }).catch(e =>{
+        alert(e.toString())
+      })
     },
     view(row){
       this.$refs.chatView.open(row.content,`${row.userId}`,row.userAvatarUrl)
