@@ -260,6 +260,20 @@ public class Bot {
         return sendSyncRequest(QqClientActionEnum.GET_LOGIN_INGO, null, timeout, new TypeReference<SyncResponse<SelfInfo>>() {});
     }
 
+
+    /**
+     * 获取好友列表
+     * @param noCache
+     * @param timeout
+     * @return
+     */
+    public SyncResponse<List<FriendInfo>> getFriendList(boolean noCache,long timeout){
+        Map<String, Object> params = new HashMap<>(1);
+        params.put("no_cache",noCache);
+        return sendSyncRequest(QqClientActionEnum.GET_FRIEND_LIST, params, timeout, new TypeReference<SyncResponse<List<FriendInfo>>>() {
+        });
+    }
+
     /**
      * 获取群成员
      * @param groupId 群号
