@@ -48,6 +48,7 @@ public class VideoDetail {
         private Integer copyright;
         private String pic;
         private String title;
+        // 发布时间
         private Long pubdate;
         private Long ctime;
         private String desc;
