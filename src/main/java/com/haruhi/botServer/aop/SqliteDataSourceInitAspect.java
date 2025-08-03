@@ -76,6 +76,7 @@ public class SqliteDataSourceInitAspect {
                         druid.setTestOnReturn(false);
                         druid.setFilters("stat");
                         druid.setPoolPreparedStatements(false);
+                        druid.setMaxActive(1);
                         linkedHashMap.put(DataBaseConfig.DATA_SOURCE_MASTER, dataSourceProperty);
                     }
                 }
