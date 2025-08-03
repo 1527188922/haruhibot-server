@@ -47,7 +47,7 @@ public class FileUtil {
     public static final String FILE_NAME_RESTART_SCRIPT_SH = "restart.sh";
     public static final String FILE_NAME_RESTART_SCRIPT_BAT = "restart.bat";
     public static final String FILE_NAME_KILL_SCRIPT_BAT = "kill.bat";
-    public static final String FILE_NAME_KILL_SCRIPT_SH = " kill.sh";
+    public static final String FILE_NAME_KILL_SCRIPT_SH = "kill.sh";
 
 
 
