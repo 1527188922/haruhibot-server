@@ -134,9 +134,9 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
             infoBuilder.append("\n");
             int endIndex = 100;
             infoBuilder.append("简介：").append(CommonUtil.substring(desc, endIndex))
-                    .append(desc.length() > endIndex ? "..." : "")
-                    .append("\n");
+                    .append(desc.length() > endIndex ? "..." : "");
         }
+        infoBuilder.append("\n");
         infoBuilder.append("时长：").append(CommonUtil.formatDuration(videoDetailDataView.getDuration(), TimeUnit.SECONDS));
         VideoDetail.View.Owner owner = videoDetailDataView.getOwner();
         if (owner != null) {
