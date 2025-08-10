@@ -358,7 +358,7 @@ public class CommonUtil {
         List<String> parts = new ArrayList<>();
         addIfPositive(parts, days, "天");
         addIfPositive(parts, hours, "小时");
-        addIfPositive(parts, minutes, "分钟");
+        addIfPositive(parts, minutes, "分");
         addIfPositive(parts, seconds, "秒");
         addIfPositive(parts, millis, "毫秒");
 

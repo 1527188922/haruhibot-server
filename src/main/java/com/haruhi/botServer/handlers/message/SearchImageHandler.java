@@ -147,7 +147,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         }
     }
     private Message replySearch(Bot bot, Message message){
-        if (message.isGroupMsg() && message.isReplyMsg() && message.isTextMsg()) {
+        if (message.isReplyMsg() && message.isTextMsg()) {
             if (message.getText(0).trim().matches(RegexEnum.SEARCH_IMAGE.getValue())) {
                 List<String> replyMsgIds = message.getReplyMsgIds();
                 Message msg = bot.getMsg(replyMsgIds.get(0),2L * 1000L).getData();
