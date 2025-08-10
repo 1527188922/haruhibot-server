@@ -117,7 +117,7 @@ public class BtSearchHandler implements IAllMessageEvent {
                 String htmlStr = null;
                 String url = MessageFormat.format(urlBt + "/s/{0}_{1}_{2}.html", finalKeyword, finalSort, finalPage);
                 try {
-                    htmlStr = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(10 * 1000), url, null);
+                    htmlStr = HttpClientUtil.doGetNoCatch( url, null,10 * 1000);
                 }catch (Exception e){
                     log.error("bt搜索 请求异常 {}", url, e);
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"bt搜索发生异常\n"+e.getMessage(),true);
@@ -185,7 +185,7 @@ public class BtSearchHandler implements IAllMessageEvent {
      */
     private void requestDetail(StringBuilder strBuilder,String detailHref) throws Exception{
 
-        String html = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(5 * 1000),detailHref, null);
+        String html = HttpClientUtil.doGetNoCatch(detailHref, null,5 * 1000);
         Document document = Jsoup.parse(html);
         Element fileDetail = document.getElementsByClass("fileDetail").get(0);
         Element size = fileDetail.getElementsByTag("p").get(1);

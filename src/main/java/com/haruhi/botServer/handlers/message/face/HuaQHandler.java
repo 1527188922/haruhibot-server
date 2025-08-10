@@ -116,122 +116,17 @@ public class HuaQHandler implements IGroupMessageEvent {
 
     public static void main(String[] args) throws IOException {
 
-        String imgPath = "D:\\temp\\pic\\ADF8852D0AD2105FCCEFDBB5EDDC16AF.gif";
+        String imgPath = "D:\\Pictures\\temp\\nezha2\\929C26690B4E6E92A2B0EFA5847155A1.gif";
         GifDecoder gifDecoder = new GifDecoder();
-        gifDecoder.read(new FileInputStream(imgPath));
-        int n = gifDecoder.getFrameCount();
-        BufferedImage bufferedImage = Thumbnails.of(ImageIO.read(new URL(CommonUtil.getAvatarUrl(1527188922L,true))))
-                .size(40, 40)
-                .asBufferedImage();
-        BufferedImage circularOverlay = CommonUtil.makeImageCircular(bufferedImage);
+        try (FileInputStream fileInputStream = new FileInputStream(imgPath)){
+            gifDecoder.read(fileInputStream);
+            int n = gifDecoder.getFrameCount();
 
-        List<BufferedImage> frames = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
-            BufferedImage frame = gifDecoder.getFrame(i);  // 原gif的帧
-            Graphics2D g2d = frame.createGraphics();
-
-            g2d.drawImage(frame, 0, 0, null);
-//            if(i == 0){
-//                g2d.drawImage(circularOverlay, 82, 73, null);
-////                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-//
-//            if(i == 1 || i == 2){
-//                g2d.drawImage(circularOverlay, 84, 75, null);
-////                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-//
-//            if(i == 3){
-//                g2d.drawImage(circularOverlay, 79, 75, null);
-////                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-//            if(i == 4){
-//                g2d.drawImage(circularOverlay, 74, 75, null);
-////                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-//            if(i == 5){
-//                g2d.drawImage(circularOverlay, 74, 77, null);
-////                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-//            if(i == 6 || i == 7 || i == 8){
-//                g2d.drawImage(circularOverlay, 75, 78, null);
-////                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-//            if(i == 9 || i == 10){
-//                g2d.drawImage(circularOverlay, 77, 78, null);
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-//            if(i == 11){
-//                circularOverlay = Thumbnails.of(circularOverlay)
-//                        .size(67, 67)
-//                        .asBufferedImage();
-//                circularOverlay = CommonUtil.rotateImage(circularOverlay,18,new Color(255, 255, 255));
-//                g2d.drawImage(circularOverlay, 75, 75, null);
-////                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-//
-//            if(i == 12){
-//                circularOverlay = CommonUtil.rotateImage(circularOverlay,25,new Color(255, 255, 255));
-//                g2d.drawImage(circularOverlay, 60, 55, null);
-////                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-//            if(i == 13){
-//                circularOverlay = CommonUtil.rotateImage(circularOverlay,33,new Color(255, 255, 255));
-//                g2d.drawImage(circularOverlay, 60, 55, null);
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\output\\\jump"+i+"-"+i+".png"));
-//            }
-
-            if(i == 0){
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+".png"));
-                g2d.drawImage(circularOverlay, 15, 49, null);
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+"-"+i+".png"));
+            for (int i = 0; i < n; i++) {
+                BufferedImage frame = gifDecoder.getFrame(i);  // 原gif的帧
+                ImageIO.write(frame,"jpg", new File("D:\\Pictures\\temp\\nezha2\\nezha2_frame_"+i+".jpg"));
             }
-            if(i == 1){
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+".png"));
-                g2d.drawImage(circularOverlay, 13, 42, null);
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+"-"+i+".png"));
-            }
-            if(i == 2){
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+".png"));
-                g2d.drawImage(circularOverlay, 15, 23, null);
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+"-"+i+".png"));
-            }
-            if(i == 3){
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+".png"));
-                g2d.drawImage(circularOverlay, 14, 4, null);
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+"-"+i+".png"));
-            }
-            if(i == 4){
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+".png"));
-                g2d.drawImage(circularOverlay, 16, -4, null);
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+"-"+i+".png"));
-            }
-            if(i == 5){
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+".png"));
-                g2d.drawImage(circularOverlay, 16, -5, null);
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+"-"+i+".png"));
-            }
-            if(i == 6){
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+".png"));
-                g2d.drawImage(circularOverlay, 15, 3, null);
-//                ImageIO.write(frame,"png", new File("D:\\temp\\pic\\jump\\"+i+"-"+i+".png"));
-            }
-            if(i == 7){
-                g2d.drawImage(circularOverlay, 15, 31, null);
-            }
-            frames.add(frame);
         }
-        File output = new File("D:\\temp\\pic\\jump\\res.gif");
-        AnimatedGifEncoder animatedGifEncoder = new AnimatedGifEncoder();
-        animatedGifEncoder.start(new FileOutputStream(output));
-        animatedGifEncoder.setDelay(gifDecoder.getDelay(0));
-        animatedGifEncoder.setRepeat(0);
-        for (BufferedImage image : frames) {
-            animatedGifEncoder.addFrame(image);
-        }
-        animatedGifEncoder.finish();
-
-
 
         System.out.println();
     }

@@ -52,7 +52,7 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
 
                 String responseHtml = null;
                 try {
-                    responseHtml = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(10 * 1000),urlAgefans, null);
+                    responseHtml = HttpClientUtil.doGetNoCatch(urlAgefans, null,10 * 1000);
                 }catch (Exception e){
                     log.error("获取新番请求异常 {}",urlAgefans,e);
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "获取新番异常\n"+e.getMessage(),true);

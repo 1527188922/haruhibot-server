@@ -119,7 +119,7 @@ public class Music163Service extends AbstractMusicService {
         map.put("csrf_token", "");
         log.info("开始搜索歌曲(163)：{}",keyWord);
         long l = System.currentTimeMillis();
-        String responseStr = HttpClientUtil.doPost(HttpClientUtil.getHttpClient(5 * 1000), ThirdPartyURL.NETEASE_SEARCH_MUSIC, prepare(map));
+        String responseStr = HttpClientUtil.doPost(ThirdPartyURL.NETEASE_SEARCH_MUSIC, prepare(map),5 * 1000);
         log.info("搜索完成(163)，耗时：{}",System.currentTimeMillis() - l);
         return responseStr;
     }

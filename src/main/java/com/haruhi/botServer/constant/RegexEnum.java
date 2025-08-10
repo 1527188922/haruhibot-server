@@ -9,6 +9,7 @@ public enum RegexEnum {
     COLLECTION_SPLIT("添加收藏|新增收藏|增加收藏"),
     COLLECTION_CANCEL("取消|算了|取消收藏"),
     SEARCH_IMAGE("识图|搜图"),
+    SEARCH_ANIME("识番|搜番"),
     PIXIV("pix|PIX"),
     PIXIV_R("pixr|PIXR"),
     PIXIV_PID("ppid|PPID"),

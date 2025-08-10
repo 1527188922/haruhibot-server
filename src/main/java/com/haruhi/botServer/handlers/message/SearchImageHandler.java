@@ -17,11 +17,11 @@ import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -71,7 +71,7 @@ public class SearchImageHandler implements IAllMessageEvent {
 
         List<MessageData> picMessageData = message.getPicMessageData();
         String key = getKey(String.valueOf(message.getSelfId()), String.valueOf(message.getUserId()), String.valueOf(message.getGroupId()));
-        if(cache.contains(key) && !CollectionUtils.isEmpty(picMessageData)){
+        if(cache.contains(key) && CollectionUtils.isNotEmpty(picMessageData)){
             // 存在缓存 并且 图片路径不为空
             startSearch(bot,message,null,picMessageData.get(0).getUrl(),key);
             return true;
@@ -121,9 +121,9 @@ public class SearchImageHandler implements IAllMessageEvent {
             param.put("db",99);
             param.put("url", url);
 //            param.add("file",new FileSystemResource(new File(picUrl)));
-            try {
-                log.info("开始请求搜图接口,图片:{}", url);
-                HttpResponse response = HttpUtil.createPost(ThirdPartyURL.SEARCH_IMAGE).timeout(30 * 1000).form(param).execute();
+
+            log.info("开始请求搜图接口,图片:{}", url);
+            try (HttpResponse response = HttpUtil.createPost(ThirdPartyURL.SEARCH_IMAGE).timeout(30 * 1000).form(param).execute()){
                 log.debug("识图接口响应 {}",response);
                 String body = null;
                 if(response != null && response.isOk() && StringUtils.isNotBlank(body = response.body())) {
