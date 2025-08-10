@@ -219,103 +219,10 @@ public class CommonUtil {
     }
 
     public static void main(String[] args) {
-//        sss();
-//        ss();
-//        System.out.println(isValidMagnetLink("magnet:?xt=urn:btih:GHTGWJOAMHKQNBO5PA7HPAGWW3GINTVD"));
-
         String s = formatDuration(124124000L, TimeUnit.MILLISECONDS);
         System.out.println(s);
 
     }
-
-    private static void sss(){
-        // GIF图片文件路径
-        String gifFilePath = "D:\\temp\\resources\\bot\\download.gif";
-        // 叠加的图片文件路径
-        String overlayImagePath = "D:\\temp\\resources\\bot\\g.jpg"; // 或 .png
-        // 新的GIF图片输出文件路径
-        String outputGifPath = "D:\\temp\\resources\\bot\\download1.gif";
-
-
-        try {
-            BufferedImage bufferedImage = Thumbnails.of(overlayImagePath)
-                    .size(120, 120) // 设置目标图片的宽度和高度为200x200像素
-                    .asBufferedImage();
-
-
-            BufferedImage bufferedImage1 = Thumbnails.of(overlayImagePath)
-                    .size(112, 112) // 设置目标图片的宽度和高度为200x200像素
-                    .asBufferedImage();
-
-
-            bufferedImage1 = rotateImage(bufferedImage1,90,new Color(255, 255, 255));
-
-            GifDecoder gifDecoder = new GifDecoder();
-            gifDecoder.read(new FileInputStream(gifFilePath));
-            int n = gifDecoder.getFrameCount();
-            List<BufferedImage> frames = new ArrayList<>();
-            for (int i = 0; i < n; i++) {
-                BufferedImage frame = gifDecoder.getFrame(i);  // 原gif的帧
-                Graphics2D g2d = frame.createGraphics();
-                BufferedImage circularOverlay = makeImageCircular(bufferedImage);
-                BufferedImage circularOverlay1 = makeImageCircular(bufferedImage1);
-
-                g2d.drawImage(frame, 0, 0, null);
-                if(i == 0){
-                    g2d.drawImage(circularOverlay, 117, -7, null);
-                    g2d.drawImage(circularOverlay1, 3, 176, null);
-                }
-                if(i == 1){
-                    g2d.drawImage(circularOverlay, 110, 4, null);
-                    g2d.drawImage(circularOverlay1, 13 , 173, null);
-                }
-                if(i == 2){
-                    g2d.drawImage(circularOverlay, 132, -9, null);
-                    g2d.drawImage(circularOverlay1, 7, 159, null);
-                }
-                g2d.dispose();
-                frames.add(frame);
-            }
-            File output = new File(outputGifPath);
-            AnimatedGifEncoder animatedGifEncoder = new AnimatedGifEncoder();
-            animatedGifEncoder.start(new FileOutputStream(output));
-            animatedGifEncoder.setDelay(gifDecoder.getDelay(0));
-            animatedGifEncoder.setRepeat(0);
-            for (BufferedImage image : frames) {
-                animatedGifEncoder.addFrame(image);
-            }
-            animatedGifEncoder.finish();
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
-    private static void ss(){
-        try {
-            // 读取GIF图片
-            File gifFile = new File("D:\\temp\\resources\\bot\\download1.gif");
-            ImageInputStream imageInputStream = ImageIO.createImageInputStream(gifFile);
-            Iterator<ImageReader> imageReaders = ImageIO.getImageReaders(imageInputStream);
-            ImageReader reader = imageReaders.next();
-            reader.setInput(imageInputStream);
-
-            // 获取GIF图片的帧数
-            int numFrames = reader.getNumImages(true);
-            // 0 x110 y-16
-            // 解帧并保存
-            for (int i = 0; i < numFrames; i++) {
-                BufferedImage frame = reader.read(i);
-                File outputFile = new File("D:\\temp\\resources\\bot\\frame_" + i + ".png");
-                ImageIO.write(frame, "png", outputFile);
-            }
-
-            // 关闭流
-            imageInputStream.close();
-            reader.dispose();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 
     public static BufferedImage makeImageCircular(BufferedImage image) {
         int w = image.getWidth();

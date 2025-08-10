@@ -1,5 +1,8 @@
 package com.haruhi.botServer.service;
 
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -7,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
+import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
@@ -20,6 +24,7 @@ import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.WordCloudUtil;
+import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import com.haruhi.botServer.ws.Bot;
@@ -33,6 +38,9 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -289,6 +297,73 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
             });
         }
         return pageInfo;
+    }
+
+    @Override
+    public BaseResp<File> exportGroupChatRecord(Long groupId, List<String> atqqs) {
+        long l = System.currentTimeMillis();
+        List<ChatRecordSqlite> list = this.list(new LambdaQueryWrapper<ChatRecordSqlite>()
+                .eq(ChatRecordSqlite::getGroupId, groupId)
+                .in(!org.springframework.util.CollectionUtils.isEmpty(atqqs),ChatRecordSqlite::getUserId,atqqs.stream().map(Long::parseLong).collect(Collectors.toList()))
+                .orderByDesc(ChatRecordSqlite::getTime));
+        long l4 = System.currentTimeMillis() - l;
+        log.info("查询聊天记录完成，耗时：{} 数量：{}",l4, list.size());
+        if(CollectionUtils.isEmpty(list)){
+            return BaseResp.fail("未查到聊天记录");
+        }
+
+        long l1 = System.currentTimeMillis();
+        WriteSheet sheet1 = EasyExcel.writerSheet(1, "群聊记录")
+                .head(ChatRecordExportBody.class)
+                .build();
+        String fileName = "group_chat_record_" + groupId+"_"+ System.currentTimeMillis() + ".xlsx";
+        FileUtil.mkdirs(FileUtil.getExcelDir());
+        File file = new File(FileUtil.getExcelDir() + File.separator + fileName);
+        if (file.exists()) {
+            file.delete();
+        }
+        ExcelWriter excelWriter = null;
+        OutputStream outputStream = null;
+        try {
+            outputStream = Files.newOutputStream(file.toPath());
+            excelWriter = EasyExcel.write(outputStream).build();
+            excelWriter.write(convertObjToExcelData(list),sheet1);
+            excelWriter.finish();
+            long l2 = System.currentTimeMillis() - l;
+            long l3 = System.currentTimeMillis() - l1;
+            log.info("生成Excel耗时：{} 总耗时：{}",l3,l2);
+            return BaseResp.success(file);
+        }catch (Exception e){
+            log.error("生成群聊记录excel异常",e);
+            return BaseResp.fail(e.getMessage());
+        }finally {
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException e) { }
+            }
+            if (excelWriter != null) {
+                try {
+                    excelWriter.finish();
+                }catch (Exception e){  }
+            }
+        }
+    }
+
+    private List<ChatRecordExportBody> convertObjToExcelData(List<ChatRecordSqlite> chatRecordList){
+        List<ChatRecordExportBody> res = new ArrayList<>();
+        long l = System.currentTimeMillis();
+        for (ChatRecordSqlite record : chatRecordList) {
+            ChatRecordExportBody exportBody = new ChatRecordExportBody();
+            exportBody.setCard(record.getCard());
+            exportBody.setNickName(record.getNickname());
+            exportBody.setUserId(String.valueOf(record.getUserId()));
+            exportBody.setContent(record.getContent());
+            exportBody.setCreateTime(record.getTime());
+            res.add(exportBody);
+        }
+        log.info("转excel实体完成 耗时：{}",System.currentTimeMillis() - l);
+        return res;
     }
 
 }
