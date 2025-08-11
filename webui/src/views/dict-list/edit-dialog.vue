@@ -73,6 +73,8 @@ export default {
               this.$message.success(message)
               this.visible = false
               this.$parent.search()
+            }).catch(e=>{
+              this.$message.error(e.message)
             }).finally(()=>{
               this.submitLoading = false
             })

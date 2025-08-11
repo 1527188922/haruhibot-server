@@ -142,6 +142,8 @@ export default {
           }
           this.search()
           this.$message.success(message)
+        }).catch(e=>{
+          this.$message.error(e.message)
         }).finally(()=>{
         })
       })
