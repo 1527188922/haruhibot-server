@@ -14,6 +14,7 @@ import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.BilibiliService;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
@@ -127,20 +128,35 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
         MessageHolder imageMessageHolder = MessageHolder.instanceImage(videoDetailDataView.getPic());
 
         StringBuilder infoBuilder = new StringBuilder();
-        infoBuilder.append("标题：").append(videoDetailDataView.getTitle()).append("\n");
+        infoBuilder.append("标题：").append(videoDetailDataView.getTitle());
         String desc = videoDetailDataView.getDesc();
         if (StringUtils.isNotBlank(desc)) {
+            infoBuilder.append("\n");
             int endIndex = 100;
             infoBuilder.append("简介：").append(CommonUtil.substring(desc, endIndex))
-                    .append(desc.length() > endIndex ? "..." : "")
-                    .append("\n");
+                    .append(desc.length() > endIndex ? "..." : "");
         }
-        infoBuilder.append("时长：").append(CommonUtil.formatDuration(videoDetailDataView.getDuration(), TimeUnit.SECONDS)).append("\n");
+        infoBuilder.append("\n");
+        infoBuilder.append("时长：").append(CommonUtil.formatDuration(videoDetailDataView.getDuration(), TimeUnit.SECONDS));
         VideoDetail.View.Owner owner = videoDetailDataView.getOwner();
         if (owner != null) {
-            infoBuilder.append("UP主：").append(owner.getName()).append("\n");
+            infoBuilder.append("\n");
+            infoBuilder.append("UP主：").append(owner.getName());
         }
-        infoBuilder.append("视频链接：https://www.bilibili.com/video/").append(videoDetailDataView.getBvid());
+        Long pubdate = videoDetailDataView.getPubdate();
+        if (pubdate != null) {
+            String formatDate = "";
+            if (String.valueOf(pubdate).length() == 10) {
+                formatDate = DateTimeUtil.dateTimeFormat(pubdate * 1000, DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+            }else{
+                formatDate = DateTimeUtil.dateTimeFormat(pubdate, DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+            }
+            infoBuilder.append("\n");
+            infoBuilder.append("发布时间：").append(formatDate);
+        }
+
+//        infoBuilder.append("\n");
+//        infoBuilder.append("视频链接：https://www.bilibili.com/video/").append(videoDetailDataView.getBvid());
         List<MessageHolder> textMessageHolder = MessageHolder.instanceText(infoBuilder.toString());
         textMessageHolder.add(0, imageMessageHolder);
 

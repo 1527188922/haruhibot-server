@@ -35,7 +35,7 @@ public class RestartBotHandler implements IPrivateMessageEvent {
     @SuperuserAuthentication
     @Override
     public boolean onPrivate(Bot bot, Message message) {
-        if (!message.getText(-1).matches(RegexEnum.RESTART.getValue())){
+        if (!(message.isTextMsg() && message.getText(-1).matches(RegexEnum.RESTART.getValue()))){
             return false;
         }
 

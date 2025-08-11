@@ -16,6 +16,7 @@ public class DataBaseConfig {
 
     // 群聊天历史
     public final static String T_CHAT_RECORD = "t_chat_record";
+    public final static String T_CHAT_RECORD_EXTEND = "t_chat_record_extend";
     // 话术
     public final static String T_CUSTOM_REPLY = "t_custom_reply";
     // 戳一戳回复表

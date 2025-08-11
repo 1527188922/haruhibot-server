@@ -1,6 +1,5 @@
 package com.haruhi.botServer.handlers.message.news;
 
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
@@ -50,7 +49,7 @@ public class SeeNewsHandler implements IAllMessageEvent {
                 List<List<MessageHolder>> newsMessages = newsService.createNewsMessage(newsBy163Resps);
 
                 List<ForwardMsgItem> forwardMsgItems = newsMessages.stream()
-                        .map(messageHolders -> ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, messageHolders))
+                        .map(messageHolders -> ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), messageHolders))
                         .collect(Collectors.toList());
 
                 bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgItems);

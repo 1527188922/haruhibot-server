@@ -19,6 +19,17 @@
              `time` DATETIME NOT NULL
         );
     </update>
+
+    <update id="createChatRecordExtend">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          chat_record_id INTEGER NOT NULL,
+          message_id TEXT NOT NULL,
+          raw_ws_message TEXT,
+          `time` DATETIME NOT NULL
+        );
+    </update>
+
     <update id="createIndex">
         CREATE INDEX IF NOT EXISTS ${tableName}_${column}_IDX ON ${tableName} (${column});
     </update>

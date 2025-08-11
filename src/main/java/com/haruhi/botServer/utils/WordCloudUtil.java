@@ -198,7 +198,7 @@ public class WordCloudUtil {
     public static List<String> getChatList(String cid){
         Map<String, Object> param = new HashMap<>();
         param.put("oid",cid);
-        String responseSre = HttpClientUtil.doGet(HttpClientUtil.getHttpClient(10 * 1000),ThirdPartyURL.BULLET_CHAR, param);
+        String responseSre = HttpClientUtil.doGet(ThirdPartyURL.BULLET_CHAR, param,10 * 1000);
         if(Strings.isNotBlank(responseSre)){
             Pattern compile = Pattern.compile("\">(.*?)</d>");
             Matcher matcher = compile.matcher(responseSre);

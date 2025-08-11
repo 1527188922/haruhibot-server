@@ -3,89 +3,71 @@ package com.haruhi.botServer.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.ParseException;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class HttpClientUtil {
-    private HttpClientUtil(){}
-    private static CloseableHttpClient defaultHttpClient = HttpClientBuilder.create().build();
-    public static CloseableHttpClient getHttpClient(){
-        return defaultHttpClient;
-    }
-
-    private static Map<Integer,CloseableHttpClient> httpClientCache = new ConcurrentHashMap<>();
-
     public static CloseableHttpClient getHttpClient(int timeout){
-
-        CloseableHttpClient httpClient = httpClientCache.get(timeout);
-        if(httpClient != null){
-            return httpClient;
-        }
         RequestConfig requestConfig = RequestConfig.custom()
                 .setSocketTimeout(timeout)
                 .setConnectTimeout(timeout)
                 .setConnectionRequestTimeout(timeout)
                 .setStaleConnectionCheckEnabled(true)
                 .build();
-        httpClient = HttpClients.custom()
+        return HttpClients.custom()
                 .setDefaultRequestConfig(requestConfig)
                 .build();
-
-        httpClientCache.put(timeout,httpClient);
-        return httpClient;
     }
 
-    public static String doPost(CloseableHttpClient httpClient,String url, Map<String,Object> urlParams){
+    public static String doPost(String url, Map<String,Object> urlParams,int timeout){
         String s = encode(getUrl(url, urlParams));
         HttpPost httpPost = new HttpPost(s);
         try {
-            return request(httpClient,httpPost);
+            return request(httpPost, timeout);
         } catch (IOException e) {
             log.error("HttpClient POST请求:{}异常",s,e);
             return null;
         }
     }
 
-    public static String doGet(CloseableHttpClient httpClient,String url, Map<String,Object> urlParams){
+    public static String doGet(String url, Map<String,Object> urlParams,int timeout){
         String s = encode(getUrl(url, urlParams));
         HttpGet httpGet = new HttpGet(s);
         try {
-            return request(httpClient,httpGet);
+            return request(httpGet,timeout);
         } catch (Exception e) {
             log.error("HttpClient GET请求:{}异常",s,e);
             return null;
         }
     }
 
-    public static String doGetNoCatch(CloseableHttpClient httpClient,String url, Map<String,Object> urlParams) throws IOException, ClientProtocolException, ParseException{
+    public static String doGetNoCatch(String url, Map<String,Object> urlParams,int timeout) throws IOException, ParseException{
         String s = encode(getUrl(url, urlParams));
         HttpGet httpGet = new HttpGet(s);
-        return request(httpClient,httpGet);
+
+        return request(httpGet,timeout);
     }
 
     private static String getUrl(String s,Map<String,Object> urlParams){
         return RestUtil.urlSplicing(s,urlParams);
     }
 
-    private static String request(CloseableHttpClient httpClient, HttpUriRequest httpUriRequest) throws IOException, ClientProtocolException, ParseException {
-        CloseableHttpResponse response = null;
-        response = httpClient.execute(httpUriRequest);
-        HttpEntity entity = response.getEntity();
-        return EntityUtils.toString(entity,"UTF-8");
-
+    private static String request(HttpUriRequest httpMethod,int timeout) throws IOException, ParseException {
+        try (CloseableHttpClient httpClient = getHttpClient(timeout);
+             CloseableHttpResponse response = httpClient.execute(httpMethod)){
+            HttpEntity entity = response.getEntity();
+            return EntityUtils.toString(entity,"UTF-8");
+        }
     }
 
     public static String encode(String url) {

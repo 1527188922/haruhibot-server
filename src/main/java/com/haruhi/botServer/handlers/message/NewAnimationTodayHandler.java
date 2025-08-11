@@ -1,7 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
 import com.alibaba.fastjson.JSONArray;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.agefans.response.NewAnimationTodayResp;
@@ -53,7 +52,7 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
 
                 String responseHtml = null;
                 try {
-                    responseHtml = HttpClientUtil.doGetNoCatch(HttpClientUtil.getHttpClient(10 * 1000),urlAgefans, null);
+                    responseHtml = HttpClientUtil.doGetNoCatch(urlAgefans, null,10 * 1000);
                 }catch (Exception e){
                     log.error("获取新番请求异常 {}",urlAgefans,e);
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), "获取新番异常\n"+e.getMessage(),true);
@@ -76,7 +75,7 @@ public class NewAnimationTodayHandler implements IAllMessageEvent {
                     List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(data.size());
                     for (NewAnimationTodayResp datum : data) {
                         String splicingParam = splicingParam(datum, urlAgefans);
-                        ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(splicingParam));
+                        ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(splicingParam));
                         forwardMsgItems.add(instance);
                     }
                     bot.sendForwardMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), forwardMsgItems);

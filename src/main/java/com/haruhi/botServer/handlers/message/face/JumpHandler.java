@@ -23,11 +23,10 @@ import org.springframework.stereotype.Component;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
+import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -125,6 +124,8 @@ public class JumpHandler implements IGroupMessageEvent {
         return MatchResult.unmatched();
     }
     private String makeHuaQFace(Long atQQ, String out){
+        InputStream inputStream = null;
+        OutputStream outputStream = null;
         try {
             BufferedImage bufferedImage = Thumbnails.of(ImageIO.read(new URL(CommonUtil.getAvatarUrl(atQQ,true))))
                     .size(40, 40)
@@ -132,7 +133,8 @@ public class JumpHandler implements IGroupMessageEvent {
             BufferedImage circularOverlay = CommonUtil.makeImageCircular(bufferedImage);
 
             GifDecoder gifDecoder = new GifDecoder();
-            gifDecoder.read(new FileInputStream(FileUtil.getJumpFace()));
+            inputStream = Files.newInputStream(Paths.get(FileUtil.getJumpFace()));
+            gifDecoder.read(inputStream);
             int n = gifDecoder.getFrameCount();
             List<BufferedImage> frames = new ArrayList<>();
             for (int i = 0; i < n; i++) {
@@ -170,7 +172,8 @@ public class JumpHandler implements IGroupMessageEvent {
 
             File output = new File(out);
             AnimatedGifEncoder animatedGifEncoder = new AnimatedGifEncoder();
-            animatedGifEncoder.start(new FileOutputStream(output));
+            outputStream = Files.newOutputStream(output.toPath());
+            animatedGifEncoder.start(outputStream);
             animatedGifEncoder.setDelay(gifDecoder.getDelay(0));
             animatedGifEncoder.setRepeat(0);
             for (BufferedImage image : frames) {
@@ -180,6 +183,17 @@ public class JumpHandler implements IGroupMessageEvent {
             return out;
         }catch (Exception e){
             log.error("生成jump图片异常",e);
+        }finally {
+            if(inputStream != null){
+                try {
+                    inputStream.close();
+                } catch (IOException e) {}
+            }
+            if(outputStream != null){
+                try {
+                    outputStream.close();
+                } catch (IOException e) {}
+            }
         }
         return null;
     }

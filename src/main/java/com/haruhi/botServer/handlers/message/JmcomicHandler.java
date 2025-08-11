@@ -69,7 +69,7 @@ public class JmcomicHandler implements IAllMessageEvent {
                     return;
                 }
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                        MessageHolder.instanceText("开始下载本子本子：JM"+finalAid+"\n"+album.getName()));
+                        MessageHolder.instanceText("开始下载本子：JM"+finalAid+"\n"+album.getName()));
                 BaseResp<File> resp = isPdf ? jmcomicService.downloadAlbumAsPdf(album) : jmcomicService.downloadAlbumAsZip(album);
                 if(!BaseResp.SUCCESS_CODE.equals(resp.getCode())){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
@@ -78,7 +78,7 @@ public class JmcomicHandler implements IAllMessageEvent {
                 }
 
                 List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
-                ForwardMsgItem instance1 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
+                ForwardMsgItem instance1 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
                         MessageHolder.instanceText(
                                 MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...\n也可通过浏览器打开下方链接进行下载", finalAid)
                         ));
@@ -86,11 +86,11 @@ public class JmcomicHandler implements IAllMessageEvent {
 
                 String fileUrl = isPdf ? webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/pdf/"+finalAid
                         : webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/"+finalAid;
-                ForwardMsgItem instance2 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME, MessageHolder.instanceText(fileUrl));
+                ForwardMsgItem instance2 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(fileUrl));
                 forwardMsgs.add(instance2);
 
 
-                ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
+                ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
                         MessageHolder.instanceText(
                                 isPdf ? "PDF保护密码："+jmcomicService.getPdfPassword() : "ZIP解压密码："+jmcomicService.getZipPassword())
                         );
@@ -101,6 +101,7 @@ public class JmcomicHandler implements IAllMessageEvent {
             } catch (Exception e) {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         MessageHolder.instanceText(MessageFormat.format("下载【JM{0}】异常"+e.getMessage(), finalAid)));
+                log.error("处理本子下载命令异常 【{}】",finalAid,e);
             }
         });
         return true;

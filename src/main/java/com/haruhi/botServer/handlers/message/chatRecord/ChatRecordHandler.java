@@ -3,8 +3,10 @@ package com.haruhi.botServer.handlers.message.chatRecord;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.entity.ChatRecordExtendSqlite;
 import com.haruhi.botServer.entity.ChatRecordSqlite;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.mapper.ChatRecordExtendSqliteMapper;
 import com.haruhi.botServer.service.ChatRecordSqliteService;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -34,6 +36,8 @@ public class ChatRecordHandler implements IAllMessageEvent {
     }
     @Autowired
     private ChatRecordSqliteService chatRecordSqliteService;
+    @Autowired
+    private ChatRecordExtendSqliteMapper chatRecordExtendSqliteMapper;
 
 
     /**
@@ -60,7 +64,14 @@ public class ChatRecordHandler implements IAllMessageEvent {
                 record.setMessageId(message.getMessageId());
                 record.setMessageType(message.getMessageType());
                 setTime(message, record);
-                chatRecordSqliteService.save(record);
+                if (chatRecordSqliteService.save(record)) {
+                    ChatRecordExtendSqlite chatRecordExtendSqlite = new ChatRecordExtendSqlite();
+                    chatRecordExtendSqlite.setChatRecordId(record.getId());
+                    chatRecordExtendSqlite.setMessageId(record.getMessageId());
+                    chatRecordExtendSqlite.setRawWsMessage(message.getRawWsMsg());
+                    chatRecordExtendSqlite.setTime(record.getTime());
+                    chatRecordExtendSqliteMapper.insert(chatRecordExtendSqlite);
+                }
             }catch (Exception e){
                 log.error("保存聊天记录异常 {}", JSONObject.toJSONString(record),e);
             }

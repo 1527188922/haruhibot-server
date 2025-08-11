@@ -1,7 +1,6 @@
 env:
   active: prod
 bot:
-  name: 春日酱
   port: 8090
   # 机器人所在主机是否在公网 1是 0否 (若不在公网主机 一定要设置为0)
   enable-internet-host: 1

@@ -1,6 +1,5 @@
 package com.haruhi.botServer.handlers.message;
 
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
@@ -90,7 +89,7 @@ public class AiChatHandler implements IAllMessageEvent {
             if(chatResp != null){
                 String content = chatResp.getContent();
                 if(content != null){
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),processContent(content),false);
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),processContent(content, bot.getBotName()),false);
                 }
             }
         });
@@ -99,8 +98,8 @@ public class AiChatHandler implements IAllMessageEvent {
 
     private static String reg ="(?<=\\{face:)[0-9]*(?=\\})";
     private static String regex = ".*\\{face:.*\\}.*";
-    private String processContent(String content){
-        content = content.replace("{br}", "\n").replace("菲菲", BotConfig.NAME).replace("&quot;","“");
+    private String processContent(String content, String botname){
+        content = content.replace("{br}", "\n").replace("菲菲", botname).replace("&quot;","“");
         if(!content.matches(regex)){
             return content;
         }

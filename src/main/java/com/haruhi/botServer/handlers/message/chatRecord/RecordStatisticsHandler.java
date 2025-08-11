@@ -1,7 +1,6 @@
 package com.haruhi.botServer.handlers.message.chatRecord;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -78,7 +77,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                         .orderByAsc(ChatRecordSqlite::getTime)
                         .last("LIMIT 1"));
                 if(chatRecord != null && chatRecord.getTime() != null){
-                    ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), BotConfig.NAME,
+                    ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
                             MessageHolder.instanceText("从[" + chatRecord.getTime() + "]开始统计"));
                     forwardMsgItems.add(instance);
                 }

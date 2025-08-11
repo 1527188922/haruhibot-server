@@ -16,6 +16,7 @@ public enum QqClientActionEnum {
     SEND_LIKE("send_like","发送好友赞"),
     SEND_POKE("send_poke","发送戳一戳"),
 
+    GET_FRIEND_LIST("get_friend_list","获取好友列表"),
     GET_GROUP_MEMBER_LIST("get_group_member_list","获取群成员列表"),
     GET_FORWARD_MSG("get_forward_msg","获取合并转发内容"),
     GET_WORD_SLICES(".get_word_slices","获取中文分词"),

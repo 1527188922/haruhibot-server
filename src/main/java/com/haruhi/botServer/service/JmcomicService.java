@@ -46,12 +46,10 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -294,7 +292,7 @@ public class JmcomicService {
             for (Series series : album.getSeries()) {
                 series.setTitle("第" + series.getSort() +"话");
                 try {
-                    String chapterPath = albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
+                    String chapterPath = getChapterPath(albumPath, series);
                     Chapter chapter = requestChapter(series.getId());
                     downloadChapter(chapter,chapterPath,series.getTitle(),-1);
                     System.gc();
@@ -302,12 +300,25 @@ public class JmcomicService {
                     log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                 }
             }
+
+            String chapterPath = getChapterPath(albumPath, album.getSeries().get(0));
+            File chapterPathFile = new File(chapterPath);
+            File[] files = null;
+            if(!chapterPathFile.exists()
+                    || (files = chapterPathFile.listFiles(File::isFile)) == null
+                    || files.length == 0) {
+                return BaseResp.fail("【JM"+aid+"】下载失败");
+            }
             return BaseResp.success(album.getAlbumFolderName());
         }finally {
             LOCK.remove(aid);
         }
     }
 
+
+    private String getChapterPath(String albumPath, Series series){
+        return albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
+    }
 
     public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle,int lastCount) {
         List<String> images = chapter.getImages();
@@ -457,7 +468,7 @@ public class JmcomicService {
     }
 
     private void saveImg(int blockNum,File tmpImgFile,File file) throws Exception {
-        try (FileInputStream fileInputStream = new FileInputStream(tmpImgFile)){
+        try (InputStream fileInputStream = Files.newInputStream(tmpImgFile.toPath())){
             BufferedImage srcImg = ImageIO.read(fileInputStream);
             BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
             ImageIO.write(dstImg, "webp", file);
@@ -543,8 +554,9 @@ public class JmcomicService {
         Album album = JSONObject.parseObject(data, Album.class);
 
         String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
-        if (albumFolderName.getBytes().length >= 255) {
-            albumFolderName = albumFolderName.substring(0,100);
+        int filenameLength = dictionarySqliteService.getInt(DictionarySqliteService.DictionaryEnum.JM_ALBUM_NAME_MAX_LENGTH.getKey(), 215);
+        if (albumFolderName.getBytes().length >= filenameLength) {
+            albumFolderName = albumFolderName.substring(0,50);
         }
         album.setAlbumFolderName(albumFolderName + "_JM" + aid);
         return album;
