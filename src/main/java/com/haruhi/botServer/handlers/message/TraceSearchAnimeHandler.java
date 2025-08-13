@@ -101,12 +101,12 @@ public class TraceSearchAnimeHandler implements IAllMessageEvent {
                         bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText("搜番异常：" + response.getStatus()));
                         return;
                     }
-                    SearchResp<Long> searchResp = JSONObject.parseObject(response.body(), new TypeReference<SearchResp<Long>>() { });
+                    SearchResp<Object> searchResp = JSONObject.parseObject(response.body(), new TypeReference<SearchResp<Object>>() { });
                     if (StringUtils.isNotBlank(searchResp.getError())) {
                         bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText(searchResp.getError()));
                         return;
                     }
-                    List<SearchResp.Result<Long>> result = searchResp.getResult();
+                    List<SearchResp.Result<Object>> result = searchResp.getResult();
                     if (CollectionUtils.isEmpty(result)) {
                         bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText("未搜索到结果"));
                         return;
@@ -124,9 +124,9 @@ public class TraceSearchAnimeHandler implements IAllMessageEvent {
         }
     }
 
-    public List<ForwardMsgItem> resultToForwardMsgItems(Bot bot,Message message,List<SearchResp.Result<Long>> results){
+    public List<ForwardMsgItem> resultToForwardMsgItems(Bot bot,Message message,List<SearchResp.Result<Object>> results){
         List<ForwardMsgItem> forwardMsgItems = new ArrayList<>();
-        for (SearchResp.Result<Long> result : results) {
+        for (SearchResp.Result<Object> result : results) {
             List<MessageHolder> messageHolders = new ArrayList<>();
             if (StringUtils.isNotBlank(result.getImage())) {
                 MessageHolder imageMessageHolder = MessageHolder.instanceImage(result.getImage());
