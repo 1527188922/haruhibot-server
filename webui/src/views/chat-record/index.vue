@@ -171,7 +171,9 @@ export default {
     },
     showRaw(row){
       selectExtend(row).then(({data:{data}})=>{
-        this.$alert(data.rawWsMessage)
+        this.$alert(data.rawWsMessage, {
+          customClass:"raw-message-alert"
+        })
         console.log(data.rawWsMessage)
       }).catch(e =>{
         alert(e.toString())

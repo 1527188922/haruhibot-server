@@ -161,6 +161,29 @@ a{
 .info-form-item{
   margin-bottom: 0 !important;
 }
+.raw-message-alert{
+  min-width: 520px;
+  p{
+    overflow-wrap: break-word;  // 标准属性
+    word-wrap: break-word;      // 旧版浏览器兼容
+    //white-space: pre-wrap;      // 保留空白符但允许换行
+
+    max-height: 600px;
+    overflow-y: auto;
+
+    // 盒模型优化
+    box-sizing: border-box;     // 包含padding在高度计算中
+
+    // 滚动条样式美化
+    //&::-webkit-scrollbar {
+    //  width: 5px;
+    //}
+    //&::-webkit-scrollbar-thumb {
+    //  background: #888;
+    //  border-radius: 3px;
+    //}
+  }
+}
 // ele样式覆盖
 @import './element-ui.scss';
 // 顶部右侧显示
