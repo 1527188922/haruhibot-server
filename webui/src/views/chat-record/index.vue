@@ -174,7 +174,7 @@ export default {
         this.$alert(data.rawWsMessage, {
           customClass:"raw-message-alert"
         })
-        console.log(data.rawWsMessage)
+        console.log(JSON.parse(data.rawWsMessage))
       }).catch(e =>{
         alert(e.toString())
       })
