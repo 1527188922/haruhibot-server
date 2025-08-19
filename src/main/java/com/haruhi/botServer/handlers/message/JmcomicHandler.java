@@ -57,11 +57,18 @@ public class JmcomicHandler implements IAllMessageEvent {
         if(pair == null){
             return false;
         }
+        if (StringUtils.isBlank(pair.getKey())) {
+            return false;
+        }
 
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             String finalAid = pair.getKey();
             boolean isPdf = pair.getRight();
             try {
+                if (!StringUtils.isNumeric(finalAid)) {
+
+                    return;
+                }
                 Album album = jmcomicService.requestAlbum(finalAid);
                 if (album == null || album.getId() == null) {
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
@@ -140,7 +147,7 @@ public class JmcomicHandler implements IAllMessageEvent {
             return Pair.of(aid, true);
         }catch (NumberFormatException e) {
             if (!aid.toLowerCase().endsWith("zip")) {
-                return null;
+                return Pair.of(aid, null);
             }
             aid = CommonUtil.replaceIgnoreCase(aid, "zip", "");
             try {
