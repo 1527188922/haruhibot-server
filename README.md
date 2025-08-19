@@ -1,28 +1,35 @@
 # haruhibot-server
 
 #### 介绍
-1:java(springboot)基于gocqhttp,websocket反向实现的qq机器人(机器人:ws服务端,gocq:ws客户端);  
-2:支持被多个gocqhttp连接;  
-3:该机器人部署可与gocqhttp不在同一台服务器上,前提是gocq可以访问程序所在的主机(比如机器人部署在具有公网ip的服务器;或机器人部署在与gocq同一个局域网下的电脑上)  
+1：一个java开发的QQ Bot  
+2：使用[NapCat](https://napneko.github.io)于QQ交互
 
 
 #### 软件架构
-SSM  
-go-cqhttp  
-websocket  
-mybatis-plus  
-dynamic-datasource  
-maven  
-mysql  
+Spring boot  
+WebSocket  
+Mybatis-Plus  
+Dynamic-datasource  
+Maven  
+Sqlite  
 
 
 #### 安装/启动 教程
 
-1.  安装:mysql5.7,java1.8(需要配置环境变量),maven3.8(需要配置环境变量)
-2.  下载源码,双击`build.bat`(linux执行`build.sh`)
-3.  解压 `target/haruhibotServer.zip`,双击`startup.bat`(linux执行`startup.sh`)
-4.  gocqhttp配置好反向ws配置 `ws://ip:port/haruhi/ws`;配置`access-token`与机器人中的`access-token`一致(可不配置)
-5.  只要配置对应ws地址和access-token的gocq都能连接,这样一个机器人后端可服务多个gocqhttp
+* Bot安装/启动  
+  1. 安装:`java1.8`、`maven3.8`
+  2. 下载bot源码后,双击打包脚本`build.bat`(linux执行`build.sh`)  
+  3. 执行打包脚本完后会出现文件：`target/haruhibotServer.zip`，解压后双击启动脚本：`startup.bat`(linux执行`startup.sh`)
+* Bot Webui安装/启动（可选步骤）
+  1. 安装:`nodejs`
+  2. 进入目录：`webui`，执行安装依赖命令：`npm install`，再执行打包命令：`npm run build`
+  3. 打包后会出现目录：`./webui/dist`
+  4. 将`dist`中的文件全选，复制进Bot压缩包解压后的目录：`./haruhibotServer/webui`中去
+  5. 访问webui地址：`http://{ip}:{port}`，webui账户密码配置文件：`./haruhibotServer/config/webuiConfig.properties`
+* NapCat启动
+  1. 看NapCat官方教程进行安装：https://napneko.github.io
+  2. 配置反向WebSocket地址：`http://{ip}:{port}/api/ws`（反向：Bot作为服务端，NapCat作为客户端）
+
 
 #### 使用说明
 
