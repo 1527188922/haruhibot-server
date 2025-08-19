@@ -28,5 +28,5 @@ public interface ChatRecordSqliteService extends IService<ChatRecordSqlite> {
 
     IPage<ChatRecordSqlite> search(ChatRecordQueryReq request, boolean isPage);
 
-    BaseResp<File> exportGroupChatRecord(Long groupId, List<String> atqqs);
+    BaseResp<File> exportGroupChatRecord(Long groupId, List<String> qqs);
 }

@@ -300,11 +300,11 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
     }
 
     @Override
-    public BaseResp<File> exportGroupChatRecord(Long groupId, List<String> atqqs) {
+    public BaseResp<File> exportGroupChatRecord(Long groupId, List<String> qqs) {
         long l = System.currentTimeMillis();
         List<ChatRecordSqlite> list = this.list(new LambdaQueryWrapper<ChatRecordSqlite>()
                 .eq(ChatRecordSqlite::getGroupId, groupId)
-                .in(!org.springframework.util.CollectionUtils.isEmpty(atqqs),ChatRecordSqlite::getUserId,atqqs.stream().map(Long::parseLong).collect(Collectors.toList()))
+                .in(CollectionUtils.isNotEmpty(qqs),ChatRecordSqlite::getUserId, qqs.stream().filter(StringUtils::isNotBlank).distinct().map(Long::parseLong).collect(Collectors.toList()))
                 .orderByDesc(ChatRecordSqlite::getTime));
         long l4 = System.currentTimeMillis() - l;
         log.info("查询聊天记录完成，耗时：{} 数量：{}",l4, list.size());
