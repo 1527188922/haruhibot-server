@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -27,8 +28,9 @@ public class PokeMeHandler implements IPokeEvent {
         if (cache.isEmpty()) {
             return;
         }
-        if(!String.valueOf(message.getSelfId()).equals(String.valueOf(message.getTargetId()))
-                || String.valueOf(message.getSelfId()).equals(String.valueOf(message.getUserId()))){
+        // targetId: 被戳人
+        if(!Objects.equals(message.getSelfId(), message.getTargetId())
+                || Objects.equals(message.getSelfId(), message.getUserId())){
             // 只对戳了机器人生效
             return;
         }

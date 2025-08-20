@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class RestUtil {
-    private RestUtil(){}
 
     public static <T> T sendGetRequest(RestTemplate restTemplate, String url,Map<String, Object> urlRequestParam, Class<T> type){
         return RestUtil.sendRequest(restTemplate,url, HttpMethod.GET,null,urlRequestParam,type);

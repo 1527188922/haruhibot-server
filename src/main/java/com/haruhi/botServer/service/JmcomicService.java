@@ -10,7 +10,6 @@ import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.*;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -34,11 +33,8 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPa
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -78,18 +74,22 @@ public class JmcomicService {
 
     public UserProfile login(String username, String password) throws Exception {
         String url = "https://" + API_DOMAIN + "/login";
-        LinkedMultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
-        formData.add("username", username);
-        formData.add("password", password);
+
 
         long ts = System.currentTimeMillis() / 1000;
         HttpHeaders headerParam = headerParam(ts);
-        ResponseEntity<String> responseEntity = RestUtil.sendPostForm(RestUtil.getRestTemplate(5000), url, formData, null,
-                headerParam.toSingleValueMap(), new ParameterizedTypeReference<String>() {
-        });
-        JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
-        String data = decryptData(ts, jsonObject.getString("data"));
-        return JSONObject.parseObject(data, UserProfile.class);
+
+        HashMap<String, Object> formData = new HashMap<>();
+        formData.put("username", username);
+        formData.put("password", password);
+        HttpRequest httpRequest = HttpUtil.createPost(url).form(formData)
+                .addHeaders(headerParam.toSingleValueMap())
+                .timeout(10000);
+        try (HttpResponse httpResponse = httpRequest.execute()){
+            JSONObject jsonObject = JSONObject.parseObject(httpResponse.body());
+            String data = decryptData(ts, jsonObject.getString("data"));
+            return JSONObject.parseObject(data, UserProfile.class);
+        }
     }
 
     public String getZipPassword(){
@@ -571,22 +571,6 @@ public class JmcomicService {
             album.setAlbumFolderName(albumFolderName + "_JM" + aid);
             return album;
         }
-
-
-//        ResponseEntity<String> responseEntity = RestUtil.sendGetRequest(RestUtil.getRestTemplate(10000),
-//                url,  urlParam, headerParam, new ParameterizedTypeReference<String>() {
-//                });
-//        JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
-//        String data = decryptData(ts, jsonObject.getString("data"));
-//        Album album = JSONObject.parseObject(data, Album.class);
-//
-//        String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
-//        int filenameLength = dictionarySqliteService.getInt(DictionarySqliteService.DictionaryEnum.JM_ALBUM_NAME_MAX_LENGTH.getKey(), 215);
-//        if (albumFolderName.getBytes().length >= filenameLength) {
-//            albumFolderName = albumFolderName.substring(0,50);
-//        }
-//        album.setAlbumFolderName(albumFolderName + "_JM" + aid);
-//        return album;
     }
 
     /**
@@ -647,13 +631,6 @@ public class JmcomicService {
             String data = decryptData(ts, jsonObject.getString("data"));
             return JSONObject.parseObject(data, Chapter.class);
         }
-
-//        ResponseEntity<String> responseEntity = RestUtil.sendGetRequest(RestUtil.getRestTemplate(10000),
-//                url,  urlParam, headerParam, new ParameterizedTypeReference<String>() {
-//                });
-//        JSONObject jsonObject = JSONObject.parseObject(responseEntity.getBody());
-//        String data = decryptData(ts, jsonObject.getString("data"));
-//        return JSONObject.parseObject(data, Chapter.class);
     }
 
     public long getScrambleId(long chapterId){
@@ -674,10 +651,14 @@ public class JmcomicService {
             urlParam.put("page", 0);
             urlParam.put("app_img_shunt", 1);
             urlParam.put("express", "off");
-            ResponseEntity<String> responseEntity = RestUtil.sendGetRequest(RestUtil.getRestTemplate(5000),
-                    url,  urlParam, httpHeaders, new ParameterizedTypeReference<String>() {
-                    });
-            return parseScrambleId(responseEntity.getBody());
+
+            String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
+            HttpRequest httpRequest = HttpUtil.createGet(s)
+                    .addHeaders(httpHeaders.toSingleValueMap())
+                    .timeout(10000);
+            try (HttpResponse httpResponse = httpRequest.execute()){
+                return parseScrambleId(httpResponse.body());
+            }
         }catch (Exception e){
             log.error("getScrambleId 异常 cid:{}",chapterId,e);
             return 220_980;
@@ -736,8 +717,18 @@ public class JmcomicService {
     public static void main(String[] args) {
         try {
             JmcomicService jmcomicService = new JmcomicService();
-            String res = jmcomicService.search("碧蓝");
-            System.out.println(res);
+//            String res = jmcomicService.search("碧蓝");
+//            System.out.println(res);
+//            Album album = jmcomicService.requestAlbum("303053");
+//            System.out.println(album);
+
+
+//            Chapter chapter = jmcomicService.requestChapter("303053");
+//            System.out.println(chapter);
+//            long scrambleId = jmcomicService.getScrambleId(303053);
+
+//            jmcomicService.login("","");
+
         } catch (Exception e) {
             e.printStackTrace();
         }
