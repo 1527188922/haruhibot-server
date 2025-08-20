@@ -94,7 +94,7 @@ public class SendLikeHandler implements IAllMessageEvent {
 
     private boolean isLiked(Long userId, Long selfId){
         Date d = new Date();
-        int count = sendLikeRecordService.count(new LambdaQueryWrapper<SendLikeRecordSqlite>()
+        long count = sendLikeRecordService.count(new LambdaQueryWrapper<SendLikeRecordSqlite>()
                 .eq(SendLikeRecordSqlite::getUserId, userId)
                 .eq(SendLikeRecordSqlite::getSelfId, selfId)
                 .between(SendLikeRecordSqlite::getSendTime,

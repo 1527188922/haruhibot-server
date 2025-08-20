@@ -19,7 +19,7 @@ public class PokeReplySqliteServiceImpl extends ServiceImpl<PokeReplySqliteMappe
 
     @Override
     public void loadPokeReply() {
-        List<PokeReplySqlite> list = this.list(null);
+        List<PokeReplySqlite> list = this.list();
         if(!CollectionUtils.isEmpty(list)){
             int pokeNum = 4;
             int logPokeNum = 0;

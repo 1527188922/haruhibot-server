@@ -92,7 +92,7 @@ public class DownloadPixivJob extends AbstractJob {
                 }
                 int total = 0;
                 for (PixivItem e : data) {
-                    int count = pixivSqliteService.count(new LambdaQueryWrapper<PixivSqlite>()
+                    long count = pixivSqliteService.count(new LambdaQueryWrapper<PixivSqlite>()
                             .eq(PixivSqlite::getImgUrl,e.getUrls().getOriginal()));
                     if(count == 0){
                         PixivSqlite param = new PixivSqlite();

@@ -1,6 +1,7 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.haruhi.botServer.entity.DictionarySqlite;
@@ -183,7 +184,7 @@ public class DictionarySqliteService {
     public void put(String key,String content){
         LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
                 .eq(DictionarySqlite::getKey, key);
-        Integer count = dictionarySqliteMapper.selectCount(queryWrapper);
+        Long count = dictionarySqliteMapper.selectCount(queryWrapper);
 
         DictionarySqlite dictionary = new DictionarySqlite();
         if(count > 0){
@@ -227,7 +228,14 @@ public class DictionarySqliteService {
     public int update(DictionarySqlite request) {
         request.setContent(request.getContent() != null ? request.getContent() : "");
         request.setModifyTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
-        return dictionarySqliteMapper.updateById(request);
+
+        LambdaUpdateWrapper<DictionarySqlite> updateWrapper = new LambdaUpdateWrapper<DictionarySqlite>()
+                .eq(DictionarySqlite::getId, request.getId())
+                .set(DictionarySqlite::getKey, request.getKey())
+                .set(DictionarySqlite::getContent, request.getContent())
+                .set(DictionarySqlite::getRemark, request.getRemark())
+                .set(DictionarySqlite::getModifyTime, request.getModifyTime());
+        return dictionarySqliteMapper.update(updateWrapper);
     }
 
     public int deleteBatch(List<DictionarySqlite> request) {

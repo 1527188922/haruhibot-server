@@ -26,7 +26,7 @@ public class WordStripSqliteServiceImpl extends ServiceImpl<WordStripSqliteMappe
      */
     @Override
     public void loadWordStrip(){
-        List<WordStripSqlite> wordStrips = this.list(null);
+        List<WordStripSqlite> wordStrips = this.list();
         if (!CollectionUtils.isEmpty(wordStrips)){
             for (WordStripSqlite element : wordStrips) {
                 WordStripHandler.putCache(element.getSelfId(),element.getGroupId(),element.getKeyWord(),element.getAnswer());

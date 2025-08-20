@@ -41,8 +41,8 @@ public class PixivCountHandler implements IAllMessageEvent {
             queryWrapper.eq(PixivSqlite::getIsR18,0);
             LambdaQueryWrapper<PixivSqlite> queryWrapperR18 = new LambdaQueryWrapper<>();
             queryWrapperR18.eq(PixivSqlite::getIsR18,1);
-            int count = pixivSqliteService.count(queryWrapper);
-            int countR18 = pixivSqliteService.count(queryWrapperR18);
+            long count = pixivSqliteService.count(queryWrapper);
+            long countR18 = pixivSqliteService.count(queryWrapperR18);
             bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                     MessageFormat.format("pixiv库：\n非r18：{0}\nr18：{1}\n总计：{2}",count,countR18,count + countR18)
                     ,true);
