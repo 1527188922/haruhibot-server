@@ -1,5 +1,8 @@
 package com.haruhi.botServer.service.music.extend;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.ThirdPartyURL;
@@ -7,8 +10,8 @@ import com.haruhi.botServer.dto.music163.Song;
 import com.haruhi.botServer.dto.music163.SearchResp;
 import com.haruhi.botServer.factory.MusicServiceFactory;
 import com.haruhi.botServer.service.music.AbstractMusicService;
-import com.haruhi.botServer.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -33,8 +36,8 @@ public class Music163Service extends AbstractMusicService {
 
     @Override
     public List<Song> searchMusic(Object param) {
-        String res = Music163Service.search(String.valueOf(param));
-        if (res == null) {
+        String res = search(String.valueOf(param));
+        if (StringUtils.isBlank(res)) {
             return null;
         }
         List<SearchResp> searchResps = parseJavaBean(res);
@@ -109,7 +112,7 @@ public class Music163Service extends AbstractMusicService {
      * @param keyWord 歌曲名
      * @return
      */
-    public static String search(String keyWord) {
+    public String search(String keyWord) {
         Map<String, Object> map = new HashMap<>(6);
         map.put("s", keyWord);
         map.put("type", 1);
@@ -119,12 +122,30 @@ public class Music163Service extends AbstractMusicService {
         map.put("csrf_token", "");
         log.info("开始搜索歌曲(163)：{}",keyWord);
         long l = System.currentTimeMillis();
-        String responseStr = HttpClientUtil.doPost(ThirdPartyURL.NETEASE_SEARCH_MUSIC, prepare(map),5 * 1000);
-        log.info("搜索完成(163)，耗时：{}",System.currentTimeMillis() - l);
-        return responseStr;
+        String s = HttpUtil.urlWithForm(ThirdPartyURL.NETEASE_SEARCH_MUSIC, prepare(map), StandardCharsets.UTF_8, true);
+        HttpRequest httpRequest = HttpUtil.createPost(encode(s)).timeout(10000);
+        try (HttpResponse response = httpRequest.execute()){
+            log.info("搜索完成(163)，耗时：{}",System.currentTimeMillis() - l);
+            return response.body();
+        }
+    }
+    private String encode(String url) {
+        return url.replace("\\","%5C")
+                .replace("+","%2B")
+                .replace(" ","%20")
+//                .replace("%","%25")
+                .replace("#","%23")
+                .replace("$","%24")
+                .replace("^","%5E")
+                .replace("{","%7B")
+                .replace("}","%7D")
+                .replace("|","%7C")
+                .replace("[","%5B")
+                .replace("]","%5D");
+
     }
 
-    private static Map<String, Object> prepare(Map<String, Object> raw) {
+    private Map<String, Object> prepare(Map<String, Object> raw) {
         Map<String, Object> data = new HashMap<>(2);
         String NONCE = "0CoJUm6Qyw8W8jud";
         String params = encrypt(JSONObject.toJSONString(raw), NONCE);
@@ -135,7 +156,7 @@ public class Music163Service extends AbstractMusicService {
         return data;
     }
 
-    private static String encrypt(String content, String password) {
+    private String encrypt(String content, String password) {
         try {
             SecretKeySpec key = new SecretKeySpec(password.getBytes(), "AES");
             // 创建密码器

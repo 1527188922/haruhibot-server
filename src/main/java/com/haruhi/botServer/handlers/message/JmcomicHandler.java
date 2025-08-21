@@ -219,7 +219,7 @@ public class JmcomicHandler implements IAllMessageEvent {
             }
 
             String categoryListStr = Stream.of((e.getCategory() != null ? e.getCategory().getTitle() : null), (e.getCategorySub() != null ? e.getCategorySub().getTitle() : null))
-                    .filter(StringUtils::isNotBlank).distinct().collect(Collectors.joining(","));
+                    .filter(StringUtils::isNotBlank).distinct().collect(Collectors.joining("/"));
             if (StringUtils.isNotBlank(categoryListStr)) {
                 stringBuilder.append("\n");
                 stringBuilder.append("分类："+categoryListStr);
