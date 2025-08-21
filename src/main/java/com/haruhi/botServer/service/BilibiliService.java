@@ -6,13 +6,18 @@ import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
+import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
 import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
+import com.haruhi.botServer.dto.bilibili.PlayerInfoResp;
 import com.haruhi.botServer.dto.bilibili.VideoDetail;
+import com.haruhi.botServer.dto.xml.bilibili.BulletChatResp;
 import com.haruhi.botServer.utils.BilibiliIdConverter;
+import com.haruhi.botServer.utils.XMLUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -84,6 +89,47 @@ public class BilibiliService {
 //            put("fnval", 1024);
         }};
         return sendGetRequest("https://api.bilibili.com/x/player/wbi/playurl", param, new TypeReference<BilibiliBaseResp<PlayUrlInfo>>(){});
+    }
+
+
+    /**
+     * 通过视频bv获取cid
+     * 无需认证
+     * @param bv
+     * @return
+     */
+    public PlayerInfoResp getPlayerInfo(String bv){
+        Map<String, Object> param = new HashMap<>();
+        param.put("bvid",bv);
+        param.put("jsonp","jsonp");
+
+        String s = HttpUtil.urlWithForm(ThirdPartyURL.PLAYER_CID, param, StandardCharsets.UTF_8, false);
+        HttpRequest httpRequest = HttpUtil.createGet(s)
+                .timeout(10 * 1000);
+        try (HttpResponse response = httpRequest.execute()){
+            BilibiliBaseResp<List<PlayerInfoResp>> listBilibiliBaseResp = JSONObject.parseObject(response.body(), new TypeReference<BilibiliBaseResp<List<PlayerInfoResp>>>() {
+            });
+            return Objects.nonNull(listBilibiliBaseResp) && CollectionUtils.isNotEmpty(listBilibiliBaseResp.getData())
+                    ? listBilibiliBaseResp.getData().get(0) : null;
+        }
+    }
+
+
+
+    /**
+     * 根据视频cid获取弹幕
+     * @param cid
+     * @return
+     */
+    public BulletChatResp getChatList(Long cid){
+        Map<String, Object> param = new HashMap<>();
+        param.put("oid",cid);
+
+        String s = HttpUtil.urlWithForm(ThirdPartyURL.BULLET_CHAR, param, StandardCharsets.UTF_8, false);
+        HttpRequest httpRequest = HttpUtil.createGet(s).timeout(10 * 1000);
+        try (HttpResponse response = httpRequest.execute()){
+            return XMLUtil.convertXmlToObject(BulletChatResp.class, response.body());
+        }
     }
 
     public String getCookie(){

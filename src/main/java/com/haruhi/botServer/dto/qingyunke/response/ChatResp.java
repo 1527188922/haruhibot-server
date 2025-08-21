@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto.aiChat.response;
+package com.haruhi.botServer.dto.qingyunke.response;
 
 import lombok.Data;
 
@@ -7,6 +7,6 @@ import java.io.Serializable;
 @Data
 public class ChatResp implements Serializable {
 
-    private int result;
+    private Integer result;
     private String content;
 }

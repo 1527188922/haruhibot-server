@@ -1,14 +1,10 @@
 package com.haruhi.botServer.utils;
 
-import com.alibaba.fastjson.JSONObject;
 import com.chenlb.mmseg4j.ComplexSeg;
 import com.chenlb.mmseg4j.Dictionary;
 import com.chenlb.mmseg4j.MMSeg;
-import com.chenlb.mmseg4j.MaxWordSeg;
 import com.chenlb.mmseg4j.Seg;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.dto.xml.bilibili.PlayerInfoResp;
 import com.kennycason.kumo.CollisionMode;
 import com.kennycason.kumo.WordCloud;
 import com.kennycason.kumo.WordFrequency;
@@ -17,20 +13,14 @@ import com.kennycason.kumo.font.scale.SqrtFontScalar;
 import com.kennycason.kumo.image.AngleGenerator;
 import com.kennycason.kumo.palette.ColorPalette;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.util.CollectionUtils;
 
 import java.awt.Dimension;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -108,7 +98,7 @@ public class WordCloudUtil {
         return map;
     }
     public static Map<String,Integer> exclusionsWord(Map<String,Integer> corpus){
-        if (CollectionUtils.isEmpty(corpus)) {
+        if (Objects.isNull(corpus)) {
             return null;
         }
         corpus = corpus.entrySet().stream().filter(e -> exclusionsWord(e.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -170,45 +160,6 @@ public class WordCloudUtil {
         wordCloud.setFontScalar(new SqrtFontScalar(5, 80));
         wordCloud.build(wordFrequencies);
         wordCloud.writeToFile(pngOutputPath);
-    }
-
-    /**
-     * 通过视频bv获取cid
-     * @param bv
-     * @return
-     */
-    public static PlayerInfoResp getPlayerInfo(String bv){
-        Map<String, Object> param = new HashMap<>(2);
-        param.put("bvid",bv);
-        param.put("jsonp","jsonp");
-        String responseStr = RestUtil.sendGetRequest(RestUtil.getRestTemplate(), ThirdPartyURL.PLAYER_CID, param, String.class);
-        if(Strings.isNotBlank(responseStr)){
-            JSONObject jsonObject = JSONObject.parseObject(responseStr);
-            String data = jsonObject.getJSONArray("data").getString(0);
-            return JSONObject.parseObject(data,PlayerInfoResp.class);
-        }
-        return null;
-    }
-
-    /**
-     * 根据视频cid获取弹幕
-     * @param cid
-     * @return
-     */
-    public static List<String> getChatList(String cid){
-        Map<String, Object> param = new HashMap<>();
-        param.put("oid",cid);
-        String responseSre = HttpClientUtil.doGet(ThirdPartyURL.BULLET_CHAR, param,10 * 1000);
-        if(Strings.isNotBlank(responseSre)){
-            Pattern compile = Pattern.compile("\">(.*?)</d>");
-            Matcher matcher = compile.matcher(responseSre);
-            List<String> res = new ArrayList<>();
-            while (matcher.find()) {
-                res.add(matcher.group(1));
-            }
-            return res;
-        }
-        return null;
     }
 
     /**

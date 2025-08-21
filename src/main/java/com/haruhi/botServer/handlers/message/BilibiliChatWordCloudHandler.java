@@ -6,7 +6,8 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
-import com.haruhi.botServer.dto.xml.bilibili.PlayerInfoResp;
+import com.haruhi.botServer.dto.bilibili.PlayerInfoResp;
+import com.haruhi.botServer.dto.xml.bilibili.BulletChatResp;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.BilibiliService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -16,7 +17,6 @@ import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -26,6 +26,7 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -66,14 +67,15 @@ public class BilibiliChatWordCloudHandler implements IAllMessageEvent {
             String outPutPath = null;
             try {
 
-                PlayerInfoResp playerInfoResp = WordCloudUtil.getPlayerInfo(bvid);
+                PlayerInfoResp playerInfoResp = bilibiliService.getPlayerInfo(bvid);
 
-                if(playerInfoResp == null || Strings.isBlank(playerInfoResp.getCid())){
+                if(playerInfoResp == null || Objects.isNull(playerInfoResp.getCid())){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"视频cid获取失败",true);
                     return;
                 }
-                List<String> chatList = WordCloudUtil.getChatList(playerInfoResp.getCid());
-                if(CollectionUtils.isEmpty(chatList)){
+                BulletChatResp bulletChatResp = bilibiliService.getChatList(playerInfoResp.getCid());
+                List<String> chatList = bulletChatResp != null ? bulletChatResp.getChatList() : null;
+                if(chatList == null){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"弹幕数为0，不生成",true);
                     return;
                 }

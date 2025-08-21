@@ -1,5 +1,9 @@
 package com.haruhi.botServer.handlers.message;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.AnalysisMagnetLinkResp;
@@ -7,15 +11,14 @@ import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IPrivateMessageEvent;
 import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -83,10 +86,16 @@ public class LinkPreviewHandler implements IPrivateMessageEvent {
     }
 
     private AnalysisMagnetLinkResp request(String link){
-        RestTemplate restTemplate = RestUtil.getRestTemplate(6 * 1000);
         HashMap<String, Object> urlParam = new HashMap<>();
         urlParam.put("url",link);
-        return RestUtil.sendGetRequest(restTemplate, ThirdPartyURL.WHATS_LINK, urlParam, AnalysisMagnetLinkResp.class);
+        String s = HttpUtil.urlWithForm(ThirdPartyURL.WHATS_LINK, urlParam, StandardCharsets.UTF_8, false);
+        HttpRequest httpRequest = HttpUtil.createGet(s).timeout(6000);
+        try (HttpResponse response = httpRequest.execute()){
+            return JSONObject.parseObject(response.body(), AnalysisMagnetLinkResp.class);
+        }catch (Exception e){
+            log.error("预览磁力异常 {}",link,e);
+            return null;
+        }
     }
 
 }

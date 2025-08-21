@@ -5,7 +5,7 @@ public class ThirdPartyURL {
     // 识图
     public static String SEARCH_IMAGE = "https://saucenao.com/search.php";
     // 青云客 ai聊天
-    public static String AI_CHAT = "http://api.qingyunke.com/api.php";
+    public static final String QINGYUNKE_AI_CHAT = "http://api.qingyunke.com/api.php";
     // b站 获取弹幕
     public static String BULLET_CHAR = "https://api.bilibili.com/x/v1/dm/list.so";
     // b站链接

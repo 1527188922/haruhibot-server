@@ -1,15 +1,18 @@
 package com.haruhi.botServer.handlers.message;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.dto.aiChat.response.ChatResp;
+import com.haruhi.botServer.dto.qingyunke.response.ChatResp;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.utils.RestUtil;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.text.MessageFormat;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -79,18 +82,23 @@ public class AiChatHandler implements IAllMessageEvent {
             urlParam.put("key","free");
             urlParam.put("appid",0);
             urlParam.put("msg",matchResult.getData());
-            ChatResp chatResp = null;
-            try {
-                chatResp = RestUtil.sendGetRequest(RestUtil.getRestTemplate(8 * 1000), ThirdPartyURL.AI_CHAT, urlParam, ChatResp.class);
-            }catch (Exception e){
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("聊天api请求异常:{0}",e.getMessage()),true);
-                log.error("青云客api请求异常",e);
-            }
-            if(chatResp != null){
-                String content = chatResp.getContent();
-                if(content != null){
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),processContent(content, bot.getBotName()),false);
+
+            String s = HttpUtil.urlWithForm(ThirdPartyURL.QINGYUNKE_AI_CHAT, urlParam, StandardCharsets.UTF_8, false);
+            HttpRequest httpRequest = HttpUtil.createGet(s).timeout(8000);
+            try (HttpResponse response = httpRequest.execute()){
+                String body = response.body();
+                if (StringUtils.isBlank(body)) {
+                    return;
                 }
+                ChatResp chatResp = JSONObject.parseObject(body, ChatResp.class);
+                if(chatResp != null){
+                    String content = chatResp.getContent();
+                    if(content != null){
+                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),processContent(content, bot.getBotName()),false);
+                    }
+                }
+            }catch (Exception e){
+                log.error("青云客api请求异常",e);
             }
         });
         return true;

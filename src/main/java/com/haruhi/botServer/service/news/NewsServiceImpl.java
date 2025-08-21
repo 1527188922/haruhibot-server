@@ -1,17 +1,15 @@
 package com.haruhi.botServer.service.news;
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.utils.DateTimeUtil;
-import com.haruhi.botServer.utils.RestUtil;
-import com.haruhi.botServer.ws.Bot;
-import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
@@ -32,27 +30,28 @@ public class NewsServiceImpl implements NewsService {
         log.info("开始获取网易新闻...");
         long l = System.currentTimeMillis();
         String sourceId = "T1348647853363";
-        try {
-            String responseStr = RestUtil.sendGetRequest(RestUtil.getRestTemplate(2 * 1000), ThirdPartyURL.NEWS_163, null, String.class);
-            if (Strings.isNotBlank(responseStr)) {
-                JSONObject responseJson = JSONObject.parseObject(responseStr);
-                JSONArray jsonArray = responseJson.getJSONArray(sourceId);
-                if(!CollectionUtils.isEmpty(jsonArray)){
-                    List<NewsBy163Resp> newsBy163Resps = JSONArray.parseArray(jsonArray.toJSONString(), NewsBy163Resp.class);
-                    newsBy163Resps = newsBy163Resps.stream().collect(
-                            Collectors.collectingAndThen(Collectors.toCollection(()-> new TreeSet<>(Comparator.comparing(NewsBy163Resp::getPostid))), ArrayList::new)
-                    ).stream().sorted(Comparator.comparing(NewsBy163Resp::getLmodify).reversed()).collect(Collectors.toList());
-                    log.info("获取网易新闻完成,耗时:{}",System.currentTimeMillis() - l);
-                    return newsBy163Resps;
-                }
+        HttpRequest httpRequest = HttpUtil.createGet(ThirdPartyURL.NEWS_163).timeout(2 * 1000);
+        try (HttpResponse response = httpRequest.execute()){
+            String responseStr = response.body();
+            if (Strings.isBlank(responseStr)) {
+                return null;
             }
-            return null;
+            JSONObject responseJson = JSONObject.parseObject(responseStr);
+            JSONArray jsonArray = responseJson.getJSONArray(sourceId);
+            if(CollectionUtils.isEmpty(jsonArray)){
+                return null;
+            }
+            List<NewsBy163Resp> newsBy163Resps = JSONArray.parseArray(jsonArray.toJSONString(), NewsBy163Resp.class);
+            newsBy163Resps = newsBy163Resps.stream().collect(
+                    Collectors.collectingAndThen(Collectors.toCollection(()-> new TreeSet<>(Comparator.comparing(NewsBy163Resp::getPostid))), ArrayList::new)
+            ).stream().sorted(Comparator.comparing(NewsBy163Resp::getLmodify).reversed()).collect(Collectors.toList());
+            log.info("获取网易新闻完成,耗时:{}",System.currentTimeMillis() - l);
+            return newsBy163Resps;
         }catch (Exception e){
             log.error("获取网易新闻异常",e);
             return null;
         }
     }
-
 
     @Override
     public List<List<MessageHolder>> createNewsMessage(List<NewsBy163Resp> list){
