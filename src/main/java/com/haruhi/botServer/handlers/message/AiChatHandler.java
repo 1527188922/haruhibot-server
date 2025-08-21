@@ -7,7 +7,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.dto.qingyunke.response.ChatResp;
+import com.haruhi.botServer.dto.qingyunke.ChatResp;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.DictionarySqliteService;

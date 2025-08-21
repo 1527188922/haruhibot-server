@@ -7,7 +7,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.bilibili.PlayerInfoResp;
-import com.haruhi.botServer.dto.xml.bilibili.BulletChatResp;
+import com.haruhi.botServer.dto.bilibili.BulletChatResp;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.BilibiliService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;

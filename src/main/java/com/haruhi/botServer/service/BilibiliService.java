@@ -11,7 +11,7 @@ import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
 import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
 import com.haruhi.botServer.dto.bilibili.PlayerInfoResp;
 import com.haruhi.botServer.dto.bilibili.VideoDetail;
-import com.haruhi.botServer.dto.xml.bilibili.BulletChatResp;
+import com.haruhi.botServer.dto.bilibili.BulletChatResp;
 import com.haruhi.botServer.utils.BilibiliIdConverter;
 import com.haruhi.botServer.utils.XMLUtil;
 import lombok.AllArgsConstructor;

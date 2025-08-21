@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto.qingyunke.response;
+package com.haruhi.botServer.dto.qingyunke;
 
 import lombok.Data;
 

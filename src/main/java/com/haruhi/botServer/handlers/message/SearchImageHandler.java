@@ -11,7 +11,7 @@ import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageData;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
-import com.haruhi.botServer.dto.searchImage.response.Results;
+import com.haruhi.botServer.dto.saucenao.Results;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;

@@ -3,7 +3,7 @@ package com.haruhi.botServer.handlers.message;
 import com.alibaba.fastjson.JSONArray;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
-import com.haruhi.botServer.dto.agefans.response.NewAnimationTodayResp;
+import com.haruhi.botServer.dto.agefans.NewAnimationTodayResp;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;

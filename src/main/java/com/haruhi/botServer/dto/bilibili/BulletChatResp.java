@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto.xml.bilibili;
+package com.haruhi.botServer.dto.bilibili;
 
 
 import lombok.Data;

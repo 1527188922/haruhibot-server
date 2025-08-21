@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * 预览磁力接口响应
+ */
 @Data
 public class AnalysisMagnetLinkResp {
 

@@ -7,7 +7,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
+import com.haruhi.botServer.dto.news163.NewsResp;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 public class NewsServiceImpl implements NewsService {
 
     @Override
-    public List<NewsBy163Resp> requestNewsBy163(){
+    public List<NewsResp> requestNewsBy163(){
         log.info("开始获取网易新闻...");
         long l = System.currentTimeMillis();
         String sourceId = "T1348647853363";
@@ -41,10 +41,10 @@ public class NewsServiceImpl implements NewsService {
             if(CollectionUtils.isEmpty(jsonArray)){
                 return null;
             }
-            List<NewsBy163Resp> newsBy163Resps = JSONArray.parseArray(jsonArray.toJSONString(), NewsBy163Resp.class);
+            List<NewsResp> newsBy163Resps = JSONArray.parseArray(jsonArray.toJSONString(), NewsResp.class);
             newsBy163Resps = newsBy163Resps.stream().collect(
-                    Collectors.collectingAndThen(Collectors.toCollection(()-> new TreeSet<>(Comparator.comparing(NewsBy163Resp::getPostid))), ArrayList::new)
-            ).stream().sorted(Comparator.comparing(NewsBy163Resp::getLmodify).reversed()).collect(Collectors.toList());
+                    Collectors.collectingAndThen(Collectors.toCollection(()-> new TreeSet<>(Comparator.comparing(NewsResp::getPostid))), ArrayList::new)
+            ).stream().sorted(Comparator.comparing(NewsResp::getLmodify).reversed()).collect(Collectors.toList());
             log.info("获取网易新闻完成,耗时:{}",System.currentTimeMillis() - l);
             return newsBy163Resps;
         }catch (Exception e){
@@ -54,18 +54,18 @@ public class NewsServiceImpl implements NewsService {
     }
 
     @Override
-    public List<List<MessageHolder>> createNewsMessage(List<NewsBy163Resp> list){
+    public List<List<MessageHolder>> createNewsMessage(List<NewsResp> list){
         List<List<MessageHolder>> forwardMsgs = new ArrayList<>(list.size() + 1);
         forwardMsgs.add(MessageHolder.instanceText("今日新闻"));
 
-        for (NewsBy163Resp e : list) {
+        for (NewsResp e : list) {
             List<MessageHolder> newsItemMessage = createNewsItemMessage(e);
             forwardMsgs.add(newsItemMessage);
         }
         return forwardMsgs;
     }
 
-    private List<MessageHolder> createNewsItemMessage(NewsBy163Resp e){
+    private List<MessageHolder> createNewsItemMessage(NewsResp e){
 
 
         String stringBuilder = "【" + e.getTitle() + "】\n[" +

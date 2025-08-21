@@ -4,7 +4,7 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
-import com.haruhi.botServer.dto.news.response.NewsBy163Resp;
+import com.haruhi.botServer.dto.news163.NewsResp;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
@@ -41,7 +41,7 @@ public class SeeNewsHandler implements IAllMessageEvent {
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
-                List<NewsBy163Resp> newsBy163Resps = newsService.requestNewsBy163();
+                List<NewsResp> newsBy163Resps = newsService.requestNewsBy163();
                 if(CollectionUtils.isEmpty(newsBy163Resps)){
                     return;
                 }

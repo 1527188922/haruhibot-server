@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto.agefans.response;
+package com.haruhi.botServer.dto.agefans;
 
 import lombok.Data;
 

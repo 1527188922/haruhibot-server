@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto.news.response;
+package com.haruhi.botServer.dto.news163;
 
 import com.haruhi.botServer.utils.DateTimeUtil;
 import lombok.Data;
@@ -10,7 +10,7 @@ import java.util.Date;
  * 网易新闻响应体
  */
 @Data
-public class NewsBy163Resp implements Serializable {
+public class NewsResp implements Serializable {
 
     private String sourceId;
 

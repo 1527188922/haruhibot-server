@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto.music.response.netease;
+package com.haruhi.botServer.dto.music163;
 
 import lombok.Data;
 
