@@ -68,7 +68,7 @@ public class JmcomicHandler implements IAllMessageEvent {
 
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             String finalAid = pair.getKey();
-            boolean isPdf = pair.getRight();
+            Boolean isPdf = pair.getRight();
             try {
                 if (!StringUtils.isNumeric(finalAid)) {
                     // 根据名称搜索本子
@@ -82,7 +82,7 @@ public class JmcomicHandler implements IAllMessageEvent {
                     sendSearchResult(bot, message, searchResp);
                     return;
                 }
-
+                isPdf = isPdf == null || isPdf;
                 // 根据jm号下载本子
                 Album album = jmcomicService.requestAlbum(finalAid);
                 if (album == null || album.getId() == null) {
@@ -90,8 +90,8 @@ public class JmcomicHandler implements IAllMessageEvent {
                             MessageHolder.instanceText("未查询到本子：JM"+finalAid));
                     return;
                 }
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                        MessageHolder.instanceText("开始下载本子：JM"+finalAid+"\n"+album.getName()));
+                sendAlbumInfo(bot, message, album);
+
                 BaseResp<File> resp = isPdf ? jmcomicService.downloadAlbumAsPdf(album) : jmcomicService.downloadAlbumAsZip(album);
                 if(!BaseResp.SUCCESS_CODE.equals(resp.getCode())){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
@@ -173,11 +173,38 @@ public class JmcomicHandler implements IAllMessageEvent {
             }
         }
     }
+    private void sendAlbumInfo(Bot bot,Message message,Album album){
+        StringBuilder albumInfoBuilder = new StringBuilder();
+        albumInfoBuilder.append("开始下载本子：").append("JM"+album.getId());
+        albumInfoBuilder.append("\n");
+        albumInfoBuilder.append(album.getName());
+        String tags = album.getTags() != null ? album.getTags().stream().filter(StringUtils::isNotBlank).distinct().collect(Collectors.joining("/")) : null;
+        if (StringUtils.isNotBlank(tags)) {
+            albumInfoBuilder.append("\n");
+            albumInfoBuilder.append("标签："+tags);
+        }
+        String authors = album.getAuthor() != null ? album.getAuthor().stream().filter(StringUtils::isNotBlank).distinct().collect(Collectors.joining("，")) : null;
+        if (StringUtils.isNotBlank(authors)) {
+            albumInfoBuilder.append("\n");
+            albumInfoBuilder.append("作者："+authors);
+        }
+        if (StringUtils.isNotBlank(album.getTotalViews())) {
+            albumInfoBuilder.append("\n");
+            albumInfoBuilder.append("观看数："+album.getTotalViews());
+        }
+        if (StringUtils.isNotBlank(album.getLikes())) {
+            albumInfoBuilder.append("\n");
+            albumInfoBuilder.append("点赞数："+album.getLikes());
+        }
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                MessageHolder.instanceText(albumInfoBuilder.toString()));
+    }
 
     private void sendSearchResult(Bot bot,Message message, SearchResp searchResp){
         List<SearchResp.ContentItem> content = searchResp.getContent();
-
-        List<ForwardMsgItem> collect = content.stream().map(e -> {
+        List<ForwardMsgItem> collect = new ArrayList<>();
+        for (int i = 0; i < content.size(); i++) {
+            SearchResp.ContentItem e = content.get(i);
 
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("JM"+e.getId());
@@ -199,15 +226,16 @@ public class JmcomicHandler implements IAllMessageEvent {
             }
             if (Objects.nonNull(e.getUpdateAt())) {
                 stringBuilder.append("\n");
-                stringBuilder.append("更新时间："+ DateTimeUtil.formatToDate(new Date(e.getUpdateAt() * 1000), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+                stringBuilder.append("更新时间："+ DateTimeUtil.dateTimeFormat(new Date(e.getUpdateAt() * 1000), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
             }
+            stringBuilder.append("\n");
+            stringBuilder.append(i + 1);
             List<MessageHolder> messageHolders = MessageHolder.instanceText(stringBuilder.toString());
             if (StringUtils.isNotBlank(e.getImage())) {
                 messageHolders.add(0, MessageHolder.instanceImage(e.getImage()));
             }
-
-            return ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), messageHolders);
-        }).collect(Collectors.toList());
+            collect.add(ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), messageHolders));
+        }
         bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), collect);
     }
 }

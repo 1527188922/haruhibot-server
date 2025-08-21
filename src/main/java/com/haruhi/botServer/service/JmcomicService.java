@@ -712,9 +712,9 @@ public class JmcomicService {
 
     public static void main(String[] args) {
         try {
-            JmcomicService jmcomicService = new JmcomicService();
-//            String res = jmcomicService.search("碧蓝");
-//            System.out.println(res);
+//            JmcomicService jmcomicService = new JmcomicService();
+//            SearchResp search = jmcomicService.search("二乃", "mv");
+//            System.out.println(search);
 //            Album album = jmcomicService.requestAlbum("303053");
 //            System.out.println(album);
 
