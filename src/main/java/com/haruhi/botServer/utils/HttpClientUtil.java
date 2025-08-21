@@ -1,5 +1,6 @@
 package com.haruhi.botServer.utils;
 
+import cn.hutool.http.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.ParseException;
@@ -13,6 +14,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Slf4j
@@ -59,7 +61,7 @@ public class HttpClientUtil {
     }
 
     private static String getUrl(String s,Map<String,Object> urlParams){
-        return RestUtil.urlSplicing(s,urlParams);
+        return HttpUtil.urlWithForm(s, urlParams, StandardCharsets.UTF_8,false);
     }
 
     private static String request(HttpUriRequest httpMethod,int timeout) throws IOException, ParseException {

@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
+import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
@@ -8,13 +9,16 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.Album;
+import com.haruhi.botServer.dto.jmcomic.SearchResp;
 import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
 import com.haruhi.botServer.service.JmcomicService;
 import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +26,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -66,9 +71,19 @@ public class JmcomicHandler implements IAllMessageEvent {
             boolean isPdf = pair.getRight();
             try {
                 if (!StringUtils.isNumeric(finalAid)) {
-
+                    // 根据名称搜索本子
+                    SearchResp searchResp = jmcomicService.search(finalAid, "mv");
+                    List<SearchResp.ContentItem> content = searchResp.getContent();
+                    if (CollectionUtils.isEmpty(content)) {
+                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                                MessageHolder.instanceText(StrFormatter.format("未搜索到结果：{}", searchResp.getSearchQuery() != null ? searchResp.getSearchQuery() : finalAid)));
+                        return;
+                    }
+                    sendSearchResult(bot, message, searchResp);
                     return;
                 }
+
+                // 根据jm号下载本子
                 Album album = jmcomicService.requestAlbum(finalAid);
                 if (album == null || album.getId() == null) {
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
@@ -157,5 +172,42 @@ public class JmcomicHandler implements IAllMessageEvent {
                 return null;
             }
         }
+    }
+
+    private void sendSearchResult(Bot bot,Message message, SearchResp searchResp){
+        List<SearchResp.ContentItem> content = searchResp.getContent();
+
+        List<ForwardMsgItem> collect = content.stream().map(e -> {
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("JM"+e.getId());
+
+            if (StringUtils.isNotBlank(e.getName())) {
+                stringBuilder.append("\n");
+                stringBuilder.append(e.getName());
+            }
+            if (StringUtils.isNotBlank(e.getAuthor())) {
+                stringBuilder.append("\n");
+                stringBuilder.append("作者："+e.getAuthor());
+            }
+
+            String categoryListStr = Stream.of((e.getCategory() != null ? e.getCategory().getTitle() : null), (e.getCategorySub() != null ? e.getCategorySub().getTitle() : null))
+                    .filter(StringUtils::isNotBlank).distinct().collect(Collectors.joining(","));
+            if (StringUtils.isNotBlank(categoryListStr)) {
+                stringBuilder.append("\n");
+                stringBuilder.append("分类："+categoryListStr);
+            }
+            if (Objects.nonNull(e.getUpdateAt())) {
+                stringBuilder.append("\n");
+                stringBuilder.append("更新时间："+ DateTimeUtil.formatToDate(new Date(e.getUpdateAt() * 1000), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+            }
+            List<MessageHolder> messageHolders = MessageHolder.instanceText(stringBuilder.toString());
+            if (StringUtils.isNotBlank(e.getImage())) {
+                messageHolders.add(0, MessageHolder.instanceImage(e.getImage()));
+            }
+
+            return ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), messageHolders);
+        }).collect(Collectors.toList());
+        bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), collect);
     }
 }

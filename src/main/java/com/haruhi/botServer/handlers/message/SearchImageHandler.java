@@ -236,7 +236,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             List list;
             try{
                 list = JSONObject.parseObject(creator, List.class);
-                if(list.size() > 0){
+                if(!list.isEmpty()){
                     strBui.append(MessageFormat.format("作者：{0}\n",list.get(0)));
                 }
             }catch (Exception e){
@@ -247,7 +247,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             strBui.append(MessageFormat.format("twitter作者id：{0}\n",results.getData().getTwitter_user_id()));
         }
         String[] ext_urls = results.getData().getExt_urls();
-        if(ext_urls != null && ext_urls.length > 0){
+        if(ext_urls != null){
             for (String ext_url : ext_urls) {
                 strBui.append(MessageFormat.format("地址：{0}\n",ext_url));
             }

@@ -16,6 +16,7 @@ public class DateTimeUtil {
     public enum PatternEnum {
         yyyyMMddHHmmssSSS("yyyy-MM-dd HH:mm:ss.SSS"),
         yyyyMMddHHmmss("yyyy-MM-dd HH:mm:ss"),
+        yyyyMMddHHmm("yyyy-MM-dd HH:mm"),
         yyyyMMddHH("yyyy-MM-dd HH"),
         yyyyMMdd("yyyy-MM-dd"),
         yyyyMM("yyyy-MM"),
