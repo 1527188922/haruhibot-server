@@ -11,6 +11,8 @@ public interface SqliteDatabaseInitMapper {
 
     List<TableInfoSqlite> pragmaTableInfo(@Param("tableName") String tableName);
 
+
+
     int createIndex(@Param("tableName") String tableName, @Param("column") String column);
 
     int addColumn(@Param("tableName") String tableName, @Param("column") String column,@Param("type") String type,@Param("notNull") boolean notNull,@Param("default") String defaultValue);
