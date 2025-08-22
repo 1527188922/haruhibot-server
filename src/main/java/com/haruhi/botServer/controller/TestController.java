@@ -2,6 +2,7 @@ package com.haruhi.botServer.controller;
 
 import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.vo.HttpResp;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

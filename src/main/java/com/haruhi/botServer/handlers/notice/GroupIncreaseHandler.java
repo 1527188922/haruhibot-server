@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handlers.notice;
 
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.notice.IGroupIncreaseEvent;
 import com.haruhi.botServer.service.DictionarySqliteService;
@@ -22,7 +23,7 @@ public class GroupIncreaseHandler implements IGroupIncreaseEvent {
     @Override
     public void onGroupIncrease(Bot bot, Message message) {
 
-        boolean groupIncrease = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_GROUP_INCREASE.getKey(), false);
+        boolean groupIncrease = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_GROUP_INCREASE.getKey(), false);
         if(!groupIncrease || message.isSelfMsg()){
             return;
         }

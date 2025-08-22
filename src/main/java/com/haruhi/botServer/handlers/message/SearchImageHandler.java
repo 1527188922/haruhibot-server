@@ -4,6 +4,7 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.cache.CacheSet;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
@@ -57,7 +58,7 @@ public class SearchImageHandler implements IAllMessageEvent {
     @Override
     public boolean onMessage(final Bot bot, final Message message) {
 
-        boolean searchImageAllowGroup = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_SEARCH_IMAGE_ALLOW_GROUP.getKey(), false);
+        boolean searchImageAllowGroup = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_SEARCH_IMAGE_ALLOW_GROUP.getKey(), false);
         if(!searchImageAllowGroup && message.isGroupMsg()){
             return false;
         }
@@ -111,7 +112,7 @@ public class SearchImageHandler implements IAllMessageEvent {
 //            KQCodeUtils instance = KQCodeUtils.getInstance();
 //            String imageUrl = instance.getParam(this.cq, "url",CqCodeTypeEnum.image.getType(),0);
 
-            String apiKey = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.SAUCENAO_SEARCH_IMAGE__KEY.getKey(), null);
+            String apiKey = dictionarySqliteService.getInCache(DictionaryEnum.SAUCENAO_SEARCH_IMAGE__KEY.getKey(), null);
 
             Map<String,Object> param = new HashMap<>();
             param.put("output_type",2);

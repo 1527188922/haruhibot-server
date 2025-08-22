@@ -6,6 +6,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.*;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -93,11 +94,11 @@ public class JmcomicService {
     }
 
     public String getZipPassword(){
-        String inCache = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.JM_PASSWORD_ZIP.getKey(), null);
+        String inCache = dictionarySqliteService.getInCache(DictionaryEnum.JM_PASSWORD_ZIP.getKey(), null);
         return StringUtils.isNotBlank(inCache) ? inCache : JM_DEFAULT_PASSWORD;
     }
     public String getPdfPassword(){
-        String inCache = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.JM_PASSWORD_PDF.getKey(), null);
+        String inCache = dictionarySqliteService.getInCache(DictionaryEnum.JM_PASSWORD_PDF.getKey(), null);
         return StringUtils.isNotBlank(inCache) ? inCache : JM_DEFAULT_PASSWORD;
     }
 
@@ -564,7 +565,7 @@ public class JmcomicService {
             Album album = JSONObject.parseObject(data, Album.class);
 
             String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
-            int filenameLength = dictionarySqliteService.getInt(DictionarySqliteService.DictionaryEnum.JM_ALBUM_NAME_MAX_LENGTH.getKey(), 215);
+            int filenameLength = dictionarySqliteService.getInt(DictionaryEnum.JM_ALBUM_NAME_MAX_LENGTH.getKey(), 215);
             if (albumFolderName.getBytes().length >= filenameLength) {
                 albumFolderName = albumFolderName.substring(0,50);
             }

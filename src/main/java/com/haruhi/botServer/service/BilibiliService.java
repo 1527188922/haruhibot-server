@@ -6,6 +6,7 @@ import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
 import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
@@ -133,8 +134,8 @@ public class BilibiliService {
     }
 
     public String getCookie(){
-        String sessdata = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.BILIBILI_COOKIES_SESSDATA.getKey(), null);
-        String jct = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.BILIBILI_COOKIES_BILI_JCT.getKey(), null);
+        String sessdata = dictionarySqliteService.getInCache(DictionaryEnum.BILIBILI_COOKIES_SESSDATA.getKey(), null);
+        String jct = dictionarySqliteService.getInCache(DictionaryEnum.BILIBILI_COOKIES_BILI_JCT.getKey(), null);
         if(StringUtils.isBlank(sessdata) || StringUtils.isBlank(jct)){
             return null;
         }

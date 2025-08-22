@@ -7,7 +7,7 @@ import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.WebuiConfig;
 import com.haruhi.botServer.constant.RootTypeEnum;
-import com.haruhi.botServer.controller.HttpResp;
+import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.dto.qqclient.RequestBox;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.exception.BusinessException;

@@ -2,6 +2,7 @@ package com.haruhi.botServer.handlers.message;
 
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
 import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
@@ -88,7 +89,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                 File bilibiliVideoFile = new File(FileUtil.getBilibiliVideoFileName(videoDetailDataView.getBvid(), cid,"mp4"));
                 if (!bilibiliVideoFile.exists()) {
                     // 判断视频时长是否超过下载限制
-                    long downloadDurationLimit = getDurationLimit(DictionarySqliteService.DictionaryEnum.BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT);
+                    long downloadDurationLimit = getDurationLimit(DictionaryEnum.BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT);
                     if (videoDetailDataView.getDuration() > downloadDurationLimit) {
                         log.error("视频时长超过下载限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),downloadDurationLimit);
                         return;
@@ -100,7 +101,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
                     log.info("下载b站视频完成 cost:{}",(System.currentTimeMillis()-l));
                 }
 
-                long uploadDurationLimit = getDurationLimit(DictionarySqliteService.DictionaryEnum.BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT);
+                long uploadDurationLimit = getDurationLimit(DictionaryEnum.BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT);
                 if (videoDetailDataView.getDuration() > uploadDurationLimit) {
                     log.error("视频时长超过上传限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),uploadDurationLimit);
                     return;
@@ -113,7 +114,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
         return true;
     }
 
-    public long getDurationLimit(DictionarySqliteService.DictionaryEnum dictionaryEnum) {
+    public long getDurationLimit(DictionaryEnum dictionaryEnum) {
         Long durationLimit = null;
         try {
             durationLimit = Long.parseLong(dictionarySqliteService.getInCache(dictionaryEnum.getKey(),

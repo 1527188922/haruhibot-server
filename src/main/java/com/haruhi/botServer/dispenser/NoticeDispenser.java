@@ -1,5 +1,6 @@
 package com.haruhi.botServer.dispenser;
 
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.event.NoticeTypeEnum;
 import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
@@ -56,7 +57,7 @@ public class NoticeDispenser {
         if(!CollectionUtils.isEmpty(container)){
             String subType = message.getSubType();
             String noticeType = message.getNoticeType();
-            boolean disableGroup = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
+            boolean disableGroup = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
             if(disableGroup && message.isGroupMsg()){
                 return;
             }

@@ -1,4 +1,4 @@
-package com.haruhi.botServer.controller;
+package com.haruhi.botServer.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -3,7 +3,7 @@ package com.haruhi.botServer.controller.web;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.controller.HttpResp;
+import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.entity.ChatRecordExtendSqlite;
 import com.haruhi.botServer.entity.ChatRecordSqlite;
 import com.haruhi.botServer.mapper.ChatRecordExtendSqliteMapper;

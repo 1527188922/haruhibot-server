@@ -6,6 +6,7 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.Album;
 import com.haruhi.botServer.service.JmcomicService;
+import com.haruhi.botServer.vo.HttpResp;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;

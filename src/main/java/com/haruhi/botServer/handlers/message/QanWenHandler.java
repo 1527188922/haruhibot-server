@@ -4,6 +4,7 @@ import com.alibaba.dashscope.aigc.generation.Generation;
 import com.alibaba.dashscope.aigc.generation.GenerationParam;
 import com.alibaba.dashscope.aigc.generation.GenerationResult;
 import com.alibaba.dashscope.common.Role;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
@@ -126,7 +127,7 @@ public class QanWenHandler implements IAllMessageEvent {
         private GenerationParam createGenerationParam(List<com.alibaba.dashscope.common.Message> messages) {
 
             String apiKey = ApplicationContextProvider.getBean(DictionarySqliteService.class)
-                    .getInCache(DictionarySqliteService.DictionaryEnum.QIANWEN_API_KEY.getKey(), null);
+                    .getInCache(DictionaryEnum.QIANWEN_API_KEY.getKey(), null);
 
             return GenerationParam.builder()
                     .model(model)

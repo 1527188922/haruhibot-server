@@ -1,4 +1,4 @@
-package com.haruhi.botServer.dto;
+package com.haruhi.botServer.dto.whatslink;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;

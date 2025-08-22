@@ -1,5 +1,6 @@
 package com.haruhi.botServer.dispenser;
 
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.event.message.IAllMessageEvent;
@@ -203,7 +204,7 @@ public class MessageDispenser {
             // 机器人self消息 且 handler类不处理self消息
             return true;
         }
-        boolean disableGroup = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
+        boolean disableGroup = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
         if(message.isGroupMsg() && disableGroup && event.getClass() != ChatRecordHandler.class){
             // 本次为群消息 且开了禁用群功能 则只让聊天记录保存handler类生效
             return true;

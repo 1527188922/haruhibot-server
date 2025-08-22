@@ -5,6 +5,7 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.qingyunke.ChatResp;
@@ -68,7 +69,7 @@ public class AiChatHandler implements IAllMessageEvent {
     @Override
     public boolean onMessage(Bot bot, Message message) {
 
-        boolean qingyunkeChat = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_QINGYUNKE_CHAT.getKey(), false);
+        boolean qingyunkeChat = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_QINGYUNKE_CHAT.getKey(), false);
         if(!qingyunkeChat){
             return false;
         }

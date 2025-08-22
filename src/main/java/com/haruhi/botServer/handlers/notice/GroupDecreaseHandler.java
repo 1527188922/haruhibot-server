@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.notice;
 
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
@@ -22,7 +23,7 @@ public class GroupDecreaseHandler implements IGroupDecreaseEvent {
 
     @Override
     public void onGroupDecrease(Bot bot, Message message) {
-        boolean groupDecrease = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_GROUP_DECREASE.getKey(), false);
+        boolean groupDecrease = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_GROUP_DECREASE.getKey(), false);
         if(!groupDecrease){
             return;
         }

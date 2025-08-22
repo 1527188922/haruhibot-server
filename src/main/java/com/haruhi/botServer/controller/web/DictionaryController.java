@@ -2,7 +2,7 @@ package com.haruhi.botServer.controller.web;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.controller.HttpResp;
+import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.entity.DictionarySqlite;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.vo.DictQueryReq;
