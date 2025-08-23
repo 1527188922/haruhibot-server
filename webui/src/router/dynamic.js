@@ -262,18 +262,27 @@ const release = [{
         keepAlive: true
     },
     children: []
-},{
-    label: '系统信息',
-    path: '/sys',
-    iconBgColor: randomColor(),
-    children: [{
+},
+//     {
+//     label: '系统信息',
+//     path: '/sys',
+//     iconBgColor: randomColor(),
+//     children: [{
+//         label: '服务器文件',
+//         path: 'files',
+//         iconBgColor: randomColor(),
+//         component: 'views/system/file/index',
+//         children: []
+//     }]
+// },
+    {
         label: '服务器文件',
-        path: 'files',
+        path: '/sys/files',
         iconBgColor: randomColor(),
         component: 'views/system/file/index',
         children: []
-    }]
-},{
+    }
+,{
     label: "外部页面",
     path: '/out',
     icon: 'icon-caidan',
