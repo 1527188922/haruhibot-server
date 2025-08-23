@@ -100,6 +100,7 @@ export default {
     lock: '锁屏',
     bug: '没有错误日志',
     bugs: '条错误日志',
+    restart:'重启',
     screenfullF: '退出全屏',
     screenfull: '全屏',
     language: '中英文',

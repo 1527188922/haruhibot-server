@@ -91,8 +91,8 @@ public class SystemController {
 
     }
 
-//    @IgnoreAuthentication
-    @PostMapping("/bot/restart")
+    @IgnoreAuthentication
+    @RequestMapping(value = "/bot/restart",method = {RequestMethod.POST,RequestMethod.GET})
     public HttpResp restartBot() {
         try {
             systemService.restartBot();

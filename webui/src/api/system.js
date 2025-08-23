@@ -15,6 +15,11 @@ export const botAction = (action,data,params) => request({
     data
 })
 
+export const restartBot = () => request({
+    url: `${baseUrl}/sys/bot/restart`,
+    method: 'post'
+})
+
 /**
  *
  * @param data{parentPath}

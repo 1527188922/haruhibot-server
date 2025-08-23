@@ -98,6 +98,7 @@ export default {
     lock: 'スクリーンをロックする',
     bug: 'エラーログがありません',
     bugs: 'バーのエラーログ',
+    restart:'再起動',
     screenfullF: 'フルスクリーンを終了',
     screenfull: 'フルスクリーン',
     language: '英語で話します',

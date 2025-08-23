@@ -74,6 +74,15 @@
              @click="handleScreen"></i>
         </div>
       </el-tooltip>
+      <el-tooltip effect="dark"
+                  :content="$t('navbar.restart')"
+                  placement="bottom">
+        <div class="top-bar__item">
+          <i class="el-icon-refresh"
+             style="font-size: 18px"
+             @click="handleRestart"></i>
+        </div>
+      </el-tooltip>
 <!--      <img class="top-bar__img"-->
 <!--           :src="userInfo.avatar">-->
       <el-dropdown>
@@ -109,6 +118,7 @@ import topLogs from "./top-logs";
 import topColor from "./top-color";
 import topNotice from './top-notice'
 import topLang from "./top-lang";
+import {restartBot} from "@/api/system";
 export default {
   components: {
     topLock,
@@ -144,6 +154,22 @@ export default {
     ])
   },
   methods: {
+    handleRestart(){
+      this.$confirm('确认重启Bot?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(()=>{
+        restartBot().then(({data:{code,message}})=>{
+          if (code !== 200) {
+            return this.$message.error(message)
+          }
+          this.$message.success(message)
+        }).catch(e =>{
+          alert(e.toString())
+        })
+      })
+    },
     handleScreen () {
       fullscreenToggel();
     },

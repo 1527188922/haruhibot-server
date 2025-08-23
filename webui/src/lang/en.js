@@ -101,6 +101,7 @@ export default {
     lock: 'lock',
     bug: 'none bug',
     bugs: 'bug',
+    restart: 'Restart',
     screenfullF: 'exit screenfull',
     screenfull: 'screenfull',
     language: 'language',
