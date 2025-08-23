@@ -281,6 +281,13 @@ const release = [{
         iconBgColor: randomColor(),
         component: 'views/system/file/index',
         children: []
+    },
+    {
+        label: 'SQL编辑器',
+        path: '/sql-editor',
+        iconBgColor: randomColor(),
+        component: 'views/sql-edit/index',
+        children: []
     }
 ,{
     label: "外部页面",
