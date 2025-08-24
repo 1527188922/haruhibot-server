@@ -43,6 +43,10 @@ export default {
     document.removeEventListener('mouseup', this.stopDrag);
   },
   methods:{
+    prependSql(text){
+      let t = this.content
+      this.content = text + t
+    },
     handleSelection(v){
       this.selectedText = v;
       console.log(this.content)
@@ -88,7 +92,7 @@ export default {
 }
 
 .drag-bar {
-  background: #e8e8e8;
+  background-color: #f0f2f5;
   cursor: ns-resize;
   position: relative;
   z-index: 1;

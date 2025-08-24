@@ -46,6 +46,11 @@ export default {
       },
     }
   },
+  computed: {
+    rightPanel(){
+      return this.$parent.$parent.$parent.$refs.rightPanel
+    }
+  },
   watch: {
     filterText(val) {
       this.$refs.tree.filter(val);
@@ -62,7 +67,7 @@ export default {
       // console.log(data,node,component)
     },
     showDDL(data){
-
+      this.rightPanel.prependSql(data.sql+'\n\n')
     },
     deleteClick(nodeData, node){
 

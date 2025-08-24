@@ -2,7 +2,7 @@
   <basic-container class="sql-editor">
     <div class="editor-container" :class="theme">
       <!-- 左侧资源管理器 -->
-      <left-panel :left-width-holder="leftWidthHolder"></left-panel>
+      <left-panel ref="leftPanel" :left-width-holder="leftWidthHolder"></left-panel>
 
       <!-- 拖拽条 -->
       <div class="resize-bar" @mousedown="startResize" :style="{width: resizeBarWeight+'px'}"></div>
@@ -74,7 +74,8 @@ export default {
     }
 
     .resize-bar {
-      background: #ddd;
+      //background: #ddd;
+      background-color: #f0f2f5;
       cursor: col-resize;
       z-index: 1;
       transition: background 0.3s;
