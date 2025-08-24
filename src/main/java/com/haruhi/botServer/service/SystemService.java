@@ -2,18 +2,26 @@ package com.haruhi.botServer.service;
 
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.extra.spring.SpringUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.constant.RootTypeEnum;
+import com.haruhi.botServer.entity.IndexInfoSqlite;
+import com.haruhi.botServer.entity.SqliteSchema;
+import com.haruhi.botServer.entity.TableInfoSqlite;
 import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.handlers.message.face.HuaQHandler;
 import com.haruhi.botServer.handlers.message.ScoldMeHandler;
 import com.haruhi.botServer.handlers.message.face.JumpHandler;
+import com.haruhi.botServer.mapper.SqliteDatabaseInitMapper;
+import com.haruhi.botServer.mapper.SqliteSchemaMapper;
 import com.haruhi.botServer.utils.CMDUtil;
 import com.haruhi.botServer.utils.FileUtil;
+import com.haruhi.botServer.vo.BotWebSocketInfo;
 import com.haruhi.botServer.vo.FileNode;
+import com.haruhi.botServer.vo.DatabaseInfoNode;
 import com.haruhi.botServer.ws.BotContainer;
 import com.haruhi.botServer.ws.BotServer;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -29,10 +37,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -48,6 +53,10 @@ public class SystemService {
     private WordStripSqliteService wordStripService;
     @Autowired
     private DictionarySqliteService dictionaryService;
+    @Autowired
+    private SqliteDatabaseInitMapper sqliteDatabaseInitMapper;
+    @Autowired
+    private SqliteSchemaMapper sqliteSchemaMapper;
 
     private BotServer botServer;
 
@@ -207,14 +216,76 @@ public class SystemService {
         return cn.hutool.core.io.FileUtil.readString(file, s);
     }
 
-    @Data
-    public static class BotWebSocketInfo{
-        private Boolean running;
-        private Integer connections;
-        private Integer maxConnections;
-        private String path;
-        private String accessToken;
+    public List<DatabaseInfoNode> databaseInfo(DatabaseInfoNode request) {
+        if (request == null ||StringUtils.isBlank(request.getType())) {
+            List<SqliteSchema> tables = sqliteSchemaMapper.selectList(new LambdaQueryWrapper<SqliteSchema>()
+                    .eq(SqliteSchema::getType, DatabaseInfoNode.TYPE_TABLE)
+                    .ne(SqliteSchema::getTblName, DataBaseConst.SQLITE_SYS_T_SQLITE_SEQUENCE));
+            return tables.stream().map(e -> {
+                DatabaseInfoNode tableInfoNode = new DatabaseInfoNode();
+                tableInfoNode.setType(DatabaseInfoNode.TYPE_TABLE);
+                tableInfoNode.setName(e.getName());
+                tableInfoNode.setSql(e.getSql());
+                tableInfoNode.setTableName(e.getTblName());
+                return tableInfoNode;
+            }).collect(Collectors.toList());
+        }
+        String tableName = request.getTableName();
+        if(DatabaseInfoNode.TYPE_TABLE.equals(request.getType())){
+            return getFixedTableInfoNodes(tableName);
+        }
+
+        String name = request.getName();
+        if(DatabaseInfoNode.TYPE_FIXED.equals(request.getType()) && StringUtils.isNotBlank(name)
+                && StringUtils.isNotBlank(tableName)){
+            if(DatabaseInfoNode.TYPE_FIXED_COLUMN.equals(name)){
+                // 获取表的列
+                List<TableInfoSqlite> tableInfoSqlites = sqliteDatabaseInitMapper.pragmaTableInfo(tableName);
+                return tableInfoSqlites.stream().map(e -> {
+                    DatabaseInfoNode tableInfoNode = new DatabaseInfoNode();
+                    tableInfoNode.setName(e.getName());
+                    tableInfoNode.setColumnType(e.getType());
+                    tableInfoNode.setNotnull(e.getNotnull());
+                    tableInfoNode.setDefaultValue(e.getDfltValue());
+                    tableInfoNode.setPk(e.getPk());
+                    tableInfoNode.setTableName(tableName);
+                    tableInfoNode.setType(DatabaseInfoNode.TYPE_COLUMN);
+                    return tableInfoNode;
+                }).collect(Collectors.toList());
+            }
+
+            if(DatabaseInfoNode.TYPE_FIXED_INDEX.equals(name)){
+                // 获取表的索引
+                List<IndexInfoSqlite> indexInfoSqlites = sqliteDatabaseInitMapper.pragmaIndexList(tableName);
+                return indexInfoSqlites.stream().map(e -> {
+                    DatabaseInfoNode tableInfoNode = new DatabaseInfoNode();
+                    tableInfoNode.setName(e.getName());
+                    tableInfoNode.setUnique(e.getUnique());
+                    tableInfoNode.setTableName(tableName);
+                    tableInfoNode.setType(DatabaseInfoNode.TYPE_INDEX);
+                    return tableInfoNode;
+                }).collect(Collectors.toList());
+            }
+        }
+        return Collections.emptyList();
     }
+
+    private List<DatabaseInfoNode> getFixedTableInfoNodes(String tableName) {
+        List<DatabaseInfoNode> tableInfoNodes = new ArrayList<>();
+        DatabaseInfoNode tableInfoNode = new DatabaseInfoNode();
+        tableInfoNode.setTableName(tableName);
+        tableInfoNode.setName(DatabaseInfoNode.TYPE_FIXED_COLUMN);
+        tableInfoNode.setType(DatabaseInfoNode.TYPE_FIXED);
+        tableInfoNodes.add(tableInfoNode);
+
+        DatabaseInfoNode tableInfoNode2 = new DatabaseInfoNode();
+        tableInfoNode2.setTableName(tableName);
+        tableInfoNode2.setName(DatabaseInfoNode.TYPE_FIXED_INDEX);
+        tableInfoNode2.setType(DatabaseInfoNode.TYPE_FIXED);
+        tableInfoNodes.add(tableInfoNode2);
+        return tableInfoNodes;
+    }
+
 
     public BotWebSocketInfo getBotWebSocketInfo(){
         BotWebSocketInfo botWebSocketInfo = new BotWebSocketInfo();

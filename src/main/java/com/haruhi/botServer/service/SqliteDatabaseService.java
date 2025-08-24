@@ -3,7 +3,7 @@ package com.haruhi.botServer.service;
 import com.baomidou.dynamic.datasource.creator.DataSourceProperty;
 import com.baomidou.dynamic.datasource.provider.DynamicDataSourceProvider;
 import com.baomidou.dynamic.datasource.provider.YmlDynamicDataSourceProvider;
-import com.haruhi.botServer.config.DataBaseConfig;
+import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.constant.SqlTypeEnum;
 import com.haruhi.botServer.dto.SqlExecuteResult;
 import com.haruhi.botServer.entity.TableInfoSqlite;
@@ -39,61 +39,61 @@ public class SqliteDatabaseService{
     }
 
     public void tableInit(){
-        sqliteDatabaseInitMapper.createChatRecord(DataBaseConfig.T_CHAT_RECORD);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"content");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"self_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"user_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"group_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"time");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"card");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"nickname");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD,"message_type");
+        sqliteDatabaseInitMapper.createChatRecord(DataBaseConst.T_CHAT_RECORD);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"content");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"self_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"user_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"group_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"time");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"card");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"nickname");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"message_type");
 
-        sqliteDatabaseInitMapper.createChatRecordExtend(DataBaseConfig.T_CHAT_RECORD_EXTEND);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD_EXTEND,"chat_record_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD_EXTEND,"message_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CHAT_RECORD_EXTEND,"time");
+        sqliteDatabaseInitMapper.createChatRecordExtend(DataBaseConst.T_CHAT_RECORD_EXTEND);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"chat_record_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"message_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"time");
 
-        sqliteDatabaseInitMapper.createPokeReply(DataBaseConfig.T_POKE_REPLY);
+        sqliteDatabaseInitMapper.createPokeReply(DataBaseConst.T_POKE_REPLY);
 
-        sqliteDatabaseInitMapper.createCustomReply(DataBaseConfig.T_CUSTOM_REPLY);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"regex");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"cq_type");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"is_text");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"group_ids");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_CUSTOM_REPLY,"deleted");
-
-
-        sqliteDatabaseInitMapper.createWordStrip(DataBaseConfig.T_WORD_STRIP);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"user_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"group_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"key_word");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"create_time");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_WORD_STRIP,"modify_time");
+        sqliteDatabaseInitMapper.createCustomReply(DataBaseConst.T_CUSTOM_REPLY);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CUSTOM_REPLY,"regex");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CUSTOM_REPLY,"cq_type");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CUSTOM_REPLY,"is_text");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CUSTOM_REPLY,"group_ids");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CUSTOM_REPLY,"deleted");
 
 
-        sqliteDatabaseInitMapper.createPixiv(DataBaseConfig.T_PIXIV);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_PIXIV,"img_url");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_PIXIV,"is_r18");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_PIXIV,"tags");
-
-        sqliteDatabaseInitMapper.createSendLikeRecord(DataBaseConfig.T_SEND_LIKE_RECORD);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_SEND_LIKE_RECORD,"message_type");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_SEND_LIKE_RECORD,"self_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_SEND_LIKE_RECORD,"user_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_SEND_LIKE_RECORD,"send_time");
+        sqliteDatabaseInitMapper.createWordStrip(DataBaseConst.T_WORD_STRIP);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"user_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"group_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"key_word");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"create_time");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"modify_time");
 
 
-        sqliteDatabaseInitMapper.createDictionary(DataBaseConfig.T_DICTIONARY);
-        addColumnIfNotExists(DataBaseConfig.T_DICTIONARY,"remark","TEXT",false,null);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_DICTIONARY,"key");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_DICTIONARY,"content");
+        sqliteDatabaseInitMapper.createPixiv(DataBaseConst.T_PIXIV);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_PIXIV,"img_url");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_PIXIV,"is_r18");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_PIXIV,"tags");
+
+        sqliteDatabaseInitMapper.createSendLikeRecord(DataBaseConst.T_SEND_LIKE_RECORD);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_SEND_LIKE_RECORD,"message_type");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_SEND_LIKE_RECORD,"self_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_SEND_LIKE_RECORD,"user_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_SEND_LIKE_RECORD,"send_time");
 
 
-        sqliteDatabaseInitMapper.createGroupInfo(DataBaseConfig.T_GROUP_INFO);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_GROUP_INFO,"self_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_GROUP_INFO,"group_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConfig.T_GROUP_INFO,"group_name");
+        sqliteDatabaseInitMapper.createDictionary(DataBaseConst.T_DICTIONARY);
+        addColumnIfNotExists(DataBaseConst.T_DICTIONARY,"remark","TEXT",false,null);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_DICTIONARY,"key");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_DICTIONARY,"content");
+
+
+        sqliteDatabaseInitMapper.createGroupInfo(DataBaseConst.T_GROUP_INFO);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_GROUP_INFO,"self_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_GROUP_INFO,"group_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_GROUP_INFO,"group_name");
     }
 
     public int addColumnIfNotExists(String tableName, String columnName, String columnType,boolean notNull,String defaultValue) {
@@ -196,7 +196,7 @@ public class SqliteDatabaseService{
                 Object o = field.get(ymlDynamicDataSourceProvider);
                 if(o instanceof LinkedHashMap){
                     LinkedHashMap<String, DataSourceProperty> linkedHashMap = (LinkedHashMap<String,DataSourceProperty>) o;
-                    return linkedHashMap.get(DataBaseConfig.DATA_SOURCE_MASTER);
+                    return linkedHashMap.get(DataBaseConst.DATA_SOURCE_MASTER);
                 }
             }
         }

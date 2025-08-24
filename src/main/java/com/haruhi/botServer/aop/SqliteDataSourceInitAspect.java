@@ -3,7 +3,7 @@ package com.haruhi.botServer.aop;
 import com.baomidou.dynamic.datasource.creator.DataSourceProperty;
 import com.baomidou.dynamic.datasource.creator.druid.DruidConfig;
 import com.baomidou.dynamic.datasource.provider.YmlDynamicDataSourceProvider;
-import com.haruhi.botServer.config.DataBaseConfig;
+import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -33,7 +33,7 @@ public class SqliteDataSourceInitAspect {
             return;
         }
         DataSourceProperty dataSourceProperty = (DataSourceProperty) arg;
-        if (!DataBaseConfig.DATA_SOURCE_MASTER.equals(dataSourceProperty.getPoolName())) {
+        if (!DataBaseConst.DATA_SOURCE_MASTER.equals(dataSourceProperty.getPoolName())) {
             return;
         }
         String url = dataSourceProperty.getUrl();
@@ -65,10 +65,10 @@ public class SqliteDataSourceInitAspect {
                 Object o = field.get(ymlDynamicDataSourceProvider);
                 if(o instanceof LinkedHashMap){
                     LinkedHashMap<String,DataSourceProperty> linkedHashMap = (LinkedHashMap<String,DataSourceProperty>) o;
-                    DataSourceProperty masterDataSourceProperty = linkedHashMap.get(DataBaseConfig.DATA_SOURCE_MASTER);
+                    DataSourceProperty masterDataSourceProperty = linkedHashMap.get(DataBaseConst.DATA_SOURCE_MASTER);
                     if (masterDataSourceProperty == null) {
                         DataSourceProperty dataSourceProperty = new DataSourceProperty();
-                        dataSourceProperty.setUrl(DataBaseConfig.SQLITE_DEFAULT_JDBC_URL);
+                        dataSourceProperty.setUrl(DataBaseConst.SQLITE_DEFAULT_JDBC_URL);
                         dataSourceProperty.setDriverClassName("org.sqlite.JDBC");
                         DruidConfig druid = dataSourceProperty.getDruid();
                         druid.setValidationQuery("SELECT 1");
@@ -77,7 +77,7 @@ public class SqliteDataSourceInitAspect {
                         druid.setFilters("stat");
                         druid.setPoolPreparedStatements(false);
                         druid.setMaxActive(1);
-                        linkedHashMap.put(DataBaseConfig.DATA_SOURCE_MASTER, dataSourceProperty);
+                        linkedHashMap.put(DataBaseConst.DATA_SOURCE_MASTER, dataSourceProperty);
                     }
                 }
             }

@@ -1,7 +1,7 @@
-package com.haruhi.botServer.config;
+package com.haruhi.botServer.constant;
 
 
-public class DataBaseConfig {
+public class DataBaseConst {
 
     public static final String JDBC_URL_TEMPLATE = "jdbc:mysql://{0}:{1}/{2}?useUnicode=true&characterEncoding=utf-8&useSSL=false";
 
@@ -28,5 +28,8 @@ public class DataBaseConfig {
     public final static String T_SEND_LIKE_RECORD = "t_send_like_record";
     public final static String T_DICTIONARY = "t_dictionary";
     public final static String T_GROUP_INFO = "t_group_info";
+
+    public final static String SQLITE_SYS_T_SQLITE_SCHEMA = "sqlite_schema";
+    public final static String SQLITE_SYS_T_SQLITE_SEQUENCE = "sqlite_sequence";
 
 }

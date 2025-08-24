@@ -7,15 +7,13 @@ import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.WebuiConfig;
 import com.haruhi.botServer.constant.RootTypeEnum;
-import com.haruhi.botServer.vo.HttpResp;
+import com.haruhi.botServer.vo.*;
 import com.haruhi.botServer.dto.qqclient.RequestBox;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.vo.ContentFileNode;
-import com.haruhi.botServer.vo.FileNode;
 import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.BotContainer;
 import com.haruhi.botServer.ws.BotServer;
@@ -208,7 +206,7 @@ public class SystemController {
     }
 
     @GetMapping("/botws/info")
-    public HttpResp<SystemService.BotWebSocketInfo> botWebSocketInfo() {
+    public HttpResp<BotWebSocketInfo> botWebSocketInfo() {
 
         return HttpResp.success(systemService.getBotWebSocketInfo());
     }
@@ -226,5 +224,9 @@ public class SystemController {
         return HttpResp.fail("不支持的操作",null);
     }
 
+    @PostMapping("/db/info")
+    public HttpResp databaseInfo(@RequestBody(required = false) DatabaseInfoNode request) {
+        return HttpResp.success(systemService.databaseInfo(request));
+    }
 
 }

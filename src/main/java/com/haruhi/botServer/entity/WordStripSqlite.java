@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.haruhi.botServer.config.DataBaseConfig;
+import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Date;
 
 @Data
-@TableName(value = DataBaseConfig.T_WORD_STRIP)
+@TableName(value = DataBaseConst.T_WORD_STRIP)
 public class WordStripSqlite {
     @TableId(value = "id",type = IdType.AUTO)
     private Long id;

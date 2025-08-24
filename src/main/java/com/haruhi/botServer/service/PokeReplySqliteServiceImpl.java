@@ -1,7 +1,7 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.haruhi.botServer.config.DataBaseConfig;
+import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.entity.PokeReplySqlite;
 import com.haruhi.botServer.handlers.notice.PokeMeHandler;
 import com.haruhi.botServer.mapper.PokeReplySqliteMapper;
@@ -35,7 +35,7 @@ public class PokeReplySqliteServiceImpl extends ServiceImpl<PokeReplySqliteMappe
             }
             log.info("加载戳一戳回复到内存成功！数量：{}", PokeMeHandler.cache.size() - logPokeNum);
         }else{
-            log.warn("表`{}`中数据为空，不能进行戳一戳回复；可对该表添加数据，自定义戳一戳回复内容", DataBaseConfig.T_POKE_REPLY);
+            log.warn("表`{}`中数据为空，不能进行戳一戳回复；可对该表添加数据，自定义戳一戳回复内容", DataBaseConst.T_POKE_REPLY);
         }
     }
 

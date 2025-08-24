@@ -1,6 +1,6 @@
 package com.haruhi.botServer.utils;
 
-import com.haruhi.botServer.config.DataBaseConfig;
+import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -220,7 +220,7 @@ public class FileUtil {
 
     // 默认sql db文件位置
     public static String getSqliteDatabaseFile() {
-        return getDataDir() + File.separator + DataBaseConfig.SQLITE_DATABASE_FILE_NAME;
+        return getDataDir() + File.separator + DataBaseConst.SQLITE_DATABASE_FILE_NAME;
     }
 
     /**

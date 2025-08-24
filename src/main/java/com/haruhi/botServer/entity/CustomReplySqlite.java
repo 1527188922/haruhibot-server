@@ -3,7 +3,7 @@ package com.haruhi.botServer.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.haruhi.botServer.config.DataBaseConfig;
+import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.utils.FileUtil;
 import lombok.Data;
@@ -13,7 +13,7 @@ import java.io.File;
 import java.util.Arrays;
 
 @Data
-@TableName(value = DataBaseConfig.T_CUSTOM_REPLY)
+@TableName(value = DataBaseConst.T_CUSTOM_REPLY)
 public class CustomReplySqlite {
 
 
