@@ -7,3 +7,11 @@ export const databaseInfoNode = (data) => request({
     timeout:60 * 1000,
     data
 });
+
+
+
+export const databaseDDL = (tableName) => request({
+    url: `${baseUrl}/sys/db/ddl?tableName=${tableName}`,
+    method: 'get',
+    timeout:60 * 1000
+});

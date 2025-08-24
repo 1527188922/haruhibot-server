@@ -23,6 +23,7 @@ import com.haruhi.botServer.vo.DatabaseInfoNode;
 import com.haruhi.botServer.ws.BotContainer;
 import com.haruhi.botServer.ws.BotServer;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -291,6 +292,29 @@ public class SystemService {
         return tableInfoNodes;
     }
 
+    public String tableDDL(String tableName) {
+        List<SqliteSchema> sqliteSchemas = sqliteSchemaMapper.selectList(new LambdaQueryWrapper<SqliteSchema>()
+                .eq(SqliteSchema::getTblName, tableName)
+                .isNotNull(SqliteSchema::getSql));
+        if (CollectionUtils.isEmpty(sqliteSchemas)) {
+            return "";
+        }
+        String createTableSql = sqliteSchemas.stream().filter(e -> DatabaseInfoNode.TYPE_TABLE.equals(e.getType())).map(SqliteSchema::getSql).findFirst().orElse("").trim();
+        if (!createTableSql.endsWith(";")) {
+            createTableSql+=";";
+        }
+        String createIndexSql = sqliteSchemas.stream()
+                .filter(e -> DatabaseInfoNode.TYPE_INDEX.equals(e.getType()))
+                .map(e->{
+                    String s = e.getSql().trim();
+                    if(!s.endsWith(";")){
+                        s+=";";
+                    }
+                    return s;
+                }).collect(Collectors.joining("\n"));
+        return createTableSql+"\n"+createIndexSql;
+    }
+
 
     public BotWebSocketInfo getBotWebSocketInfo(){
         BotWebSocketInfo botWebSocketInfo = new BotWebSocketInfo();
@@ -325,9 +349,5 @@ public class SystemService {
                 log.info("执行sh结果：{}", s);
             }
         }).start();
-    }
-
-    public static void main(String[] args) {
-        System.out.println(SystemUtils.getJavaHome().getAbsolutePath());
     }
 }

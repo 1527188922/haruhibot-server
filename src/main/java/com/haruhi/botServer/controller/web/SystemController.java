@@ -229,4 +229,9 @@ public class SystemController {
         return HttpResp.success(systemService.databaseInfo(request));
     }
 
+    @GetMapping("/db/ddl")
+    public HttpResp databaseDDL(@RequestParam String tableName) {
+        return HttpResp.success(systemService.tableDDL(tableName));
+    }
+
 }

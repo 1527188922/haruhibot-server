@@ -49,8 +49,8 @@ export default {
     },
     handleSelection(v){
       this.selectedText = v;
-      console.log(this.content)
-      console.log(this.selectedText)
+      // console.log(this.content)
+      // console.log(this.selectedText)
     },
     startDrag(e) {
       this.isDragging = true;

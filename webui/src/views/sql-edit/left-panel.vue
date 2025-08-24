@@ -28,7 +28,7 @@
   </div>
 </template>
 <script>
-import {databaseInfoNode} from "@/api/database";
+import {databaseInfoNode,databaseDDL} from "@/api/database";
 export default {
   props:{
     leftWidthHolder:{
@@ -58,16 +58,29 @@ export default {
   },
   methods:{
     async loadNode(node, resolve){
-      // console.log(node)
-      let {data:{data}} = await databaseInfoNode(node && node.data && node.data.length !== 0 ? node.data : {})
-      resolve(data)
-      this.$refs.tree.filter(this.filterText);
+      const loading = this.$loading({ lock: true,  text: 'Loading', spinner: 'el-icon-loading'});
+      try {
+        let {data:{data}} = await databaseInfoNode(node && node.data && node.data.length !== 0 ? node.data : {})
+        resolve(data)
+        this.$refs.tree.filter(this.filterText);
+      }finally {
+        loading.close()
+      }
+
     },
     handleNodeClick(data,node,component){
-      // console.log(data,node,component)
     },
     showDDL(data){
-      this.rightPanel.prependSql(data.sql+'\n\n')
+      // this.rightPanel.prependSql(data.sql+'\n\n')
+
+      const loading = this.$loading({ lock: true,  text: 'Loading', spinner: 'el-icon-loading'});
+      databaseDDL(data.tableName).then(({data:{data}})=>{
+        this.rightPanel.prependSql(data+'\n\n')
+      }).catch(e=>{
+        console.log('err',e)
+      }).finally(()=>{
+        loading.close()
+      })
     },
     deleteClick(nodeData, node){
 
