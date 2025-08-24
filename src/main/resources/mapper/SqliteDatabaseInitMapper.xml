@@ -97,6 +97,7 @@
             `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             `key` TEXT NOT NULL,
             `content` TEXT NOT NULL,
+            `remark` TEXT,
             `create_time` DATETIME,
             `modify_time` DATETIME
         );
@@ -117,6 +118,10 @@
         );
     </update>
     <select id="pragmaTableInfo" resultType="com.haruhi.botServer.entity.TableInfoSqlite">
-        PRAGMA table_info(`${tableName}`)
+        PRAGMA table_info(${tableName})
+    </select>
+
+    <select id="pragmaIndexList" resultType="com.haruhi.botServer.entity.IndexInfoSqlite">
+        PRAGMA index_list(${tableName})
     </select>
 </mapper>

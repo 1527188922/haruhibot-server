@@ -1,5 +1,6 @@
 package com.haruhi.botServer.mapper;
 
+import com.haruhi.botServer.entity.IndexInfoSqlite;
 import com.haruhi.botServer.entity.TableInfoSqlite;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -11,6 +12,7 @@ public interface SqliteDatabaseInitMapper {
 
     List<TableInfoSqlite> pragmaTableInfo(@Param("tableName") String tableName);
 
+    List<IndexInfoSqlite> pragmaIndexList(@Param("tableName") String tableName);
 
 
     int createIndex(@Param("tableName") String tableName, @Param("column") String column);
