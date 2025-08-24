@@ -283,10 +283,10 @@ const release = [{
         children: []
     },
     {
-        label: 'SQL编辑器',
-        path: '/sql-editor',
+        label: '数据库管理',
+        path: '/db-manage',
         iconBgColor: randomColor(),
-        component: 'views/sql-edit/index',
+        component: 'views/database-manage/index',
         children: []
     }
 ,{

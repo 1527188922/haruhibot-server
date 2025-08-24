@@ -1,6 +1,6 @@
 <template>
-  <basic-container class="sql-editor">
-    <div class="editor-container" :class="theme">
+  <basic-container class="db-manage">
+    <div class="db-manage-container" :class="theme">
       <!-- 左侧资源管理器 -->
       <left-panel ref="leftPanel" :left-width-holder="leftWidthHolder"></left-panel>
 
@@ -57,7 +57,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.sql-editor{
+.db-manage{
   display: flex;
   height: 100%;
   padding-bottom: 0;
@@ -65,7 +65,7 @@ export default {
     height: 100%;
     padding: 0;
   }
-  .editor-container {
+  .db-manage-container {
     display: flex;
     height: 100%;
     &.dark {
