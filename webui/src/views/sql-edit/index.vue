@@ -28,7 +28,7 @@ export default {
       theme: 'light',
       resizeBarWeight:5,
       leftWidthHolder:{
-        leftWidth: 280,
+        leftWidth: 400,
       },
       dbTree: [],
       treeProps: {

@@ -23,4 +23,6 @@ public class DatabaseInfoNode {
     private String tableName;// 所属表名称
     private String sql;// DDL
     private Integer unique;// 是否唯一索引
+
+    private Boolean leaf;
 }
