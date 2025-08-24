@@ -153,14 +153,4 @@ export default {
   background: #409EFF;
 }
 
-.el-main {
-  border-bottom: 1px solid #ebeef5;
-  overflow: auto;
-}
-
-.el-footer {
-  border-top: 1px solid #ebeef5;
-  //background: #f5f7fa;
-  overflow: auto;
-}
 </style>
