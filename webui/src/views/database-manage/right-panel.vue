@@ -1,17 +1,33 @@
 <template>
   <div class="right-panel">
     <el-container>
-      <el-main ref="main" :style="{ height: mainHeight + 'px' }">
+      <el-aside>
+        <div class="btn-dev" title="执行">
+          <el-button type="text" @click="exec">▶</el-button>
+        </div>
+<!--        <div class="btn-dev" title="执行选中的">-->
+<!--          <template v-if="selectedText && selectedText.trim().length !== 0">-->
+<!--            <el-button type="text"  class="success-text-btn" @click="execSelected">▶</el-button>-->
+<!--          </template>-->
+<!--          <template v-else>-->
+<!--            <el-button type="text"  class="info-text-btn" disabled>▶</el-button>-->
+<!--          </template>-->
+<!--        </div>-->
+      </el-aside>
+      <el-container>
+        <el-main ref="main" :style="{ height: mainHeight + 'px' }">
           <sql-textarea v-model="content" @selection-change="handleSelection"></sql-textarea>
+        </el-main>
 
-      </el-main>
+        <!-- 拖动条 -->
+        <div class="drag-bar" @mousedown="startDrag" :style="{ height: dragBarHeight + 'px'}"></div>
 
-      <!-- 拖动条 -->
-      <div class="drag-bar" @mousedown="startDrag" :style="{ height: dragBarHeight + 'px'}"></div>
+        <el-footer ref="footer" :style="{ height: footerHeight + 'px' }">
+          Footer Content
+<!--         -->
+        </el-footer>
+      </el-container>
 
-      <el-footer ref="footer" :style="{ height: footerHeight + 'px' }">
-        Footer Content
-      </el-footer>
     </el-container>
   </div>
 </template>
@@ -43,6 +59,12 @@ export default {
     document.removeEventListener('mouseup', this.stopDrag);
   },
   methods:{
+    exec(){
+      console.log(this.content)
+    },
+    execSelected(){
+      console.log(this.selectedText)
+    },
     prependSql(text){
       let t = this.content
       this.content = text + t
@@ -89,6 +111,34 @@ export default {
   display: flex;
   flex-direction: column;
   flex: 1;
+  ::v-deep .el-container{
+    height: calc(100vh - 110px) !important;
+  }
+
+  ::v-deep .el-aside{
+    // 减去
+    //height: calc(100vh - 110px) !important;
+    width: 30px !important;
+    padding: 5px;
+    text-align: center;
+    .btn-dev{
+      .el-button{
+        padding-top: 10px;
+        padding-bottom: 10px;
+        span{
+          font-size: 20px;
+        }
+      }
+    }
+    .btn-dev:not(:last-child) {
+      border-bottom: 1px solid #DCDFE6;
+    }
+
+  }
+
+  ::v-deep .el-footer{
+    border-left:  1px solid #DCDFE6;
+  }
 }
 
 .drag-bar {
