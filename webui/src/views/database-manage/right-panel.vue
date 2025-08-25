@@ -146,6 +146,7 @@ export default {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
   ::v-deep .el-container{
     height: calc(100vh - 110px) !important;
   }

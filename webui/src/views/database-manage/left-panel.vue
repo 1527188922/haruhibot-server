@@ -110,7 +110,7 @@ export default {
 </script>
 <style scoped lang="scss">
 .left-panel {
-  overflow: auto;
+  //overflow: auto;
   border-right: 1px solid #ebeef5;
   padding-bottom: 10px;
   padding-left: 10px;

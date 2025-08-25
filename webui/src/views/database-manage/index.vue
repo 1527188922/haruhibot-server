@@ -27,8 +27,9 @@ export default {
     return {
       theme: 'light',
       resizeBarWeight:5,
+      leftMinWidth:200,//左侧最小宽度
       leftWidthHolder:{
-        leftWidth: 400,
+        leftWidth: 400,//左侧初始宽度
       },
       dbTree: [],
       treeProps: {
@@ -45,7 +46,10 @@ export default {
       const startX = e.clientX
       const startWidth = this.leftWidthHolder.leftWidth
       document.onmousemove = (e) => {
-        this.leftWidthHolder.leftWidth = startWidth + (e.clientX - startX)
+        let w = startWidth + (e.clientX - startX)
+        if (w > this.leftMinWidth) {
+          this.leftWidthHolder.leftWidth = startWidth + (e.clientX - startX)
+        }
       }
       document.onmouseup = () => {
         document.onmousemove = null
