@@ -114,6 +114,7 @@ public class SqliteDatabaseService{
 
     public List<SqlExecuteResult> executeSql(String sql, String url) {
         sql = sql == null ? "" : sql;
+        sql = sql.replace("\n","").replace("\t","");
         long l = System.currentTimeMillis();
         try (Connection conn = DriverManager.getConnection(url);
              Statement stmt = conn.createStatement()){
@@ -201,41 +202,6 @@ public class SqliteDatabaseService{
 
         }
         return null;
-    }
-
-    public static void main(String[] args) {
-        // QUERY
-//        SqliteDatabaseService sqliteDatabaseService = new SqliteDatabaseService();
-//        SqlExecuteResult sqlExecuteResult = sqliteDatabaseService.executeSql("PRAGMA table_info(`t_test`)", "jdbc:sqlite:D:\\my\\bot\\db\\haruhibot_server.db");
-
-
-        // UPDATE
-//        SqliteDatabaseService sqliteDatabaseService = new SqliteDatabaseService();
-//        List<SqlExecuteResult> results = sqliteDatabaseService.executeSql("CREATE TABLE IF NOT EXISTS `t_test3` (\n" +
-//                "            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n" +
-//                "            `key` TEXT NOT NULL UNIQUE,\n" +
-//                "            `content` TEXT NOT NULL,\n" +
-//                "            `create_time` DATETIME,\n" +
-//                "            `modify_time` DATETIME\n" +
-//                "        );", "jdbc:sqlite:D:\\my\\bot\\db\\haruhibot_server.db");
-//        System.out.println(results);
-
-
-        // UPDATE
-//        SqliteDatabaseService sqliteDatabaseService = new SqliteDatabaseService();
-//        sqliteDatabaseService.executeSql("INSERT INTO t_test(\"key\",        content) values('1','2');" +
-//                "INSERT INTO t_test(\"key\",content) values('1','2')", "jdbc:sqlite:D:\\my\\bot\\db\\haruhibot_server.db");
-
-
-        // DDL or UPDATE ?
-//        SqliteDatabaseService sqliteDatabaseService = new SqliteDatabaseService();
-//        List<SqlExecuteResult> results = sqliteDatabaseService.executeSql("ALTER TABLE t_test ADD COLUMN c_6 text;;;;;", "jdbc:sqlite:D:\\my\\bot\\db\\haruhibot_server.db");
-//        System.out.println(results);
-
-
-        // UPDATE
-//        SqliteDatabaseService sqliteDatabaseService = new SqliteDatabaseService();
-//        SqlExecuteResult sqlExecuteResult = sqliteDatabaseService.executeSql("delete from t_dictionary where id = 99999999;", "jdbc:sqlite:D:\\my\\bot\\db\\haruhibot_server.db");
     }
 
 

@@ -12,6 +12,14 @@
                   show-overflow-tooltip
                   :label="field"
                   :prop="field">
+                <template slot-scope="scope">
+                  <span v-if="scope.row[field] !== null">
+                    {{ scope.row[field] }}
+                  </span>
+                  <span v-else class="null-value">
+                    NULL
+                  </span>
+                </template>
               </el-table-column>
             </el-table>
           </template>
@@ -79,7 +87,17 @@ export default {
     border: none !important;
     .el-tabs__content{
       padding: 0;
+      .el-table{
+        width: 100% !important;
+        min-width: 0 !important; /* 覆盖表格默认最小宽度 */
+        .el-table__body-wrapper {
+          overflow-x: auto; /* 允许横向滚动 */
+        }
+      }
     }
+  }
+  .null-value{
+    color: #C0C4CC;
   }
 }
 
