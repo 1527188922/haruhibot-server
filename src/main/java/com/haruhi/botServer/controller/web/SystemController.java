@@ -7,6 +7,9 @@ import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.WebuiConfig;
 import com.haruhi.botServer.constant.RootTypeEnum;
+import com.haruhi.botServer.constant.SqlTypeEnum;
+import com.haruhi.botServer.dto.SqlExecuteResult;
+import com.haruhi.botServer.service.SqliteDatabaseService;
 import com.haruhi.botServer.vo.*;
 import com.haruhi.botServer.dto.qqclient.RequestBox;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
@@ -28,10 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -47,6 +47,8 @@ public class SystemController {
 
     @Autowired
     private BotServer botServer;
+    @Autowired
+    private SqliteDatabaseService sqliteDatabaseService;
 
 
     @IgnoreAuthentication
@@ -232,6 +234,21 @@ public class SystemController {
     @GetMapping("/db/ddl")
     public HttpResp databaseDDL(@RequestParam String tableName) {
         return HttpResp.success(systemService.tableDDL(tableName));
+    }
+
+    @PostMapping("/db/execute")
+    public HttpResp<List<SqlExecuteResult>> executeSql(@RequestBody Map<String,String> request) {
+        String sql = request.get("sql");
+        try {
+            return HttpResp.success(sqliteDatabaseService.executeSql(sql));
+        } catch (Exception e) {
+            log.error("executeSql异常",e);
+            SqlExecuteResult result = new SqlExecuteResult();
+            result.setSql(sql);
+            result.setType(SqlTypeEnum.ERROR.name());
+            result.setErrorMessage(e.getMessage());
+            return HttpResp.success(Collections.singletonList(result));
+        }
     }
 
 }
