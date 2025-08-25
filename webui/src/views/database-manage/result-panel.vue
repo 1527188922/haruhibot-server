@@ -87,13 +87,8 @@ export default {
     border: none !important;
     .el-tabs__content{
       padding: 0;
-      .el-table{
-        width: 100% !important;
-        min-width: 0 !important; /* 覆盖表格默认最小宽度 */
-        .el-table__body-wrapper {
-          overflow-x: auto; /* 允许横向滚动 */
-        }
-      }
+      //.el-table{
+      //}
     }
   }
   .null-value{
