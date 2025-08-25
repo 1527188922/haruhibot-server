@@ -16,7 +16,7 @@
       </el-aside>
       <el-container>
         <el-main ref="main" :style="{ height: mainHeight + 'px' }">
-          <sql-textarea v-model="content" @selection-change="handleSelection"></sql-textarea>
+          <sql-textarea v-model="content" @selection-change="handleSelection" @contextmenu="openMenu"></sql-textarea>
         </el-main>
 
         <!-- 拖动条 -->
@@ -29,12 +29,15 @@
       </el-container>
 
     </el-container>
+    <context-menu ref="contextMenu" :items="menuItems" @menu-click="handleMenuClick"></context-menu>
   </div>
 </template>
 <script>
+import ContextMenu from "@/components/context-menu.vue";
 import SqlTextarea from "./sql-textarea.vue";
 export default {
   components:{
+    ContextMenu,
     SqlTextarea,
   },
   data(){
@@ -46,7 +49,11 @@ export default {
       minFooterHeight: 30, // footer最小高度
       isDragging: false,
       content:'',
-      selectedText:''
+      selectedText:'',
+      menuItems: [
+        { text: '▶执行', action: 'execAll' },
+        { text: '▶执行选中的', action: 'execSelected' }
+      ]
     }
   },
   mounted() {
@@ -65,14 +72,23 @@ export default {
     execSelected(){
       console.log(this.selectedText)
     },
+    // 右键事件
+    openMenu(e){
+      this.$refs.contextMenu.open(e)
+    },
+    handleMenuClick({ action }){
+      if (action === 'execAll') {
+        this.exec()
+      }else if(action === 'execSelected'){
+        this.execSelected()
+      }
+    },
     prependSql(text){
       let t = this.content
       this.content = text + t
     },
     handleSelection(v){
       this.selectedText = v;
-      // console.log(this.content)
-      // console.log(this.selectedText)
     },
     startDrag(e) {
       this.isDragging = true;
@@ -121,6 +137,9 @@ export default {
     width: 30px !important;
     padding: 5px;
     text-align: center;
+    border-top: 1px solid #DCDFE6;
+    border-left: 1px solid #DCDFE6;
+    border-bottom: 1px solid #DCDFE6;
     .btn-dev{
       .el-button{
         padding-top: 10px;
@@ -137,20 +156,20 @@ export default {
   }
 
   ::v-deep .el-footer{
-    border-left:  1px solid #DCDFE6;
+    border:  1px solid #DCDFE6;
   }
-}
 
-.drag-bar {
-  background-color: #f0f2f5;
-  cursor: ns-resize;
-  position: relative;
-  z-index: 1;
-  transition: background 0.3s;
-}
 
-.drag-bar:hover {
-  background: #409EFF;
-}
+  .drag-bar {
+    background-color: #f0f2f5;
+    cursor: ns-resize;
+    position: relative;
+    z-index: 1;
+    transition: background 0.3s;
+  }
+  .drag-bar:hover {
+    background: #409EFF;
+  }
 
+}
 </style>

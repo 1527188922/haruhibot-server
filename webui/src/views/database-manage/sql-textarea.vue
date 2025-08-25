@@ -10,7 +10,7 @@
       @keyup.native="onKeyup"
       @blur="onBlur"
       @focus="onFocus"
-
+      @contextmenu.native.prevent="contextmenu"
       class="full-size-textarea"
   ></el-input>
 </template>
@@ -28,6 +28,10 @@ export default {
   beforeDestroy() {
   },
   methods: {
+    // 鼠标右键
+    contextmenu(e){
+      this.$emit('contextmenu', e);
+    },
     handleInput(value) {
       this.$emit('selection-change', '')
       this.$emit('input', value);
@@ -50,7 +54,9 @@ export default {
     },
     onSelect() { this.readLater() },
     onMouseUp() { this.readLater() },
-    onClick() { this.readLater() },
+    onClick(e) {
+      this.readLater()
+    },
     onKeyup(e) {
       const keys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Escape','Shift']
       if (keys.includes(e.key)) {
@@ -68,11 +74,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-//.auto-resize-wrapper {
-//  width: 100%;
-//  height: 100%;
-//}
-
 .full-size-textarea {
   width: 100%;
   height: 100%;
