@@ -58,15 +58,9 @@ export default {
   },
   methods:{
     async loadNode(node, resolve){
-      const loading = this.$loading({ lock: true,  text: 'Loading', spinner: 'el-icon-loading'});
-      try {
-        let {data:{data}} = await databaseInfoNode(node && node.data && node.data.length !== 0 ? node.data : {})
-        resolve(data)
-        this.$refs.tree.filter(this.filterText);
-      }finally {
-        loading.close()
-      }
-
+      let {data:{data}} = await databaseInfoNode(node && node.data && node.data.length !== 0 ? node.data : {})
+      resolve(data)
+      this.$refs.tree.filter(this.filterText);
     },
     handleNodeClick(data,node,component){
     },

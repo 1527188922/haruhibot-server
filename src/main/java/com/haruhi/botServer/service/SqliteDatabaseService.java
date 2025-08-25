@@ -1,8 +1,8 @@
 package com.haruhi.botServer.service;
 
-import com.baomidou.dynamic.datasource.creator.DataSourceProperty;
-import com.baomidou.dynamic.datasource.provider.DynamicDataSourceProvider;
-import com.baomidou.dynamic.datasource.provider.YmlDynamicDataSourceProvider;
+import com.alibaba.druid.pool.DruidDataSource;
+import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
+import com.baomidou.dynamic.datasource.ds.ItemDataSource;
 import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.constant.SqlTypeEnum;
 import com.haruhi.botServer.dto.SqlExecuteResult;
@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.lang.reflect.Field;
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,7 +26,7 @@ public class SqliteDatabaseService{
     @Autowired
     private SqliteDatabaseInitMapper sqliteDatabaseInitMapper;
     @Autowired
-    private DynamicDataSourceProvider dynamicDataSourceProvider;
+    private DataSource dataSource;
 
     @PostConstruct
     private void firstInit(){
@@ -107,9 +107,9 @@ public class SqliteDatabaseService{
         return sqliteDatabaseInitMapper.addColumn(tableName,columnName,columnType,notNull,defaultValue);
     }
 
-    public List<SqlExecuteResult> executeSql(String sql) throws IllegalAccessException{
-        DataSourceProperty masterDataSourceProperty = getMasterDataSourceProperty();
-        return executeSql(sql, masterDataSourceProperty.getUrl());
+    public List<SqlExecuteResult> executeSql(String sql) {
+        String url = getMasterDataSourceProperty();
+        return executeSql(sql, url);
     }
 
     public List<SqlExecuteResult> executeSql(String sql, String url) {
@@ -187,18 +187,18 @@ public class SqliteDatabaseService{
     }
 
 
-    private DataSourceProperty getMasterDataSourceProperty() throws IllegalAccessException {
-        if(dynamicDataSourceProvider instanceof YmlDynamicDataSourceProvider){
-            YmlDynamicDataSourceProvider ymlDynamicDataSourceProvider = (YmlDynamicDataSourceProvider) dynamicDataSourceProvider;
-            Field[] dataSourcePropertiesMaps = YmlDynamicDataSourceProvider.class.getDeclaredFields();
-            for (Field field : dataSourcePropertiesMaps) {
-                field.setAccessible(true);
-                Object o = field.get(ymlDynamicDataSourceProvider);
-                if(o instanceof LinkedHashMap){
-                    LinkedHashMap<String, DataSourceProperty> linkedHashMap = (LinkedHashMap<String,DataSourceProperty>) o;
-                    return linkedHashMap.get(DataBaseConst.DATA_SOURCE_MASTER);
+    private String getMasterDataSourceProperty() {
+        if (dataSource instanceof DynamicRoutingDataSource) {
+            DynamicRoutingDataSource dynamicRoutingDataSource = (DynamicRoutingDataSource) dataSource;
+            DataSource realDatasource = dynamicRoutingDataSource.getDataSource(DataBaseConst.DATA_SOURCE_MASTER);
+            if (realDatasource instanceof ItemDataSource) {
+                ItemDataSource itemDataSource = (ItemDataSource) realDatasource;
+                if (itemDataSource.getDataSource() instanceof DruidDataSource) {
+                    DruidDataSource druidDataSource = (DruidDataSource) itemDataSource.getDataSource();
+                    return druidDataSource.getUrl();
                 }
             }
+
         }
         return null;
     }

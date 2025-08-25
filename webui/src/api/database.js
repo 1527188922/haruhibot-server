@@ -15,3 +15,11 @@ export const databaseDDL = (tableName) => request({
     method: 'get',
     timeout:60 * 1000
 });
+
+
+export const executeSql = (data) => request({
+    url: `${baseUrl}/sys/db/execute`,
+    method: 'post',
+    timeout:10 * 60 * 1000,
+    data
+});

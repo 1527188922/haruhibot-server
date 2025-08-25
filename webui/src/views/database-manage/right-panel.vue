@@ -23,7 +23,8 @@
         <div class="drag-bar" @mousedown="startDrag" :style="{ height: dragBarHeight + 'px'}"></div>
 
         <el-footer ref="footer" :style="{ height: footerHeight + 'px' }">
-          Footer Content
+          <result-panel ref="resultPanel"></result-panel>
+
         </el-footer>
       </el-container>
 
@@ -34,9 +35,12 @@
 <script>
 import ContextMenu from "@/components/context-menu.vue";
 import SqlTextarea from "./sql-textarea.vue";
+import ResultPanel from "./result-panel.vue";
+import {executeSql as executeSqlApi} from "@/api/database";
 export default {
   components:{
     ContextMenu,
+    ResultPanel,
     SqlTextarea,
   },
   data(){
@@ -66,15 +70,31 @@ export default {
   },
   methods:{
     exec(){
-      console.log(this.content)
+      this.executeSql(this.content)
     },
     execSelected(){
-      console.log(this.selectedText)
+      this.executeSql(this.selectedText)
+    },
+    executeSql(sql){
+      const loading = this.$loading({ lock: true,  text: 'Loading', spinner: 'el-icon-loading'});
+      executeSqlApi({sql}).then(({data:{code,message,data}})=>{
+        if(code !== 200){
+          return this.$message.error(message)
+        }
+        this.$refs.resultPanel.updateResult(data)
+      }).catch(e =>{
+        if (e.message) {
+          this.$message.error(e.message)
+        }
+      }).finally(()=>{
+        loading.close()
+      })
     },
     // 右键事件
     openMenu(e){
       this.$refs.contextMenu.open(e)
     },
+    // 右键菜单 点击item事件
     handleMenuClick({ action }){
       if (action === 'execAll') {
         this.exec()
@@ -156,6 +176,7 @@ export default {
 
   ::v-deep .el-footer{
     border:  1px solid #DCDFE6;
+    padding: 0;
   }
 
 
