@@ -5,14 +5,14 @@
         <div class="btn-dev" title="执行">
           <el-button type="text" @click="exec">▶</el-button>
         </div>
-<!--        <div class="btn-dev" title="执行选中的">-->
-<!--          <template v-if="selectedText && selectedText.trim().length !== 0">-->
-<!--            <el-button type="text"  class="success-text-btn" @click="execSelected">▶</el-button>-->
-<!--          </template>-->
-<!--          <template v-else>-->
-<!--            <el-button type="text"  class="info-text-btn" disabled>▶</el-button>-->
-<!--          </template>-->
-<!--        </div>-->
+        <div class="btn-dev" title="执行选中的" @mousedown.prevent="(e)=>{}">
+          <template v-if="selectedText && selectedText.trim().length !== 0">
+            <el-button type="text" class="success-text-btn" @click="execSelected">▶</el-button>
+          </template>
+          <template v-else>
+            <el-button type="text" class="info-text-btn" disabled>▶</el-button>
+          </template>
+        </div>
       </el-aside>
       <el-container>
         <el-main ref="main" :style="{ height: mainHeight + 'px' }">
@@ -24,7 +24,6 @@
 
         <el-footer ref="footer" :style="{ height: footerHeight + 'px' }">
           Footer Content
-<!--         -->
         </el-footer>
       </el-container>
 
