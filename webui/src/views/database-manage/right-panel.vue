@@ -16,7 +16,8 @@
       </el-aside>
       <el-container>
         <el-main ref="main" :style="{ height: mainHeight + 'px' }">
-          <sql-textarea v-model="content" @selection-change="handleSelection" @contextmenu="openMenu"></sql-textarea>
+          <sql-textarea v-model="content" @selection-change="handleSelection" @contextmenu="openMenu"
+                        @change="handleSqlChange"></sql-textarea>
         </el-main>
 
         <!-- 拖动条 -->
@@ -37,6 +38,7 @@ import ContextMenu from "@/components/context-menu.vue";
 import SqlTextarea from "./sql-textarea.vue";
 import ResultPanel from "./result-panel.vue";
 import {executeSql as executeSqlApi} from "@/api/database";
+import { getStore,setStore } from "@/util/store.js";
 export default {
   components:{
     ContextMenu,
@@ -68,7 +70,14 @@ export default {
     document.removeEventListener('mousemove', this.handleDrag);
     document.removeEventListener('mouseup', this.stopDrag);
   },
+  created() {
+    this.initContent()
+  },
   methods:{
+    initContent(){
+      let sql = getStore({name:'sql-cache'})
+      this.content = sql || ''
+    },
     exec(){
       this.executeSql(this.content)
     },
@@ -88,6 +97,12 @@ export default {
         }
       }).finally(()=>{
         loading.close()
+      })
+    },
+    handleSqlChange(v){
+      setStore({
+        name:'sql-cache',
+        content:v
       })
     },
     // 右键事件

@@ -11,6 +11,7 @@
       @blur="onBlur"
       @focus="onFocus"
       @contextmenu.native.prevent="contextmenu"
+      @change="handleChange"
       class="full-size-textarea"
   ></el-input>
 </template>
@@ -31,6 +32,9 @@ export default {
     // 鼠标右键
     contextmenu(e){
       this.$emit('contextmenu', e);
+    },
+    handleChange(v){
+      this.$emit('change', v);
     },
     handleInput(value) {
       this.$emit('selection-change', '')

@@ -4,7 +4,7 @@
 export default {
   title: "",
   logo: "H",
-  key: 'avue',//配置主键,目前用于存储
+  key: 'hbot',//配置主键,目前用于存储
   indexTitle: 'Suzumiya Haruhi',
   lockPage: '/lock',
   tokenTime: 6000,//token过期时间
