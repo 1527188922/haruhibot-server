@@ -10,6 +10,7 @@ import com.haruhi.botServer.entity.TableInfoSqlite;
 import com.haruhi.botServer.mapper.SqliteDatabaseInitMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -113,15 +114,19 @@ public class SqliteDatabaseService{
     }
 
     public List<SqlExecuteResult> executeSql(String sql, String url) {
-        sql = sql == null ? "" : sql;
-        sql = sql.replace("\n","").replace("\t","");
+        List<String> sqls = handleSql(sql);
+        if (CollectionUtils.isEmpty(sqls)) {
+            SqlExecuteResult sqlExecuteResult = new SqlExecuteResult();
+            sqlExecuteResult.setType(SqlTypeEnum.ERROR.name());
+            sqlExecuteResult.setErrorMessage("无SQL");
+            return Collections.singletonList(sqlExecuteResult);
+        }
         long l = System.currentTimeMillis();
         try (Connection conn = DriverManager.getConnection(url);
              Statement stmt = conn.createStatement()){
 
             List<SqlExecuteResult> results = new ArrayList<>();
-            String[] split = sql.split("(?<=;)");
-            for (String s : split) {
+            for (String s : sqls) {
                 SqlExecuteResult executeResult = new SqlExecuteResult();
                 executeResult.setSql(s);
                 try {
@@ -158,6 +163,15 @@ public class SqliteDatabaseService{
             log.error("打开连接异常", e);
             return new ArrayList<>(Collections.singletonList(sqlExecuteResult));
         }
+    }
+
+    private List<String> handleSql(String originalSql) {
+        if (StringUtils.isBlank(originalSql)) {
+            return null;
+        }
+        originalSql = originalSql.replaceAll("--.*?(\\R|$)", "");
+        String[] split = originalSql.split("(?<=;)");
+        return Arrays.stream(split).filter(StringUtils::isNotBlank).map(String::trim).collect(Collectors.toList());
     }
 
     /**

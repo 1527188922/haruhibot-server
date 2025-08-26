@@ -48,10 +48,10 @@ export default {
   data(){
     return{
       dragBarHeight: 5,//拖动条高度
-      mainHeight: 400,      // main初始高度
-      footerHeight: 250,    // footer初始高度
+      mainHeight: 400,      // main初始高度 这里初始化无意思
+      footerHeight: 400,    // footer初始高度
       minMainHeight: 0,   // main最小高度
-      minFooterHeight: 30, // footer最小高度
+      minFooterHeight: 40, // footer最小高度
       isDragging: false,
       content:'',
       selectedText:'',

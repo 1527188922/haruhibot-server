@@ -5,12 +5,11 @@
         <el-tab-pane :key="item.name" v-for="(item, index) in results" :name="item.name">
           <span slot="label" :title="item.type">
 <!--            hover click 只有query展示popover-->
-            <el-popover placement="top" width="200" trigger="click"
-                        :disabled="item.type !== 'QUERY'">
-               <div>
-                 <div v-if="item.cost || item.cost === 0">{{`耗时：${item.cost}ms`}}</div>
-                 <div>{{item.sql}}</div>
-               </div>
+            <el-popover placement="top-start" trigger="click"
+                        :disabled="item.type !== 'QUERY'"
+                        popper-class="query-result-sql-popover">
+              <div v-if="item.cost || item.cost === 0">{{`耗时：${item.cost}ms`}}</div>
+              <pre>{{item.sql}}</pre>
               <span slot="reference">
                 <i :class="item.type === 'ERROR' ? 'el-icon-error danger-text' : 'el-icon-success success-text'"></i>
                 {{ item.title }}
@@ -38,17 +37,21 @@
             </el-table>
           </template>
           <template v-if="item.type === 'UPDATE' || item.type === 'DDL' || item.type === 'ERROR'">
-            <div v-if="item.data || item.data === 0">
-              <label>影响行数：</label>{{item.data}}
-            </div>
-            <div v-if="item.cost || item.cost === 0">
-              <label>耗时：</label>{{item.cost}}
-            </div>
-            <div v-if="item.errorMessage">
-              <label>错误：</label>{{item.errorMessage}}
-            </div>
-            <div v-if="item.sql">
-              <label>SQL：</label>{{item.sql}}
+            <div class="update-result">
+              <el-form :model="item" label-width="80px">
+                <el-form-item label="影响行数：" v-if="item.data || item.data === 0">
+                  {{item.data}}
+                </el-form-item>
+                <el-form-item label="耗时：" v-if="item.cost || item.cost === 0">
+                  {{item.cost}}ms
+                </el-form-item>
+                <el-form-item label="错误：" v-if="item.errorMessage">
+                  {{item.errorMessage}}
+                </el-form-item>
+                <el-form-item label="SQL：" v-if="item.sql">
+                  <pre>{{item.sql}}</pre>
+                </el-form-item>
+              </el-form>
             </div>
           </template>
         </el-tab-pane>
@@ -110,6 +113,16 @@ export default {
   }
 }
 </script>
+<style lang="scss">
+.query-result-sql-popover{
+  padding: 10px;
+  min-width: 200px;
+  max-width: 500px;
+  pre{
+    margin: 0;
+  }
+}
+</style>
 <style scoped lang="scss">
 .result-panel{
   width: 100%;
@@ -119,13 +132,35 @@ export default {
     box-shadow: none !important;
     .el-tabs__content{
       padding: 0;
-      //.el-table{
-      //}
     }
   }
   .null-value{
     color: #C0C4CC;
   }
+
+  .update-result{
+    padding: 5px 10px 5px 10px;
+    ::v-deep .el-form-item{
+      margin-bottom: 0;
+
+      .el-form-item__label{
+        padding-right: 0;
+        line-height: 30px;
+        height: 30px;
+        font-weight: bold;
+      }
+
+      .el-form-item__content{
+        line-height: 30px;
+        min-height: 30px;
+        height: auto;
+        pre{
+          margin: 0;
+        }
+      }
+    }
+  }
+
 }
 
 </style>

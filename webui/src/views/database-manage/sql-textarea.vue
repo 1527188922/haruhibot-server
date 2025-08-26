@@ -88,6 +88,7 @@ export default {
     resize: none;
     padding: 5px;
     box-sizing: border-box;
+    font-family: monospace, serif;
   }
 }
 </style>
