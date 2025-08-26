@@ -121,7 +121,7 @@ public class SqliteDatabaseService{
             sqlExecuteResult.setErrorMessage("无SQL");
             return Collections.singletonList(sqlExecuteResult);
         }
-        long l = System.currentTimeMillis();
+
         try (Connection conn = DriverManager.getConnection(url);
              Statement stmt = conn.createStatement()){
 
@@ -130,6 +130,7 @@ public class SqliteDatabaseService{
                 SqlExecuteResult executeResult = new SqlExecuteResult();
                 executeResult.setSql(s);
                 try {
+                    long l = System.currentTimeMillis();
                     boolean hasResultSet = stmt.execute(s);
                     executeResult.setCost(System.currentTimeMillis() - l);
                     if (hasResultSet) {
@@ -140,11 +141,11 @@ public class SqliteDatabaseService{
                         }
                     } else {
                         int affectedRows = stmt.getUpdateCount();
+                        executeResult.setData(affectedRows);
                         if (affectedRows == -1) {
                             executeResult.setType(SqlTypeEnum.DDL.name());
                         } else {
                             executeResult.setType(SqlTypeEnum.UPDATE.name());
-                            executeResult.setData(affectedRows);
                         }
                     }
                 }catch (SQLException e) {
