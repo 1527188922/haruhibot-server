@@ -7,6 +7,7 @@
     <li v-for="item in items"
         :key="item.action"
         @click.stop="handleClick(item.action)">
+      <i v-if="item.icon" :class="item.icon"></i>
       {{ item.text }}
     </li>
   </ul>

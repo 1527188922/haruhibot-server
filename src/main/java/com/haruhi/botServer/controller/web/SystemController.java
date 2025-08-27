@@ -1,6 +1,7 @@
 package com.haruhi.botServer.controller.web;
 
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.annotation.IgnoreAuthentication;
@@ -32,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -267,5 +269,21 @@ public class SystemController {
         dictionarySqliteService.put(DictionaryEnum.DATABASE_DB_SQL_CACHE.getKey(),sql);
         return HttpResp.success();
     }
+    @PostMapping("/db/export")
+    public void export(@RequestBody Map<String,String> request,HttpServletResponse response) throws IOException {
+        String sql = request.get("sql");
+        try (ServletOutputStream outputStream = response.getOutputStream()){
+            response.setCharacterEncoding("UTF-8");
+            response.setHeader("content-Type", "application/vnd.ms-excel");
+            response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(StrFormatter.format("db_export_{}.xlsx",System.currentTimeMillis()), "UTF-8"));
+            response.setHeader("access-control-expose-headers", "*");
+            response.setHeader("overwrite-response-data", "true");
+            response.setContentType("application/octet-stream;charset=UTF-8");
+
+            sqliteDatabaseService.executeAndExport(sql, outputStream);
+        }
+
+    }
+
 
 }

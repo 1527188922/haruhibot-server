@@ -1,12 +1,16 @@
 package com.haruhi.botServer.service;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.ds.ItemDataSource;
 import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.constant.SqlTypeEnum;
 import com.haruhi.botServer.dto.SqlExecuteResult;
 import com.haruhi.botServer.entity.TableInfoSqlite;
+import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.mapper.SqliteDatabaseInitMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -16,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
+import java.io.OutputStream;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -219,5 +224,40 @@ public class SqliteDatabaseService{
     }
 
 
+    public void executeAndExport(String sql, OutputStream outputStream) {
+        List<SqlExecuteResult> results = executeSql(sql);
+        if (CollectionUtils.isEmpty(results)) {
+            throw new BusinessException("无执行结果");
+        }
+
+        List<SqlExecuteResult> queryResult = results.stream().filter(e -> SqlTypeEnum.QUERY.name().equals(e.getType())).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(queryResult)) {
+            throw new BusinessException("无查询结果");
+        }
+        ExcelWriter excelWriter = EasyExcel.write(outputStream)
+                .useDefaultStyle(false)
+                .build();
+        try {
+
+            for (int i = 0; i < queryResult.size(); i++) {
+                SqlExecuteResult result = queryResult.get(i);
+                List<List<Object>> excelData = (List<List<Object>>)result.getData();
+
+                List<List<String>> head = new ArrayList<>();
+                for (Object header : excelData.get(0)) {
+                    head.add(Collections.singletonList(header == null ? "" : header.toString()));
+                }
+
+                WriteSheet sheet = EasyExcel.writerSheet(i, i+"-sheet")
+                        .head(head)
+                        .build();
+
+                List<List<Object>> dataRows = excelData.subList(1, excelData.size());
+                excelWriter.write(dataRows, sheet);
+            }
+        }finally {
+            excelWriter.finish();
+        }
+    }
 
 }

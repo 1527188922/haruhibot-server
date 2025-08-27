@@ -36,3 +36,10 @@ export const saveSqlCache = (data) => request({
     timeout:10 * 1000,
     data
 });
+export const execAndExport = (data) => request({
+    url: `${baseUrl}/sys/db/export`,
+    method: 'post',
+    timeout:10 * 60 * 1000,
+    responseType:'blob',
+    data
+});
