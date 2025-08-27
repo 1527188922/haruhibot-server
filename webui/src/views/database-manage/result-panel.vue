@@ -1,7 +1,9 @@
 <template>
-  <div class="result-panel">
+  <div class="result-panel" ref="resultPanelDiv">
     <template v-if="results && results.length > 0">
-      <el-tabs v-model="activeName" type="border-card" closable @tab-remove="handleTabRemove">
+      <el-tabs v-model="activeName" type="border-card" closable @tab-remove="handleTabRemove"
+               ref="resultTab"
+      @tab-click="tabClick">
         <el-tab-pane :key="item.name" v-for="(item, index) in results" :name="item.name">
           <span slot="label" :title="item.type">
 <!--            hover click 只有query展示popover-->
@@ -18,10 +20,12 @@
           </el-popover>
           </span>
           <template v-if="isQuery(item)">
-            <el-table :data="item.rows" border size="small" :fit="false"
+            <el-table :data="item.rows" border size="small" :fit="false" :key="tableKey"
+                      ref="dataTable"
+                      :height="`${tableHeight}px`"
                       highlight-current-row>
               <!-- 动态表头 -->
-              <el-table-column  v-for="(field, index) in item.tableHeaders"
+              <el-table-column  v-for="(field, index) in item.tableHeaders" sortable
                   :key="index"
                   show-overflow-tooltip
                   :label="field"
@@ -65,19 +69,88 @@ export default {
   data(){
     return{
       results:[],
-      activeName:''
+      activeName:'',
+      currentClickTabName:'',
+      observer:null,
+      tableHeight:0,
+      tableKey:0,
+      tableUpdated:false
     }
   },
   computed:{
   },
+  mounted() {
+   this.initObserver()
+  },
+  beforeDestroy() {
+    this.disconnect()
+  },
   methods:{
+    getResultPanelHeight(){
+      return this.$refs.resultPanelDiv.offsetHeight
+    },
+    getResultPanelWidth(){
+      return this.$refs.resultPanelDiv.offsetWidth
+    },
+    getCurrentTable(){
+      if(!this.results || this.results.length === 0 || !this.$refs.dataTable
+      || this.$refs.dataTable.length === 0 || !this.activeName){
+        return null
+      }
+      let queryResult = this.results.filter(e => this.isQuery(e.type))
+      let i = queryResult.findIndex(e => e.name === this.activeName)
+      return this.$refs.dataTable[i]
+    },
+    initObserver(){
+      this.observer = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          let newHeight = entry.contentRect.height
+          let newWidth = entry.contentRect.width
+          this.handlePanelResize(newHeight,newWidth)
+        }
+      })
+      this.observer.observe(this.$refs.resultPanelDiv)
+    },
+    disconnect(){
+      if (this.observer) {
+        this.observer.disconnect()
+        this.observer = null
+      }
+    },
+    handlePanelResize(height,width){
+      let ts = this.$refs.resultTab
+      let tableHeaderHeight = 0
+      if(ts){
+        let headerEl = ts.$el.querySelector('.el-tabs__header')
+        tableHeaderHeight = headerEl.offsetHeight
+      }
+      this.tableHeight = height - tableHeaderHeight
+      let t = this.getCurrentTable()
+      if(t){
+        let tHeaderWidth = t.$el.querySelector('.el-table__header').offsetWidth
+        if(width < tHeaderWidth && !this.tableUpdated){
+          this.tableKey++
+          this.tableUpdated = true
+        }
+      }
+    },
+    tabClick(v){
+      if(this.currentClickTabName === v.name){
+        return
+      }
+      this.currentClickTabName = v.name
+      this.tableKey++
+    },
     handleTabRemove(name){
       let index = this.results.findIndex(e => e.name === name)
       this.results.splice(index,1)
     },
     updateResult(v){
+      this.results = this.handleResult(v)
       this.$nextTick(()=>{
-        this.results = this.handleResult(v)
+        this.handlePanelResize(this.getResultPanelHeight(),this.getResultPanelWidth())
+        this.tableKey++
+        this.tableUpdated = false
       })
     },
     handleResult(v){
@@ -104,6 +177,7 @@ export default {
         return obj
       })
       this.activeName = list[0].name
+      this.currentClickTabName = this.activeName
       return list
     },
     isQuery(item) {

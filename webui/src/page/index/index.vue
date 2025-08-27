@@ -2,7 +2,7 @@
   <div class="avue-contail"
        :class="{'avue--collapse':isCollapse,}">
     <screenshot v-if="setting.screenshot"></screenshot>
-    <setting></setting>
+<!--    <setting></setting>-->
     <div class="avue-layout"
          :class="{'avue-layout--horizontal':isHorizontal}">
       <div class="avue-sidebar"
@@ -43,7 +43,7 @@
 import { mapGetters } from "vuex";
 import tags from "./tags";
 import screenshot from './screenshot';
-import setting from './setting';
+// import setting from './setting';
 import search from "./search";
 import logo from "./logo";
 import top from "./top/";
@@ -58,7 +58,7 @@ export default {
     tags,
     search,
     sidebar,
-    setting,
+    // setting,
     screenshot
   },
   name: "index",
