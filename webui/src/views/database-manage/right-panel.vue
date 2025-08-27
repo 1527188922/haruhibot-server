@@ -37,7 +37,7 @@
 import ContextMenu from "@/components/context-menu.vue";
 import SqlTextarea from "./sql-textarea.vue";
 import ResultPanel from "./result-panel.vue";
-import {executeSql as executeSqlApi} from "@/api/database";
+import {executeSql as executeSqlApi,getSqlCache,saveSqlCache} from "@/api/database";
 import { getStore,setStore } from "@/util/store.js";
 export default {
   components:{
@@ -71,12 +71,18 @@ export default {
     document.removeEventListener('mouseup', this.stopDrag);
   },
   created() {
+    // this.initContentInLocal()
     this.initContent()
   },
   methods:{
-    initContent(){
+    initContentInLocal(){
       let sql = getStore({name:'sql-cache'})
       this.content = sql || ''
+    },
+    initContent(){
+      getSqlCache().then(({data:{data}})=>{
+        this.content = data || ''
+      })
     },
     exec(){
       this.executeSql(this.content)
@@ -99,11 +105,20 @@ export default {
         loading.close()
       })
     },
-    handleSqlChange(v){
+    saveSqlToLocal(v){
       setStore({
         name:'sql-cache',
         content:v
       })
+    },
+    saveSql(v){
+      saveSqlCache({sql:v}).then((res)=>{
+
+      })
+    },
+    handleSqlChange(v){
+      // this.saveSqlToLocal(v)
+      this.saveSql(v)
     },
     // 右键事件
     openMenu(e){

@@ -23,3 +23,16 @@ export const executeSql = (data) => request({
     timeout:10 * 60 * 1000,
     data
 });
+
+
+export const getSqlCache = () => request({
+    url: `${baseUrl}/sys/db/sql`,
+    method: 'get',
+    timeout:10 * 1000
+});
+export const saveSqlCache = (data) => request({
+    url: `${baseUrl}/sys/db/sql`,
+    method: 'post',
+    timeout:10 * 1000,
+    data
+});

@@ -9,8 +9,6 @@ import com.haruhi.botServer.entity.DictionarySqlite;
 import com.haruhi.botServer.mapper.DictionarySqliteMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.vo.DictQueryReq;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +32,12 @@ public class DictionarySqliteService {
 
     public void refreshCache(){
         synchronized (DictionarySqliteService.class){
-            List<DictionarySqlite> list = getList(null);
+            List<String> keys = Arrays.stream(DictionaryEnum.values())
+                    .filter(DictionaryEnum::isNeedInit)
+                    .map(DictionaryEnum::getKey)
+                    .collect(Collectors.toList());
+            List<DictionarySqlite> list = dictionarySqliteMapper.selectList(new LambdaQueryWrapper<DictionarySqlite>()
+                    .in(DictionarySqlite::getKey, keys));
             CACHE.clear();
             if(CollectionUtils.isEmpty(list)){
                 return;
@@ -77,7 +80,10 @@ public class DictionarySqliteService {
 
     public void initData(boolean refreshCache){
         boolean changed = false;
-        for (DictionaryEnum value : DictionaryEnum.values()) {
+        List<DictionaryEnum> collect = Arrays.stream(DictionaryEnum.values())
+                .filter(DictionaryEnum::isNeedInit)
+                .collect(Collectors.toList());
+        for (DictionaryEnum value : collect) {
             if (!containsKey(value.getKey())) {
                 DictionarySqlite dictionary = new DictionarySqlite();
                 dictionary.setKey(value.getKey());

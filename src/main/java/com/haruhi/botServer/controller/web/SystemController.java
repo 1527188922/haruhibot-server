@@ -6,9 +6,11 @@ import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.WebuiConfig;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.constant.SqlTypeEnum;
 import com.haruhi.botServer.dto.SqlExecuteResult;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.SqliteDatabaseService;
 import com.haruhi.botServer.vo.*;
 import com.haruhi.botServer.dto.qqclient.RequestBox;
@@ -49,6 +51,8 @@ public class SystemController {
     private BotServer botServer;
     @Autowired
     private SqliteDatabaseService sqliteDatabaseService;
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
 
     @IgnoreAuthentication
@@ -249,6 +253,19 @@ public class SystemController {
             result.setErrorMessage(e.getMessage());
             return HttpResp.success(Collections.singletonList(result));
         }
+    }
+
+    @GetMapping("/db/sql")
+    public HttpResp<String> getSqlCache() {
+        String s = dictionarySqliteService.get(DictionaryEnum.DATABASE_DB_SQL_CACHE.getKey());
+        return HttpResp.success(s);
+    }
+
+    @PostMapping("/db/sql")
+    public HttpResp<String> saveSqlCache(@RequestBody Map<String,String> request) {
+        String sql = request.get("sql");
+        dictionarySqliteService.put(DictionaryEnum.DATABASE_DB_SQL_CACHE.getKey(),sql);
+        return HttpResp.success();
     }
 
 }
