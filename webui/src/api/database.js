@@ -40,6 +40,5 @@ export const execAndExport = (data) => request({
     url: `${baseUrl}/sys/db/export`,
     method: 'post',
     timeout:10 * 60 * 1000,
-    responseType:'blob',
     data
 });

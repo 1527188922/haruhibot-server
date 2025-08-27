@@ -50,19 +50,12 @@ export const deleteFile = (data,rootType,password) => request({
     data
 })
 
-
 /**
- *
- * @param data{path:绝对路径}
- * @returns {AxiosPromise}
+ * 返回path
+ * @param path
+ * @returns {`${string}/sys/file/download?path=${string}`}
  */
-export const downloadFile = (data) =>request({
-    url: baseUrl + '/sys/file/download',
-    method: 'post',
-    data,
-    responseType:'blob'
-})
-
+export const downloadFileUrl = (path) =>  `${baseUrl}/sys/file/download?path=${path}`
 
 export const saveFile = (data) => request({
     url: baseUrl + '/sys/file/save',

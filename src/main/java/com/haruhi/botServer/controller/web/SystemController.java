@@ -13,6 +13,7 @@ import com.haruhi.botServer.constant.SqlTypeEnum;
 import com.haruhi.botServer.dto.SqlExecuteResult;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.SqliteDatabaseService;
+import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.vo.*;
 import com.haruhi.botServer.dto.qqclient.RequestBox;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
@@ -31,9 +32,11 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -196,6 +199,47 @@ public class SystemController {
         }
     }
 
+    @IgnoreAuthentication
+    @GetMapping("/file/download")
+    public void downloadFile(@RequestParam String path, HttpServletResponse response) {
+        if (StringUtils.isBlank(path)) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.setHeader("content-Type", "application/json; charset=utf-8");
+            try (ServletOutputStream outputStream = response.getOutputStream()){
+                outputStream.write(JSONObject.toJSONString(HttpResp.fail("参数错误",null)).getBytes(StandardCharsets.UTF_8));
+            } catch (IOException e) {
+
+            }
+            return;
+        }
+        File file = new File(path);
+        if(!file.exists() || !file.isFile()) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.setHeader("content-Type", "application/json; charset=utf-8");
+            try (ServletOutputStream outputStream = response.getOutputStream()){
+                outputStream.write(JSONObject.toJSONString(HttpResp.fail("文件不存在",path)).getBytes(StandardCharsets.UTF_8));
+            } catch (IOException e) {
+
+            }
+            return;
+        }
+
+        try (InputStream in = Files.newInputStream(file.toPath());
+             ServletOutputStream outputStream = response.getOutputStream()){
+            response.setCharacterEncoding("UTF-8");
+            response.setHeader("content-Type", "*");
+            response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));
+            response.setHeader("access-control-expose-headers", "*");
+            response.setHeader("overwrite-response-data", "true");
+            response.setContentType("application/octet-stream;charset=UTF-8");
+            response.setContentLength((int) file.length());
+            outputStream.write(IoUtil.readBytes(in));
+        } catch (Exception e) {
+            log.error("下载文件异常",e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     /**
      * 内容写入文件
      * 不存在文件则创建
@@ -269,21 +313,20 @@ public class SystemController {
         dictionarySqliteService.put(DictionaryEnum.DATABASE_DB_SQL_CACHE.getKey(),sql);
         return HttpResp.success();
     }
-    @PostMapping("/db/export")
-    public void export(@RequestBody Map<String,String> request,HttpServletResponse response) throws IOException {
-        String sql = request.get("sql");
-        try (ServletOutputStream outputStream = response.getOutputStream()){
-            response.setCharacterEncoding("UTF-8");
-            response.setHeader("content-Type", "application/vnd.ms-excel");
-            response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(StrFormatter.format("db_export_{}.xlsx",System.currentTimeMillis()), "UTF-8"));
-            response.setHeader("access-control-expose-headers", "*");
-            response.setHeader("overwrite-response-data", "true");
-            response.setContentType("application/octet-stream;charset=UTF-8");
 
-            sqliteDatabaseService.executeAndExport(sql, outputStream);
+    @PostMapping("/db/export")
+    public HttpResp<String> export(@RequestBody Map<String,String> request,HttpServletResponse response) {
+        String sql = request.get("sql");
+        String filename = StrFormatter.format("db_export_{}.xlsx", DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss2));
+        File file = new File(FileUtil.getAppTempDir() + File.separator + filename);
+        try (FileOutputStream fileOutputStream = new FileOutputStream(file)){
+            sqliteDatabaseService.executeAndExport(sql, fileOutputStream);
+            response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(filename, "UTF-8"));
+            return HttpResp.success(file.getAbsolutePath());
+        } catch (Exception e) {
+            return HttpResp.fail("导出异常："+e.getMessage(),null);
         }
 
     }
-
 
 }

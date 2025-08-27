@@ -39,6 +39,7 @@ import SqlTextarea from "./sql-textarea.vue";
 import ResultPanel from "./result-panel.vue";
 import {execAndExport as execAndExportApi, executeSql as executeSqlApi, getSqlCache, saveSqlCache} from "@/api/database";
 import { getStore,setStore } from "@/util/store.js";
+import {downloadFileUrl} from "@/api/system";
 export default {
   components:{
     ContextMenu,
@@ -95,9 +96,12 @@ export default {
       if(!this.selectedText){
         return this.$message.warning('请选择sql')
       }
-      execAndExportApi({sql:this.selectedText}).then((response)=>{
-        const blob = new Blob([response.data])
-        const contentDisposition = response.headers['content-disposition']
+      const loading = this.$loading({ lock: true,  text: 'Loading', spinner: 'el-icon-loading'});
+      execAndExportApi({sql:this.selectedText}).then(({data:{code,data,message},headers})=>{
+        if (code !== 200) {
+          return this.$message.error(message)
+        }
+        const contentDisposition = headers['content-disposition']
         let fileName = 'db_export_'+new Date().getTime()+'.xlsx'
         if (contentDisposition) {
           const fileNameMatch = contentDisposition.match(/filename=(.+)/)
@@ -105,21 +109,21 @@ export default {
             fileName = decodeURIComponent(fileNameMatch[1].replace(/"/g, ''))
           }
         }
-        const downloadUrl = window.URL.createObjectURL(blob)
 
         const link = document.createElement('a')
-        link.href = downloadUrl
+        link.href = downloadFileUrl(encodeURI(data))
         link.setAttribute('download', fileName)
         document.body.appendChild(link)
         link.click()
 
         document.body.removeChild(link)
-        window.URL.revokeObjectURL(downloadUrl)
       }).catch(e =>{
         if(e.message){
           return this.$message.error(e.message)
         }
         this.$message.error('导出异常')
+      }).finally(()=>{
+        loading.close()
       })
     },
     executeSql(sql){
