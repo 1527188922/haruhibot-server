@@ -6,8 +6,9 @@
           <span slot="label" :title="item.type">
 <!--            hover click 只有query展示popover-->
             <el-popover placement="top-start" trigger="click"
-                        :disabled="item.type !== 'QUERY'"
+                        :disabled="!isQuery(item)"
                         popper-class="query-result-sql-popover">
+              <div>{{`获取行数：${item.count}`}}</div>
               <div v-if="item.cost || item.cost === 0">{{`耗时：${item.cost}ms`}}</div>
               <pre>{{item.sql}}</pre>
               <span slot="reference">
@@ -16,11 +17,11 @@
               </span>
           </el-popover>
           </span>
-          <template v-if="item.type === 'QUERY'">
-            <el-table :data="formatTableData(item.data)" border size="small" :fit="false"
+          <template v-if="isQuery(item)">
+            <el-table :data="item.rows" border size="small" :fit="false"
                       highlight-current-row>
               <!-- 动态表头 -->
-              <el-table-column  v-for="(field, index) in dynamicHeaders(item.data)"
+              <el-table-column  v-for="(field, index) in item.tableHeaders"
                   :key="index"
                   show-overflow-tooltip
                   :label="field"
@@ -36,7 +37,7 @@
               </el-table-column>
             </el-table>
           </template>
-          <template v-if="item.type === 'UPDATE' || item.type === 'DDL' || item.type === 'ERROR'">
+          <template v-else>
             <div class="update-result">
               <el-form :model="item" label-width="80px">
                 <el-form-item label="影响行数：" v-if="item.data || item.data === 0">
@@ -81,11 +82,11 @@ export default {
     },
     handleResult(v){
       if(!v || v.length === 0){
-        return []
+        return [];
       }
       let list = v.map((e,i) => {
-        let {type,sql,cost,data,errorMessage} = e
-        return {
+        let {type,sql,cost,data,errorMessage} = e;
+        let obj = {
           name:type + 'name'+i,
           title:`结果(${i+1})`,//tab展示的title
           type,
@@ -93,10 +94,23 @@ export default {
           cost,
           data,
           errorMessage
+        };
+        if(this.isQuery(type)){
+          obj['tableHeaders'] = data && data.length > 0 ? this.dynamicHeaders(data) : [];
+          let rows = data && data.length > 1 ? this.formatTableData(data) : [];
+          obj['rows'] = rows;
+          obj['count'] = rows.length;
         }
+        return obj
       })
       this.activeName = list[0].name
       return list
+    },
+    isQuery(item) {
+      if(typeof item === 'string'){
+        return item === 'QUERY'
+      }
+      return item.type === 'QUERY'
     },
     formatTableData(data){
       return data.slice(1).map(item => {

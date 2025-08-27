@@ -109,8 +109,8 @@ public class SqliteDatabaseService{
     }
 
     public List<SqlExecuteResult> executeSql(String sql) {
-        String url = getMasterDataSourceProperty();
-        return executeSql(sql, url);
+        DruidDataSource masterDataSource = getMasterDataSource();
+        return executeSql(sql, masterDataSource.getUrl());
     }
 
     public List<SqlExecuteResult> executeSql(String sql, String url) {
@@ -203,15 +203,14 @@ public class SqliteDatabaseService{
     }
 
 
-    private String getMasterDataSourceProperty() {
+    public DruidDataSource getMasterDataSource() {
         if (dataSource instanceof DynamicRoutingDataSource) {
             DynamicRoutingDataSource dynamicRoutingDataSource = (DynamicRoutingDataSource) dataSource;
             DataSource realDatasource = dynamicRoutingDataSource.getDataSource(DataBaseConst.DATA_SOURCE_MASTER);
             if (realDatasource instanceof ItemDataSource) {
                 ItemDataSource itemDataSource = (ItemDataSource) realDatasource;
                 if (itemDataSource.getDataSource() instanceof DruidDataSource) {
-                    DruidDataSource druidDataSource = (DruidDataSource) itemDataSource.getDataSource();
-                    return druidDataSource.getUrl();
+                    return (DruidDataSource) itemDataSource.getDataSource();
                 }
             }
 
