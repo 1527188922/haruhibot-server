@@ -30,6 +30,7 @@
                </span>
               <span class="node-operation-btns">
                 <el-button type="text" size="mini" @click.stop="preview(data)" v-if="data.showPreview">预览</el-button>
+                <el-button type="text" size="mini" @click.stop="downloadFile(data)" v-if="!data.isDirectory">下载</el-button>
                 <el-button type="text" class="success-text-btn" size="mini"
                            @click.stop="openDetailDialog(data,node)">详情</el-button>
                 <el-button type="text" class="danger-text-btn" size="mini" v-if="data.showDel"
@@ -46,10 +47,11 @@
   </div>
 </template>
 <script>
-import {findFileNodes,deleteFile as deleteFileApi} from "@/api/system";
+import {findFileNodes,deleteFile as deleteFileApi,downloadFileUrl} from "@/api/system";
 import DrawerPreview from "./drawer-preview";
 import DetailDialog from "./detail-dialog";
 import {fileSizeFormatter} from "@/util/util";
+import {downloadLink} from "@/util/util";
 
 export default {
   components:{
@@ -136,6 +138,9 @@ export default {
     },
     openDetailDialog(nodeData,node){
       this.$refs.DetailDialog.open(nodeData)
+    },
+    downloadFile(data){
+      downloadLink(downloadFileUrl(encodeURI(data.absolutePath)), data.fileName)
     },
     deleteFile(nodeData,node){
       let msg = '请输入WEB UI登录密码'

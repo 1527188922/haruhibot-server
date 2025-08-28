@@ -138,6 +138,7 @@ export default {
   }
   ::v-deep .el-textarea__inner{
     padding: 0;
+    font-family: monospace, serif;
   }
   .info{
     font-size: 12px;
