@@ -5,7 +5,7 @@
                ref="resultTab"
       @tab-click="tabClick">
         <el-tab-pane :key="item.name" v-for="(item, index) in results" :name="item.name">
-          <span slot="label" :title="item.type">
+          <span slot="label" :title="item.type" @contextmenu.prevent="(e)=>openMenu(e,item)">
 <!--            hover click 只有query展示popover-->
             <el-popover placement="top-start" trigger="click"
                         :disabled="!isQuery(item)"
@@ -62,10 +62,19 @@
         </el-tab-pane>
       </el-tabs>
     </template>
+    <context-menu ref="contextMenu" :items="menuItems" @menu-click="handleMenuClick"></context-menu>
   </div>
 </template>
 <script>
+import ContextMenu from "@/components/context-menu.vue";
+import {execAndExport} from "@/api/database";
+import {downloadFileUrl} from "@/api/system";
+import {downloadLink} from "@/util/util";
+
 export default {
+  components: {
+    ContextMenu
+  },
   data(){
     return{
       results:[],
@@ -74,7 +83,8 @@ export default {
       observer:null,
       tableHeight:0,
       tableKey:0,
-      tableUpdated:false
+      tableUpdated:false,
+      menuItems:[{ text: '导出结果', action: 'export',icon:'el-icon-download' }]
     }
   },
   computed:{
@@ -86,6 +96,47 @@ export default {
     this.disconnect()
   },
   methods:{
+    openMenu(event,item){
+      if(this.isQuery(item)){
+        this.$refs.contextMenu.open({event,data:item})
+      }
+    },
+    // 右键菜单 点击item事件
+    handleMenuClick({ action },data){
+      if(action === 'export'){
+        this.exportResult(data)
+      }
+    },
+    exportResult(data){
+      if(!data || data.length === 0){
+        return this.$message.warning('无数据')
+      }
+      const loading = this.$loading({ lock: true,  text: 'Loading', spinner: 'el-icon-loading'});
+      execAndExport({
+        data
+      }).then(({data:{code,data,message},headers})=>{
+        if (code !== 200) {
+          return this.$message.error(message)
+        }
+        const contentDisposition = headers['content-disposition']
+        let fileName = 'db_export_'+new Date().getTime()+'.xlsx'
+        if (contentDisposition) {
+          const fileNameMatch = contentDisposition.match(/filename=(.+)/)
+          if (fileNameMatch.length > 1) {
+            fileName = decodeURIComponent(fileNameMatch[1].replace(/"/g, ''))
+          }
+        }
+        let h = downloadFileUrl(encodeURI(data))
+        downloadLink(h, fileName)
+      }).catch(e =>{
+        if(e.message){
+          return this.$message.error(e.message)
+        }
+        this.$message.error('导出异常')
+      }).finally(()=>{
+        loading.close()
+      })
+    },
     getResultPanelHeight(){
       return this.$refs.resultPanelDiv.offsetHeight
     },
@@ -158,15 +209,11 @@ export default {
         return [];
       }
       let list = v.map((e,i) => {
-        let {type,sql,cost,data,errorMessage} = e;
+        let {type,data} = e;
         let obj = {
           name:type + 'name'+i,
           title:`结果(${i+1})`,//tab展示的title
-          type,
-          sql,
-          cost,
-          data,
-          errorMessage
+          ...e
         };
         if(this.isQuery(type)){
           obj['tableHeaders'] = data && data.length > 0 ? this.dynamicHeaders(data) : [];

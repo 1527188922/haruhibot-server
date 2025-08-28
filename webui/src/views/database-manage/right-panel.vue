@@ -40,6 +40,8 @@ import ResultPanel from "./result-panel.vue";
 import {execAndExport as execAndExportApi, executeSql as executeSqlApi, getSqlCache, saveSqlCache} from "@/api/database";
 import { getStore,setStore } from "@/util/store.js";
 import {downloadFileUrl} from "@/api/system";
+import {downloadLink} from "@/util/util";
+
 export default {
   components:{
     ContextMenu,
@@ -109,14 +111,8 @@ export default {
             fileName = decodeURIComponent(fileNameMatch[1].replace(/"/g, ''))
           }
         }
-
-        const link = document.createElement('a')
-        link.href = downloadFileUrl(encodeURI(data))
-        link.setAttribute('download', fileName)
-        document.body.appendChild(link)
-        link.click()
-
-        document.body.removeChild(link)
+        let h = downloadFileUrl(encodeURI(data))
+        downloadLink(h, fileName)
       }).catch(e =>{
         if(e.message){
           return this.$message.error(e.message)
@@ -157,11 +153,11 @@ export default {
       this.saveSql(v)
     },
     // 右键事件
-    openMenu(e){
-      this.$refs.contextMenu.open(e)
+    openMenu(event){
+      this.$refs.contextMenu.open({event,data:null})
     },
     // 右键菜单 点击item事件
-    handleMenuClick({ action }){
+    handleMenuClick({ action },data){
       if (action === 'execAll') {
         this.exec()
       }else if(action === 'execSelected'){

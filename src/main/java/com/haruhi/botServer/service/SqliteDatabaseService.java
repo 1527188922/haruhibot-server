@@ -229,8 +229,14 @@ public class SqliteDatabaseService{
         if (CollectionUtils.isEmpty(results)) {
             throw new BusinessException("无执行结果");
         }
+        exportResult(results, outputStream);
+    }
 
-        List<SqlExecuteResult> queryResult = results.stream().filter(e -> SqlTypeEnum.QUERY.name().equals(e.getType())).collect(Collectors.toList());
+    public void exportResult(List<SqlExecuteResult> queryResult, OutputStream outputStream) {
+        queryResult = CollectionUtils.isNotEmpty(queryResult) ? queryResult.stream()
+                .filter(e -> SqlTypeEnum.QUERY.name().equals(e.getType()))
+                .collect(Collectors.toList())
+                : null;
         if (CollectionUtils.isEmpty(queryResult)) {
             throw new BusinessException("无查询结果");
         }
@@ -247,11 +253,9 @@ public class SqliteDatabaseService{
                 for (Object header : excelData.get(0)) {
                     head.add(Collections.singletonList(header == null ? "" : header.toString()));
                 }
-
                 WriteSheet sheet = EasyExcel.writerSheet(i, i+"-sheet")
                         .head(head)
                         .build();
-
                 List<List<Object>> dataRows = excelData.subList(1, excelData.size());
                 excelWriter.write(dataRows, sheet);
             }

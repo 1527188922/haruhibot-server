@@ -303,3 +303,13 @@ export const fileSizeFormatter = (size) =>{
   }
   return (Math.floor(kb * 100) / 100)+'KB';
 }
+
+export const downloadLink = (href,fileName) =>{
+  const link = document.createElement('a')
+  link.href = href
+  link.setAttribute('download', fileName)
+  document.body.appendChild(link)
+  link.click()
+
+  document.body.removeChild(link)
+}

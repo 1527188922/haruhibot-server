@@ -315,14 +315,23 @@ public class SystemController {
     }
 
     @PostMapping("/db/export")
-    public HttpResp<String> export(@RequestBody Map<String,String> request,HttpServletResponse response) {
-        String sql = request.get("sql");
+    public HttpResp<String> export(@RequestBody ExportDatabaseReq request,HttpServletResponse response) {
+        String sql = request.getSql();
+        SqlExecuteResult data = request.getData();
+
         String filename = StrFormatter.format("db_export_{}.xlsx", DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss2));
         File file = new File(FileUtil.getAppTempDir() + File.separator + filename);
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)){
-            sqliteDatabaseService.executeAndExport(sql, fileOutputStream);
+
+            if(Objects.nonNull(data)){
+                sqliteDatabaseService.exportResult(Collections.singletonList(data), fileOutputStream);
+            }else{
+                sqliteDatabaseService.executeAndExport(sql, fileOutputStream);
+            }
             response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(filename, "UTF-8"));
             return HttpResp.success(file.getAbsolutePath());
+        }catch (BusinessException e){
+            return HttpResp.fail(e.getErrorMsg(),null);
         } catch (Exception e) {
             return HttpResp.fail("导出异常："+e.getMessage(),null);
         }

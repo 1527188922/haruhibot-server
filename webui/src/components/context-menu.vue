@@ -6,7 +6,7 @@
       ref="menu">
     <li v-for="item in items"
         :key="item.action"
-        @click.stop="handleClick(item.action)">
+        @click.stop="handleClick(item)">
       <i v-if="item.icon" :class="item.icon"></i>
       {{ item.text }}
     </li>
@@ -30,13 +30,15 @@ export default {
       visible: false,
       left: 0,
       top: 0,
+      data:null
     }
   },
   methods: {
     // 父组件传递右键事件参数
-    open(event) {
+    open({event,data}) {
       this.visible = true
       this.$nextTick(() => {
+        this.data = data
         const menuEl = this.$refs.menu
         const menuWidth = menuEl.offsetWidth
         const menuHeight = menuEl.offsetHeight
@@ -52,12 +54,11 @@ export default {
     },
     close() {
       this.visible = false
+      this.data = null
       document.removeEventListener('click', this.close)
     },
-    handleClick(action) {
-      this.$emit('menu-click', {
-        action
-      })
+    handleClick(item) {
+      this.$emit('menu-click', item,this.data)
       this.close()
     },
     mousedown(e){
