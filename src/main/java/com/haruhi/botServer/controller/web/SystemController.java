@@ -170,35 +170,6 @@ public class SystemController {
         return HttpResp.fail("删除失败",null);
     }
 
-
-
-    @PostMapping("/file/download")
-    public void downloadFile(@RequestBody FileNode request, HttpServletResponse response) {
-        String path = request.getAbsolutePath();//绝对路径
-        if (StringUtils.isBlank(path)) {
-            return;
-        }
-
-        File file = new File(path);
-        if(!file.exists() || !file.isFile()) {
-            return;
-        }
-
-        response.setCharacterEncoding("UTF-8");
-//        response.setHeader("content-Type", "application/vnd.ms-excel");
-//        response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));
-        response.setHeader("access-control-expose-headers", "*");
-        response.setHeader("overwrite-response-data", "true");
-        response.setContentLength((int) file.length());
-
-        try (InputStream in = Files.newInputStream(file.toPath());
-             ServletOutputStream outputStream = response.getOutputStream()){
-            outputStream.write(IoUtil.readBytes(in));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @IgnoreAuthentication
     @GetMapping("/file/download")
     public void downloadFile(@RequestParam String path, HttpServletResponse response) {
@@ -207,9 +178,7 @@ public class SystemController {
             response.setHeader("content-Type", "application/json; charset=utf-8");
             try (ServletOutputStream outputStream = response.getOutputStream()){
                 outputStream.write(JSONObject.toJSONString(HttpResp.fail("参数错误",null)).getBytes(StandardCharsets.UTF_8));
-            } catch (IOException e) {
-
-            }
+            } catch (IOException e) {  }
             return;
         }
         File file = new File(path);
@@ -218,9 +187,7 @@ public class SystemController {
             response.setHeader("content-Type", "application/json; charset=utf-8");
             try (ServletOutputStream outputStream = response.getOutputStream()){
                 outputStream.write(JSONObject.toJSONString(HttpResp.fail("文件不存在",path)).getBytes(StandardCharsets.UTF_8));
-            } catch (IOException e) {
-
-            }
+            } catch (IOException e) { }
             return;
         }
 
@@ -233,7 +200,7 @@ public class SystemController {
             response.setHeader("overwrite-response-data", "true");
             response.setContentType("application/octet-stream;charset=UTF-8");
             response.setContentLength((int) file.length());
-            outputStream.write(IoUtil.readBytes(in));
+            IoUtil.copy(in, outputStream);
         } catch (Exception e) {
             log.error("下载文件异常",e);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

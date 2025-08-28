@@ -3,8 +3,6 @@ package com.haruhi.botServer.controller;
 import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.vo.HttpResp;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,17 +15,8 @@ import java.util.Map;
 public class TestController {
 
     @IgnoreAuthentication
-    @GetMapping("/ping")
+    @RequestMapping("/ping")
     public HttpResp<Map<String,Object>> ping(){
-        HashMap<String, Object> hashMap = new HashMap<String, Object>() {{
-            put("time",ZonedDateTime.now());
-        }};
-        return HttpResp.success("pong",hashMap);
-    }
-
-    @IgnoreAuthentication
-    @PostMapping("/ping/post")
-    public HttpResp<Map<String,Object>> pingPost(){
         HashMap<String, Object> hashMap = new HashMap<String, Object>() {{
             put("time",ZonedDateTime.now());
         }};
