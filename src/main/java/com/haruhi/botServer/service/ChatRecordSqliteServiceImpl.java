@@ -25,7 +25,6 @@ import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
-import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
@@ -34,7 +33,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -43,10 +41,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,12 +53,6 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
     private AbstractWebResourceConfig abstractPathConfig;
     @Autowired
     private GroupInfoSqliteService groupInfoSqliteService;
-    private static final int availableProcessors = Runtime.getRuntime().availableProcessors();
-    public static int poolSize = availableProcessors + 1;
-    private static final Executor pool =  new ThreadPoolExecutor(poolSize,poolSize * 2,60L,
-            TimeUnit.SECONDS,new ArrayBlockingQueue<>(8),
-            new CustomizableThreadFactory("pool-chat-history-"),
-            new ThreadPoolExecutor.CallerRunsPolicy());
 
     /**
      * 发送聊天历史
@@ -94,21 +82,19 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
         // 升序
         queryWrapper.orderByAsc(ChatRecordSqlite::getTime);
         List<ChatRecordSqlite> chatList = this.list(queryWrapper);
-        if(!CollectionUtils.isEmpty(chatList)){
-            int limit = 80;
-            if(chatList.size() > limit){
-                // 记录条数多于80张,分开发送
-                List<List<ChatRecordSqlite>> lists = CommonUtil.averageAssignList(chatList, limit);
-                for (List<ChatRecordSqlite> list : lists) {
-                    pool.execute(()->{
-                        partSend(bot,list,message);
-                    });
-                }
-            }else{
-                partSend(bot,chatList,message);
-            }
-        }else{
+        if(CollectionUtils.isEmpty(chatList)){
             bot.sendGroupMessage(message.getGroupId(), "该条件下没有聊天记录。",true);
+            return;
+        }
+        int limit = 80;
+        if(chatList.size() > limit){
+            // 记录条数多于80张,分开发送
+            List<List<ChatRecordSqlite>> lists = CommonUtil.averageAssignList(chatList, limit);
+            lists.forEach(list -> {
+                partSend(bot,list,message);
+            });
+        }else{
+            partSend(bot,chatList,message);
         }
     }
     private void partSend(Bot bot, List<ChatRecordSqlite> chatList, Message message){

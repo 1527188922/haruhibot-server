@@ -25,7 +25,6 @@ import com.kennycason.kumo.wordstart.RandomWordStart;
 import com.kennycason.kumo.wordstart.WordStartStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
@@ -41,16 +40,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.*;
 
 public class WordCloud {
     private static final Logger LOGGER = LoggerFactory.getLogger(WordCloud.class);
     private static final int availableProcessors = Runtime.getRuntime().availableProcessors();
-    public static final ExecutorService pool = new ThreadPoolExecutor(availableProcessors, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),new CustomizableThreadFactory("pool-buildWord-"));
 
     protected final Dimension dimension;
     protected final CollisionMode collisionMode;
@@ -117,10 +111,12 @@ public class WordCloud {
         LOGGER.info("处理总数:{}",words.size());
         int i = CommonUtil.averageAssignNum(words.size(), availableProcessors);
         List<List<Word>> lists = CommonUtil.averageAssignList(words, i);
-        CountDownLatch countDownLatch = new CountDownLatch(lists.size());
-        LOGGER.info("分{}条线程处理",countDownLatch.getCount());
+        int poolSize = lists.size();
+        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+        CountDownLatch countDownLatch = new CountDownLatch(poolSize);
+        LOGGER.info("分{}条线程处理",poolSize);
         for (List<Word> list : lists) {
-            pool.execute(new BuildWordTask(list,countDownLatch));
+            executor.execute(new BuildWordTask(list,countDownLatch));
         }
 
         try {
@@ -128,7 +124,7 @@ public class WordCloud {
         } catch (InterruptedException e) {
             LOGGER.info("countDownLatch.await() exception",e);
         }
-
+        executor.shutdownNow();
         this.drawForegroundToBackground();
     }
 

@@ -2,19 +2,12 @@ package com.haruhi.botServer.thread;
 
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.WordCloudUtil;
-import com.haruhi.botServer.utils.system.SystemInfo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 
 /**
@@ -24,8 +17,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class WordSlicesTask implements Callable<List<String>> {
     private static final int availableProcessors = Runtime.getRuntime().availableProcessors();
-    public static int poolSize = availableProcessors + 1;
-    public static final ExecutorService pool = new ThreadPoolExecutor(poolSize, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),new CustomizableThreadFactory("pool-word-slices-"));
     private List<String> data;
 
     public WordSlicesTask(List<String> data){
@@ -56,13 +47,15 @@ public class WordSlicesTask implements Callable<List<String>> {
     public static List<String> execute(List<String> corpus){
         List<String> strings = new ArrayList<>(corpus.size() * 3);
         // 根据线程池大小，计算每个线程需要跑几个词语 确保不会有线程空闲
-        int limit = CommonUtil.averageAssignNum(corpus.size(),poolSize);
+        int limit = CommonUtil.averageAssignNum(corpus.size(), availableProcessors + 1);
         List<List<String>> lists = CommonUtil.averageAssignList(corpus, limit);
-        List<FutureTask<List<String>>> futureTasks = new ArrayList<>(lists.size());
+        int poolSize = lists.size();
+        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+        List<FutureTask<List<String>>> futureTasks = new ArrayList<>(poolSize);
         for (List<String> list : lists) {
             FutureTask<List<String>> listFutureTask = new FutureTask<>(new WordSlicesTask(list));
             futureTasks.add(listFutureTask);
-            pool.submit(listFutureTask);
+            executor.submit(listFutureTask);
         }
         try {
             for (FutureTask<List<String>> futureTask : futureTasks) {
@@ -72,6 +65,8 @@ public class WordSlicesTask implements Callable<List<String>> {
         }catch (Exception e){
             log.error("获取分词结果异常",e);
             return null;
+        }finally {
+            executor.shutdownNow();
         }
 
     }
