@@ -23,7 +23,8 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class WordSlicesTask implements Callable<List<String>> {
-    public static int poolSize = SystemInfo.AVAILABLE_PROCESSORS + 1;
+    private static final int availableProcessors = Runtime.getRuntime().availableProcessors();
+    public static int poolSize = availableProcessors + 1;
     public static final ExecutorService pool = new ThreadPoolExecutor(poolSize, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),new CustomizableThreadFactory("pool-word-slices-"));
     private List<String> data;
 

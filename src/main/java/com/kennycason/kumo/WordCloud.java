@@ -2,7 +2,6 @@
 package com.kennycason.kumo;
 
 import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.utils.system.SystemInfo;
 import com.kennycason.kumo.bg.Background;
 import com.kennycason.kumo.bg.RectangleBackground;
 import com.kennycason.kumo.collide.RectanglePixelCollidable;
@@ -50,9 +49,8 @@ import java.util.concurrent.CountDownLatch;
 
 public class WordCloud {
     private static final Logger LOGGER = LoggerFactory.getLogger(WordCloud.class);
-
-    public static int poolSize = SystemInfo.AVAILABLE_PROCESSORS;
-    public static final ExecutorService pool = new ThreadPoolExecutor(poolSize, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),new CustomizableThreadFactory("pool-buildWord-"));
+    private static final int availableProcessors = Runtime.getRuntime().availableProcessors();
+    public static final ExecutorService pool = new ThreadPoolExecutor(availableProcessors, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),new CustomizableThreadFactory("pool-buildWord-"));
 
     protected final Dimension dimension;
     protected final CollisionMode collisionMode;
@@ -117,7 +115,7 @@ public class WordCloud {
 
         List<Word> words = this.buildWords(wordFrequencies, this.colorPalette);
         LOGGER.info("处理总数:{}",words.size());
-        int i = CommonUtil.averageAssignNum(words.size(), poolSize);
+        int i = CommonUtil.averageAssignNum(words.size(), availableProcessors);
         List<List<Word>> lists = CommonUtil.averageAssignList(words, i);
         CountDownLatch countDownLatch = new CountDownLatch(lists.size());
         LOGGER.info("分{}条线程处理",countDownLatch.getCount());

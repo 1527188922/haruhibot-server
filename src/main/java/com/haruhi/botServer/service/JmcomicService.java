@@ -11,8 +11,6 @@ import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.*;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.ThreadPoolUtil;
-import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
@@ -50,6 +48,8 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -100,6 +100,14 @@ public class JmcomicService {
     public String getPdfPassword(){
         String inCache = dictionarySqliteService.getInCache(DictionaryEnum.JM_PASSWORD_PDF.getKey(), null);
         return StringUtils.isNotBlank(inCache) ? inCache : JM_DEFAULT_PASSWORD;
+    }
+
+    public int getThreads(){
+        int thread = dictionarySqliteService.getInt(DictionaryEnum.JM_DOWNLOAD_THREADS.getKey(), Runtime.getRuntime().availableProcessors());
+        if(thread <= 0){
+            return Runtime.getRuntime().availableProcessors();
+        }
+        return thread;
     }
 
 
@@ -355,8 +363,9 @@ public class JmcomicService {
         }
         CountDownLatch countDownLatch = new CountDownLatch(downloadParams.size());
         FileUtil.mkdirs(chapterPath);
-        List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, SystemUtil.getAvailableProcessors() * 2 + 1);
-
+        List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, getThreads());
+        int poolSize = lists.size();
+        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
         List<CompletableFuture<Void>> taskList = lists.stream().map(list -> {
             return CompletableFuture.runAsync(() -> {
                 list.forEach(param -> {
@@ -377,12 +386,13 @@ public class JmcomicService {
                         tmpImgFile.delete();
                     }
                 });
-            }, ThreadPoolUtil.getCommonExecutor());
+            }, executor);
         }).collect(Collectors.toList());
         log.info("开始下载【{}】 线程数：{}",seriesTitle, taskList.size());
         long l = System.currentTimeMillis();
         taskList.forEach(CompletableFuture::join);
         log.info("【{}】下载完成 cost:{}", seriesTitle,(System.currentTimeMillis() - l));
+        executor.shutdownNow();
         long count = countDownLatch.getCount();
         if (count > 0) {
             log.info("本章【{}】剩余数量：{} 开始下载剩余图片", seriesTitle,count);

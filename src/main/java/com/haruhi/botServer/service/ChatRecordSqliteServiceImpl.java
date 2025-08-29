@@ -59,8 +59,8 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
     private AbstractWebResourceConfig abstractPathConfig;
     @Autowired
     private GroupInfoSqliteService groupInfoSqliteService;
-
-    public static int poolSize = SystemInfo.AVAILABLE_PROCESSORS + 1;
+    private static final int availableProcessors = Runtime.getRuntime().availableProcessors();
+    public static int poolSize = availableProcessors + 1;
     private static final Executor pool =  new ThreadPoolExecutor(poolSize,poolSize * 2,60L,
             TimeUnit.SECONDS,new ArrayBlockingQueue<>(8),
             new CustomizableThreadFactory("pool-chat-history-"),
