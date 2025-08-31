@@ -181,7 +181,7 @@ public class FileUtil {
 
     public static File getDisk(){
         for (File file : File.listRoots()) {
-            if (SystemUtil.USER_DIR.startsWith(file.toString())) {
+            if (SystemUtils.USER_DIR.startsWith(file.toString())) {
                 return file;
             }
         }
