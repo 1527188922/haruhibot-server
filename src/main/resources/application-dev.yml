@@ -30,3 +30,16 @@ log:
 spring:
   application:
     name: haruhi-bot-service
+  datasource:
+    dynamic:
+      datasource:
+        master:
+          url: jdbc:sqlite:D:\my\bot\db\haruhibot_server.db
+          driver-class-name: org.sqlite.JDBC
+          druid:
+            validation-query: SELECT 1
+            filters: stat
+            test-on-borrow: false
+            test-on-return: false
+            pool-prepared-statements: false
+            max-active: 1
