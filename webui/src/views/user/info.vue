@@ -67,7 +67,7 @@ export default {
         '耿直'
       ],
       form: {
-        img: 'https://avatar.gitee.com/uploads/61/632261_smallweigit.jpg!avatar100?1518660401',
+        img: 'https://q2.qlogo.cn/headimg_dl?dst_uin=1527188922&spec=100',
         username: "smallwei",
         name: "smallwei",
         ms: "保护头发，人人有责",

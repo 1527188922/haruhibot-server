@@ -8,7 +8,7 @@
 <!--          {{time}}-->
 <!--        </div>-->
 <!--        <img class="img"-->
-<!--             :src="'./img/logo.png'"-->
+<!--             :src="'https://q2.qlogo.cn/headimg_dl?dst_uin=1527188922&spec=100'"-->
 <!--             alt="">-->
 <!--        <p class="title">{{ $t('login.info') }}</p>-->
 <!--      </div>-->

@@ -4,7 +4,7 @@
     <div class="login animated"
          :class="{'bounceOut':pass}">
       <div class="head">
-        <img src="https://avatar.gitee.com/uploads/61/632261_smallweigit.jpg!avatar100?1518660401"
+        <img src="https://q2.qlogo.cn/headimg_dl?dst_uin=1527188922&spec=100"
              alt="">
       </div>
       <div class="message">Login Please</div>
@@ -61,7 +61,7 @@ export default {
         }, 1000)
         return
       }
-      this.$store.dispatch("LoginByUsername", this.loginForm).then(() => {
+      this.$store.dispatch("LoginByUsername", this.form).then(() => {
         this.pass = true
         setTimeout(() => {
           this.$router.push(this.tagWel);

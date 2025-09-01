@@ -31,4 +31,4 @@ log:
 
 spring:
   application:
-    name: haruhi-bot-service
+    name: haruhi-bot-server

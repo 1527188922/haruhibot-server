@@ -54,7 +54,7 @@ export default {
       });
     },
     handleLogin () {
-      if (this.passwd != this.lockPasswd) {
+      if (this.lockPasswd && this.passwd !== this.lockPasswd) {
         this.passwd = "";
         this.$message({
           message: "解锁密码错误,请重新输入",
@@ -70,7 +70,7 @@ export default {
       setTimeout(() => {
         this.$store.commit("CLEAR_LOCK");
         this.$router.push({
-          path: this.tag.value
+          path: '/'
         });
       }, 1000);
     }
