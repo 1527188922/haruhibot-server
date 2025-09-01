@@ -7,22 +7,17 @@ import com.haruhi.botServer.dispenser.MessageDispenser;
 import com.haruhi.botServer.dispenser.NoticeDispenser;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.service.GroupInfoSqliteService;
-import com.haruhi.botServer.thread.pool.policy.ShareRunsPolicy;
+import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
 public class MessageProcessor{
 
-    private final static ThreadPoolExecutor threadPool;
 
     @Autowired
     private MessageDispenser messageDispenser;
@@ -30,14 +25,11 @@ public class MessageProcessor{
     private NoticeDispenser noticeDispenser;
     @Autowired
     private GroupInfoSqliteService groupInfoSqliteService;
-    static {
-        threadPool = new ThreadPoolExecutor(6, 10, 10L * 60L, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(100), new CustomizableThreadFactory("pool-processMessage-"), new ShareRunsPolicy("pool-processMessage"));
-    }
+
 
     public void execute(Bot bot, Message message){
 
-        threadPool.execute(()->{
+        ThreadPoolUtil.getFixedThreadPool().execute(()->{
             try {
                 if(PostTypeEnum.message.name().equals(message.getPostType())
                         || PostTypeEnum.message_sent.name().equals(message.getPostType())){

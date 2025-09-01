@@ -49,7 +49,7 @@ public class ChatRecordHandler implements IAllMessageEvent {
     @Override
     public boolean onMessage(Bot bot, Message message) {
 
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
+        ThreadPoolUtil.getFixedThreadPool().execute(()->{
 
             ChatRecordSqlite record = new ChatRecordSqlite();
             try {
@@ -75,7 +75,7 @@ public class ChatRecordHandler implements IAllMessageEvent {
             }catch (Exception e){
                 log.error("保存聊天记录异常 {}", JSONObject.toJSONString(record),e);
             }
-        },false);
+        });
 
         return false;
     }

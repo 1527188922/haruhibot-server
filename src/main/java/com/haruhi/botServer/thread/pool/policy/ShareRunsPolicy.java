@@ -8,16 +8,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 public class ShareRunsPolicy implements RejectedExecutionHandler {
-    private final String poolName;
-    public ShareRunsPolicy(String poolName){
-        this.poolName = poolName;
-    }
 
     @Override
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
         if (!executor.isShutdown()) {
-            ThreadPoolUtil.getSharePool().execute(r);
-            log.info("线程池：{}执行拒绝策略，本次任务由公共线程池执行,executor: {},",poolName, executor);
+            ThreadPoolUtil.getFixedThreadPool().execute(r);
         }
 
     }

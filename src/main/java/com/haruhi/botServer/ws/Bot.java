@@ -7,7 +7,6 @@ import com.haruhi.botServer.constant.QqClientActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.utils.ThreadPoolUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -399,7 +398,7 @@ public class Bot {
 
         log.debug("echo: {}",echo);
         FutureTask<JSONObject> futureTask = new FutureTask<>(new GetSyncRespTask(echo, resultMap));
-        ThreadPoolUtil.getSharePool().submit(futureTask);
+        new Thread(futureTask).start();
         try {
             JSONObject res;
             if(timeout <= GET_SYNC_RESP_PERIOD){

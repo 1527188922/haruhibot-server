@@ -36,7 +36,7 @@ public class OneMoreHandler implements IGroupMessageEvent {
     @Override
     public boolean onGroup(Bot bot, Message message) {
 
-        ThreadPoolUtil.getSharePool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
 
             String groupIdStr = String.valueOf(message.getGroupId())+message.getSelfId();
             Pair<String, Boolean> pair = msgCache.get(groupIdStr);
@@ -54,7 +54,7 @@ public class OneMoreHandler implements IGroupMessageEvent {
                 msgCache.remove(groupIdStr);
                 putMsg(message);
             }
-        });
+        },false);
         return false;
     }
 
