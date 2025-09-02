@@ -388,7 +388,7 @@ public class JmcomicService {
                 });
             }, executor);
         }).collect(Collectors.toList());
-        log.info("开始下载【{}】 线程数：{}",seriesTitle, taskList.size());
+        log.info("开始下载【{}】 线程数：{}",seriesTitle, poolSize);
         long l = System.currentTimeMillis();
         taskList.forEach(CompletableFuture::join);
         log.info("【{}】下载完成 cost:{}", seriesTitle,(System.currentTimeMillis() - l));
