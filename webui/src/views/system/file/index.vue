@@ -21,18 +21,19 @@
             </span>
           </div>
           <el-tree ref="tree" :data="fileNodes" :props="props" :load="loadNode" node-key="absolutePath" lazy
-              highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode">
+              highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode"
+                   @node-contextmenu="nodeContextmenu">
             <span class="alignment" slot-scope="{ node, data }">
-               <span :class="data.isDirectory ? 'dir-label' : ''">
+               <span>
                  <div :title="node.label" class="file-name">{{ node.label }}</div>
                  <span class="file-attribute" v-if="showSize(data.size)">{{ data.size | fileSizeFormatter }}</span>
                  <span class="file-attribute" v-if="showChildCount(data)">{{ data.childCount | childCountFormatter }}</span>
                </span>
               <span class="node-operation-btns">
-                <el-button type="text" size="mini" @click.stop="preview(data)" v-if="data.showPreview">预览</el-button>
-                <el-button type="text" size="mini" @click.stop="downloadFile(data)" v-if="!data.isDirectory">下载</el-button>
-                <el-button type="text" class="success-text-btn" size="mini"
-                           @click.stop="openDetailDialog(data,node)">详情</el-button>
+<!--                <el-button type="text" size="mini" @click.stop="preview(data)" v-if="data.showPreview">编辑</el-button>-->
+<!--                <el-button type="text" size="mini" @click.stop="downloadFile(data)" v-if="!data.isDirectory">下载</el-button>-->
+<!--                <el-button type="text" class="success-text-btn" size="mini"-->
+<!--                           @click.stop="openDetailDialog(data,node)">详情</el-button>-->
                 <el-button type="text" class="danger-text-btn" size="mini" v-if="data.showDel"
                            @click.stop="deleteFile(data,node)">删除</el-button>
               </span>
@@ -44,19 +45,22 @@
 
     <detail-dialog ref="DetailDialog"></detail-dialog>
     <drawer-preview direction="ltr" ref="drawerPreview"></drawer-preview>
+    <context-menu ref="contextMenu" @menu-click="handleMenuClick"></context-menu>
   </div>
 </template>
 <script>
 import {findFileNodes,deleteFile as deleteFileApi,downloadFileUrl} from "@/api/system";
 import DrawerPreview from "./drawer-preview";
 import DetailDialog from "./detail-dialog";
+import ContextMenu from "@/components/context-menu.vue";
 import {fileSizeFormatter} from "@/util/util";
 import {downloadLink} from "@/util/util";
 
 export default {
   components:{
     DrawerPreview,
-    DetailDialog
+    DetailDialog,
+    ContextMenu
   },
   name:'SystemFile',
   data(){
@@ -88,6 +92,21 @@ export default {
   mounted() {
   },
   methods:{
+    refreshMenuItem(){
+      return { text: '刷新', action: 'refresh', icon:'el-icon-refresh',style:{color:'#67c23a'}}
+    },
+    detailMenuItem(){
+      return { text: '详情', action: 'detail', icon:'el-icon-info',style:{color:'#909399'} }
+    },
+    deleteMenuItem(){
+      return { text: '删除', action: 'delete', icon:'el-icon-delete',style:{color:'#F56C6CFF'} }
+    },
+    downloadMenuItem(){
+      return { text: '下载', action: 'download', icon:'el-icon-download' }
+    },
+    previewMenuItem(){
+      return { text: '编辑', action: 'preview', icon:'el-icon-edit-outline',style:{color:'#409EFF'} }
+    },
     filterNode(value, data) {
       if (!value) return true;
       let fn = (str)=> {
@@ -100,6 +119,7 @@ export default {
       this.$refs.drawerPreview.open(nodeData)
     },
     async rootTypeChange(v){
+      this.$refs.contextMenu.close()
       let data = await this.requestNodes({},v)
       this.rootDir = data.rootDir
       this.fileNodes = data.nodes
@@ -115,14 +135,48 @@ export default {
       let {data:{data,code}} = await findFileNodes(request,rootType)
       return data
     },
+    handleMenuClick({action}, {data,node}){
+      if (action === 'refresh') {
+        node.loaded = false
+        node.expand()
+      }else if(action === 'preview'){
+        this.preview(data)
+      }else if(action === 'download'){
+        this.downloadFile(data)
+      }else if(action === 'detail'){
+        this.openDetailDialog(data,node)
+      }else if(action === 'delete'){
+        this.deleteFile(data,node)
+      }
+    },
+    // 右键节点事件
+    nodeContextmenu(event,data,node,component){
+      this.$refs.tree.setCurrentKey(data.absolutePath);
+      let v = {event,data:{data,node}}
+      let menuItems = []
+      if (!data.leaf) {
+        menuItems.push(this.refreshMenuItem())
+      }
+      if (data.showPreview) {
+        menuItems.push(this.previewMenuItem())
+      }
+      if (!data.isDirectory) {
+        menuItems.push(this.downloadMenuItem())
+      }
+      menuItems.push(this.detailMenuItem())
+      if (data.showDel) {
+        menuItems.push(this.deleteMenuItem())
+      }
+      this.$refs.contextMenu.open(v,menuItems)
+    },
     handleNodeClick(data, node){
-      // console.log('handleNodeClick',data,node)
+      this.$refs.contextMenu.close()
     },
     showSize(size){
       return size || size === 0
     },
     showChildCount(nodeData){
-      return nodeData.isDirectory && nodeData.childCount && nodeData.childCount !== 0
+      return nodeData.isDirectory && (nodeData.childCount || nodeData.childCount === 0)
     },
     removeNode(nodeData,node){
       let parent = node.parent
@@ -208,16 +262,16 @@ export default {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 520px;
+    //max-width: 520px;
   }
   .file-attribute{
     margin-left: 10px;
     font-size: 12px;
     color: #C0C4CC;
   }
-  .dir-label{
-    color: #409EFFFF;
-  }
+  //.dir-label{
+  //  color: #409EFFFF;
+  //}
   .filter-input{
     max-width: 350px;
     ::v-deep .el-input-group__prepend{

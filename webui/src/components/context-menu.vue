@@ -6,7 +6,8 @@
       ref="menu">
     <li v-for="item in (currentItems && currentItems.length > 0 ? currentItems : items)"
         :key="item.action"
-        @click.stop="handleClick(item)">
+        @click.stop="handleClick(item)"
+        :style="liStyle(item)">
       <i v-if="item.icon" :class="item.icon"></i>
       {{ item.text }}
     </li>
@@ -66,6 +67,12 @@ export default {
     },
     mousedown(e){
       // 阻止默认聚焦行为
+    },
+    liStyle(item){
+      if (item.style) {
+        return item.style
+      }
+      return {}
     }
   },
   mounted() {
