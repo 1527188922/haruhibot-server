@@ -226,6 +226,7 @@ public class SystemService {
                 DatabaseInfoNode tableInfoNode = new DatabaseInfoNode();
                 tableInfoNode.setType(DatabaseInfoNode.TYPE_TABLE);
                 tableInfoNode.setName(e.getName());
+                tableInfoNode.setKey(e.getName());
                 tableInfoNode.setSql(e.getSql());
                 tableInfoNode.setTableName(e.getTblName());
                 tableInfoNode.setLeaf(false);
@@ -246,6 +247,7 @@ public class SystemService {
                 return tableInfoSqlites.stream().map(e -> {
                     DatabaseInfoNode tableInfoNode = new DatabaseInfoNode();
                     tableInfoNode.setName(e.getName());
+                    tableInfoNode.setKey(tableName+"_"+e.getName());
                     tableInfoNode.setColumnType(e.getType());
                     tableInfoNode.setNotnull(e.getNotnull());
                     tableInfoNode.setDefaultValue(e.getDfltValue());
@@ -263,6 +265,7 @@ public class SystemService {
                 return indexInfoSqlites.stream().map(e -> {
                     DatabaseInfoNode tableInfoNode = new DatabaseInfoNode();
                     tableInfoNode.setName(e.getName());
+                    tableInfoNode.setKey(tableName+"_"+e.getName());
                     tableInfoNode.setUnique(e.getUnique());
                     tableInfoNode.setTableName(tableName);
                     tableInfoNode.setType(DatabaseInfoNode.TYPE_INDEX);
@@ -279,6 +282,7 @@ public class SystemService {
         DatabaseInfoNode tableInfoNode = new DatabaseInfoNode();
         tableInfoNode.setTableName(tableName);
         tableInfoNode.setName(DatabaseInfoNode.TYPE_FIXED_COLUMN);
+        tableInfoNode.setKey(tableName+"_"+tableInfoNode.getName());
         tableInfoNode.setType(DatabaseInfoNode.TYPE_FIXED);
         tableInfoNode.setLeaf(false);
         tableInfoNodes.add(tableInfoNode);
@@ -286,6 +290,7 @@ public class SystemService {
         DatabaseInfoNode tableInfoNode2 = new DatabaseInfoNode();
         tableInfoNode2.setTableName(tableName);
         tableInfoNode2.setName(DatabaseInfoNode.TYPE_FIXED_INDEX);
+        tableInfoNode2.setKey(tableName+"_"+tableInfoNode2.getName());
         tableInfoNode2.setType(DatabaseInfoNode.TYPE_FIXED);
         tableInfoNode2.setLeaf(false);
         tableInfoNodes.add(tableInfoNode2);

@@ -25,4 +25,6 @@ public class DatabaseInfoNode {
     private Integer unique;// 是否唯一索引
 
     private Boolean leaf;
+
+    private String key;
 }

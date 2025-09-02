@@ -1,12 +1,14 @@
 <template>
   <div class="left-panel" :style="{width: leftWidthHolder.leftWidth + 'px'}">
     <div class="filter-input-container">
-      <el-input size="small" clearable placeholder="输入关键字进行过滤" v-model="filterText">
+      <el-input placeholder="输入关键字进行过滤" v-model="filterText" size="small">
+        <el-button title="刷新" @click="refreshTable" slot="prepend" icon="el-icon-refresh"></el-button>
       </el-input>
     </div>
     <div class="tree-container">
-      <el-tree ref="tree" :data="fileNodes" :props="props" :load="loadNode" node-key="name" lazy
-               highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode">
+      <el-tree ref="tree" :data="tableNodes" :props="props" :load="loadNode" node-key="key" lazy
+               highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode"
+               @node-contextmenu="nodeContextmenu">
             <span class="alignment" slot-scope="{ node, data }">
                <span>
                  <div class="node-name">{{ data.name }}</div>
@@ -16,20 +18,25 @@
                  <span class="node-attribute" v-if="isColumn(data) && data.pk === 1">PK</span>
                  <span class="node-attribute" v-if="isIndex(data) && data.unique === 1">UNIQUE</span>
                </span>
-              <span class="node-operation-btns">
-                <el-button type="text"  size="mini" v-if="isTable(data)"
-                           @click.stop="showDDL(data)">DDL</el-button>
-                <!--                <el-button type="text" class="danger-text-btn" size="mini"-->
-                <!--                           @click.stop="deleteClick(data,node)">删除</el-button>-->
-              </span>
+<!--              <span class="node-operation-btns">-->
+<!--                <el-button type="text"  size="mini" v-if="isTable(data)"-->
+<!--                           @click.stop="showDDL(data)">DDL</el-button>-->
+<!--                <el-button type="text" class="danger-text-btn" size="mini"-->
+<!--                           @click.stop="deleteClick(data,node)">删除</el-button>-->
+<!--              </span>-->
             </span>
       </el-tree>
     </div>
+    <context-menu ref="contextMenu" :items="menuItems" @menu-click="handleMenuClick"></context-menu>
   </div>
 </template>
 <script>
 import {databaseInfoNode,databaseDDL} from "@/api/database";
+import ContextMenu from "@/components/context-menu.vue";
 export default {
+  components:{
+    ContextMenu
+  },
   props:{
     leftWidthHolder:{
       type: Object,
@@ -39,7 +46,11 @@ export default {
   data(){
     return{
       filterText:'',
-      fileNodes: [],
+      tableNodes: [],
+      menuItems: [
+        this.ddlMenuItem(),
+        this.refreshMenuItem()
+      ],
       props: {
         label: 'name',
         isLeaf: 'leaf'
@@ -57,12 +68,49 @@ export default {
     }
   },
   methods:{
+    async refreshTable(){
+      this.tableNodes = await this.requestNodes(null)
+    },
+    ddlMenuItem(){
+      return { text: 'DDL', action: 'DDL' }
+    },
+    refreshMenuItem(){
+      return { text: '刷新', action: 'refresh' }
+    },
+    // 右键节点 点击item事件
+    handleMenuClick({ action }, {data,node}){
+      if (action === 'DDL') {
+        this.showDDL(data)
+      }else if(action === 'refresh'){
+        node.loaded = false
+        node.expand()
+      }
+    },
     async loadNode(node, resolve){
-      let {data:{data}} = await databaseInfoNode(node && node.data && node.data.length !== 0 ? node.data : {})
+      let data = await this.requestNodes(node)
       resolve(data)
       this.$refs.tree.filter(this.filterText);
     },
+    async requestNodes(node){
+      let {data:{data}} = await databaseInfoNode(node && node.data && node.data.length !== 0 ? node.data : {})
+      return data
+    },
+    // 右键节点事件
+    nodeContextmenu(event,data,node,component){
+      this.$refs.tree.setCurrentKey(data.key);
+      if(data.leaf){
+        this.$refs.contextMenu.close()
+        return
+      }
+      if(data.type === 'table'){
+        this.$refs.contextMenu.open({event, data:{data,node}})
+      }
+      if (data.type === 'fixed') {
+        this.$refs.contextMenu.open({event, data:{data,node}},[this.refreshMenuItem()])
+      }
+    },
     handleNodeClick(data,node,component){
+      this.$refs.contextMenu.close()
     },
     showDDL(data){
       // this.rightPanel.prependSql(data.sql+'\n\n')

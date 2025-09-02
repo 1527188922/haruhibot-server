@@ -4,7 +4,7 @@
       class="contextmenu"
       @mousedown.prevent="mousedown"
       ref="menu">
-    <li v-for="item in items"
+    <li v-for="item in (currentItems && currentItems.length > 0 ? currentItems : items)"
         :key="item.action"
         @click.stop="handleClick(item)">
       <i v-if="item.icon" :class="item.icon"></i>
@@ -30,12 +30,14 @@ export default {
       visible: false,
       left: 0,
       top: 0,
-      data:null
+      data:null,
+      currentItems:[]
     }
   },
   methods: {
     // 父组件传递右键事件参数
-    open({event,data}) {
+    open({event,data},items = []) {
+      this.currentItems = items
       this.visible = true
       this.$nextTick(() => {
         this.data = data
@@ -55,6 +57,7 @@ export default {
     close() {
       this.visible = false
       this.data = null
+      this.currentItems = []
       document.removeEventListener('click', this.close)
     },
     handleClick(item) {
