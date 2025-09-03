@@ -31,8 +31,10 @@
   </div>
 </template>
 <script>
-import {databaseInfoNode,databaseDDL} from "@/api/database";
+import {databaseInfoNode, databaseDDL, execAndExport as execAndExportApi} from "@/api/database";
 import ContextMenu from "@/components/context-menu.vue";
+import {downloadFileUrl} from "@/api/system";
+import {downloadLink} from "@/util/util";
 export default {
   components:{
     ContextMenu
@@ -49,7 +51,9 @@ export default {
       tableNodes: [],
       menuItems: [
         this.ddlMenuItem(),
-        this.refreshMenuItem()
+        this.refreshMenuItem(),
+        this.exportMenuItem(),
+        // this.importMenuItem()
       ],
       props: {
         label: 'name',
@@ -71,11 +75,17 @@ export default {
     async refreshTable(){
       this.tableNodes = await this.requestNodes(null)
     },
+    importMenuItem(){
+      return { text: '导入数据', action: 'import',icon:'el-icon-upload2' }
+    },
+    exportMenuItem(){
+      return { text: '导出数据', action: 'export',icon:'el-icon-download' }
+    },
     ddlMenuItem(){
-      return { text: 'DDL', action: 'DDL' }
+      return { text: 'DDL', action: 'DDL',icon:'el-icon-view' }
     },
     refreshMenuItem(){
-      return { text: '刷新', action: 'refresh' }
+      return { text: '刷新', action: 'refresh',icon:'el-icon-refresh' }
     },
     // 右键节点 点击item事件
     handleMenuClick({ action }, {data,node}){
@@ -84,7 +94,36 @@ export default {
       }else if(action === 'refresh'){
         node.loaded = false
         node.expand()
+      }else if(action === 'export'){
+        this.execAndExport(`SELECT * FROM ${data.tableName};`,data.tableName)
+      } else if(action === 'import'){
+
       }
+    },
+    execAndExport(sql, tableName){
+      const loading = this.$loading({ lock: true,  text: 'Loading', spinner: 'el-icon-loading'});
+      execAndExportApi({sql,tableName}).then(({data:{code,data,message},headers})=>{
+        if (code !== 200) {
+          return this.$message.error(message)
+        }
+        const contentDisposition = headers['content-disposition']
+        let fileName = `${tableName}_`+new Date().getTime()+'.xlsx'
+        if (contentDisposition) {
+          const fileNameMatch = contentDisposition.match(/filename=(.+)/)
+          if (fileNameMatch.length > 1) {
+            fileName = decodeURIComponent(fileNameMatch[1].replace(/"/g, ''))
+          }
+        }
+        let h = downloadFileUrl(encodeURI(data))
+        downloadLink(h, fileName)
+      }).catch(e =>{
+        if(e.message){
+          return this.$message.error(e.message)
+        }
+        this.$message.error('导出异常')
+      }).finally(()=>{
+        loading.close()
+      })
     },
     async loadNode(node, resolve){
       let data = await this.requestNodes(node)

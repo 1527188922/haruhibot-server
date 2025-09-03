@@ -285,8 +285,15 @@ public class SystemController {
     public HttpResp<String> export(@RequestBody ExportDatabaseReq request,HttpServletResponse response) {
         String sql = request.getSql();
         SqlExecuteResult data = request.getData();
+        String tableName = request.getTableName();
+        String filename = null;
+        if (StringUtils.isNotBlank(tableName)) {
+            filename = StrFormatter.format("{}_{}.xlsx",tableName, DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss2));
+        }else{
+            filename = StrFormatter.format("db_export_{}.xlsx", DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss2));
+        }
 
-        String filename = StrFormatter.format("db_export_{}.xlsx", DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss2));
+
         File file = new File(FileUtil.getAppTempDir() + File.separator + filename);
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)){
 
