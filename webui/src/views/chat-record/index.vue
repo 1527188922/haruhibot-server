@@ -172,7 +172,8 @@ export default {
     showRaw(row){
       selectExtend(row).then(({data:{data}})=>{
         this.$alert(data.rawWsMessage, {
-          customClass:"raw-message-alert"
+          customClass:"raw-message-alert",
+          confirmButtonText:'关闭'
         })
         console.log(JSON.parse(data.rawWsMessage))
       }).catch(e =>{
