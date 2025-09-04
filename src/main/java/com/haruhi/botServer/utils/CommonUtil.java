@@ -1,26 +1,21 @@
 package com.haruhi.botServer.utils;
 
-import cn.hutool.core.img.gif.AnimatedGifEncoder;
-import cn.hutool.core.img.gif.GifDecoder;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.simplerobot.modules.utils.KQCodeUtils;
-import net.coobird.thumbnailator.Thumbnails;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.CollectionUtils;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -408,4 +403,24 @@ public class CommonUtil {
     public interface FieldExtractor<T, K> {
         K extract(T item);
     }
+
+
+
+    public static Class<?> findEntityClassByTableName(String tableName, String pkgName) throws ClassNotFoundException {
+        pkgName = StringUtils.isBlank(pkgName) ? "com.haruhi.botServer.entity" : pkgName;
+        // 使用类路径扫描工具查找所有带有@TableName注解的类
+        // 这里以Spring为例，实际可能需要调整
+        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter(new AnnotationTypeFilter(TableName.class));
+
+        for (BeanDefinition bd : scanner.findCandidateComponents(pkgName)) {
+            Class<?> clazz = Class.forName(bd.getBeanClassName());
+            TableName annotation = clazz.getAnnotation(TableName.class);
+            if (annotation.value().equalsIgnoreCase(tableName)) {
+                return clazz;
+            }
+        }
+        return null;
+    }
+
 }

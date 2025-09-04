@@ -53,7 +53,7 @@ export default {
         this.ddlMenuItem(),
         this.refreshMenuItem(),
         this.exportMenuItem(),
-        // this.importMenuItem()
+        this.importMenuItem()
       ],
       props: {
         label: 'name',

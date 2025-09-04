@@ -2,7 +2,9 @@ package com.haruhi.botServer.service;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelReader;
 import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.read.metadata.ReadSheet;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.ds.ItemDataSource;
@@ -12,14 +14,17 @@ import com.haruhi.botServer.dto.SqlExecuteResult;
 import com.haruhi.botServer.entity.TableInfoSqlite;
 import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.mapper.SqliteDatabaseInitMapper;
+import com.haruhi.botServer.utils.excel.BatchInsertListener;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
 import java.util.*;
@@ -33,6 +38,9 @@ public class SqliteDatabaseService{
     private SqliteDatabaseInitMapper sqliteDatabaseInitMapper;
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @PostConstruct
     private void firstInit(){
@@ -262,6 +270,23 @@ public class SqliteDatabaseService{
         }finally {
             excelWriter.finish();
         }
+    }
+
+    public void importData(InputStream inputStream, String tableName) {
+
+        ExcelReader excelReader = null;
+        try {
+            excelReader = EasyExcel.read(inputStream).build();
+            BatchInsertListener batchInsertListener = new BatchInsertListener(jdbcTemplate, tableName);
+            ReadSheet sheet = EasyExcel.readSheet(0)
+                    .registerReadListener(batchInsertListener).build();
+            excelReader.read(sheet);
+        }finally {
+            if (excelReader != null) {
+                excelReader.finish();
+            }
+        }
+
     }
 
 }

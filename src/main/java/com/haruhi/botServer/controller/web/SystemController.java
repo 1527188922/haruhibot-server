@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -310,6 +311,18 @@ public class SystemController {
             return HttpResp.fail("导出异常："+e.getMessage(),null);
         }
 
+    }
+
+    @PostMapping("/db/import")
+    public HttpResp importData(@RequestParam MultipartFile file,@RequestParam String tableName) {
+        try (InputStream inputStream = file.getInputStream()){
+
+            sqliteDatabaseService.importData(inputStream, tableName);
+            return HttpResp.success("导入成功",null);
+        } catch (Exception e) {
+            log.error("导入数据异常:{}",tableName,e);
+            return HttpResp.fail(e.getMessage(),null);
+        }
     }
 
 }
