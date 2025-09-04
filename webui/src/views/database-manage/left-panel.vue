@@ -28,6 +28,7 @@
       </el-tree>
     </div>
     <context-menu ref="contextMenu" :items="menuItems" @menu-click="handleMenuClick"></context-menu>
+    <import-data-dialog ref="importDataDialog"></import-data-dialog>
   </div>
 </template>
 <script>
@@ -35,9 +36,11 @@ import {databaseInfoNode, databaseDDL, execAndExport as execAndExportApi} from "
 import ContextMenu from "@/components/context-menu.vue";
 import {downloadFileUrl} from "@/api/system";
 import {downloadLink} from "@/util/util";
+import ImportDataDialog from "./import-data-dialog.vue";
 export default {
   components:{
-    ContextMenu
+    ContextMenu,
+    ImportDataDialog
   },
   props:{
     leftWidthHolder:{
@@ -97,7 +100,7 @@ export default {
       }else if(action === 'export'){
         this.execAndExport(`SELECT * FROM ${data.tableName};`,data.tableName)
       } else if(action === 'import'){
-
+        this.$refs.importDataDialog.open(data)
       }
     },
     execAndExport(sql, tableName){

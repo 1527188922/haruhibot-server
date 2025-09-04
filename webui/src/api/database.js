@@ -42,3 +42,13 @@ export const execAndExport = (data) => request({
     timeout:10 * 60 * 1000,
     data
 });
+
+export const importExcel = (file, tableName) => {
+    let formData = new FormData()
+    formData.append('file',file)
+    formData.append('tableName',tableName)
+    return request.post( `${baseUrl}/sys/db/import`, formData,{
+        timeout:10 * 60 * 1000,
+        headers:{ 'Content-Type': 'multipart/form-data' }
+    });
+}
