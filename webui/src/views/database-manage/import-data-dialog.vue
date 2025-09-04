@@ -13,7 +13,7 @@
           </el-button>
         </el-tooltip>
 
-        <input type="file" :value="fileName" ref="importFileInput" style="display: none"
+        <input type="file" ref="importFileInput" style="display: none"
                 @change="fileInputChange"
                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"/>
       </el-row>
@@ -49,7 +49,10 @@ export default {
   },
   methods:{
     open(nodeData){
-      this.title = '导入数据：'+nodeData.tableName || '导入数据'
+      if(!nodeData || !nodeData.tableName){
+        return this.$message.error('缺少表信息')
+      }
+      this.title = '导入数据：'+nodeData.tableName
       this.dialogVisible = true
       this.$nextTick(()=>{
         this.nodeData = deepClone(nodeData)
@@ -84,8 +87,11 @@ export default {
       this.$refs.importFileInput.click()
     },
     fileInputChange(e){
-      this.fileName = e.target.value
-      this.targetFile = e.target.files[0]
+      let fs = e.target.files
+      if(fs && fs.length > 0){
+        this.targetFile = e.target.files[0]
+        this.fileName = this.targetFile.name
+      }
     },
     clearErr(){
       this.errorMsg = ''
@@ -113,6 +119,7 @@ export default {
       overflow: hidden; /* 超出隐藏 */
       text-overflow: ellipsis; /* 文本超出显示省略号 */
       max-width: 100% !important;
+      height: 14px;
     }
   }
   .err-ul{

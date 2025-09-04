@@ -26,6 +26,7 @@ public class BatchInsertListener extends AnalysisEventListener<Map<Integer, Stri
 
     private List<String> headers;
     private List<List<Object>> batchCache = new ArrayList<>(batchSize);
+    private String sql;
 
     public BatchInsertListener(JdbcTemplate jdbcTemplate, String tableName) {
         this.jdbcTemplate = jdbcTemplate;
@@ -38,6 +39,7 @@ public class BatchInsertListener extends AnalysisEventListener<Map<Integer, Stri
                 .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
+        sql = buildInsertSql(headers);
     }
  
     @Override
@@ -60,7 +62,6 @@ public class BatchInsertListener extends AnalysisEventListener<Map<Integer, Stri
     }
  
     private void executeBatch() {
-        String sql = buildInsertSql();
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
@@ -81,7 +82,7 @@ public class BatchInsertListener extends AnalysisEventListener<Map<Integer, Stri
 
     }
  
-    private String buildInsertSql() {
+    private String buildInsertSql(List<String> headers) {
         String columns = String.join(", ", headers);
         String placeholders = headers.stream()
                 .map(h -> "?")
