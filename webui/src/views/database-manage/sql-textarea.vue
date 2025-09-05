@@ -20,10 +20,11 @@
         class="suggestion-box"
          ref="suggestionBox"
         :style="suggestionStyle">
-      <ul class="">
-        <li class="" v-for="(item, index) in filteredSuggestions" :key="index"  :class="{ 'active': index === activeSuggestionIndex }"
+      <ul>
+        <li v-for="(item, index) in filteredSuggestions" :key="index"
+            :class="{ 'active': index === activeSuggestionIndex }"
             @click="selectSuggestion(index)">
-          {{ item }}
+          {{ item.keyword }}
         </li>
       </ul>
     </div>
@@ -32,6 +33,7 @@
 </template>
 
 <script>
+import suggestions from "@/views/database-manage/suggestions";
 export default {
   props: {
     value: {
@@ -47,17 +49,6 @@ export default {
     return {
       start: 0,
       end: 0,
-      // 联想提示相关
-      suggestions: [
-        // SQL关键字
-        'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'FROM', 'WHERE', 'AND', 'OR',
-        'JOIN', 'LEFT', 'RIGHT', 'INNER', 'ON', 'GROUP BY', 'ORDER BY', 'LIMIT',
-        'OFFSET', 'AS', 'DISTINCT', 'COUNT', 'SUM', 'MAX', 'MIN', 'AVG',
-        // 表名建议 - 可以从数据库元数据动态获取
-        'chat_record', 'poke_reply', 'custom_reply', 'word_strip', 'pixiv',
-        // 列名建议 - 可以根据当前表动态获取
-        'id', 'group_id', 'user_id', 'message', 'create_time', 'status'
-      ],
       filteredSuggestions: [],
       showSuggestions: false,
       activeSuggestionIndex: -1,
@@ -219,8 +210,7 @@ export default {
       // 过滤提示列表
       if (this.currentWord.length >= 1) {
         const lowerWord = this.currentWord.toLowerCase();
-        this.filteredSuggestions = this.suggestions
-            .filter(item => item.toLowerCase().startsWith(lowerWord))
+        this.filteredSuggestions = suggestions.filter(item => item.keyword.toLowerCase().includes(lowerWord))
             .sort();
 
         let showSuggestionsTemp = this.filteredSuggestions.length > 0;
@@ -241,7 +231,7 @@ export default {
     selectSuggestion(index) {
       if (index < 0 || index >= this.filteredSuggestions.length) return;
 
-      const suggestion = this.filteredSuggestions[index];
+      const suggestion = this.filteredSuggestions[index].keyword;
       const textarea = this.getNativeTextarea();
       const cursorPos = textarea.selectionStart;
       const text = this.value || '';
@@ -305,6 +295,7 @@ export default {
     onSelect() { this.readLater() },
     onMouseUp() { this.readLater() },
     onClick(e) {
+      this.showSuggestions = false
       this.readLater()
     },
     onKeyup(e) {
@@ -325,6 +316,7 @@ export default {
       }
     },
     onBlur() {
+      // this.showSuggestions = false
       this.$emit('selection-change', '')
     },
     onFocus(){
