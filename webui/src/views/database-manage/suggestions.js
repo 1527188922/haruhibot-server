@@ -16,6 +16,10 @@ export default [
         "category": "关键字"
     },
     {
+        "keyword": "SELECT *",
+        "category": "关键字"
+    },
+    {
         "keyword": "INSERT INTO",
         "category": "关键字"
     },
@@ -41,6 +45,10 @@ export default [
     },
     {
         "keyword": "DROP",
+        "category": "关键字"
+    },
+    {
+        "keyword": "DROP TABLE",
         "category": "关键字"
     },
     {

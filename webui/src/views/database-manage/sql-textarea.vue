@@ -23,6 +23,7 @@
       <ul>
         <li v-for="(item, index) in filteredSuggestions" :key="index"
             :class="{ 'active': index === activeSuggestionIndex }"
+            :ref="`suggestionItem-${index}`"
             @click.stop="selectSuggestion(index)">
           <span class="keyword">{{ item.keyword }}</span>
           <span class="category">{{ item.category }}</span>
@@ -175,11 +176,12 @@ export default {
           e.preventDefault();
           this.activeSuggestionIndex =
               (this.activeSuggestionIndex + 1) % this.filteredSuggestions.length;
-
+          this.scrollToActiveSuggestion();
         } else if (e.key === 'ArrowUp') {
           e.preventDefault();
           this.activeSuggestionIndex =
               (this.activeSuggestionIndex - 1 + this.filteredSuggestions.length) % this.filteredSuggestions.length;
+          this.scrollToActiveSuggestion();
         } else if (e.key === 'Enter') {
           // 回车选中当前提示
           if (this.activeSuggestionIndex >= 0) {
@@ -190,6 +192,39 @@ export default {
           //  ESC键关闭提示
           this.showSuggestions = false;
         }
+      }
+    },
+    // 滚动到当前选中的提示项
+    scrollToActiveSuggestion() {
+      if (this.activeSuggestionIndex < 0 || this.activeSuggestionIndex >= this.filteredSuggestions.length) {
+        return;
+      }
+      let items = this.$refs[`suggestionItem-${this.activeSuggestionIndex}`]
+      if(!items ){
+        return;
+      }
+      // 获取当前选中项的DOM元素和提示框容器
+      const suggestionItem = items[0];
+      const suggestionBox = this.$refs.suggestionBox;
+
+      if (!suggestionItem || !suggestionBox) return;
+
+      // 获取元素和容器的位置信息
+      const itemRect = suggestionItem.getBoundingClientRect();
+      const boxRect = suggestionBox.getBoundingClientRect();
+      const boxScrollTop = suggestionBox.scrollTop;
+
+      // 计算元素在容器内的相对位置
+      const itemTopInBox = itemRect.top - boxRect.top + boxScrollTop;
+      const itemBottomInBox = itemTopInBox + itemRect.height;
+
+      // 如果元素在容器可视区域上方，滚动到元素顶部
+      if (itemTopInBox < boxScrollTop) {
+        suggestionBox.scrollTop = itemTopInBox;
+      }
+      // 如果元素在容器可视区域下方，滚动到元素底部
+      else if (itemBottomInBox > boxScrollTop + boxRect.height) {
+        suggestionBox.scrollTop = itemBottomInBox - boxRect.height;
       }
     },
 
@@ -215,7 +250,16 @@ export default {
         let sqlSuggestionsTable = getStore({name:'sql-suggestions-table'})
         let _suggestions = suggestions.concat(sqlSuggestionsTable || [])
         this.filteredSuggestions = _suggestions.filter(item => item.keyword.toLowerCase().includes(lowerWord))
-            .sort();
+            .sort((a, b) => {
+              // TABLE 始终排在最前面
+              if (a.category === 'TABLE' && b.category !== 'TABLE') {
+                return -1;
+              }
+              if (a.category !== 'TABLE' && b.category === 'TABLE') {
+                return 1;
+              }
+              return a.keyword.localeCompare(b.keyword);
+            });
 
         let showSuggestionsTemp = this.filteredSuggestions.length > 0;
         if (showSuggestionsTemp) {
