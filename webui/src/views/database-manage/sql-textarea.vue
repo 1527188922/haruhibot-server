@@ -3,7 +3,7 @@
     <el-input
         ref="textarea"
         type="textarea"
-        :value="value"
+        v-model="valueObj.value"
         @input="handleInput"
         @select.native="onSelect"
         @mouseup.native="onMouseUp"
@@ -23,7 +23,7 @@
       <ul>
         <li v-for="(item, index) in filteredSuggestions" :key="index"
             :class="{ 'active': index === activeSuggestionIndex }"
-            @click="selectSuggestion(index)">
+            @click.stop="selectSuggestion(index)">
           <span class="keyword">{{ item.keyword }}</span>
           <span class="category">{{ item.category }}</span>
         </li>
@@ -35,11 +35,12 @@
 
 <script>
 import suggestions from "@/views/database-manage/suggestions";
+import {getStore} from "@/util/store";
 export default {
   props: {
-    value: {
-      type: String,
-      default: ''
+    valueObj: {
+      type: Object,
+      default: ()=>{return {value:''}}
     }
   },
   mounted() {
@@ -198,7 +199,7 @@ export default {
       if (!textarea) return;
 
       const cursorPos = textarea.selectionStart;
-      const text = this.value || '';
+      const text = this.valueObj.value || '';
 
       // 获取当前输入的单词
       let wordStart = cursorPos;
@@ -211,7 +212,9 @@ export default {
       // 过滤提示列表
       if (this.currentWord.length >= 1) {
         const lowerWord = this.currentWord.toLowerCase();
-        this.filteredSuggestions = suggestions.filter(item => item.keyword.toLowerCase().includes(lowerWord))
+        let sqlSuggestionsTable = getStore({name:'sql-suggestions-table'})
+        let _suggestions = suggestions.concat(sqlSuggestionsTable || [])
+        this.filteredSuggestions = _suggestions.filter(item => item.keyword.toLowerCase().includes(lowerWord))
             .sort();
 
         let showSuggestionsTemp = this.filteredSuggestions.length > 0;
@@ -235,7 +238,7 @@ export default {
       const suggestion = this.filteredSuggestions[index].keyword;
       const textarea = this.getNativeTextarea();
       const cursorPos = textarea.selectionStart;
-      const text = this.value || '';
+      const text = this.valueObj.value || '';
 
       // 计算当前单词的起始位置
       let wordStart = cursorPos;
@@ -249,7 +252,8 @@ export default {
       const newCursorPos = wordStart + suggestion.length+endWorld.length;
 
       // 更新文本
-      this.$emit('input', newText);
+      // this.$emit('input', newText);
+      this.valueObj.value = newText
 
       // 更新光标位置
       this.$nextTick(() => {

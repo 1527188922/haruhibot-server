@@ -16,7 +16,7 @@
       </el-aside>
       <el-container>
         <el-main ref="main" :style="{ height: mainHeight + 'px' }">
-          <sql-textarea v-model="content" @selection-change="handleSelection" @contextmenu="openMenu"
+          <sql-textarea :value-obj="valueObj" @selection-change="handleSelection" @contextmenu="openMenu"
                         @change="handleSqlChange"></sql-textarea>
         </el-main>
 
@@ -56,7 +56,7 @@ export default {
       minMainHeight: 0,   // main最小高度
       minFooterHeight: 40, // footer最小高度
       isDragging: false,
-      content:'',
+      valueObj:{value:''},
       selectedText:'',
       menuItems: [
         { text: '▶执行', action: 'execAll' },
@@ -81,15 +81,15 @@ export default {
   methods:{
     initContentInLocal(){
       let sql = getStore({name:'sql-cache'})
-      this.content = sql || ''
+      this.valueObj.value = sql || ''
     },
     initContent(){
       getSqlCache().then(({data:{data}})=>{
-        this.content = data || ''
+        this.valueObj.value = data || ''
       })
     },
     exec(){
-      this.executeSql(this.content)
+      this.executeSql(this.valueObj.value)
     },
     execSelected(){
       this.executeSql(this.selectedText)
@@ -167,8 +167,8 @@ export default {
       }
     },
     prependSql(text){
-      let t = this.content
-      this.content = text + t
+      let t = this.valueObj.value
+      this.valueObj.value = text + t
     },
     handleSelection(v){
       this.selectedText = v;

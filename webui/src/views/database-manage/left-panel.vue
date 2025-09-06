@@ -37,6 +37,7 @@ import ContextMenu from "@/components/context-menu.vue";
 import {downloadFileUrl} from "@/api/system";
 import {downloadLink} from "@/util/util";
 import ImportDataDialog from "./import-data-dialog.vue";
+import {setStore} from "@/util/store";
 export default {
   components:{
     ContextMenu,
@@ -135,7 +136,24 @@ export default {
     },
     async requestNodes(node){
       let {data:{data}} = await databaseInfoNode(node && node.data && node.data.length !== 0 ? node.data : {})
+      this.saveSuggestionsCache(data)
       return data
+    },
+    saveSuggestionsCache(data){
+      if(!data || data.length === 0 || data[0].type !== 'table'){
+        return
+      }
+      let cache = data.map(item => {
+        return{
+          keyword:item.name,
+          category:'TABLE'
+        }
+      })
+      setStore({
+        name:'sql-suggestions-table',
+        content:cache,
+        type:1
+      })
     },
     // 右键节点事件
     nodeContextmenu(event,data,node,component){
