@@ -1,10 +1,22 @@
 export default [
     {
+        "keyword": "LIMIT",
+        "category": "关键字"
+    },
+    {
+        "keyword": "OFFSET",
+        "category": "关键字"
+    },
+    {
+        "keyword": "FROM",
+        "category": "关键字"
+    },
+    {
         "keyword": "SELECT",
         "category": "关键字"
     },
     {
-        "keyword": "INSERT",
+        "keyword": "INSERT INTO",
         "category": "关键字"
     },
     {
@@ -13,6 +25,10 @@ export default [
     },
     {
         "keyword": "DELETE",
+        "category": "关键字"
+    },
+    {
+        "keyword": "TABLE",
         "category": "关键字"
     },
     {
@@ -52,7 +68,31 @@ export default [
         "category": "关键字"
     },
     {
+        "keyword": "NULL",
+        "category": "关键字"
+    },
+    {
+        "keyword": "IS NULL",
+        "category": "关键字"
+    },
+    {
+        "keyword": "NOT NULL",
+        "category": "关键字"
+    },
+    {
         "keyword": "JOIN",
+        "category": "关键字"
+    },
+    {
+        "keyword": "INNER JOIN",
+        "category": "关键字"
+    },
+    {
+        "keyword": "RIGHT JOIN",
+        "category": "关键字"
+    },
+    {
+        "keyword": "LEFT JOIN",
         "category": "关键字"
     },
     {

@@ -24,7 +24,8 @@
         <li v-for="(item, index) in filteredSuggestions" :key="index"
             :class="{ 'active': index === activeSuggestionIndex }"
             @click="selectSuggestion(index)">
-          {{ item.keyword }}
+          <span class="keyword">{{ item.keyword }}</span>
+          <span class="category">{{ item.category }}</span>
         </li>
       </ul>
     </div>
@@ -243,8 +244,9 @@ export default {
       }
 
       // 替换当前单词为选中的提示词
-      const newText = text.substring(0, wordStart) + suggestion + text.substring(cursorPos);
-      const newCursorPos = wordStart + suggestion.length;
+      let endWorld = ' ';
+      const newText = text.substring(0, wordStart) + suggestion + endWorld +text.substring(cursorPos);
+      const newCursorPos = wordStart + suggestion.length+endWorld.length;
 
       // 更新文本
       this.$emit('input', newText);
@@ -337,7 +339,7 @@ export default {
     resize: none;
     padding: 5px;
     box-sizing: border-box;
-    font-family: monospace, serif;
+    font-family:  "Consolas", "Courier New", monospace;
   }
 }
 .sql-editor-container {
@@ -354,7 +356,7 @@ export default {
   border: 1px solid #ddd;
   border-radius: 4px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  min-width: 150px;
+  min-width: 250px;
   max-height: 200px;
   overflow-y: auto;
 
@@ -368,6 +370,12 @@ export default {
       cursor: pointer;
       white-space: nowrap;
 
+
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
       &:hover {
         background-color: #f5f7fa;
       }
@@ -376,6 +384,16 @@ export default {
         background-color: #e4e8f1;
         color: #1890ff;
       }
+
+      .keyword{
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 14px;
+      }
+      .category{
+        font-size: 12px;
+        color: #909399;
+      }
+
     }
   }
 }

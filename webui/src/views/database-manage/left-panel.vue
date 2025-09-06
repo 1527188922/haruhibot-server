@@ -218,6 +218,7 @@ export default {
 .tree-container{
 
   .alignment {
+    font-family: "Consolas", "Courier New", monospace;
     flex: 1;
     display: flex;
     align-items: center;

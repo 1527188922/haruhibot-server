@@ -12,7 +12,12 @@
           <span style="margin-left: 10px">
             <template v-if="editable">
               <el-button type="text" icon="el-icon-close" size="small" @click="cancel">取消</el-button>
-              <el-button class="success-text-btn success-text" type="text" icon="el-icon-check" size="small" @click="save">保存</el-button>
+              <el-popconfirm title="确认保存文件内容？"
+                             @confirm="submit">
+                <el-button class="success-text-btn success-text" slot="reference"
+                           type="text" icon="el-icon-check" size="small">保存</el-button>
+              </el-popconfirm>
+
             </template>
             <template v-else>
               <el-button type="text" size="small" icon="el-icon-edit" @click="edit">编辑</el-button>
@@ -71,28 +76,22 @@ export default {
     }
   },
   methods:{
-    save(){
-      this.$confirm('确认保存文件内容?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(()=>{
-        this.saveLoading = true
-        saveFile({
-          ...this.nodeData,
-          content:this.content
-        }).then(({data:{code,message}})=>{
-          if(code !== 200){
-            return this.$message.error(message)
-          }
-          this.$message.success(message)
-          this.oldValue = ''
-          this.editable = false
-        }).catch(e=>{
-          this.$message.error(e.message)
-        }).finally(()=>{
-          this.saveLoading = false
-        })
+    submit(){
+      this.saveLoading = true
+      saveFile({
+        ...this.nodeData,
+        content:this.content
+      }).then(({data:{code,message}})=>{
+        if(code !== 200){
+          return this.$message.error(message)
+        }
+        this.$message.success(message)
+        this.oldValue = ''
+        this.editable = false
+      }).catch(e=>{
+        this.$message.error(e.message)
+      }).finally(()=>{
+        this.saveLoading = false
       })
     },
     cancel(){
@@ -133,12 +132,15 @@ export default {
 </script>
 <style lang="scss" scoped>
 #DrawerPreview{
+  pre{
+    font-family: "Consolas", "Courier New", monospace;
+  }
   .operation-btns{
     font-weight: bold;
   }
   ::v-deep .el-textarea__inner{
     padding: 0;
-    font-family: monospace, serif;
+    font-family: "Consolas", "Courier New", monospace;
   }
   .info{
     font-size: 12px;
