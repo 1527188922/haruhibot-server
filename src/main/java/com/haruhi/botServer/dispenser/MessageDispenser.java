@@ -10,15 +10,12 @@ import com.haruhi.botServer.handlers.message.chatRecord.ChatRecordHandler;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
 import com.haruhi.botServer.ws.Bot;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -39,16 +36,13 @@ public class MessageDispenser {
         loadEvent(map);
     }
 
+    @Getter
     private static final List<IMessageEvent> container = new CopyOnWriteArrayList<>();
     private static final List<IMessageEvent> groupContainer = new CopyOnWriteArrayList<>();
     private static final List<IMessageEvent> privateContainer = new CopyOnWriteArrayList<>();
 
-    public static List<IMessageEvent> getContainer(){
-        return container;
-    }
-
     private void loadEvent(Map<String, IMessageEvent> messageEventMap){
-        if (!CollectionUtils.isEmpty(messageEventMap)) {
+        if (messageEventMap != null && !messageEventMap.isEmpty()) {
             log.info("加载消息处理类...");
             container.addAll(messageEventMap.values());
             checkWeight();
@@ -204,10 +198,21 @@ public class MessageDispenser {
             // 机器人self消息 且 handler类不处理self消息
             return true;
         }
-        boolean disableGroup = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
-        if(message.isGroupMsg() && disableGroup && event.getClass() != ChatRecordHandler.class){
-            // 本次为群消息 且开了禁用群功能 则只让聊天记录保存handler类生效
-            return true;
+
+        if (message.isGroupMsg()) {
+            List<Long> accessGroups = dictionarySqliteService.getList(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), "[,，]", Long.class, Collections.emptyList());
+            if(CollectionUtils.isNotEmpty(accessGroups)
+                    && !accessGroups.contains(message.getGroupId())
+                    && event.getClass() != ChatRecordHandler.class){
+                return true;
+            }
+
+            boolean disableGroup = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
+            if(disableGroup
+                    && event.getClass() != ChatRecordHandler.class){
+                // 本次为群消息 且开了禁用群功能 则只让聊天记录保存handler类生效
+                return true;
+            }
         }
         return false;
     }

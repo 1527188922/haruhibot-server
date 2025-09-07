@@ -25,6 +25,7 @@ public enum DictionaryEnum{
     BOT_ACCESS_TOKEN(true,"bot.access_token",null,"机器人Websocket服务，建立连接握手时认证token，未配置表示无需认证"),
     BOT_SUPERUSERS(true,"bot.superusers","1527188922","机器人超级管理员qq号，多个qq号逗号分割,注意：未配置超级用户则一些超级用户功能不可使用"),
     BOT_MAX_CONNECTIONS(true,"bot.max_connections","5","机器人Websocket服务最大连接数，小于0表示无限制，0表示禁止连接（改成0不会断开已有连接）"),
+    BOT_ACCESS_GROUP(true,"bot.access_groups",null,"可使用机器人的群号，多个时逗号分开，若不配置表示所有群都可使用机器人"),
 
     SWITCH_DISABLE_GROUP(true,"switch.disable_group","false","是否禁用所有群功能（对有所有群消息不予理睬，但会保留保存聊天记录功能），true:禁用"),
     SWITCH_QINGYUNKE_CHAT(true,"switch.qingyunke_chat","true","是否启用青云可聊天api，当at机器人或私聊机器人任何命令都未触发时，会触发该api，true:启用"),

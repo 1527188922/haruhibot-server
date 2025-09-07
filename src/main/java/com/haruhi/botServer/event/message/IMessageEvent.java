@@ -18,6 +18,12 @@ public interface IMessageEvent {
         return weight() + "-" + funName();
     }
 
+    /**
+     * 是否处理机器人自身消息
+     * true：处理
+     * 默认不处理：false
+     * @return
+     */
     default boolean handleSelfMsg(){
         return false;
     }

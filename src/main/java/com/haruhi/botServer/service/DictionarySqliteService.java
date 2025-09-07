@@ -59,6 +59,60 @@ public class DictionarySqliteService {
         return Arrays.stream(superusers.split("[,，]")).filter(StringUtils::isNotBlank).distinct().map(Long::valueOf).collect(Collectors.toList());
     }
 
+    public <T> List<T> getList(String key, String regex, Class<T> tClass, List<T> defaultList){
+        String inCache = this.getInCache(key, null);
+        if (StringUtils.isBlank(inCache)) {
+            return defaultList;
+        }
+        String[] split = inCache.split(regex);
+
+        return Arrays.stream(split).map(e -> {
+            if (StringUtils.isEmpty(e)) {
+                return null;
+            }
+            try {
+                return convertToType(e, tClass);
+            } catch (Exception ex) {
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+
+    private static <T> T convertToType(String value, Class<T> tClass) throws Exception {
+        if (tClass == String.class) {
+            return tClass.cast(value);
+        }
+        if (tClass == Integer.class || tClass == int.class) {
+            return tClass.cast(Integer.parseInt(value));
+        }
+        if (tClass == Long.class || tClass == long.class) {
+            return tClass.cast(Long.parseLong(value));
+        }
+        if (tClass == Double.class || tClass == double.class) {
+            return tClass.cast(Double.parseDouble(value));
+        }
+        if (tClass == Float.class || tClass == float.class) {
+            return tClass.cast(Float.parseFloat(value));
+        }
+        if (tClass == Boolean.class || tClass == boolean.class) {
+            return tClass.cast(Boolean.parseBoolean(value));
+        }
+        if (tClass == Short.class || tClass == short.class) {
+            return tClass.cast(Short.parseShort(value));
+        }
+        if (tClass == Byte.class || tClass == byte.class) {
+            return tClass.cast(Byte.parseByte(value));
+        } else {
+            try {
+                return (T) tClass.getMethod("valueOf", String.class).invoke(null, value);
+            } catch (NoSuchMethodException e) {
+                return tClass.getConstructor(String.class).newInstance(value);
+            }
+        }
+    }
+
+
     public String getBotAccessToken(){
         return this.getInCache(DictionaryEnum.BOT_ACCESS_TOKEN.getKey(),null);
     }
