@@ -1,10 +1,10 @@
 <template>
-  <basic-container class="tail-log">
-    <div class="log-content" ref="logContent">
+  <basic-container class="tail-log" >
+    <code class="log-content">
       <div v-for="(log, index) in logs" :key="index" class="log-line">
         {{ log }}
       </div>
-    </div>
+    </code>
   </basic-container>
 
 </template>
@@ -14,106 +14,51 @@ import {createLogSSEClient} from "@/api/log";
 export default {
   data() {
     return {
-      sse: null,
-      logs: [],
-      connectionStatus: 'disconnected',
-      close:null
+      sseClient: null,
+      logs: []
     }
   },
   mounted() {
-    this.close = createLogSSEClient(10,(s)=>{
-      // console.log("qwe",s)
-    })
+    this.initSSEClient()
+  },
+  watch: {
+    logs(newVal) {
+    }
+  },
+  methods:{
+    initSSEClient(){
+      if(this.sseClient){
+        this.sseClient.close()
+      }
+      this.sseClient = createLogSSEClient(120,this.handleLineLog)
+      this.sseClient.connect()
+    },
+    handleLineLog({data,id,event}){
+      if(!data || data.length === 0){
+        return
+      }
+      for (let i = 0; i < data.length; i++) {
+        let d = data[i];
+        if(!d){
+          continue;
+        }
+        let obj = JSON.parse(d)
+        this.logs.push(obj.data)
+      }
+    }
   },
   beforeDestroy() {
-    // 移除自定义事件监听
-    this.sse.off('notification')
-    // 断开连接
-    this.sse.disconnect()
-  },
-  style: `
-    .log-viewer {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      border: 1px solid #e0e0e0;
-      border-radius: 4px;
-      overflow: hidden;
+    if(this.sseClient){
+      this.sseClient.close()
     }
-
-    .log-controls {
-      padding: 10px;
-      background-color: #f5f5f5;
-      border-bottom: 1px solid #e0e0e0;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .log-path-input {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-
-    .start-btn, .stop-btn, .clear-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .start-btn {
-      background-color: #42b983;
-      color: white;
-    }
-
-    .start-btn:disabled {
-      background-color: #a0d9b9;
-      cursor: not-allowed;
-    }
-
-    .stop-btn {
-      background-color: #f44336;
-      color: white;
-    }
-
-    .stop-btn:disabled {
-      background-color: #f8a69f;
-      cursor: not-allowed;
-    }
-
-    .clear-btn {
-      background-color: #2196f3;
-      color: white;
-    }
-
-    .log-content {
-      flex: 1;
-      padding: 10px;
-      overflow-y: auto;
-      background-color: #2d2d2d;
-      color: #f0f0f0;
-      font-family: monospace;
-      font-size: 14px;
-    }
-
-    .log-line {
-      margin-bottom: 4px;
-      line-height: 1.4;
-    }
-
-    .status-info {
-      padding: 8px 10px;
-      background-color: #f0f0f0;
-      border-top: 1px solid #e0e0e0;
-      font-size: 13px;
-      color: #666;
-    }
-  `
+  }
 }
 
 </script>
+<style scoped lang="scss">
+.tail-log{
+  display: flex;
+  min-height: 100%;
+  padding-bottom: 0;
+}
+</style>

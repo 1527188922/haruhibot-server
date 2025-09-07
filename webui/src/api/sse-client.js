@@ -1,4 +1,3 @@
-
 export default class SSEClient {
     /**
      * 创建SSE客户端实例
@@ -37,6 +36,8 @@ export default class SSEClient {
         this.reconnectTimer = null;
         this.reader = null;
         this.controller = null;
+        // 新增：用于累积不完整消息的缓冲区
+        this.buffer = '';
     }
 
     buildUrl() {
@@ -79,7 +80,7 @@ export default class SSEClient {
 
         fetch(url, {
             method: 'GET',
-            keepalive:true,
+            keepalive: true,
             headers: this.options.headers,
             signal: this.controller.signal,
             // 跨域场景需要时开启（需后端配合CORS配置）
@@ -162,21 +163,76 @@ export default class SSEClient {
     }
 
     /**
-     * 解析SSE格式的数据
-     * @param {string} data - 原始数据
+     * 解析SSE格式的数据（优化版）
+     * 处理不完整消息和多行文数据，遵循SSE规范
+     * @param {string} data - 新收到的原始数据
      */
     parseSSEData(data) {
-        console.log(data)
-        // SSE消息通常以"\n\n"分隔
-        const lines = data.split('\n\n');
+        // 将新数据添加到缓冲区
+        this.buffer += data;
 
-        lines.forEach(line => {
-            if (!line || line.trim() === '') {
-                return
+        // SSE消息以\n\n分隔，循环提取完整消息
+        while (true) {
+            const separatorIndex = this.buffer.indexOf('\n\n');
+            // 没有完整消息则退出循环
+            if (separatorIndex === -1) break;
+
+            // 提取完整消息（不包含分隔符）
+            const message = this.buffer.substring(0, separatorIndex);
+            // 剩余内容保留在缓冲区
+            this.buffer = this.buffer.substring(separatorIndex + 2);
+
+            // 解析单条消息
+            this.parseSingleMessage(message);
+        }
+    }
+
+    /**
+     * 解析单条SSE消息
+     * @param {string} message - 单条完整消息
+     */
+    parseSingleMessage(message) {
+        if (!message.trim()) return;
+
+        const lines = message.split('\n');
+        let event = 'message'; // 默认事件类型
+        let data = []; // data可能有多行，用数组收集
+        let id = null;
+
+        for (const line of lines) {
+            if (!line || line.startsWith(':')) continue;
+
+            const colonIndex = line.indexOf(':');
+            if (colonIndex === -1) continue;
+
+            const field = line.substring(0, colonIndex).trim();
+            if (!field) continue;
+
+            let value = line.substring(colonIndex + 1).trimStart();
+
+            // 处理不同字段
+            switch (field) {
+                case 'event':
+                    event = value;
+                    break;
+                case 'data':
+                    data.push(value);
+                    break;
+                case 'id':
+                    id = value;
+                    break;
             }
-            // console.log(line)
-            this.options.onMessage(line.trim());
-        });
+        }
+
+
+        // 调用回调函数，传递解析后的事件和数据
+        if (data || event) {
+            this.options.onMessage({
+                id,
+                event,
+                data: data
+            });
+        }
     }
 
     /**
@@ -231,6 +287,9 @@ export default class SSEClient {
         if (this.reconnectTimer) {
             clearTimeout(this.reconnectTimer);
         }
+
+        // 清空缓冲区
+        this.buffer = '';
 
         this.isConnecting = false;
         this.options.onClose('manual close');

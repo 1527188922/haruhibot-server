@@ -333,13 +333,14 @@ public class SystemController {
 
     @GetMapping(value = "/log/tail", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter tailLog(@RequestParam(required = false) Integer initLine) {
-        // 设置超时时间为30分钟
         SseEmitter emitter = new SseEmitter(-1L);
         LineHandler listener = line -> {
             try {
+
                 emitter.send(SseEmitter.event()
+                        .id(CommonUtil.uuid())
                         .name("log")
-                        .data(line));
+                        .data(HttpResp.success(line)));
             } catch (IOException e) {
                 emitter.completeWithError(e);
             }
@@ -349,7 +350,7 @@ public class SystemController {
                 StandardCharsets.UTF_8,
                 listener,
                 initLine == null ? 30 : initLine,
-                50L);
+                10L);
         tailer.start(true);
 
 
