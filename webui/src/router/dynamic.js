@@ -283,6 +283,13 @@ const release = [{
         children: []
     },
     {
+        label: '日志监控',
+        path: '/sys/log-monitor',
+        iconBgColor: randomColor(),
+        component: 'views/log-monitor/index',
+        children: []
+    },
+    {
         label: '数据库管理',
         path: '/db-manage',
         iconBgColor: randomColor(),

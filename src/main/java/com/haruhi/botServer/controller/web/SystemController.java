@@ -1,6 +1,8 @@
 package com.haruhi.botServer.controller.web;
 
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.io.LineHandler;
+import cn.hutool.core.io.file.Tailer;
 import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
@@ -27,8 +29,10 @@ import com.haruhi.botServer.ws.BotServer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -323,6 +327,37 @@ public class SystemController {
             log.error("导入数据异常:{}",tableName,e);
             return HttpResp.fail(e.getMessage(),null);
         }
+    }
+
+
+
+    @GetMapping(value = "/log/tail", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter tailLog(@RequestParam(required = false) Integer initLine) {
+        // 设置超时时间为30分钟
+        SseEmitter emitter = new SseEmitter(-1L);
+        LineHandler listener = line -> {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("log")
+                        .data(line));
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+            }
+        };
+        String file = "D:\\JavaProject\\haruhibot-server\\logs\\haruhibot.log";
+        Tailer tailer = new Tailer(new File(file),
+                StandardCharsets.UTF_8,
+                listener,
+                initLine == null ? 30 : initLine,
+                50L);
+        tailer.start(true);
+
+
+        emitter.onCompletion(() -> tailer.stop());
+        emitter.onTimeout(() -> tailer.stop());
+        emitter.onError((e) -> tailer.stop());
+
+        return emitter;
     }
 
 }
