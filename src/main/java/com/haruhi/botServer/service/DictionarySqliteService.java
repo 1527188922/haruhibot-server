@@ -52,11 +52,7 @@ public class DictionarySqliteService {
     }
 
     public List<Long> getBotSuperUsers(){
-        String superusers = this.getInCache(DictionaryEnum.BOT_SUPERUSERS.getKey(),null);
-        if (StringUtils.isBlank(superusers)) {
-            return Collections.emptyList();
-        }
-        return Arrays.stream(superusers.split("[,，]")).filter(StringUtils::isNotBlank).distinct().map(Long::valueOf).collect(Collectors.toList());
+        return getList(DictionaryEnum.BOT_SUPERUSERS.getKey(),"[,，]", Long.class, Collections.emptyList());
     }
 
     public <T> List<T> getList(String key, String regex, Class<T> tClass, List<T> defaultList){

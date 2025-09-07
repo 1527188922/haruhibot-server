@@ -4,13 +4,16 @@
       <el-row>
         <el-form :model="queryFormObj" label-width="60px" inline ref="queryForm" size="small">
           <el-form-item label="key" prop="key">
-            <el-input v-model="queryFormObj.key" class="form-input" maxlength="255" clearable></el-input>
+            <el-input v-model="queryFormObj.key" class="form-input" maxlength="255" clearable
+                      @keyup.enter.native="search"></el-input>
           </el-form-item>
           <el-form-item label="value" prop="content">
-            <el-input v-model="queryFormObj.content" class="form-input" maxlength="255" clearable></el-input>
+            <el-input v-model="queryFormObj.content" class="form-input" maxlength="255" clearable
+                      @keyup.enter.native="search"></el-input>
           </el-form-item>
           <el-form-item label="备注" prop="remark">
-            <el-input v-model="queryFormObj.remark" class="form-input" maxlength="500" clearable></el-input>
+            <el-input v-model="queryFormObj.remark" class="form-input" maxlength="500" clearable
+                      @keyup.enter.native="search"></el-input>
           </el-form-item>
         </el-form>
       </el-row>
