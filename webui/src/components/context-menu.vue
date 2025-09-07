@@ -1,15 +1,21 @@
 <template>
   <ul v-show="visible"
-      :style="{left: left + 'px', top: top + 'px'}"
+      :style="{left: left + 'px', top: top + 'px',minWidth }"
       class="contextmenu"
       @mousedown.prevent="mousedown"
       ref="menu">
     <li v-for="item in (currentItems && currentItems.length > 0 ? currentItems : items)"
         :key="item.action"
+        :title="item.title"
         @click.stop="handleClick(item)"
         :style="liStyle(item)">
-      <i v-if="item.icon" :class="item.icon"></i>
+      <span>
+        <i v-if="item.icon" :class="item.icon"></i>
       {{ item.text }}
+      </span>
+      <span v-if="item.rightText">
+        {{item.rightText}}
+      </span>
     </li>
   </ul>
 </template>
@@ -24,6 +30,10 @@ export default {
           typeof item.text === 'string' &&
           typeof item.action === 'string'
       )
+    },
+    minWidth:{
+      type: String,
+      default:() => 'auto',
     }
   },
   data() {
@@ -106,9 +116,15 @@ export default {
     margin: 0;
     padding: 7px 16px;
     cursor: pointer;
-  }
-  li:hover {
-    background: #eee;
+
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    &:hover {
+      background: #eee;
+    }
   }
 }
 

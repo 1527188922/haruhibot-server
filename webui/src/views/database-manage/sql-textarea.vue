@@ -170,6 +170,12 @@ export default {
 
     // 处理键盘按下事件
     onKeydown(e) {
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        this.$emit('ctrl-enter',e);
+        return;
+      }
+
       // 上下键选择提示
       if (this.showSuggestions) {
         if (e.key === 'ArrowDown') {

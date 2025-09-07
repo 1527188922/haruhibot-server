@@ -17,6 +17,7 @@
       <el-container>
         <el-main ref="main" :style="{ height: mainHeight + 'px' }">
           <sql-textarea :value-obj="valueObj" @selection-change="handleSelection" @contextmenu="openMenu"
+                        @ctrl-enter="handleCtrlEnter"
                         @change="handleSqlChange"></sql-textarea>
         </el-main>
 
@@ -30,7 +31,7 @@
       </el-container>
 
     </el-container>
-    <context-menu ref="contextMenu" :items="menuItems" @menu-click="handleMenuClick"></context-menu>
+    <context-menu ref="contextMenu" min-width="200px" :items="menuItems" @menu-click="handleMenuClick"></context-menu>
   </div>
 </template>
 <script>
@@ -60,7 +61,7 @@ export default {
       selectedText:'',
       menuItems: [
         { text: '▶执行', action: 'execAll' },
-        { text: '▶执行选中的', action: 'execSelected' },
+        { text: '▶执行选中的', action: 'execSelected',rightText:'Ctrl+Enter'},
         { text: '导出查询结果', action: 'export',icon:'el-icon-download' }
       ]
     }
@@ -123,6 +124,10 @@ export default {
       })
     },
     executeSql(sql){
+      if(!sql || sql.trim().length === 0){
+        return
+      }
+
       const loading = this.$loading({ lock: true,  text: 'Loading', spinner: 'el-icon-loading'});
       executeSqlApi({sql}).then(({data:{code,message,data}})=>{
         if(code !== 200){
@@ -169,6 +174,9 @@ export default {
     prependSql(text){
       let t = this.valueObj.value
       this.valueObj.value = text + t
+    },
+    handleCtrlEnter(e){
+      this.execSelected()
     },
     handleSelection(v){
       this.selectedText = v;
