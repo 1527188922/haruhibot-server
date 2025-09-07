@@ -200,7 +200,7 @@ public class MessageDispenser {
         }
 
         if (message.isGroupMsg()) {
-            List<Long> accessGroups = dictionarySqliteService.getList(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), "[,，]", Long.class, Collections.emptyList());
+            List<Long> accessGroups = dictionarySqliteService.getList(DictionaryEnum.BOT_ACCESS_GROUP.getKey(), "[,，]", Long.class, Collections.emptyList());
             if(CollectionUtils.isNotEmpty(accessGroups)
                     && !accessGroups.contains(message.getGroupId())
                     && event.getClass() != ChatRecordHandler.class){
