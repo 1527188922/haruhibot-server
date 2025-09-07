@@ -221,6 +221,10 @@ export default {
   min-width: 0;
   ::v-deep .el-container{
     height: calc(100vh - 110px) !important;
+
+    .el-main{
+      overflow: hidden;
+    }
   }
 
   ::v-deep .el-aside{
