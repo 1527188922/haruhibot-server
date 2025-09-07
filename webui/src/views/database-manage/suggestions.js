@@ -56,6 +56,14 @@ export default [
         "category": "关键字"
     },
     {
+        "keyword": "LIKE",
+        "category": "关键字"
+    },
+    {
+        "keyword": "LIKE '%%'",
+        "category": "关键字"
+    },
+    {
         "keyword": "ORDER BY",
         "category": "关键字"
     },
