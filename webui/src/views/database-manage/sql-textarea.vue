@@ -436,7 +436,7 @@ export default {
 
       &.active {
         background-color: #e4e8f1;
-        color: #1890ff;
+        color: #409EFF;
       }
 
       .keyword{
