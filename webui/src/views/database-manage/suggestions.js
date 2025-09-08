@@ -1,5 +1,9 @@
 export default [
     {
+        "keyword": "EXPLAIN",
+        "category": "关键字"
+    },
+    {
         "keyword": "LIMIT",
         "category": "关键字"
     },
