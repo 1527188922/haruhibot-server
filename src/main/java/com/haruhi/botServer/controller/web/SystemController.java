@@ -354,9 +354,15 @@ public class SystemController {
         tailer.start(true);
 
 
-        emitter.onCompletion(() -> tailer.stop());
-        emitter.onTimeout(() -> tailer.stop());
-        emitter.onError((e) -> tailer.stop());
+        emitter.onCompletion(() -> {
+            tailer.stop();
+        });
+        emitter.onTimeout(() -> {
+            tailer.stop();
+        });
+        emitter.onError((e) -> {
+            tailer.stop();
+        });
 
         return emitter;
     }

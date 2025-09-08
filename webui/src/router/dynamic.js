@@ -2,6 +2,8 @@ function randomColor () {
     return '#' + Math.random().toString(16).substr(2, 6).toUpperCase();
 }
 
+import {PATH_LOG_MONITOR} from "@/const/const";
+
 // const demo = [
 //     {
 //         label: "缓冲",
@@ -284,7 +286,7 @@ const release = [{
     },
     {
         label: '日志监控',
-        path: '/sys/log-monitor',
+        path: PATH_LOG_MONITOR,
         iconBgColor: randomColor(),
         component: 'views/log-monitor/index',
         children: []

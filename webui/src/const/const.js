@@ -1,0 +1,1 @@
+export const PATH_LOG_MONITOR  = "/sys/log-monitor"
