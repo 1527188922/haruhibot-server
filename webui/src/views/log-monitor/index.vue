@@ -1,7 +1,7 @@
 <template>
   <div class="tail-log" >
     <div class="log-content" ref="logContent">
-      <div v-for="(log, index) in logs" :key="index" class="log-line">
+      <div v-for="(log, index) in logs" :key="index" class="log-line" :class="getLogClass(log)">
         {{ log }}
       </div>
     </div>
@@ -81,6 +81,14 @@ export default {
           logContent.scrollTop = logContent.scrollHeight;
         });
       }
+    },
+    // 根据日志内容判断日志类型，添加不同样式
+    getLogClass(log) {
+      if (log.includes('ERROR') || log.includes('error')) return 'danger-text';
+      if (log.includes('WARN') || log.includes('warn')) return 'warning-text';
+      if (log.includes('INFO') || log.includes('info')) return 'info-text2';
+      if (log.includes('DEBUG') || log.includes('debug')) return 'primary-text';
+      return 'info-text2';
     }
   },
   beforeDestroy() {
@@ -96,6 +104,12 @@ export default {
   min-width: 100%;
   background-color: #FFF;
   .log-content{
+
+    background-color: #1e1e1e;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.4;
+
     max-height: calc(100vh - 50px - 40px - 10px - 10px);
     min-width: 100%;
     overflow-y: auto;
@@ -104,6 +118,11 @@ export default {
       padding-top: 2px;
       padding-bottom: 2px;
     }
+
+    .log-debug {
+      color: #a78bfa;
+    }
+
   }
 }
 </style>
