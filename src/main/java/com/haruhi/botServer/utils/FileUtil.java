@@ -49,6 +49,7 @@ public class FileUtil {
     public static final String FILE_NAME_KILL_SCRIPT_BAT = "kill.bat";
     public static final String FILE_NAME_KILL_SCRIPT_SH = "kill.sh";
 
+    public static final String FILE_NAME_LOG = "haruhibot.log";
 
 
     public static String getRestartScript() {

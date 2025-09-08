@@ -345,7 +345,7 @@ public class SystemController {
                 emitter.completeWithError(e);
             }
         };
-        String file = "D:\\JavaProject\\haruhibot-server\\logs\\haruhibot.log";
+        String file = FileUtil.getLogsDir() + File.separator + FileUtil.FILE_NAME_LOG;
         Tailer tailer = new Tailer(new File(file),
                 StandardCharsets.UTF_8,
                 listener,
