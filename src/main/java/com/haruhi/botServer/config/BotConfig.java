@@ -19,7 +19,7 @@ public class BotConfig {
     public static String ENABLE_INTERNET_HOST;
 
     @Autowired
-    public void setPort(@Value("${bot.port}") int port) {
+    public void setPort(@Value("${server.port}") int port) {
         PORT = port;
         if (PORT == 0) {
             throw new IllegalArgumentException();

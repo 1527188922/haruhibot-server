@@ -1,7 +1,10 @@
 env:
   active: dev
-bot:
+
+server:
   port: 8090
+
+bot:
   enable-internet-host: 0
   internet-host:
   same-machine-qqclient: true
@@ -11,25 +14,15 @@ job:
     cron: 0/15 * 0-7 * * ? *
     enable: 1
 
-server:
-  port: ${bot.port}
 
 mybatis-plus:
   type-aliases-package: com.haruhi.botServer.entity
-  mapper-locations: classpath:/mapper/**/*.xml
 
 logging:
   level:
     com.haruhi.botServer: debug
 
-log:
-  level: info
-  path: logs
-  filename: haruhibot
-
-spring:
-  application:
-    name: haruhi-bot-server
+#spring:
 #  datasource:
 #    dynamic:
 #      datasource:
