@@ -1,7 +1,10 @@
 env:
   active: prod
-bot:
+
+server:
   port: 8090
+
+bot:
   # 机器人所在主机是否在公网 1是 0否 (若不在公网主机 一定要设置为0)
   enable-internet-host: 1
   # 公网ip(程序自动获取公网ip失败情况下将采用该配置) enable-internet-host为1情况下 尽量配置该项
@@ -13,22 +16,10 @@ job:
     cron: 0/15 * 0-7 * * ? *
     enable: 0
     
-server:
-  port: ${bot.port}
-
 mybatis-plus:
   type-aliases-package: com.haruhi.botServer.entity
-  mapper-locations: classpath:/mapper/**/*.xml
-  
+
 logging:
   level:
     com.haruhi.botServer: info
 
-log:
-  level: info
-  path: logs
-  filename: haruhibot
-
-spring:
-  application:
-    name: haruhi-bot-server

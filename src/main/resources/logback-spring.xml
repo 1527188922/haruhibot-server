@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-	<!-- 引用的application.yml的配置 -->
-	<springProperty scope="context" name="logLevel" source="log.level"/>
-	<springProperty scope="context" name="logPath" source="log.path"/>
-	<springProperty scope="context" name="filename" source="log.filename"/>
 
 	<conversionRule conversionWord="levelColor" converterClass="com.haruhi.botServer.config.log.LevelColorCustomConfig"/>
 	<conversionRule conversionWord="messageColor" converterClass="com.haruhi.botServer.config.log.MessageColorCustomConfig"/>
@@ -19,10 +15,11 @@
 
 	<!-- 所有日志 -->
 	<appender name="rollingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<file>${logPath}/${filename}.log</file>
+		<file>logs/haruhibot.log</file>
+
 		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
 			<!-- 日志文件备份的文件名 -->
-			<FileNamePattern>${logPath}/${filename}_%d{yyyy-MM-dd}_%i.log</FileNamePattern>
+			<FileNamePattern>logs/haruhibot_%d{yyyy-MM-dd}_%i.log</FileNamePattern>
             <maxFileSize>10MB</maxFileSize>
             <maxHistory>10</maxHistory>
 		</rollingPolicy>
@@ -31,7 +28,7 @@
 		</encoder>
 	</appender>
 
-	<root level="${logLevel}">
+	<root level="info">
 		<appender-ref ref="rollingFileAppender" />
 		<appender-ref ref="consoleAppender" />
 	</root>

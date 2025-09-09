@@ -63,31 +63,27 @@ export default {
         this.logs.push(obj.data)
       }
     },
-    // 自动滚动到底部的逻辑
+    // 自动滚动到底部
     autoScrollToBottom() {
-      // 获取日志容器元素
       const logContent = this.$refs.logContent;
       if (!logContent) return;
 
-      // 计算滚动条位置是否接近底部（允许20px的误差）
+      // 计算滚动条位置是否接近底部（允许(20 + 10)px的误差）
       const isNearBottom = logContent.scrollTop + logContent.clientHeight >=
           logContent.scrollHeight - (20 + 10);
       // const isNearBottom = true;
 
-      // 如果接近底部，则滚动到底部
       if (isNearBottom) {
-        // 使用$nextTick确保DOM已更新
         this.$nextTick(() => {
           logContent.scrollTop = logContent.scrollHeight;
         });
       }
     },
-    // 根据日志内容判断日志类型，添加不同样式
     getLogClass(log) {
       if (log.includes('ERROR') || log.includes('error')) return 'danger-text';
       if (log.includes('WARN') || log.includes('warn')) return 'warning-text';
       if (log.includes('INFO') || log.includes('info')) return 'info-text2';
-      if (log.includes('DEBUG') || log.includes('debug')) return 'primary-text';
+      if (log.includes('DEBUG') || log.includes('debug')) return 'log-debug';
       return 'info-text2';
     }
   },
