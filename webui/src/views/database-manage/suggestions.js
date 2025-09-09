@@ -96,7 +96,7 @@ export default [
         "category": "关键字"
     },
     {
-        "keyword": "NOT NULL",
+        "keyword": "IS NOT NULL",
         "category": "关键字"
     },
     {
