@@ -39,6 +39,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 
@@ -341,17 +343,19 @@ public class SystemService {
             throw new BusinessException("重启脚本不存在："+ restartScript);
         }
         new Thread(()->{
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-            }
+            synchronized (SystemService.class) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                }
 
-            if (SystemUtils.IS_OS_WINDOWS) {
-                String s = CMDUtil.executeBatFile(restartScript, String.valueOf(BotConfig.PORT), FileUtil.getAppDir() + File.separator);
-                log.info("执行bat结果：{}", s);
-            }else{
-                String s = CMDUtil.executeShFile(restartScript, SystemUtils.getJavaHome().getAbsolutePath());
-                log.info("执行sh结果：{}", s);
+                if (SystemUtils.IS_OS_WINDOWS) {
+                    String s = CMDUtil.executeBatFile(restartScript, String.valueOf(BotConfig.PORT), FileUtil.getAppDir() + File.separator);
+                    log.info("执行bat结果：{}", s);
+                } else {
+                    String s = CMDUtil.executeShFile(restartScript, SystemUtils.getJavaHome().getAbsolutePath());
+                    log.info("执行sh结果：{}", s);
+                }
             }
         }).start();
     }
