@@ -1,7 +1,8 @@
 # Build and Release Folders
 *.iml
 .idea
-bin-debug/
+.vscode
+bin-debug/ 
 bin-release/
 [Oo]bj/
 [Bb]in/
