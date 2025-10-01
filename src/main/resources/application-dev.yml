@@ -5,7 +5,6 @@ server:
   port: 8090
 
 bot:
-  enable-internet-host: 0
   internet-host:
   same-machine-qqclient: true
 

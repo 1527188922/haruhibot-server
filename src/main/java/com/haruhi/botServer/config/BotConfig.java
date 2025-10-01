@@ -15,8 +15,6 @@ public class BotConfig {
     public final static String CONTEXT_PATH = "/api";
     public final static String WEB_SOCKET_PATH = CONTEXT_PATH + "/ws";
     public static boolean SAME_MACHINE_QQCLIENT;
-    // 是否启用公网ip 0否 1是 若程序和gocq都在同一台主机上 可以不启用
-    public static String ENABLE_INTERNET_HOST;
 
     @Autowired
     public void setPort(@Value("${server.port}") int port) {
@@ -41,9 +39,5 @@ public class BotConfig {
         SAME_MACHINE_QQCLIENT = sameMachineQqClient;
     }
 
-    @Autowired
-    public void setEnableInternetHost(@Value("${bot.enable-internet-host}") String enableInternetHost){
-        ENABLE_INTERNET_HOST = enableInternetHost;
-    }
 }
 

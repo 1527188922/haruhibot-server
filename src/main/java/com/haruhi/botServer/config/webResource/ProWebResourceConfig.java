@@ -6,7 +6,7 @@ import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.system.SystemInfo;
 import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
@@ -34,31 +34,27 @@ public class ProWebResourceConfig extends AbstractWebResourceConfig {
     }
 
     private static void setWebHomePath(){
-        if("1".equals(BotConfig.ENABLE_INTERNET_HOST)){
+        if(StringUtils.isNotBlank(BotConfig.INTERNET_HOST)){
+            host = BotConfig.INTERNET_HOST;
+        }else{
             try {
                 host = CommonUtil.getNowIP4();
             } catch (IOException e) { }
 
-            if(Strings.isBlank(host)){
+            if(StringUtils.isBlank(host)){
                 try {
                     host = CommonUtil.getNowIP2();
                 } catch (IOException e) {}
             }
-
-            if(Strings.isBlank(host)){
-                if(Strings.isNotBlank(BotConfig.INTERNET_HOST)){
-                    host = BotConfig.INTERNET_HOST;
-                }else {
-                    throw new IllegalArgumentException("prod环境获取外网ip失败！请手动配置外网ip");
+            if(StringUtils.isBlank(host)){
+                log.warn("自动获取公网IP失败，将使用内网IP");
+                try {
+                    InetAddress localHost = Inet4Address.getLocalHost();
+                    host = localHost.getHostAddress();
+                } catch (UnknownHostException e) {
+                    host = "127.0.0.1";
+                    log.error("获取内网IP异常,IP将使用127.0.0.1",e);
                 }
-            }
-        }else {
-            try {
-                InetAddress localHost = Inet4Address.getLocalHost();
-                host = localHost.getHostAddress();
-            } catch (UnknownHostException e) {
-                host = "127.0.0.1";
-                log.error("获取本机ip异常,ip将使用127.0.0.1",e);
             }
         }
 
