@@ -22,12 +22,14 @@ import javax.servlet.http.HttpServletResponse;
 public class ApiHeaderInterceptor implements HandlerInterceptor {
     @Autowired
     private LoginService loginService;
-    private final ThreadLocal<Long> startTimeThreadLocal = new ThreadLocal<>();
+//    private final ThreadLocal<Long> startTimeThreadLocal = new ThreadLocal<>();
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        startTimeThreadLocal.set(System.currentTimeMillis());
-        log.info("访问api=[{}] IP=[{}]", request.getRequestURI(),request.getRemoteAddr());
+//        startTimeThreadLocal.set(System.currentTimeMillis());
+//        log.info("访问api=[{}] IP=[{}]", request.getRequestURI(),request.getRemoteAddr());
+
+
         HandlerMethod handlerMethod = null;
         if(handler instanceof HandlerMethod){
             handlerMethod = (HandlerMethod)handler;
@@ -55,13 +57,13 @@ public class ApiHeaderInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-
-        long cost = System.currentTimeMillis() - startTimeThreadLocal.get();
-        startTimeThreadLocal.remove();
-
-        log.info("访问api=[{}] IP=[{}] cost=[{}ms]", request.getRequestURI(),request.getRemoteAddr(),cost);
-
-    }
+//    @Override
+//    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+//
+//        long cost = System.currentTimeMillis() - startTimeThreadLocal.get();
+//        startTimeThreadLocal.remove();
+//
+//        log.info("访问api=[{}] IP=[{}] cost=[{}ms]", request.getRequestURI(),request.getRemoteAddr(),cost);
+//
+//    }
 }
