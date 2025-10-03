@@ -167,8 +167,9 @@ public class JmcomicService {
         if(pdfFile.exists()){
             pdfFile.delete();
         }
+        log.info("开始生成pdf文件 {}", pdfFilePath);
         long l = System.currentTimeMillis();
-        albumToPdf(file,pdfFile);
+        albumToPdf(file, pdfFile);
         log.info("pdf文件生成完成 cost:{} {}",(System.currentTimeMillis() - l),pdfFilePath);
         return BaseResp.success(pdfFile);
     }
