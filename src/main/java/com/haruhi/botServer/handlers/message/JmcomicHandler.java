@@ -108,8 +108,8 @@ public class JmcomicHandler implements IAllMessageEvent {
 
                 String fileUrl = isPdf ? webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/pdf/"+finalAid
                         : webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/"+finalAid;
-                ForwardMsgItem instance2 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(fileUrl));
-                forwardMsgs.add(instance2);
+//                ForwardMsgItem instance2 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(fileUrl));
+//                forwardMsgs.add(instance2);
 
 
                 ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
