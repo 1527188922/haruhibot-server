@@ -19,7 +19,6 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -141,7 +140,7 @@ public class M3u8Downloader {
         }).collect(Collectors.toList());
         List<MutablePair<String, File>> failedMutablePairs = null;
         if (CollectionUtils.isNotEmpty(needDownload)) {
-            int last = 0;
+            int last = -1;
             do{
                 failedMutablePairs = downloadTs(needDownload, downloadThreads);
                 if (last == failedMutablePairs.size()) {
