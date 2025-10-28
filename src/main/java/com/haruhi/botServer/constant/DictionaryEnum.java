@@ -46,6 +46,7 @@ public enum DictionaryEnum{
             "http://www.eclzz.wiki\n" +
             "http://www.eclzz.bio\n" +
             "http://www.eclzz.lat"),
+    URL_CONF_BTBTLA_SEARCH(true,"url_conf.btbtla_search","https://www.btbtla.com","bt影视搜索"),
 
     DATABASE_DB_SQL_CACHE(false,"db.sql_cache","","WebUI sql编辑器内容缓存"),
 
