@@ -151,7 +151,7 @@ export default {
       pagination:{
         currentPage: 1,
         pageSizes: [5, 10, 30, 50, 100, 500],
-        pageSize: 10,
+        pageSize: 5,
         layout: 'total, sizes, prev, pager, next, jumper',
         background: true,
         total: 0
@@ -162,7 +162,7 @@ export default {
 
   },
   mounted() {
-    this.search()
+    // this.search()
   },
   methods:{
     search(){

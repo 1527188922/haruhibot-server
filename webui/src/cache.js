@@ -6,8 +6,8 @@ Vue.mixin({
     if (this.$vnode) {
       if (this.$vnode.parent && this.$vnode.parent.componentInstance && this.$vnode.parent.componentInstance.cache) {
         if (this.$vnode.componentOptions) {
-          var cache = this.$vnode.parent.componentInstance.cache;
-          var keys = this.$vnode.parent.componentInstance.keys;
+          const cache = this.$vnode.parent.componentInstance.cache;
+          const keys = this.$vnode.parent.componentInstance.keys;
           keys.forEach(key => {
             let t = {}
             let i = list.findIndex(tag => {
@@ -18,7 +18,7 @@ Vue.mixin({
               return false;
             })
             let meta = t.meta || {}
-            if (i == -1 || meta.keepAlive == false) {
+            if (i === -1 || !meta.keepAlive) {
               keys.splice(i, 1);
               delete cache[key];
             }
