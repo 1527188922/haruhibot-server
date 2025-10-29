@@ -110,6 +110,7 @@ export default {
     min-width: 100%;
     overflow-y: auto;
     .log-line {
+      word-break: break-all;
       padding-left: 10px;
       padding-top: 2px;
       padding-bottom: 2px;
