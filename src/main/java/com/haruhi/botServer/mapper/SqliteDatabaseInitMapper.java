@@ -17,6 +17,11 @@ public interface SqliteDatabaseInitMapper {
 
     int createIndex(@Param("tableName") String tableName, @Param("column") String column);
 
+    int createIndexEnhance(@Param("tableName") String tableName,
+                           @Param("indexName") String indexName,
+                           @Param("columns") String columns,
+                           @Param("unique") Boolean unique);
+
     int addColumn(@Param("tableName") String tableName, @Param("column") String column,@Param("type") String type,@Param("notNull") boolean notNull,@Param("default") String defaultValue);
 
     /**
@@ -62,4 +67,6 @@ public interface SqliteDatabaseInitMapper {
     int createDictionary(@Param("tableName") String tableName);
 
     int createGroupInfo(@Param("tableName") String tableName);
+
+    int createFriend(@Param("tableName") String tableName);
 }

@@ -5,12 +5,13 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.simplerobot.modules.utils.KQCodeUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
-import org.springframework.util.CollectionUtils;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
@@ -23,6 +24,7 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -35,18 +37,6 @@ public class CommonUtil {
         return random.nextInt(end - start + 1) + start;
     }
 
-    public static boolean isAt(Long userId,final String context) {
-        List<String> qqs = getCqParams(context, CqCodeTypeEnum.at, "qq");
-        if(CollectionUtils.isEmpty(qqs)){
-            return false;
-        }
-        for (String qq : qqs) {
-            if(String.valueOf(userId).equals(qq)){
-                return true;
-            }
-        }
-        return false;
-    }
     public static String commandReplaceFirst(final String command, RegexEnum regexEnum){
         String[] split = regexEnum.getValue().split("\\|");
         for (String s : split) {
@@ -421,6 +411,31 @@ public class CommonUtil {
             }
         }
         return null;
+    }
+
+
+    public static <T, K> MutablePair<List<T>,List<T>> getIntersectionByField(
+            List<T> left,
+            List<T> right,
+            Function<T, K> fieldExtractor){
+
+        Set<K> fieldValues1 = left.stream()
+                .filter(Objects::nonNull)
+                .filter(e-> Objects.nonNull(fieldExtractor.apply(e)))
+                .map(fieldExtractor)
+                .collect(Collectors.toSet());
+
+        Set<K> fieldValues2 = right.stream()
+                .filter(Objects::nonNull)
+                .filter(e-> Objects.nonNull(fieldExtractor.apply(e)))
+                .map(fieldExtractor)
+                .collect(Collectors.toSet());
+
+        Collection<K> intersection = CollectionUtils.intersection(fieldValues1, fieldValues2);
+        List<T> collect1 = left.stream().filter(e -> intersection.contains(fieldExtractor.apply(e))).collect(Collectors.toList());
+
+        List<T> collect2 = right.stream().filter(e -> intersection.contains(fieldExtractor.apply(e))).collect(Collectors.toList());
+        return MutablePair.of(collect1, collect2);
     }
 
 }

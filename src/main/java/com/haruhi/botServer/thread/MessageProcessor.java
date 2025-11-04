@@ -6,6 +6,7 @@ import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dispenser.MessageDispenser;
 import com.haruhi.botServer.dispenser.NoticeDispenser;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.service.FriendSqliteService;
 import com.haruhi.botServer.service.GroupInfoSqliteService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
@@ -25,6 +26,8 @@ public class MessageProcessor{
     private NoticeDispenser noticeDispenser;
     @Autowired
     private GroupInfoSqliteService groupInfoSqliteService;
+    @Autowired
+    private FriendSqliteService friendSqliteService;
 
 
     public void execute(Bot bot, Message message){
@@ -69,6 +72,7 @@ public class MessageProcessor{
             try {
                 // 加载群信息
                 groupInfoSqliteService.loadGroupInfo(bot);
+                friendSqliteService.loadFriendInfo(bot);
             }catch (Exception e){
                 log.error("初始加载机器人群聊异常 bot：{}",message.getSelfId(),e);
             }

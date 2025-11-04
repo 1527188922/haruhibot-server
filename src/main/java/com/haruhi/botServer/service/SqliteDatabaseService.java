@@ -108,6 +108,11 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_GROUP_INFO,"self_id");
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_GROUP_INFO,"group_id");
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_GROUP_INFO,"group_name");
+
+        sqliteDatabaseInitMapper.createFriend(DataBaseConst.T_FRIEND);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_FRIEND,"self_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_FRIEND,"user_id");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_FRIEND,"nickname");
     }
 
     public int addColumnIfNotExists(String tableName, String columnName, String columnType,boolean notNull,String defaultValue) {

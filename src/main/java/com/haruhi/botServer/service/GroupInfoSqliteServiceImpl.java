@@ -18,6 +18,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
      * @param bot
      * @return 返回本次请求qq客户端获取的群
      */
+    @Transactional
     @Override
     public List<GroupInfoSqlite> loadGroupInfo(Bot bot) {
         SyncResponse<List<GroupInfo>> syncResponse = bot.getGroupList(true, 10 * 1000);

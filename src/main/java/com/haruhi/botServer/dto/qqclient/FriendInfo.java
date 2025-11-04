@@ -5,8 +5,6 @@ import lombok.Data;
 
 @Data
 public class FriendInfo {
-    @JSONField(name = "birthday_day")
-    private Integer birthdayDay;
     @JSONField(name = "category_id")
     private Integer categoryId;
     @JSONField(name = "user_id")
@@ -14,13 +12,16 @@ public class FriendInfo {
     private Integer level;
     private String sex;
     private String nickname;
+    @JSONField(name = "birthday_day")
+    private Integer birthdayDay;
     @JSONField(name = "birthday_month")
     private Integer birthdayMonth;
+    @JSONField(name = "birthday_year")
+    private Integer birthdayYear;
     @JSONField(name = "phone_num")
     private String phoneNum;
     private String remark;
     private Integer age;
     private String email;
-    @JSONField(name = "birthday_year")
-    private Integer birthdayYear;
+
 }

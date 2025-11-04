@@ -33,6 +33,13 @@
     <update id="createIndex">
         CREATE INDEX IF NOT EXISTS ${tableName}_${column}_IDX ON ${tableName} (${column});
     </update>
+
+    <update id="createIndexEnhance">
+        CREATE
+        <if test="unique != null and unique">UNIQUE</if>
+        INDEX IF NOT EXISTS ${indexName} ON ${tableName} (${columns});
+    </update>
+
     <update id="createPokeReply">
         CREATE TABLE IF NOT EXISTS `${tableName}` (
             `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -115,6 +122,24 @@
           `group_memo` TEXT,
           `group_create_time` DATETIME,
           `group_level` INTEGER
+        );
+    </update>
+    <update id="createFriend">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          `self_id` INTEGER NOT NULL,
+          `user_id` INTEGER NOT NULL,
+          `birthday_day` INTEGER,
+          `birthday_year` INTEGER,
+          `birthday_month` INTEGER,
+          `category_id` INTEGER,
+          `level` INTEGER,
+          `sex` TEXT,
+          `nickname` TEXT,
+          `phone_num` TEXT,
+          `remark` TEXT,
+          `age` INTEGER,
+          `email` TEXT
         );
     </update>
     <select id="pragmaTableInfo" resultType="com.haruhi.botServer.entity.TableInfoSqlite">
