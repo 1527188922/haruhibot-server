@@ -3,6 +3,8 @@ package com.haruhi.botServer.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
+import com.haruhi.botServer.vo.CodeNameReq;
+import com.haruhi.botServer.vo.CodeNameResp;
 import com.haruhi.botServer.vo.GroupInfoQueryReq;
 import com.haruhi.botServer.ws.Bot;
 
@@ -18,4 +20,6 @@ public interface GroupInfoSqliteService extends IService<GroupInfoSqlite> {
     IPage<GroupInfoSqlite> search(GroupInfoQueryReq request, boolean isPage);
 
     List<GroupInfoSqlite> selectBySelfId(Long selfId);
+
+    List<CodeNameResp> codeNameList(CodeNameReq request);
 }

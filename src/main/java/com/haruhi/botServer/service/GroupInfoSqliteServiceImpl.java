@@ -10,6 +10,8 @@ import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.mapper.GroupInfoSqliteMapper;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
+import com.haruhi.botServer.vo.CodeNameReq;
+import com.haruhi.botServer.vo.CodeNameResp;
 import com.haruhi.botServer.vo.GroupInfoQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import org.apache.commons.collections4.CollectionUtils;
@@ -139,4 +141,32 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
         return this.list(new LambdaQueryWrapper<GroupInfoSqlite>().eq(GroupInfoSqlite::getSelfId, selfId));
 
     }
+
+
+    @Override
+    public List<CodeNameResp> codeNameList(CodeNameReq request) {
+        String codeOrName = request.getCodeOrName();
+        if (StringUtils.isBlank(codeOrName)) {
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<GroupInfoSqlite> queryWrapper = new LambdaQueryWrapper<GroupInfoSqlite>()
+                .select(GroupInfoSqlite::getGroupId, GroupInfoSqlite::getGroupName)
+                .last(!request.getEqCode() && !request.getEqName(),"LIMIT "+request.getLimit());
+        if(request.getEqCode()){
+            queryWrapper.eq(GroupInfoSqlite::getGroupId, codeOrName);
+        }else if(request.getEqName()){
+            queryWrapper.eq(GroupInfoSqlite::getGroupName, codeOrName);
+        }else {
+            queryWrapper.like(GroupInfoSqlite::getGroupId, codeOrName)
+                    .or()
+                    .like(GroupInfoSqlite::getGroupName, codeOrName);
+        }
+        List<GroupInfoSqlite> list = this.list(queryWrapper);
+        Map<String, CodeNameResp> collect = list.stream()
+                .map(e -> new CodeNameResp(e.getGroupId(), e.getGroupName()))
+                .collect(Collectors.groupingBy(e -> e.getCode() + e.getName(), Collectors.collectingAndThen(Collectors.toList(),
+                        v -> v.get(0))));
+        return new ArrayList<>(collect.values());
+    }
+
 }

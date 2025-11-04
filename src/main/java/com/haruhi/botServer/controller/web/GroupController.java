@@ -2,6 +2,8 @@ package com.haruhi.botServer.controller.web;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.vo.CodeNameReq;
+import com.haruhi.botServer.vo.CodeNameResp;
 import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.service.GroupInfoSqliteService;
@@ -23,6 +25,12 @@ public class GroupController {
 
     @Autowired
     private GroupInfoSqliteService groupInfoSqliteService;
+
+
+    @PostMapping("/list")
+    public HttpResp<List<CodeNameResp>> list(@RequestBody CodeNameReq request){
+        return HttpResp.success(groupInfoSqliteService.codeNameList(request));
+    }
 
     @PostMapping("/search")
     public HttpResp<IPage<GroupInfoSqlite>> search(@RequestBody GroupInfoQueryReq request){
