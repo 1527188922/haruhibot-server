@@ -185,8 +185,8 @@ a{
 .raw-message-alert{
   min-width: 520px;
   p{
-    overflow-wrap: break-word;  // 标准属性
-    word-wrap: break-word;      // 旧版浏览器兼容
+    overflow-wrap: break-all;  // 标准属性
+    word-wrap: break-all;      // 旧版浏览器兼容
     //white-space: pre-wrap;      // 保留空白符但允许换行
 
     max-height: 600px;

@@ -394,6 +394,7 @@ export default {
     padding: 5px;
     box-sizing: border-box;
     font-family:  "Consolas", "Courier New", monospace;
+    white-space: nowrap;
   }
 }
 .sql-editor-container {
