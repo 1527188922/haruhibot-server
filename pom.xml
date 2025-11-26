@@ -165,7 +165,6 @@
             <artifactId>zip4j</artifactId>
             <version>2.11.5</version>
         </dependency>
-        <!-- Maven依赖 -->
         <dependency>
             <groupId>com.googlecode.juniversalchardet</groupId>
             <artifactId>juniversalchardet</artifactId>
@@ -233,7 +232,26 @@
 <!--                </exclusion>-->
 <!--            </exclusions>-->
         </dependency>
-
+        <dependency>
+            <groupId>org.xhtmlrenderer</groupId>
+            <artifactId>flying-saucer-core</artifactId>
+            <version>9.1.22</version>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>xerces</groupId>-->
+<!--            <artifactId>xercesImpl</artifactId>-->
+<!--            <version>2.12.2</version>-->
+<!--        </dependency>-->
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <version>2.3.34</version>
+        </dependency>
+        <dependency>
+            <groupId>io.lindstrom</groupId>
+            <artifactId>m3u8-parser</artifactId>
+            <version>0.30</version>
+        </dependency>
     </dependencies>
     <profiles>
         <profile>

@@ -1,7 +1,6 @@
 package com.haruhi.botServer.utils;
 
 import com.haruhi.botServer.constant.DataBaseConst;
-import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
