@@ -54,7 +54,7 @@ public class OneMoreHandler implements IGroupMessageEvent {
                 msgCache.remove(groupIdStr);
                 putMsg(message);
             }
-        },false);
+        });
         return false;
     }
 
