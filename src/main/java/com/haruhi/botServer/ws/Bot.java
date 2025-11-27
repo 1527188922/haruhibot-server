@@ -349,9 +349,9 @@ public class Bot {
 
         if(httpHeaders != null && !httpHeaders.isEmpty()){
             List<String> headStrs = new ArrayList<>();
-            for (Map.Entry<String, List<String>> entry : httpHeaders.entrySet()) {
+            for (Map.Entry<String, String> entry :  httpHeaders.toSingleValueMap().entrySet()) {
                 StringBuilder item = new StringBuilder(entry.getKey() + "=");
-                for (String s : entry.getValue()) {
+                for (String s : Arrays.asList(entry.getValue())) {
                     item.append(s).append(";");
                 }
                 headStrs.add(item.toString());

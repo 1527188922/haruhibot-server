@@ -1,6 +1,5 @@
 package com.haruhi.botServer.interceptors;
 
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.ws.BotContainer;
 import com.haruhi.botServer.ws.BotServer;

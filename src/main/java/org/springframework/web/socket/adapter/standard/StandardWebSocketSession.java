@@ -9,10 +9,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.websocket.CloseReason;
-import javax.websocket.CloseReason.CloseCodes;
-import javax.websocket.Extension;
-import javax.websocket.Session;
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.CloseReason.CloseCodes;
+import jakarta.websocket.Extension;
+import jakarta.websocket.Session;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;

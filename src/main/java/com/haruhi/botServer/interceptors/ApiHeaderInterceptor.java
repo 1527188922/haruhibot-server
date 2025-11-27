@@ -10,8 +10,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * webui http请求头拦截
@@ -48,7 +48,7 @@ public class ApiHeaderInterceptor implements HandlerInterceptor {
         if (!loginService.verifyWebToken(userName,token)) {
             log.error("非法请求api=[{}] IP=[{}] UserCode：{} Authorization：{}",
                     request.getRequestURI(),request.getRemoteAddr(),userName,token);
-            response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
 //            response.getWriter().print(JSONObject.toJSONString(HttpResp.fail(401,"认证异常",null)));
             return false;

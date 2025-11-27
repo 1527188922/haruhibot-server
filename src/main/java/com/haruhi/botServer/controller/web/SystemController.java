@@ -34,8 +34,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -298,8 +298,9 @@ public class SystemController {
             filename = StrFormatter.format("db_export_{}.xlsx", DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss2));
         }
 
-
-        File file = new File(FileUtil.getAppTempDir() + File.separator + filename);
+        String systemTempDir = FileUtil.getSystemTempDir();
+        File file = new File((systemTempDir.endsWith(File.separator) ?
+                systemTempDir : systemTempDir +  File.separator) + filename);
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)){
 
             if(Objects.nonNull(data)){

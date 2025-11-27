@@ -194,11 +194,7 @@ public class FileUtil {
      * @return
      */
     public static String getSystemTempDir(){
-        if(SystemUtils.IS_OS_WINDOWS){
-            return FileUtils.getTempDirectoryPath();
-        }else{
-            return FileUtils.getTempDirectoryPath() + File.separator;
-        }
+        return FileUtils.getTempDirectoryPath();
     }
 
     /**

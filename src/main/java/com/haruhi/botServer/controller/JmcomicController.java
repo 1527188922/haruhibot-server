@@ -75,7 +75,7 @@ public class JmcomicController {
             headers.setContentDispositionFormData("attachment", new String(file.getName().getBytes(StandardCharsets.UTF_8), Charset.forName("ISO8859-1")));
             headers.setContentLength(file.length());
         }else{
-            headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
+            headers.setContentType(MediaType.APPLICATION_JSON);
         }
         return headers;
     }

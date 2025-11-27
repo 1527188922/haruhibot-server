@@ -1,16 +1,15 @@
 package com.haruhi.botServer.filter;
 
-import com.haruhi.botServer.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import java.io.File;
 import java.io.IOException;
 
@@ -29,11 +28,6 @@ public class CreateTmpDirectoryFilter implements Filter {
         if (!tmp.exists()) {
             tmp.mkdirs();
             log.info("创建了临时目录：{}",tmp);
-        }
-        File appTempDir = new File(FileUtil.getAppTempDir());
-        if(!appTempDir.exists()){
-            File file = FileUtil.mkdirs(FileUtil.getAppTempDir());
-            log.info("创建了自定义临时目录：{}",file);
         }
         filterChain.doFilter(request,response);
     }
