@@ -55,9 +55,7 @@ public class DownloadPixivJob extends AbstractJob {
 
         int taskSize = 2;
         int r18TaskSize = 1;
-
-        ExecutorService executor = Executors.newFixedThreadPool(taskSize+r18TaskSize);
-        try {
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()){
             List<DownloadTask> downloadTasks = new ArrayList<>();
             for (int i = 0; i < taskSize; i++) {
                 DownloadTask downloadTask = new DownloadTask(param);
@@ -76,8 +74,7 @@ public class DownloadPixivJob extends AbstractJob {
                             log.error("下载pixiv异常",e);
                             return null;
                         }
-                    }, executor))
-                    .collect(Collectors.toList());
+                    }, executor)).toList();
 
             CompletableFuture<List<LoliconPixResp>> allResults = CompletableFuture.allOf(
                     futures.toArray(new CompletableFuture[0])
@@ -89,7 +86,7 @@ public class DownloadPixivJob extends AbstractJob {
             if (CollectionUtils.isEmpty(results)) {
                return;
             }
-            List<LoliconPixResp> respList = results.stream().filter(Objects::nonNull).collect(Collectors.toList());
+            List<LoliconPixResp> respList = results.stream().filter(Objects::nonNull).toList();
             respList.forEach(resp -> {
                 List<LoliconPixResp.PixivItem> data = resp.getData();
                 if(CollectionUtils.isEmpty(data)){
@@ -118,8 +115,6 @@ public class DownloadPixivJob extends AbstractJob {
                 }
                 log.info("本次pixiv下载{}条",total);
             });
-        }finally {
-            executor.shutdownNow();
         }
     }
 

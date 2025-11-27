@@ -49,7 +49,7 @@ public class ChatRecordHandler implements IAllMessageEvent {
     @Override
     public boolean onMessage(Bot bot, Message message) {
 
-        ThreadPoolUtil.getFixedThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
 
             ChatRecordSqlite record = new ChatRecordSqlite();
             try {

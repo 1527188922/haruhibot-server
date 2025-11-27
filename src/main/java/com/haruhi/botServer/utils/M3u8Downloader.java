@@ -165,9 +165,8 @@ public class M3u8Downloader {
     }
 
     private static List<MutablePair<String, File>> downloadTs(List<MutablePair<String, File>> needDownload, int downloadThreads) {
-        ExecutorService executorService = Executors.newFixedThreadPool(downloadThreads);
         List<MutablePair<String, File>> failed = new ArrayList<>();
-        try {
+        try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()){
             CountDownLatch countDownLatch = new CountDownLatch(needDownload.size());
             for (MutablePair<String, File> mutablePair : needDownload) {
                 executorService.execute(() -> {
@@ -192,8 +191,6 @@ public class M3u8Downloader {
             countDownLatch.await();
         } catch (InterruptedException e) {
             log.error("下载ts时线程中断异常",e);
-        } finally {
-            executorService.shutdownNow();
         }
         return failed;
     }

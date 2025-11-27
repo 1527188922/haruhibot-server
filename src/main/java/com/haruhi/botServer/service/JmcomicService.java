@@ -366,34 +366,34 @@ public class JmcomicService {
         FileUtil.mkdirs(chapterPath);
         List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, getThreads());
         int poolSize = lists.size();
-        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
-        List<CompletableFuture<Void>> taskList = lists.stream().map(list -> {
-            return CompletableFuture.runAsync(() -> {
-                list.forEach(param -> {
-                    String imgUrl = param.getImgUrl();
-                    File tmpImgFile = new File(param.getImgFile().getAbsolutePath() + ".tmp");
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()){
+            List<CompletableFuture<Void>> taskList = lists.stream().map(list -> {
+                return CompletableFuture.runAsync(() -> {
+                    list.forEach(param -> {
+                        String imgUrl = param.getImgUrl();
+                        File tmpImgFile = new File(param.getImgFile().getAbsolutePath() + ".tmp");
 
-                    downloadImage(imgUrl,tmpImgFile);
-                    if (!tmpImgFile.exists()) {
-                        return;
-                    }
-                    try {
-                        saveImg(param.getBlockNum(), tmpImgFile, param.getImgFile());
-                        log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
-                        countDownLatch.countDown();
-                    }catch (Exception e) {
-                        log.error("保存图片异常：{}", JSONObject.toJSONString(param),e);
-                    }finally {
-                        tmpImgFile.delete();
-                    }
-                });
-            }, executor);
-        }).collect(Collectors.toList());
-        log.info("开始下载【{}】 线程数：{}",seriesTitle, poolSize);
-        long l = System.currentTimeMillis();
-        taskList.forEach(CompletableFuture::join);
-        log.info("【{}】下载完成 cost:{}", seriesTitle,(System.currentTimeMillis() - l));
-        executor.shutdownNow();
+                        downloadImage(imgUrl,tmpImgFile);
+                        if (!tmpImgFile.exists()) {
+                            return;
+                        }
+                        try {
+                            saveImg(param.getBlockNum(), tmpImgFile, param.getImgFile());
+                            log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
+                            countDownLatch.countDown();
+                        }catch (Exception e) {
+                            log.error("保存图片异常：{}", JSONObject.toJSONString(param),e);
+                        }finally {
+                            tmpImgFile.delete();
+                        }
+                    });
+                }, executor);
+            }).toList();
+            log.info("开始下载【{}】 线程数：{}",seriesTitle, poolSize);
+            long l = System.currentTimeMillis();
+            taskList.forEach(CompletableFuture::join);
+            log.info("【{}】下载完成 cost:{}", seriesTitle,(System.currentTimeMillis() - l));
+        }
         long count = countDownLatch.getCount();
         if (count > 0) {
             log.info("本章【{}】剩余数量：{} 开始下载剩余图片", seriesTitle,count);

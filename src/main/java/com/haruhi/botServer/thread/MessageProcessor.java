@@ -32,7 +32,7 @@ public class MessageProcessor{
 
     public void execute(Bot bot, Message message){
 
-        ThreadPoolUtil.getFixedThreadPool().execute(()->{
+        ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
                 if(PostTypeEnum.message.name().equals(message.getPostType())
                         || PostTypeEnum.message_sent.name().equals(message.getPostType())){

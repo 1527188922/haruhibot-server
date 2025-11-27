@@ -112,19 +112,19 @@ public class WordCloud {
         int i = CommonUtil.averageAssignNum(words.size(), availableProcessors);
         List<List<Word>> lists = CommonUtil.averageAssignList(words, i);
         int poolSize = lists.size();
-        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
-        CountDownLatch countDownLatch = new CountDownLatch(poolSize);
-        LOGGER.info("分{}条线程处理",poolSize);
-        for (List<Word> list : lists) {
-            executor.execute(new BuildWordTask(list,countDownLatch));
-        }
+        try (ExecutorService executor = Executors.newFixedThreadPool(poolSize)){
+            CountDownLatch countDownLatch = new CountDownLatch(poolSize);
+            LOGGER.info("分{}条线程处理",poolSize);
+            for (List<Word> list : lists) {
+                executor.execute(new BuildWordTask(list,countDownLatch));
+            }
 
-        try {
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            LOGGER.info("countDownLatch.await() exception",e);
+            try {
+                countDownLatch.await();
+            } catch (InterruptedException e) {
+                LOGGER.info("countDownLatch.await() exception",e);
+            }
         }
-        executor.shutdownNow();
         this.drawForegroundToBackground();
     }
 

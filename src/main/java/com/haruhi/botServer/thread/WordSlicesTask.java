@@ -50,14 +50,13 @@ public class WordSlicesTask implements Callable<List<String>> {
         int limit = CommonUtil.averageAssignNum(corpus.size(), availableProcessors + 1);
         List<List<String>> lists = CommonUtil.averageAssignList(corpus, limit);
         int poolSize = lists.size();
-        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
-        List<FutureTask<List<String>>> futureTasks = new ArrayList<>(poolSize);
-        for (List<String> list : lists) {
-            FutureTask<List<String>> listFutureTask = new FutureTask<>(new WordSlicesTask(list));
-            futureTasks.add(listFutureTask);
-            executor.submit(listFutureTask);
-        }
-        try {
+        try (ExecutorService executor = Executors.newFixedThreadPool(poolSize)){
+            List<FutureTask<List<String>>> futureTasks = new ArrayList<>(poolSize);
+            for (List<String> list : lists) {
+                FutureTask<List<String>> listFutureTask = new FutureTask<>(new WordSlicesTask(list));
+                futureTasks.add(listFutureTask);
+                executor.submit(listFutureTask);
+            }
             for (FutureTask<List<String>> futureTask : futureTasks) {
                 strings.addAll(futureTask.get());
             }
@@ -65,9 +64,6 @@ public class WordSlicesTask implements Callable<List<String>> {
         }catch (Exception e){
             log.error("获取分词结果异常",e);
             return null;
-        }finally {
-            executor.shutdownNow();
         }
-
     }
 }
