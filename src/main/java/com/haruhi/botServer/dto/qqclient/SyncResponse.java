@@ -5,12 +5,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Objects;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class SyncResponse<T> {
 
     public static final String STATUS_OK = "ok";
+    public static final Integer SUCCESS_RETCODE = 0;
     public static final String STATUS_FAILED = "failed";
 
     private Integer retcode;
@@ -23,7 +26,7 @@ public class SyncResponse<T> {
     private JSONObject raw;
     
     public boolean isSuccess(){
-        return retcode != null && retcode == 0 && STATUS_OK.equals(status);
+        return Objects.equals(retcode, SUCCESS_RETCODE) && STATUS_OK.equals(status);
     }
     
     public static SyncResponse failed(){
