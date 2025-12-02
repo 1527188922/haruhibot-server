@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -18,11 +17,6 @@ import java.io.IOException;
 public class CreateTmpDirectoryFilter implements Filter {
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-        Filter.super.init(filterConfig);
-    }
-
-    @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         File tmp = (File)request.getServletContext().getAttribute(ServletContext.TEMPDIR);
         if (!tmp.exists()) {
@@ -30,10 +24,5 @@ public class CreateTmpDirectoryFilter implements Filter {
             log.info("创建了临时目录：{}",tmp);
         }
         filterChain.doFilter(request,response);
-    }
-
-    @Override
-    public void destroy() {
-        Filter.super.destroy();
     }
 }
