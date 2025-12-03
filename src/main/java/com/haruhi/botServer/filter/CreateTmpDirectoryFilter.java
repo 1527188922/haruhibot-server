@@ -20,8 +20,12 @@ public class CreateTmpDirectoryFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         File tmp = (File)request.getServletContext().getAttribute(ServletContext.TEMPDIR);
         if (!tmp.exists()) {
-            tmp.mkdirs();
-            log.info("创建了临时目录：{}",tmp);
+            if (tmp.mkdirs()) {
+                log.info("创建了web服务器临时目录：{}",tmp);
+            }else{
+                log.error("创建web服务器临时目录失败：{}",tmp);
+            }
+
         }
         filterChain.doFilter(request,response);
     }
