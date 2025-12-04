@@ -3,11 +3,9 @@ package com.haruhi.botServer.config.webResource;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.system.SystemInfo;
-import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
@@ -18,22 +16,20 @@ import java.net.UnknownHostException;
 
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "env.active",havingValue = SystemUtil.PROFILE_RPOD)
+@Conditional(ProdEnvironmentCondition.class)
 @DependsOn("botConfig")
 public class ProWebResourceConfig extends AbstractWebResourceConfig {
 
     public ProWebResourceConfig(){
-        log.info("profile active : {}", SystemInfo.PROFILE);
+        log.info("ProWebResourceConfig instantiated");
     }
-
-    private static String host;
-
 
     static {
         setWebHomePath();
     }
 
     private static void setWebHomePath(){
+        String host = "";
         if(StringUtils.isNotBlank(BotConfig.INTERNET_HOST)){
             host = BotConfig.INTERNET_HOST;
         }else{

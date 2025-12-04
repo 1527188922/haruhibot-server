@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class BotConfig {
 
     public static String DEFAULT_NAME = "春日酱";
-    public static String INTERNET_HOST;//公网ip
+    public static String INTERNET_HOST;
     public static int PORT;
     public final static String CONTEXT_PATH = "/api";
     public final static String WEB_SOCKET_PATH = CONTEXT_PATH + "/ws";

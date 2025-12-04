@@ -2,10 +2,9 @@ package com.haruhi.botServer.config.webResource;
 
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.system.SystemInfo;
-import com.haruhi.botServer.utils.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
@@ -15,12 +14,11 @@ import java.net.UnknownHostException;
 
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "env.active",havingValue = SystemUtil.PROFILE_DEV)
+@Conditional(DevEnvironmentCondition.class)
 @DependsOn("botConfig")
 public class DevWebResourceConfig extends AbstractWebResourceConfig {
     public DevWebResourceConfig(){
-        SystemInfo.PROFILE = SystemUtil.PROFILE_DEV;
-        log.info("profile active : {}",SystemInfo.PROFILE);
+        log.info("DevWebResourceConfig instantiated");
     }
     
     static {
@@ -29,14 +27,20 @@ public class DevWebResourceConfig extends AbstractWebResourceConfig {
 
 
     public static void setWebHomePath(){
-        try {
-            InetAddress localHost = Inet4Address.getLocalHost();
-            WEB_HOME_PATH = "http://" + localHost.getHostAddress() + ":" + BotConfig.PORT;
-            log.info("web home path:{}",WEB_HOME_PATH);
-        } catch (UnknownHostException e) {
-            log.error("获取ip异常,ip将使用localhost",e);
-            WEB_HOME_PATH = "http://127.0.0.1:" + BotConfig.PORT;
+        String host = "";
+        if(StringUtils.isNotBlank(BotConfig.INTERNET_HOST)){
+            host = BotConfig.INTERNET_HOST;
+        }else{
+            try {
+                InetAddress localHost = Inet4Address.getLocalHost();
+                host = localHost.getHostAddress();
+            } catch (UnknownHostException e) {
+                log.error("获取ip异常,ip将使用127.0.0.1",e);
+                host = "127.0.0.1";
+            }
         }
+        WEB_HOME_PATH = "http://" + host + ":" + BotConfig.PORT;
+        log.info("web home path:{}",WEB_HOME_PATH);
     }
 
     @Override

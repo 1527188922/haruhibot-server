@@ -98,11 +98,6 @@
             <artifactId>kumo-tokenizers</artifactId>
             <version>1.28</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.14</version>
-        </dependency>
         <!-- java操作html document-->
         <dependency>
             <groupId>org.jsoup</groupId>
