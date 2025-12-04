@@ -68,7 +68,7 @@ public class SqliteDataSourceInitAspect {
                     DataSourceProperty masterDataSourceProperty = linkedHashMap.get(DataBaseConst.DATA_SOURCE_MASTER);
                     if (masterDataSourceProperty == null) {
                         DataSourceProperty dataSourceProperty = new DataSourceProperty();
-                        dataSourceProperty.setUrl(DataBaseConst.SQLITE_DEFAULT_JDBC_URL);
+                        dataSourceProperty.setUrl(DataBaseConst.SQLITE_DEFAULT_JDBC_URL+"?journal_mode=WAL&synchronous=NORMAL");
                         dataSourceProperty.setDriverClassName("org.sqlite.JDBC");
                         DruidConfig druid = dataSourceProperty.getDruid();
                         druid.setValidationQuery("SELECT 1");
@@ -76,7 +76,7 @@ public class SqliteDataSourceInitAspect {
                         druid.setTestOnReturn(false);
                         druid.setFilters("stat");
                         druid.setPoolPreparedStatements(false);
-                        druid.setMaxActive(1);
+                        druid.setMaxActive(5);
                         linkedHashMap.put(DataBaseConst.DATA_SOURCE_MASTER, dataSourceProperty);
                     }
                 }
