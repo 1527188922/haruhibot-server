@@ -10,10 +10,6 @@ job:
     cron: 0/15 * 0-7 * * ? *
     enable: 1
 
-
-mybatis-plus:
-  type-aliases-package: com.haruhi.botServer.entity
-
 logging:
   level:
     com.haruhi.botServer: debug
