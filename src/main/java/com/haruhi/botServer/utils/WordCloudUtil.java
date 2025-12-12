@@ -207,20 +207,14 @@ public class WordCloudUtil {
             return "";
         }
         String urlPattern = "((https?|ftp|gopher|telnet|file|Unsure|http):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)";
-        Pattern p = Pattern.compile(urlPattern,Pattern.CASE_INSENSITIVE);
+        Pattern p = Pattern.compile(urlPattern, Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(commentStr);
-        int i = 0;
         while (m.find()) {
-            String group = m.group(i);
-            if(Strings.isBlank(group)){
-                return "";
+            String group = m.group(0);
+            if (Strings.isBlank(group)) {
+                continue;
             }
-            String s = commentStr.replaceAll(group, "");
-            if (Strings.isBlank(s)) {
-                return "";
-            }
-            commentStr = s.trim();
-            i++;
+            commentStr = commentStr.replaceAll(Pattern.quote(group), "").trim();
         }
         return commentStr;
     }

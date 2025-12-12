@@ -155,6 +155,7 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
         queryWrapper.eq(ChatRecordSqlite::getDeleted,0)
                 .eq(ChatRecordSqlite::getGroupId,message.getGroupId())
                 .eq(ChatRecordSqlite::getSelfId,message.getSelfId())
+                .ne(ChatRecordSqlite::getUserId,message.getSelfId())
                 .gt(ChatRecordSqlite::getTime,date)
                 .eq(ChatRecordSqlite::getMessageType,MessageTypeEnum.group.getType());
         for (GroupWordCloudHandler.RegexEnum value : GroupWordCloudHandler.RegexEnum.values()) {
