@@ -576,8 +576,18 @@ public class JmcomicService {
                 .addHeaders(headerParam.toSingleValueMap())
                 .timeout(10000);
         try (HttpResponse httpResponse = httpRequest.execute()){
-            JSONObject jsonObject = JSONObject.parseObject(httpResponse.body());
-            String data = decryptData(ts, jsonObject.getString("data"));
+            String body = httpResponse.body();
+            if (StringUtils.isBlank(body)) {
+                log.error("请求/album响应空");
+                return null;
+            }
+            JSONObject jsonObject = JSONObject.parseObject(body);
+            String encryptedData = jsonObject.getString("data");
+            if (StringUtils.isBlank(encryptedData)) {
+                log.error("请求/album data字段为空");
+                return null;
+            }
+            String data = decryptData(ts, encryptedData);
             Album album = JSONObject.parseObject(data, Album.class);
 
             String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
