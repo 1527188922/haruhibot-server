@@ -263,7 +263,7 @@ public class SqliteDatabaseService{
                 List<List<Object>> excelData = (List<List<Object>>)result.getData();
 
                 List<List<String>> head = new ArrayList<>();
-                for (Object header : excelData.get(0)) {
+                for (Object header : excelData.getFirst()) {
                     head.add(Collections.singletonList(header == null ? "" : header.toString()));
                 }
                 WriteSheet sheet = EasyExcel.writerSheet(i, i+"-sheet")

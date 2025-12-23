@@ -57,13 +57,14 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class JmcomicService {
-    private static final String API_DOMAIN = "www.cdnblackmyth.club";
+
+    public static final String DEFAULT_API_DOMAIN = "www.cdnbea.net";
     private static final String APP_TOKEN_SECRET = "18comicAPP";
     private static final String APP_TOKEN_SECRET_2 = "18comicAPPContent";
     private static final String APP_DATA_SECRET = "185Hcomic3PAPP7R";
-    private static final String APP_VERSION = "1.7.5";
+    private static final String APP_VERSION = "2.0.13";
     private static final String IMAGE_DOMAIN = "cdn-msp2.jmapiproxy2.cc";
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
     public static final String JM_DEFAULT_PASSWORD = "1234";
 
@@ -72,9 +73,13 @@ public class JmcomicService {
     @Autowired
     private DictionarySqliteService dictionarySqliteService;
 
+    public String getJmApiDomain(){
+        return dictionarySqliteService.getInCache(DictionaryEnum.JM_API_DOMAIN.getKey(), DEFAULT_API_DOMAIN);
+    }
+
 
     public UserProfile login(String username, String password) throws Exception {
-        String url = "https://" + API_DOMAIN + "/login";
+        String url = "https://" + this.getJmApiDomain() + "/login";
 
 
         long ts = System.currentTimeMillis() / 1000;
@@ -311,7 +316,7 @@ public class JmcomicService {
                 }
             }
 
-            String chapterPath = getChapterPath(albumPath, album.getSeries().get(0));
+            String chapterPath = getChapterPath(albumPath, album.getSeries().getFirst());
             File chapterPathFile = new File(chapterPath);
             File[] files = null;
             if(!chapterPathFile.exists()
@@ -558,7 +563,7 @@ public class JmcomicService {
      * @throws Exception
      */
     public Album requestAlbum(String aid) throws Exception {
-        String url = "https://" + API_DOMAIN + "/album";
+        String url = "https://" + this.getJmApiDomain() + "/album";
         long ts = System.currentTimeMillis() / 1000;
         HttpHeaders headerParam = headerParam(ts);
 
@@ -593,7 +598,7 @@ public class JmcomicService {
      * @throws Exception
      */
     public SearchResp search(String name, String sort) throws Exception {
-        String url = "https://" + API_DOMAIN + "/search";
+        String url = "https://" + this.getJmApiDomain() + "/search";
         long ts = System.currentTimeMillis() / 1000;
         HttpHeaders headerParam = headerParam(ts);
 
@@ -622,7 +627,7 @@ public class JmcomicService {
      * @throws Exception
      */
     public Chapter requestChapter(String chapterId)throws Exception{
-        String url = "https://" + API_DOMAIN + "/chapter";
+        String url = "https://" + this.getJmApiDomain() + "/chapter";
         long ts = System.currentTimeMillis() / 1000;
         HttpHeaders headerParam = headerParam(ts);
 
@@ -643,7 +648,7 @@ public class JmcomicService {
 
     public long getScrambleId(long chapterId){
         try {
-            String url = "https://" + API_DOMAIN + "/chapter_view_template";
+            String url = "https://" + this.getJmApiDomain() + "/chapter_view_template";
             long ts = System.currentTimeMillis() / 1000;
             HttpHeaders httpHeaders = new HttpHeaders();
             String token = DigestUtils.md5Hex(ts + APP_TOKEN_SECRET_2);
@@ -724,7 +729,8 @@ public class JmcomicService {
 
     public static void main(String[] args) {
         try {
-//            JmcomicService jmcomicService = new JmcomicService();
+            JmcomicService jmcomicService = new JmcomicService();
+            Album album = jmcomicService.requestAlbum("1023584");
 //            SearchResp search = jmcomicService.search("二乃", "mv");
 //            System.out.println(search);
 //            Album album = jmcomicService.requestAlbum("303053");

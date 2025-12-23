@@ -62,7 +62,7 @@ public class BtbtlaService {
         if (CollectionUtils.isEmpty(elementsByClass)) {
             return;
         }
-        Element moduleItemsBoxFirst = elementsByClass.get(0);
+        Element moduleItemsBoxFirst = elementsByClass.getFirst();
         Elements moduleItems = moduleItemsBoxFirst.getElementsByClass("module-item");
         if (CollectionUtils.isEmpty(moduleItems)) {
             return;
@@ -76,7 +76,7 @@ public class BtbtlaService {
 
                 Elements moduleItemCaption = moduleItem.getElementsByClass("module-item-caption");
                 if (CollectionUtils.isNotEmpty(moduleItemCaption)) {
-                    Element element = moduleItemCaption.get(0);
+                    Element element = moduleItemCaption.getFirst();
                     Elements span = element.getElementsByTag("span");
                     for (int i = 0; i < span.size(); i++) {
                         Element element1 = span.get(i);
@@ -94,7 +94,7 @@ public class BtbtlaService {
 
                 Elements moduleItemContent = moduleItem.getElementsByClass("module-item-content");
                 if (CollectionUtils.isNotEmpty(moduleItemContent)) {
-                    Element element = moduleItemContent.get(0);
+                    Element element = moduleItemContent.getFirst();
                     Elements item = element.getElementsByClass("module-item-style");
                     for (int i = 0; i < item.size(); i++) {
                         Element div = item.get(i);

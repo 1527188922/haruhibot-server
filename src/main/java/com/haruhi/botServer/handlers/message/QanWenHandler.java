@@ -110,7 +110,7 @@ public class QanWenHandler implements IAllMessageEvent {
                 history.add(createMessage(Role.USER,msg));
                 GenerationParam generationParam = createGenerationParam(history);
                 GenerationResult call = gen.call(generationParam);
-                com.alibaba.dashscope.common.Message message = call.getOutput().getChoices().get(0).getMessage();
+                com.alibaba.dashscope.common.Message message = call.getOutput().getChoices().getFirst().getMessage();
                 String content = message.getContent();
                 history.add(message);
                 return content;

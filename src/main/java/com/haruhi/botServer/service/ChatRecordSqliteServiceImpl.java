@@ -278,7 +278,7 @@ public class ChatRecordSqliteServiceImpl extends ServiceImpl<ChatRecordSqliteMap
                 if (Objects.nonNull(e.getGroupId())) {
                     List<GroupInfoSqlite> groupInfo = groupMap.get(e.getGroupId());
                     if (groupInfo != null) {
-                        e.setGroupName(groupInfo.get(0).getGroupName());
+                        e.setGroupName(groupInfo.getFirst().getGroupName());
                     }
                 }
             });

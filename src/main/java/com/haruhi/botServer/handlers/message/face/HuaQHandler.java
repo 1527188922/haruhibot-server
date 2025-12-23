@@ -212,11 +212,11 @@ public class HuaQHandler implements IGroupMessageEvent {
         }
 
         if(message.getText(-1).trim().matches("撅|撅你|撅撅你|超超你|超你|超市你|超死你|操你|操死你|草你|草饲你")){
-            return MatchResult.matched(Pair.of(String.valueOf(message.getUserId()), message.getAtQQs().get(0)));
+            return MatchResult.matched(Pair.of(String.valueOf(message.getUserId()), message.getAtQQs().getFirst()));
         }
 
         if(message.getText(-1).trim().matches("撅我|超我|撅撅我|超超我|超市我|超死我|操我|操死我|草我|草饲我")){
-            return MatchResult.matched(Pair.of(message.getAtQQs().get(0), String.valueOf(message.getUserId())));
+            return MatchResult.matched(Pair.of(message.getAtQQs().getFirst(), String.valueOf(message.getUserId())));
         }
 
         return MatchResult.unmatched();

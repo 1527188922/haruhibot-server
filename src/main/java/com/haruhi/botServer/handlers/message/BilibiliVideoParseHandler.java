@@ -56,7 +56,7 @@ public class BilibiliVideoParseHandler implements IAllMessageEvent {
     public boolean onMessage(Bot bot, Message message) {
         String bvid = null;
         if (message.isJsonMsg()) {
-            bvid = bilibiliService.getBvidInText(message.getJsons().get(0));
+            bvid = bilibiliService.getBvidInText(message.getJsons().getFirst());
         }else if(message.isTextMsg()){
             bvid = bilibiliService.getBvidInText(message.getText(-1));
         }

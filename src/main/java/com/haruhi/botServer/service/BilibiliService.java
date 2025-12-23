@@ -111,7 +111,7 @@ public class BilibiliService {
             BilibiliBaseResp<List<PlayerInfoResp>> listBilibiliBaseResp = JSONObject.parseObject(response.body(), new TypeReference<BilibiliBaseResp<List<PlayerInfoResp>>>() {
             });
             return Objects.nonNull(listBilibiliBaseResp) && CollectionUtils.isNotEmpty(listBilibiliBaseResp.getData())
-                    ? listBilibiliBaseResp.getData().get(0) : null;
+                    ? listBilibiliBaseResp.getData().getFirst() : null;
         }
     }
 

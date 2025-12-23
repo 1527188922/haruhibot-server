@@ -118,7 +118,7 @@ public class JumpHandler implements IGroupMessageEvent {
         }
 
         if(message.getText(-1).trim().matches("跳")){
-            return MatchResult.matched(Pair.of(String.valueOf(message.getUserId()), message.getAtQQs().get(0)));
+            return MatchResult.matched(Pair.of(String.valueOf(message.getUserId()), message.getAtQQs().getFirst()));
         }
 
         return MatchResult.unmatched();

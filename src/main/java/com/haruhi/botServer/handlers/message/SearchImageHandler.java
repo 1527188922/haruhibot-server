@@ -66,7 +66,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         Message replyMessage = replySearch(bot, message);
         if(replyMessage != null){
             // 回复式识图
-            startSearch(bot,message,replyMessage,replyMessage.getPicUrls().get(0),null);
+            startSearch(bot,message,replyMessage,replyMessage.getPicUrls().getFirst(),null);
             return true;
         }
 
@@ -74,7 +74,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         String key = getKey(String.valueOf(message.getSelfId()), String.valueOf(message.getUserId()), String.valueOf(message.getGroupId()));
         if(cache.contains(key) && CollectionUtils.isNotEmpty(picMessageData)){
             // 存在缓存 并且 图片路径不为空
-            startSearch(bot,message,null,picMessageData.get(0).getUrl(),key);
+            startSearch(bot,message,null,picMessageData.getFirst().getUrl(),key);
             return true;
         }
         boolean matches = matches(message);
@@ -84,7 +84,7 @@ public class SearchImageHandler implements IAllMessageEvent {
                 cache.add(key);
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"图呢！",true);
             }else {
-                startSearch(bot,message,null,picMessageData.get(0).getUrl(),key);
+                startSearch(bot,message,null,picMessageData.getFirst().getUrl(),key);
             }
             return true;
         }
@@ -96,7 +96,7 @@ public class SearchImageHandler implements IAllMessageEvent {
         if(CollectionUtils.isEmpty(texts)){
             return false;
         }
-        String msg = texts.get(0).trim();
+        String msg = texts.getFirst().trim();
         String[] split = RegexEnum.SEARCH_IMAGE.getValue().split("\\|");
         for (String s : split) {
             if(s.equals(msg)){
@@ -151,8 +151,8 @@ public class SearchImageHandler implements IAllMessageEvent {
         if (message.isReplyMsg() && message.isTextMsg()) {
             if (message.getText(0).trim().matches(RegexEnum.SEARCH_IMAGE.getValue())) {
                 List<String> replyMsgIds = message.getReplyMsgIds();
-                Message msg = bot.getMsg(replyMsgIds.get(0),2L * 1000L).getData();
-                log.debug("回复式识图，根据msgId获取消息 {} {}",replyMsgIds.get(0), JSONObject.toJSONString(msg));
+                Message msg = bot.getMsg(replyMsgIds.getFirst(),2L * 1000L).getData();
+                log.debug("回复式识图，根据msgId获取消息 {} {}",replyMsgIds.getFirst(), JSONObject.toJSONString(msg));
                 if(msg != null && msg.isPicMsg()){
                     return msg;
                 }
@@ -238,7 +238,7 @@ public class SearchImageHandler implements IAllMessageEvent {
             try{
                 list = JSONObject.parseObject(creator, List.class);
                 if(!list.isEmpty()){
-                    strBui.append(MessageFormat.format("作者：{0}\n",list.get(0)));
+                    strBui.append(MessageFormat.format("作者：{0}\n",list.getFirst()));
                 }
             }catch (Exception e){
                 strBui.append(MessageFormat.format("作者：{0}\n",creator));

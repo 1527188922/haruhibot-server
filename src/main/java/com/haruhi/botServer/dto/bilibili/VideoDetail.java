@@ -26,7 +26,7 @@ public class VideoDetail {
     public Long getCidFirst(){
         if (view != null) {
             if (CollectionUtils.isNotEmpty(view.getPages())) {
-                return view.getPages().get(0).getCid();
+                return view.getPages().getFirst().getCid();
             }
             return view.getCid();
         }

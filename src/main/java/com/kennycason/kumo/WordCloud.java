@@ -297,7 +297,7 @@ public class WordCloud {
     }
 
     private static int maxFrequency(List<WordFrequency> wordFrequencies) {
-        return wordFrequencies.isEmpty() ? 1 : ((WordFrequency)wordFrequencies.get(0)).getFrequency();
+        return wordFrequencies.isEmpty() ? 1 : ((WordFrequency)wordFrequencies.getFirst()).getFrequency();
     }
 
     private static Padder derivePadder(CollisionMode collisionMode) {

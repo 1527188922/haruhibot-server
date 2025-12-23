@@ -54,7 +54,7 @@ public class Music163Service extends AbstractMusicService {
             List<String> tns = searchResp.getTns();
             if (!CollectionUtils.isEmpty(tns)) {
                 // 后缀加上翻译名
-                name += MessageFormat.format(" - ({0})",tns.get(0));
+                name += MessageFormat.format(" - ({0})",tns.getFirst());
             }
             song.setName(name);
             // set专辑名称
@@ -66,7 +66,7 @@ public class Music163Service extends AbstractMusicService {
             if (!CollectionUtils.isEmpty(ar)) {
                 int size = ar.size();
                 if(size == 1){
-                    artists = ar.get(0).getName();
+                    artists = ar.getFirst().getName();
                 }else{
                     StringBuilder stringBuilder = new StringBuilder();
                     for (int i = 0; i < size; i++) {

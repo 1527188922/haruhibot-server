@@ -31,7 +31,7 @@ public class PlayUrlInfo {
 
     public String getDurlFirst(){
         if (CollectionUtils.isNotEmpty(durl)) {
-            return durl.get(0).getUrl();
+            return durl.getFirst().getUrl();
         }
         return null;
     }

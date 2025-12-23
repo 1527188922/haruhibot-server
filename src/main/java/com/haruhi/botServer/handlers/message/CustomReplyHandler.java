@@ -62,7 +62,7 @@ public class CustomReplyHandler implements IAllMessageEvent {
             return false;
         }
 
-        CustomReplySqlite customReply = replyList.size() == 1 ? replyList.get(0)
+        CustomReplySqlite customReply = replyList.size() == 1 ? replyList.getFirst()
                 : replyList.get(CommonUtil.randomInt(0, replyList.size() - 1));
 
         boolean pass = customReply.pass(message.getMessageType(), 

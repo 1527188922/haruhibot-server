@@ -21,6 +21,7 @@ public enum DictionaryEnum{
     JM_PASSWORD_PDF(true,"jm.password.pdf",JmcomicService.JM_DEFAULT_PASSWORD,"jm本子pdf保护密码,注意：修改密码不会改变之前已经存在的pdf文件密码，重复下载可重新生成使用新密码的pdf文件"),
     JM_DOWNLOAD_THREADS(true,"jm.download.threads",null,"下载本子时线程数量，未配置、0或小于0则等于CPU逻辑核心数量"),
     JM_ALBUM_NAME_MAX_LENGTH(true,"jm.album.name_max_length","215","jm本子名称最大长度(注意是名称的bytes.length而非名称字符个数！)，由于使用本子名做为下载后的本子文件名，文件名有长度限制，linux系统文件名称最长支持255，注意：这里配置要小于255，预留出文件名称后面拼接的jm号"),
+    JM_API_DOMAIN(true,"jm.api_domain",JmcomicService.DEFAULT_API_DOMAIN,"JM API域名"),
 
     BOT_ACCESS_TOKEN(true,"bot.access_token",null,"机器人Websocket服务，建立连接握手时认证token，未配置表示无需认证"),
     BOT_SUPERUSERS(true,"bot.superusers","1527188922","机器人超级管理员qq号，多个qq号逗号分割,注意：未配置超级用户则一些超级用户功能不可使用"),

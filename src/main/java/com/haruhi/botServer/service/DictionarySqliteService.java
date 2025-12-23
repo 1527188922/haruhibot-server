@@ -154,7 +154,7 @@ public class DictionarySqliteService {
     public String getInCache(String key, String defaultValue){
         List<String> values = CACHE.get(key);
         if(CollectionUtils.isNotEmpty(values)){
-            return values.get(0);
+            return values.getFirst();
         }
         return defaultValue;
     }
