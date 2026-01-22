@@ -602,7 +602,7 @@ public class JmcomicService {
 
     /**
      * 根据本子名称搜索
-     * @param name
+     * @param name jm后端会截取前8个字符串去搜索
      * @param sort  Latest => "mr", View => "mv",Picture => "mp", Like => "tf",
      * @return
      * @throws Exception
