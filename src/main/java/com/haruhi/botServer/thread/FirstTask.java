@@ -23,7 +23,7 @@ public class FirstTask implements CommandLineRunner {
     public synchronized void execute(){
         try {
             dictionarySqliteService.initData(false);
-            systemService.loadCache();
+            systemService.loadCache(1);
             // 创建stop脚本
             systemService.writeStopScript();
         }catch (Exception e){

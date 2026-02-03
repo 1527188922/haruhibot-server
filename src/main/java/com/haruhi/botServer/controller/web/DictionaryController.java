@@ -2,6 +2,7 @@ package com.haruhi.botServer.controller.web;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.entity.DictionarySqlite;
 import com.haruhi.botServer.service.DictionarySqliteService;
@@ -22,6 +23,8 @@ public class DictionaryController {
 
     @Autowired
     private DictionarySqliteService dictionarySqliteService;
+    @Autowired
+    private SystemService systemService;
 
 
     @PostMapping("/search")
@@ -33,7 +36,7 @@ public class DictionaryController {
     @PostMapping("/refresh")
     public HttpResp refreshCache(){
         long l = System.currentTimeMillis();
-        dictionarySqliteService.refreshCache();
+        systemService.loadCache(2);
         return HttpResp.success("刷新完成，耗时："+(System.currentTimeMillis() - l),null);
     }
 

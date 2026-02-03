@@ -17,6 +17,10 @@ public enum DictionaryEnum{
 
     QIANWEN_API_KEY(true,"qianwen.api_key",null,"请求阿里巴巴千问模型认证"),
 
+    DEEP_SEEK_API_KEY(true,"ds.api.key",null,"DeepSeek api key"),
+    DEEP_SEEK_API_BASE_URL(true,"ds.api.base_url","https://api.deepseek.com","DeepSeek api baseurl"),
+    DEEP_SEEK_API_TIMEOUT(true,"ds.api.timeout","30","DeepSeek 请求超时时长，单位秒"),
+
     JM_PASSWORD_ZIP(true,"jm.password.zip", JmcomicService.JM_DEFAULT_PASSWORD,"jm本子zip包解压密码,注意：修改密码不会改变之前已经存在的zip包密码，重复下载可重新生成使用新密码的zip包"),
     JM_PASSWORD_PDF(true,"jm.password.pdf",JmcomicService.JM_DEFAULT_PASSWORD,"jm本子pdf保护密码,注意：修改密码不会改变之前已经存在的pdf文件密码，重复下载可重新生成使用新密码的pdf文件"),
     JM_DOWNLOAD_THREADS(true,"jm.download.threads",null,"下载本子时线程数量，未配置、0或小于0则等于CPU逻辑核心数量"),

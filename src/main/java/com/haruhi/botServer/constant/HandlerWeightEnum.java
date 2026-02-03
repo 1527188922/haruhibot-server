@@ -12,6 +12,7 @@ public enum HandlerWeightEnum {
 
     W_890(890,"捏"),
     W_880(880,"千问"),
+    W_870(870,"DeepSeek"),
     W_860(860,"显示所有功能"),
     W_820(820,"pixr根据tag"),
     W_780(780,"pix统计"),

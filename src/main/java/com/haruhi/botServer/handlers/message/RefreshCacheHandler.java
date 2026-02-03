@@ -56,7 +56,7 @@ public class RefreshCacheHandler implements IAllMessageEvent {
             try {
                 long l = System.currentTimeMillis();
                 systemService.clearCache();
-                systemService.loadCache();
+                systemService.loadCache(3);
                 bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                         "刷新缓存完成\n耗时：" + (System.currentTimeMillis() - l) + "ms", true);
             }finally {

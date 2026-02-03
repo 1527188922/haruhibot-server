@@ -156,6 +156,7 @@
             <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.alibaba/dashscope-sdk-java -->
+        <!--   千问sdk     -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>dashscope-sdk-java</artifactId>
@@ -166,6 +167,24 @@
                     <artifactId>slf4j-simple</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <!--   Open AI SDK  包含 client api   -->
+        <dependency>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>service</artifactId>
+            <version>0.18.2</version>
+            <exclusions>
+<!--                排除有漏斗版本-->
+                <exclusion>
+                    <groupId>io.github.classgraph</groupId>
+                    <artifactId>classgraph</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.retrofit2</groupId>
+            <artifactId>converter-jackson</artifactId>
+            <version>2.9.0</version>
         </dependency>
         <dependency>
             <groupId>org.xhtmlrenderer</groupId>

@@ -17,6 +17,7 @@ import com.haruhi.botServer.mapper.SqliteDatabaseInitMapper;
 import com.haruhi.botServer.mapper.SqliteSchemaMapper;
 import com.haruhi.botServer.utils.CMDUtil;
 import com.haruhi.botServer.utils.FileUtil;
+import com.haruhi.botServer.utils.OpenAiServiceHolder;
 import com.haruhi.botServer.vo.BotWebSocketInfo;
 import com.haruhi.botServer.vo.FileNode;
 import com.haruhi.botServer.vo.DatabaseInfoNode;
@@ -88,13 +89,18 @@ public class SystemService {
         log.info("生成kill脚本完成:{}",file.getAbsolutePath());
     }
 
-    public synchronized void loadCache(){
+    /**
+     *
+     * @param mode 1系统启动刷新 2接口刷新 3bot命令刷新
+     */
+    public synchronized void loadCache(int mode){
        try {
            dictionaryService.refreshCache();
            pokeReplyService.loadPokeReply();
            customReplySqliteService.loadToCache();
            wordStripService.loadWordStrip();
            ScoldMeHandler.refreshFile();
+           OpenAiServiceHolder.refresh(mode);
            log.info("加载缓存完成");
        }catch (Exception e){
            log.error("加载缓存异常",e);
