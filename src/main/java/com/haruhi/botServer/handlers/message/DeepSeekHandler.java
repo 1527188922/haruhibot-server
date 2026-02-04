@@ -107,7 +107,7 @@ public class DeepSeekHandler implements IAllMessageEvent {
             try {
                 history.add(new ChatMessage(ChatMessageRole.USER.value(), msg));
                 ChatCompletionRequest request = createRequest(history);
-                ChatCompletionResult chatCompletion =  OpenAiServiceHolder.getOpenAiService().createChatCompletion(request);
+                ChatCompletionResult chatCompletion = OpenAiServiceHolder.getOpenAiService().createChatCompletion(request);
                 List<ChatCompletionChoice> choices = chatCompletion.getChoices();
                 ChatMessage resMessage = choices.getFirst().getMessage();
                 String content = resMessage.getContent();
