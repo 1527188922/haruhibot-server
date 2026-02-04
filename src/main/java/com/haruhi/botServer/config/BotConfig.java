@@ -13,6 +13,7 @@ public class BotConfig {
     public static String INTERNET_HOST;
     public static int PORT;
     public final static String CONTEXT_PATH = "/api";
+    public final static String DRUID_PATH = "/druid";
     public final static String WEB_SOCKET_PATH = CONTEXT_PATH + "/ws";
     public static boolean SAME_MACHINE_QQCLIENT;
 

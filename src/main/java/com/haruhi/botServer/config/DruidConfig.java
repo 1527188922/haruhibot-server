@@ -1,5 +1,6 @@
 package com.haruhi.botServer.config;
 
+import cn.hutool.core.text.StrFormatter;
 import com.alibaba.druid.support.jakarta.StatViewServlet;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,7 @@ public class DruidConfig {
 
     @Bean
     public ServletRegistrationBean<StatViewServlet> druidServlet() {
-        ServletRegistrationBean<StatViewServlet> bean = new ServletRegistrationBean<>(new StatViewServlet(), "/druid/*");
+        ServletRegistrationBean<StatViewServlet> bean = new ServletRegistrationBean<>(new StatViewServlet(), StrFormatter.format("{}/*",BotConfig.DRUID_PATH));
 
         // 登录验证
         if (StringUtils.isNotBlank(webuiConfig.getDruidLoginUsername()) && StringUtils.isNotBlank(webuiConfig.getDruidLoginPassword())) {

@@ -30,7 +30,8 @@ public class VueHistoryFilter implements Filter {
         boolean need = HttpMethod.GET.name().equals(requestMethod)
                         && !requestURI.startsWith(BotConfig.CONTEXT_PATH)
                         && !requestURI.contains(".")
-                        && !"/index.html".equals(requestURI);
+                        && !"/index.html".equals(requestURI)
+                        && !requestURI.startsWith(BotConfig.DRUID_PATH);
 
         if (need) {
             // 符合转发规则 → 服务器内部转发到 index.html
