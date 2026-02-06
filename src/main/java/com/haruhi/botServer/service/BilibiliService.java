@@ -14,6 +14,7 @@ import com.haruhi.botServer.dto.bilibili.PlayerInfoResp;
 import com.haruhi.botServer.dto.bilibili.VideoDetail;
 import com.haruhi.botServer.dto.bilibili.BulletChatResp;
 import com.haruhi.botServer.utils.BilibiliIdConverter;
+import com.haruhi.botServer.utils.BilibililSidUtil;
 import com.haruhi.botServer.utils.XMLUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -140,8 +141,9 @@ public class BilibiliService {
             return null;
         }
         ArrayList<String> strings = new ArrayList<>();
-        strings.add("SESSDATA="+sessdata);
-        strings.add("bili_jct="+jct);
+        strings.add("SESSDATA=" + sessdata);
+        strings.add("bili_jct=" + jct);
+        strings.add("b_lsid=" + BilibililSidUtil.generate());
         return StringUtils.join(strings,";");
     }
 
