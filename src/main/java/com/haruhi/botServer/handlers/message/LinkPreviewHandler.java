@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handlers.message;
 
+import cn.hutool.core.io.unit.DataSizeUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
@@ -67,20 +68,14 @@ public class LinkPreviewHandler implements IPrivateMessageEvent {
         stringBuilder.append(resp.getName()).append("\n")
                 .append("类型：").append(resp.getFileType()).append("\n")
                 .append("文件数量：").append(resp.getCount());
-        if(resp.getSize() != null && resp.getSize() != 0){
-            double v = (double) resp.getSize() / 1024D / 1024D; //MB
-            String size = "";
-            if(v >= 1024D){
-                size = String.format("%.3f",(v / 1024D)); //GB
-            }else{
-                size = String.format("%.3f",v);
-            }
-            stringBuilder.append("\n").append("总大小：").append(size).append("MB");
+        if(resp.getSize() != null){
+            String size = DataSizeUtil.format(resp.getSize());
+            stringBuilder.append("\n").append("总大小：").append(size);
         }
         if (!CollectionUtils.isEmpty(resp.getScreenshots())) {
             List<String> collect = resp.getScreenshots().stream().map(AnalysisMagnetLinkResp.Screenshots::getScreenshot).collect(Collectors.toList());
             String join = StringUtils.join(collect, "\n");
-            stringBuilder.append("\n").append(join);
+            stringBuilder.append("\n预览图链接：\n").append(join);
         }
         return stringBuilder.toString();
     }
