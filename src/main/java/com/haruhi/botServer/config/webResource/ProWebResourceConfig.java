@@ -35,12 +35,16 @@ public class ProWebResourceConfig extends AbstractWebResourceConfig {
         }else{
             try {
                 host = CommonUtil.getNowIP4();
-            } catch (IOException e) { }
+            } catch (Exception e) {
+                log.error("【getNowIP4】第1次获取公网ip失败 {}",e.getMessage(),e);
+            }
 
             if(StringUtils.isBlank(host)){
                 try {
                     host = CommonUtil.getNowIP2();
-                } catch (IOException e) {}
+                } catch (Exception e) {
+                    log.error("【getNowIP2】第2次获取公网ip失败 {}",e.getMessage(),e);
+                }
             }
             if(StringUtils.isBlank(host)){
                 log.warn("自动获取公网IP失败，将使用内网IP");

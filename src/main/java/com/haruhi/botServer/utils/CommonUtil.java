@@ -184,7 +184,6 @@ public class CommonUtil {
             URL url = new URL(objWebURL);
             br = new BufferedReader(new InputStreamReader(url.openStream()));
             String s = "";
-            String webContent = "";
             while ((s = br.readLine()) != null) {
                 if (s.indexOf("互联网IP") != -1) {
                     ip = s.substring(s.indexOf("'") + 1, s.lastIndexOf("'"));
