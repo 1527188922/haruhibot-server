@@ -5,6 +5,7 @@ import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.simplerobot.modules.utils.KQCodeUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -19,8 +20,15 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.URI;
 import java.net.URL;
+import java.net.UnknownHostException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -29,12 +37,32 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class CommonUtil {
-    private CommonUtil(){}
 
-    private static final Random random = new Random();
+    private static final String[] IP_API_LIST = {
+            "https://icanhazip.com",
+            "http://myip.ipip.net",
+            "https://api.ipify.org",
+    };
+
+    private static Random random;
+
+    public static Random getRandomInstance() {
+        if (random != null) {
+            return random;
+        }
+        synchronized (CommonUtil.class) {
+            if (random != null) {
+                return random;
+            }
+            random = new Random();
+            return random;
+        }
+    }
+
     public static int randomInt(int start,int end){
-        return random.nextInt(end - start + 1) + start;
+        return getRandomInstance().nextInt(end - start + 1) + start;
     }
 
     public static String commandReplaceFirst(final String command, RegexEnum regexEnum){
@@ -196,6 +224,57 @@ public class CommonUtil {
         }
         return ip;
     }
+
+    /**
+     * 获取服务器公网IP
+     * @return
+     */
+    public static String getPublicIp()  {
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
+
+        for (String api : IP_API_LIST) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(api))
+                        .timeout(Duration.ofSeconds(5))
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                String body;
+                if (response.statusCode() == 200 && StringUtils.isNotBlank((body = response.body()))) {
+                    return match(body.trim());
+                }
+            } catch (Exception e) {
+                log.error("请求获取公网ip异常 {}",api,e);
+            }
+        }
+        return null;
+    }
+
+    private static String match(String input) throws UnknownHostException {
+        List<String> ipList = new ArrayList<>();
+        String ipv4Regex =
+                "\\b((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\b";
+        Pattern ipv4Pattern = Pattern.compile(ipv4Regex);
+        Matcher matcher = ipv4Pattern.matcher(input);
+        while (matcher.find()) {
+            ipList.add(matcher.group());
+        }
+        if (ipList.isEmpty()) {
+            return null;
+        }
+        for (String ip : ipList) {
+            InetAddress byName = InetAddress.getByName(ip);
+            if (!byName.isSiteLocalAddress()) {
+                return ip;
+            }
+        }
+        return null;
+    }
+
 
     public static String getAvatarUrl(Long qq, boolean origin){
         return origin ? MessageFormat.format("https://q1.qlogo.cn/g?b=qq&nk={0}&s=0",String.valueOf(qq))
