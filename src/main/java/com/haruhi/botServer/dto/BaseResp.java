@@ -4,14 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class BaseResp<T> implements Serializable {
+public class BaseResp<T> {
 
-    private static final long serialVersionUID = 3644594880158646600L;
     public static final String SUCCESS_CODE = "000";
     public static final String SUCCESS_MESSAGE = "成功";
     public static final String FAIL_CODE = "100";
@@ -19,6 +16,10 @@ public class BaseResp<T> implements Serializable {
     private String code;
     private String msg;
     private T data;
+
+    public boolean isSuccess() {
+        return SUCCESS_CODE.equals(code);
+    }
 
     public static BaseResp fail(String msg){
         return new BaseResp(FAIL_CODE,msg,null);

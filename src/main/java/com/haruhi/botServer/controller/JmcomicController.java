@@ -36,7 +36,11 @@ public class JmcomicController {
     @GetMapping("/download/{aid}")
     public ResponseEntity<Object> download(@PathVariable("aid") String aid) {
         try {
-            Album album = jmcomicService.requestAlbum(aid);
+            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum(aid);
+            if (!albumBaseResp.isSuccess()) {
+                return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(albumBaseResp.getMsg())));
+            }
+            Album album = albumBaseResp.getData();
             BaseResp<File> fileBaseResp = jmcomicService.downloadAlbumAsZip(album);
             if (!BaseResp.SUCCESS_CODE.equals(fileBaseResp.getCode())) {
                 return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(fileBaseResp.getMsg())));
@@ -52,7 +56,11 @@ public class JmcomicController {
     @GetMapping("/download/pdf/{aid}")
     public ResponseEntity<Object> downloadPdf(@PathVariable("aid") String aid) {
         try {
-            Album album = jmcomicService.requestAlbum(aid);
+            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum(aid);
+            if (!albumBaseResp.isSuccess()) {
+                return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(albumBaseResp.getMsg())));
+            }
+            Album album = albumBaseResp.getData();
             BaseResp<File> fileBaseResp = jmcomicService.downloadAlbumAsPdf(album);
             if (!BaseResp.SUCCESS_CODE.equals(fileBaseResp.getCode())) {
                 return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(fileBaseResp.getMsg())));

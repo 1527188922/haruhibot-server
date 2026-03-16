@@ -84,12 +84,13 @@ public class JmcomicHandler implements IAllMessageEvent {
                 }
                 isPdf = isPdf == null || isPdf;
                 // 根据jm号下载本子
-                Album album = jmcomicService.requestAlbum(finalAid);
-                if (album == null || album.getId() == null) {
+                BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum(aid);
+                if (!albumBaseResp.isSuccess()) {
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                            MessageHolder.instanceText("未查询到本子：JM"+finalAid));
+                            MessageHolder.instanceText(albumBaseResp.getMsg()));
                     return;
                 }
+                Album album = albumBaseResp.getData();
                 sendAlbumInfo(bot, message, album);
 
                 BaseResp<File> resp = isPdf ? jmcomicService.downloadAlbumAsPdf(album) : jmcomicService.downloadAlbumAsZip(album);

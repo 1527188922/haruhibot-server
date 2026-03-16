@@ -1,6 +1,7 @@
 package com.haruhi.botServer.service;
 
 import cn.hutool.core.collection.ConcurrentHashSet;
+import cn.hutool.core.text.StrFormatter;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -562,41 +563,52 @@ public class JmcomicService {
      * @return
      * @throws Exception
      */
-    public Album requestAlbum(String aid) throws Exception {
-        String url = "https://" + this.getJmApiDomain() + "/album";
-        long ts = System.currentTimeMillis() / 1000;
-        HttpHeaders headerParam = headerParam(ts);
+    public BaseResp<Album> requestAlbum(String aid) {
+        try {
+            String url = "https://" + this.getJmApiDomain() + "/album";
+            long ts = System.currentTimeMillis() / 1000;
+            HttpHeaders headerParam = headerParam(ts);
 
-        HashMap<String, Object> urlParam = new HashMap<>();
-        urlParam.put("id", aid);
+            HashMap<String, Object> urlParam = new HashMap<>();
+            urlParam.put("id", aid);
 
+            String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
+            HttpRequest httpRequest = HttpUtil.createGet(s)
+                    .addHeaders(headerParam.toSingleValueMap())
+                    .timeout(10000);
+            try (HttpResponse httpResponse = httpRequest.execute()){
+                String body = httpResponse.body();
+                if (StringUtils.isBlank(body)) {
+                    log.error("请求/album响应空");
+                    return BaseResp.fail("请求/album响应空");
+                }
+                String encryptedData = null;
+                try {
+                    JSONObject jsonObject = JSONObject.parseObject(body);
+                    encryptedData = jsonObject.getString("data");
+                    if (StringUtils.isBlank(encryptedData)) {
+                        log.error("请求/album data字段为空");
+                        return BaseResp.fail("请求/album data字段为空");
+                    }
+                }catch (Exception e) {
+                    log.error(StrFormatter.format("解析响应结果异常 body:{}",body),e);
+                    return BaseResp.fail("解析响应结果异常："+e.getMessage());
+                }
 
-        String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
-        HttpRequest httpRequest = HttpUtil.createGet(s)
-                .addHeaders(headerParam.toSingleValueMap())
-                .timeout(10000);
-        try (HttpResponse httpResponse = httpRequest.execute()){
-            String body = httpResponse.body();
-            if (StringUtils.isBlank(body)) {
-                log.error("请求/album响应空");
-                return null;
+                String data = decryptData(ts, encryptedData);
+                Album album = JSONObject.parseObject(data, Album.class);
+
+                String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
+                int filenameLength = dictionarySqliteService.getInt(DictionaryEnum.JM_ALBUM_NAME_MAX_LENGTH.getKey(), 215);
+                if (albumFolderName.getBytes().length >= filenameLength) {
+                    albumFolderName = albumFolderName.substring(0,50);
+                }
+                album.setAlbumFolderName(albumFolderName + "_JM" + aid);
+                return BaseResp.success(album);
             }
-            JSONObject jsonObject = JSONObject.parseObject(body);
-            String encryptedData = jsonObject.getString("data");
-            if (StringUtils.isBlank(encryptedData)) {
-                log.error("请求/album data字段为空");
-                return null;
-            }
-            String data = decryptData(ts, encryptedData);
-            Album album = JSONObject.parseObject(data, Album.class);
-
-            String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
-            int filenameLength = dictionarySqliteService.getInt(DictionaryEnum.JM_ALBUM_NAME_MAX_LENGTH.getKey(), 215);
-            if (albumFolderName.getBytes().length >= filenameLength) {
-                albumFolderName = albumFolderName.substring(0,50);
-            }
-            album.setAlbumFolderName(albumFolderName + "_JM" + aid);
-            return album;
+        } catch (Exception e) {
+            log.error("请求/album异常",e);
+            return BaseResp.fail("请求/album异常"+e.getMessage());
         }
     }
 
@@ -740,7 +752,8 @@ public class JmcomicService {
     public static void main(String[] args) {
         try {
             JmcomicService jmcomicService = new JmcomicService();
-            Album album = jmcomicService.requestAlbum("1023584");
+            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum("1023584");
+
 //            SearchResp search = jmcomicService.search("二乃", "mv");
 //            System.out.println(search);
 //            Album album = jmcomicService.requestAlbum("303053");
