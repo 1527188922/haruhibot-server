@@ -31,8 +31,14 @@ public interface SqliteDatabaseInitMapper {
      */
     int createChatRecord(@Param("tableName") String tableName);
 
+    int createChatRecordGroup(@Param("tableName") String tableName);
+    int createChatRecordPrivate(@Param("tableName") String tableName);
+
+
 
     int createChatRecordExtend(@Param("tableName") String tableName);
+
+    int createChatRecordExtendV2(@Param("tableName") String tableName);
 
     /**
      * 戳一戳回复表

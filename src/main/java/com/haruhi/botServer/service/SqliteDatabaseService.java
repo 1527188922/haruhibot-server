@@ -8,13 +8,17 @@ import com.alibaba.excel.read.metadata.ReadSheet;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.ds.ItemDataSource;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.constant.SqlTypeEnum;
 import com.haruhi.botServer.dto.SqlExecuteResult;
+import com.haruhi.botServer.entity.SqliteSchema;
 import com.haruhi.botServer.entity.TableInfoSqlite;
 import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.mapper.SqliteDatabaseInitMapper;
+import com.haruhi.botServer.mapper.SqliteSchemaMapper;
 import com.haruhi.botServer.utils.excel.BatchInsertListener;
+import com.haruhi.botServer.vo.DatabaseInfoNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -28,14 +32,29 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class SqliteDatabaseService{
 
+    private static final Map<String, Object> TABPE_LOCK_MAP = new ConcurrentHashMap<>();
+
+    public static Object getLock(String tableName) {
+        return TABPE_LOCK_MAP.computeIfAbsent(tableName, k -> new Object());
+    }
+
+    public static void removeLock(String tableName) {
+        TABPE_LOCK_MAP.remove(tableName);
+    }
+
     @Autowired
     private SqliteDatabaseInitMapper sqliteDatabaseInitMapper;
+
+    @Autowired
+    private SqliteSchemaMapper sqliteSchemaMapper;
+
     @Autowired
     private DataSource dataSource;
 
@@ -67,6 +86,9 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"chat_record_id");
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"message_id");
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"time");
+
+        sqliteDatabaseInitMapper.createChatRecordExtendV2(DataBaseConst.T_CHAT_RECORD_EXTEND_V2);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_CHAT_RECORD_EXTEND_V2,"chat_id_user_IDX","chat_record_id,user_id",false);
 
         sqliteDatabaseInitMapper.createPokeReply(DataBaseConst.T_POKE_REPLY);
 
@@ -114,6 +136,67 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_FRIEND,"user_id");
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_FRIEND,"nickname");
     }
+
+    public boolean checkTableExists(String tableName) {
+        Long count = sqliteSchemaMapper.selectCount(new LambdaQueryWrapper<SqliteSchema>()
+                .eq(SqliteSchema::getType, DatabaseInfoNode.TYPE_TABLE)
+                .eq(SqliteSchema::getTblName, tableName));
+        return Objects.nonNull(count) && count > 0;
+    }
+
+
+    public int createChatRecordPrivateIfNotExists(Long selfId){
+        if (Objects.isNull(selfId)) {
+            return 0;
+        }
+
+        String tableName = DataBaseConst.T_CHAT_RECORD_PRIVATE_PREFIX + selfId;
+        if(checkTableExists(tableName)){
+            return 0;
+        }
+
+        Object lock = getLock(tableName);
+        try {
+            synchronized (lock) {
+                if(checkTableExists(tableName)){
+                    return 0;
+                }
+
+                sqliteDatabaseInitMapper.createChatRecordPrivate(tableName);
+                sqliteDatabaseInitMapper.createIndexEnhance(tableName, "user_time_IDX","user_id,time",false);
+                return 1;
+            }
+        }finally {
+            removeLock(tableName);
+        }
+    }
+
+    public int createChatRecordGroupIfNotExists(Long groupId){
+        if (Objects.isNull(groupId)) {
+            return 0;
+        }
+
+        String tableName = DataBaseConst.T_CHAT_RECORD_GROUP_PREFIX + groupId;
+        if(checkTableExists(tableName)){
+            return 0;
+        }
+
+        Object lock = getLock(tableName);
+        try {
+            synchronized (lock) {
+                if(checkTableExists(tableName)){
+                    return 0;
+                }
+
+                sqliteDatabaseInitMapper.createChatRecordGroup(tableName);
+                sqliteDatabaseInitMapper.createIndexEnhance(tableName, "user_time_IDX","user_id,time",false);
+                return 1;
+            }
+        }finally {
+            removeLock(tableName);
+        }
+    }
+
 
     public int addColumnIfNotExists(String tableName, String columnName, String columnType,boolean notNull,String defaultValue) {
         List<TableInfoSqlite> tableInfo = sqliteDatabaseInitMapper.pragmaTableInfo(tableName);

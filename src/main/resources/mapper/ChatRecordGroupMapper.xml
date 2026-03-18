@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haruhi.botServer.mapper.ChatRecordGroupMapper">
+
+    <sql id="base_columns">
+        id,card,nickname,message_id,user_id,self_id,content,deleted,time
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyColumn="id" keyProperty="param.id">
+     INSERT INTO ${tableName}(card,nickname,message_id,user_id,self_id,content,time)
+     values(#{param.card},#{param.nickname},#{param.messageId},#{param.userId},#{param.selfId},#{param.content},#{param.time})
+    </insert>
+
+
+</mapper>

@@ -14,9 +14,15 @@ public class DataBaseConst {
     public final static String DATA_SOURCE_MYSQL_SYSTEM = "mysql_system";
     public final static String DATA_SOURCE_MYSQL = "mysql";
 
-    // 群聊天历史
+    // 聊天历史
     public final static String T_CHAT_RECORD = "t_chat_record";
     public final static String T_CHAT_RECORD_EXTEND = "t_chat_record_extend";
+
+    public final static String T_CHAT_RECORD_EXTEND_V2 = "t_chat_record_extend_v2";
+
+    // 群聊天记录表前缀
+    public final static String T_CHAT_RECORD_GROUP_PREFIX = "t_chat_record_group_";
+    public final static String T_CHAT_RECORD_PRIVATE_PREFIX = "t_chat_record_private_";
     // 话术
     public final static String T_CUSTOM_REPLY = "t_custom_reply";
     // 戳一戳回复表
