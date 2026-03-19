@@ -452,16 +452,19 @@ public class ChatRecordService implements CommandLineRunner {
     public void migratePrivateData(Long selfId){
         int pageSize = 1000;
         int currentPage = 1;
+        LambdaQueryWrapper<ChatRecordSqlite> eq = new LambdaQueryWrapper<ChatRecordSqlite>()
+                .eq(ChatRecordSqlite::getMessageType, MessageTypeEnum.privat.getType())
+                .eq(ChatRecordSqlite::getSelfId, selfId);
         while (true){
-            Page<ChatRecordSqlite> page = chatRecordSqliteService.page(new Page<>(currentPage, pageSize), new LambdaQueryWrapper<ChatRecordSqlite>()
-                    .eq(ChatRecordSqlite::getMessageType, MessageTypeEnum.privat.getType())
-                    .eq(ChatRecordSqlite::getSelfId, selfId));
-            if (CollectionUtils.isEmpty(page.getRecords())) {
+            PageInfo<ChatRecordSqlite> pageinfo = PageHelper.startPage(currentPage, pageSize, false).doSelectPageInfo(() -> {
+                chatRecordSqliteService.list(eq);
+            });
+            if (CollectionUtils.isEmpty(pageinfo.getList())) {
                 log.info("执行完成：{}",selfId);
                 break;
             }
 
-            List<ChatRecordSqlite> records = page.getRecords();
+            List<ChatRecordSqlite> records = pageinfo.getList();
             List<MutablePair<ChatRecordPrivate, Long>> list = records.stream().map(e -> {
                 ChatRecordPrivate chatRecordPrivate = new ChatRecordPrivate();
                 chatRecordPrivate.setTime(e.getTime());
@@ -481,6 +484,7 @@ public class ChatRecordService implements CommandLineRunner {
                 ChatRecordPrivate left = mutablePair.getLeft();
 
                 String chatTableName = sqliteDatabaseService.getChatTableName(null, selfId);
+                sqliteDatabaseService.createChatRecordPrivateIfNotExists(selfId);
                 chatRecordPrivateMapper.insert(chatTableName, left);
 
                 chatRecordExtendSqlites.stream().filter(ex -> oldId.equals(ex.getChatRecordId())).findFirst().ifPresent(ex -> {
@@ -499,14 +503,18 @@ public class ChatRecordService implements CommandLineRunner {
         int pageSize = 1000;
         int currentPage = 1;
         while (true){
-            Page<ChatRecordSqlite> page = chatRecordSqliteService.page(new Page<>(currentPage, pageSize), new LambdaQueryWrapper<ChatRecordSqlite>()
-                    .eq(ChatRecordSqlite::getGroupId, groupId));
-            if (CollectionUtils.isEmpty(page.getRecords())) {
+            LambdaQueryWrapper<ChatRecordSqlite> eq = new LambdaQueryWrapper<ChatRecordSqlite>()
+                    .eq(ChatRecordSqlite::getGroupId, groupId);
+            PageInfo<ChatRecordSqlite> pageinfo = PageHelper.startPage(currentPage, pageSize, false).doSelectPageInfo(() -> {
+                chatRecordSqliteService.list(eq);
+            });
+
+            if (CollectionUtils.isEmpty(pageinfo.getList())) {
                 log.info("执行完成：{}",groupId);
                 break;
             }
 
-            List<ChatRecordSqlite> records = page.getRecords();
+            List<ChatRecordSqlite> records = pageinfo.getList();
             List<MutablePair<ChatRecordGroup, Long>> list = records.stream().map(e -> {
                 ChatRecordGroup chatRecordGroup = new ChatRecordGroup();
                 chatRecordGroup.setTime(e.getTime());
@@ -528,6 +536,7 @@ public class ChatRecordService implements CommandLineRunner {
                 ChatRecordGroup left = mutablePair.getLeft();
 
                 String chatTableName = sqliteDatabaseService.getChatTableName(groupId, null);
+                sqliteDatabaseService.createChatRecordGroupIfNotExists(groupId);
                 chatRecordGroupMapper.insert(chatTableName, left);
 
                 chatRecordExtendSqlites.stream().filter(ex -> oldId.equals(ex.getChatRecordId())).findFirst().ifPresent(ex -> {
