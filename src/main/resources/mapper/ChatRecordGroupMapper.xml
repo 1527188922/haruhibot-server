@@ -49,5 +49,24 @@
         group by user_id
         ORDER BY total desc
     </select>
+    <select id="selectWordCloudCorpus" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
+        select <include refid="base_columns"></include>
+        FROM ${tableName}
+        <where>
+            self_id = #{selfId} and user_id != #{selfId} and `time` &gt;= #{startTime}
+            <if test="userIds != null and userIds.size()>0">
+                and user_id in
+                <foreach collection="userIds" open="(" close=")" index="index" item="userId" separator=",">
+                    #{userId}
+                </foreach>
+            </if>
+            <if test="excludeContent != null and excludeContent.size()>0">
+                and
+                <foreach collection="excludeContent" item="item" separator="AND" open="(" close=")">
+                    content NOT LIKE CONCAT('%', #{item}, '%')
+                </foreach>
+            </if>
+        </where>
+    </select>
 
 </mapper>

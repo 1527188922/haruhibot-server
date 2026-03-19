@@ -5,6 +5,7 @@ import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -18,15 +19,19 @@ import com.haruhi.botServer.entity.ChatRecordGroup;
 import com.haruhi.botServer.entity.ChatRecordPrivate;
 import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.handlers.message.chatRecord.FindGroupChatHandler;
+import com.haruhi.botServer.handlers.message.chatRecord.GroupWordCloudHandler;
 import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.mapper.ChatRecordGroupMapper;
 import com.haruhi.botServer.mapper.ChatRecordPrivateMapper;
+import com.haruhi.botServer.thread.WordSlicesTask;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.FileUtil;
+import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import com.haruhi.botServer.ws.Bot;
+import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -39,9 +44,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -54,7 +64,8 @@ public class ChatRecordService implements CommandLineRunner {
     private SqliteDatabaseService sqliteDatabaseService;
     @Autowired
     private ChatRecordExtendV2Mapper chatRecordExtendV2Mapper;
-
+    @Autowired
+    private AbstractWebResourceConfig abstractPathConfig;
 
     @Override
     public void run(String... args) throws Exception {
@@ -334,5 +345,98 @@ public class ChatRecordService implements CommandLineRunner {
         }
         return res;
     }
+
+
+    public void sendWordCloudImage(Bot bot, GroupWordCloudHandler.RegexEnum regexEnum, Message message) {
+        // 解析查询条件
+        log.info("群[{}]开始生成词云图...",message.getGroupId());
+        String date = DateTimeUtil.dateTimeFormat(limitDate(regexEnum), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+        String outPutPath = null;
+//        List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
+        List<String> userIds = message.getAtQQs();
+        // 从数据库查询聊天记录
+        String chatTableName = sqliteDatabaseService.getChatTableName(message.getGroupId(), null);
+        List<Long> longs = CollectionUtils.isNotEmpty(userIds) ? userIds.stream().map(Long::parseLong).toList() : null;
+        List<String> list = Arrays.stream(GroupWordCloudHandler.RegexEnum.values()).map(GroupWordCloudHandler.RegexEnum::getRegex).toList();
+
+        List<ChatRecordGroup> corpus = chatRecordGroupMapper.selectWordCloudCorpus(chatTableName, message.getSelfId(), longs,date ,list);
+        if (CollectionUtils.isEmpty(corpus)) {
+            bot.sendGroupMessage(message.getGroupId(),"该条件下没有聊天记录",true);
+            generateComplete(message);
+            return;
+        }
+
+        bot.sendGroupMessage(message.getGroupId(), MessageFormat.format("词云图片将从{0}条聊天记录中生成,开始分词...",corpus.size()),true);
+        try{
+            // 开始分词
+            long l = System.currentTimeMillis();
+            List<String> collect = corpus.stream().map(ChatRecordGroup::getContent).collect(Collectors.toList());
+            List<String> strings = WordSlicesTask.execute(collect);
+            // 设置权重和排除指定词语
+            Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(strings));
+            if(org.springframework.util.CollectionUtils.isEmpty(map)){
+                bot.sendGroupMessage(message.getGroupId(),"分词为0，本次不生成词云图",true);
+                generateComplete(message);
+                return;
+            }
+            long l1 = System.currentTimeMillis();
+            bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("分词完成:{0}条\n耗时:{1}毫秒\n开始生成图片...",strings.size(),l1 - l),true);
+            // 开始生成图片
+            String fileName = regexEnum.getUnit().toString() + "-" + message.getGroupId() + ".png";
+            outPutPath = FileUtil.mkdirs(FileUtil.getWordCloudDir()) + File.separator + fileName;
+
+            // 先删掉旧图片
+            File file = new File(outPutPath);
+            FileUtil.deleteFile(file);
+
+            WordCloudUtil.generateWordCloudImage(map,outPutPath);
+            log.info("生成词云图完成,耗时:{}",System.currentTimeMillis() - l1);
+            // 生成图片完成,发送图片
+            KQCodeUtils instance = KQCodeUtils.getInstance();
+            String s = abstractPathConfig.webWordCloudPath() + "/" + fileName + "?t=" + System.currentTimeMillis();
+            log.info("群词云图片地址：{}",s);
+            String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
+            bot.sendGroupMessage(message.getGroupId(),imageCq,false);
+        }catch (Exception e){
+            bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("生成词云图片异常：{0}",e.getMessage()),true);
+            log.error("生成词云图片异常",e);
+        }finally {
+            generateComplete(message);
+        }
+    }
+    private void generateComplete(Message message){
+        GroupWordCloudHandler.lock.remove(String.valueOf(message.getGroupId()) + message.getSelfId());
+    }
+
+    private Date limitDate(GroupWordCloudHandler.RegexEnum regexEnum){
+        Date res = null;
+        Date current = new Date();
+        switch (regexEnum.getUnit()){
+            case YEAR:
+                res = DateTimeUtil.formatToDate(current, DateTimeUtil.PatternEnum.yyyy);
+                break;
+            case MONTH:
+                res = DateTimeUtil.formatToDate(current, DateTimeUtil.PatternEnum.yyyyMM);
+                break;
+            case WEEK:
+                // 获取本周第一天日期
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(current);
+                calendar.set(Calendar.DAY_OF_WEEK, 2);
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+                res = calendar.getTime();
+                break;
+            case DAY:
+                res = DateTimeUtil.formatToDate(current, DateTimeUtil.PatternEnum.yyyyMMdd);
+                break;
+            default:
+                break;
+        }
+        return res;
+    }
+
 
 }

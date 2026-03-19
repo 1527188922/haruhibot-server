@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.service.ChatRecordSqliteService;
+import com.haruhi.botServer.service.ChatRecordService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
     public static final Map<String, Integer> lock = new ConcurrentHashMap<>();
 
     @Autowired
-    private ChatRecordSqliteService chatRecordSqliteService;
+    private ChatRecordService chatRecordService;
 
     private RegexEnum matching(final String command){
         String s = command.replaceAll(com.haruhi.botServer.constant.RegexEnum.CQ_CODE_REPLACR.getValue(), "").trim();
@@ -62,7 +62,7 @@ public class GroupWordCloudHandler implements IGroupMessageEvent {
             lock.put(String.valueOf(message.getGroupId()) + message.getSelfId(),1);
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            chatRecordSqliteService.sendWordCloudImage(bot,matching, message);
+            chatRecordService.sendWordCloudImage(bot,matching, message);
         });
         return true;
     }

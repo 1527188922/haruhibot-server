@@ -17,4 +17,10 @@ public interface ChatRecordGroupMapper {
 
     List<ChatRecordVo> chatStats(@Param("tableName") String tableName, @Param("selfId") Long selfId);
 
+    List<ChatRecordGroup> selectWordCloudCorpus(@Param("tableName") String tableName,
+                                                @Param("selfId") Long selfId,
+                                                @Param("userIds") List<Long> userIds,
+                                                @Param("startTime") String startTime,
+                                                @Param("excludeContent") List<String> excludeList);
+
 }
