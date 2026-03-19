@@ -11,4 +11,21 @@
         values(#{param.nickname},#{param.messageId},#{param.userId},#{param.content},#{param.time})
     </insert>
 
+    <select id="selectList" resultType="com.haruhi.botServer.entity.ChatRecordPrivate">
+        select <include refid="base_columns"></include>
+        from ${tableName}
+        <where>
+            <if test="param.userId != null">
+                and user_id = #{param.userId}
+            </if>
+            <if test='param.startTime != null and param.startTime != "" and param.endTime != null and param.endTime != ""'>
+                and `time` between #{param.startTime} and #{param.endTime}
+            </if>
+            <if test='param.content != null and param.content != ""'>
+                and content LIKE CONCAT('%',#{param.content},'%')
+            </if>
+        </where>
+        order by `time` ${param.sort}
+    </select>
+
 </mapper>

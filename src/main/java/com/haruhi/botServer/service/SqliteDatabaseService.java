@@ -138,19 +138,31 @@ public class SqliteDatabaseService{
     }
 
     public boolean checkTableExists(String tableName) {
+        if (StringUtils.isBlank(tableName)) {
+            return false;
+        }
         Long count = sqliteSchemaMapper.selectCount(new LambdaQueryWrapper<SqliteSchema>()
                 .eq(SqliteSchema::getType, DatabaseInfoNode.TYPE_TABLE)
                 .eq(SqliteSchema::getTblName, tableName));
         return Objects.nonNull(count) && count > 0;
     }
 
+    public String getChatTableName(Long groupId, Long selfId) {
+        if (Objects.nonNull(groupId)) {
+            return DataBaseConst.T_CHAT_RECORD_GROUP_PREFIX + groupId;
+        }
+        if (Objects.nonNull(selfId)) {
+            return DataBaseConst.T_CHAT_RECORD_PRIVATE_PREFIX + selfId;
+        }
+        return null;
+    }
 
     public int createChatRecordPrivateIfNotExists(Long selfId){
         if (Objects.isNull(selfId)) {
             return 0;
         }
 
-        String tableName = DataBaseConst.T_CHAT_RECORD_PRIVATE_PREFIX + selfId;
+        String tableName = this.getChatTableName(null, selfId);
         if(checkTableExists(tableName)){
             return 0;
         }
@@ -176,7 +188,7 @@ public class SqliteDatabaseService{
             return 0;
         }
 
-        String tableName = DataBaseConst.T_CHAT_RECORD_GROUP_PREFIX + groupId;
+        String tableName = this.getChatTableName(groupId, null);
         if(checkTableExists(tableName)){
             return 0;
         }

@@ -1,15 +1,20 @@
 package com.haruhi.botServer.service;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.haruhi.botServer.constant.DataBaseConst;
+import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.Sender;
 import com.haruhi.botServer.entity.ChatRecordExtendV2;
 import com.haruhi.botServer.entity.ChatRecordGroup;
 import com.haruhi.botServer.entity.ChatRecordPrivate;
+import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.mapper.ChatRecordGroupMapper;
 import com.haruhi.botServer.mapper.ChatRecordPrivateMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
+import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -106,6 +111,41 @@ public class ChatRecordService implements CommandLineRunner {
         }else{
             return DateTimeUtil.dateTimeFormat(time, DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
         }
+    }
+
+    public PageInfo search(ChatRecordQueryReq request, boolean page) {
+        if (MessageTypeEnum.group.getType().equals(request.getMessageType())) {
+            String chatTableName = sqliteDatabaseService.getChatTableName(request.getGroupId(), null);
+            boolean b = sqliteDatabaseService.checkTableExists(chatTableName);
+            if (!b){
+                throw new BusinessException("Table不存在："+chatTableName);
+            }
+
+            return this.groupSearch(request, chatTableName, page);
+        }
+        if (MessageTypeEnum.privat.getType().equals(request.getMessageType())) {
+            String chatTableName = sqliteDatabaseService.getChatTableName(null, request.getSelfId());
+            boolean b = sqliteDatabaseService.checkTableExists(chatTableName);
+            if (!b){
+                throw new BusinessException("Table不存在："+chatTableName);
+            }
+            return this.privateSearch(request, chatTableName, page);
+        }
+        throw new BusinessException("查询消息错误："+request.getMessageType());
+    }
+
+    public PageInfo groupSearch(ChatRecordQueryReq request, String tableName, boolean page) {
+        PageInfo<ChatRecordGroup> pageInfo = PageHelper.startPage(request.getCurrentPage(),request.getPageSize(), page).doSelectPageInfo(() -> {
+            chatRecordGroupMapper.selectList(tableName, request);
+        });
+        return pageInfo;
+    }
+
+    public PageInfo privateSearch(ChatRecordQueryReq request, String tableName, boolean page) {
+        PageInfo<ChatRecordGroup> pageInfo = PageHelper.startPage(request.getCurrentPage(),request.getPageSize(), page).doSelectPageInfo(() -> {
+            chatRecordPrivateMapper.selectList(tableName, request);
+        });
+        return pageInfo;
     }
 
 }
