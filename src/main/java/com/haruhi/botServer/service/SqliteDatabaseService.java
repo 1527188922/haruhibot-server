@@ -175,7 +175,7 @@ public class SqliteDatabaseService{
                 }
 
                 sqliteDatabaseInitMapper.createChatRecordPrivate(tableName);
-                sqliteDatabaseInitMapper.createIndexEnhance(tableName, "user_time_IDX","user_id,time",false);
+                sqliteDatabaseInitMapper.createIndexEnhance(tableName, "idx_user_time_"+selfId,"user_id,time",false);
                 return 1;
             }
         }finally {
@@ -201,7 +201,7 @@ public class SqliteDatabaseService{
                 }
 
                 sqliteDatabaseInitMapper.createChatRecordGroup(tableName);
-                sqliteDatabaseInitMapper.createIndexEnhance(tableName, "user_time_IDX","user_id,time",false);
+                sqliteDatabaseInitMapper.createIndexEnhance(tableName, "idx_user_time_"+groupId,"user_id,time",false);
                 return 1;
             }
         }finally {
