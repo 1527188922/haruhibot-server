@@ -20,6 +20,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class ChatRecordService implements CommandLineRunner {
@@ -113,7 +114,7 @@ public class ChatRecordService implements CommandLineRunner {
         }
     }
 
-    public PageInfo search(ChatRecordQueryReq request, boolean page) {
+    public PageInfo search(ChatRecordQueryReq request, boolean page, boolean needCount) {
         if (MessageTypeEnum.group.getType().equals(request.getMessageType())) {
             String chatTableName = sqliteDatabaseService.getChatTableName(request.getGroupId(), null);
             boolean b = sqliteDatabaseService.checkTableExists(chatTableName);
@@ -121,7 +122,7 @@ public class ChatRecordService implements CommandLineRunner {
                 throw new BusinessException("Table不存在："+chatTableName);
             }
 
-            return this.groupSearch(request, chatTableName, page);
+            return this.groupSearch(request, chatTableName, page, needCount);
         }
         if (MessageTypeEnum.privat.getType().equals(request.getMessageType())) {
             String chatTableName = sqliteDatabaseService.getChatTableName(null, request.getSelfId());
@@ -129,23 +130,29 @@ public class ChatRecordService implements CommandLineRunner {
             if (!b){
                 throw new BusinessException("Table不存在："+chatTableName);
             }
-            return this.privateSearch(request, chatTableName, page);
+            return this.privateSearch(request, chatTableName, page, needCount);
         }
         throw new BusinessException("查询消息错误："+request.getMessageType());
     }
 
-    public PageInfo groupSearch(ChatRecordQueryReq request, String tableName, boolean page) {
-        PageInfo<ChatRecordGroup> pageInfo = PageHelper.startPage(request.getCurrentPage(),request.getPageSize(), page).doSelectPageInfo(() -> {
-            chatRecordGroupMapper.selectList(tableName, request);
-        });
-        return pageInfo;
+    public PageInfo groupSearch(ChatRecordQueryReq request, String tableName, boolean page, boolean needCount) {
+        if (page) {
+            return PageHelper.startPage(request.getCurrentPage(),request.getPageSize(), needCount).<ChatRecordGroup>doSelectPageInfo(() -> {
+                chatRecordGroupMapper.selectList(tableName, request);
+            });
+        }
+        List<ChatRecordGroup> chatRecordGroups = chatRecordGroupMapper.selectList(tableName, request);
+        return new PageInfo<>(chatRecordGroups);
     }
 
-    public PageInfo privateSearch(ChatRecordQueryReq request, String tableName, boolean page) {
-        PageInfo<ChatRecordGroup> pageInfo = PageHelper.startPage(request.getCurrentPage(),request.getPageSize(), page).doSelectPageInfo(() -> {
-            chatRecordPrivateMapper.selectList(tableName, request);
-        });
-        return pageInfo;
+    public PageInfo privateSearch(ChatRecordQueryReq request, String tableName, boolean page, boolean needCount) {
+        if (page) {
+            return PageHelper.startPage(request.getCurrentPage(),request.getPageSize(), needCount).doSelectPageInfo(() -> {
+                chatRecordPrivateMapper.selectList(tableName, request);
+            });
+        }
+        List<ChatRecordPrivate> chatRecordPrivates = chatRecordPrivateMapper.selectList(tableName, request);
+        return new PageInfo<>(chatRecordPrivates);
     }
 
 }

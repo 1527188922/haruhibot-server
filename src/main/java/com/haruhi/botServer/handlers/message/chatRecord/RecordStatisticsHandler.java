@@ -1,15 +1,19 @@
 package com.haruhi.botServer.handlers.message.chatRecord;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.github.pagehelper.PageInfo;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.*;
-import com.haruhi.botServer.entity.ChatRecordSqlite;
+import com.haruhi.botServer.entity.ChatRecordGroup;
+import com.haruhi.botServer.entity.vo.ChatRecordVo;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.mapper.ChatRecordSqliteMapper;
+import com.haruhi.botServer.mapper.ChatRecordGroupMapper;
+import com.haruhi.botServer.service.ChatRecordService;
+import com.haruhi.botServer.service.SqliteDatabaseService;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,7 +32,11 @@ import java.util.Objects;
 public class RecordStatisticsHandler implements IGroupMessageEvent {
     
     @Autowired
-    private ChatRecordSqliteMapper chatRecordSqliteMapper;
+    private ChatRecordService chatRecordService;
+    @Autowired
+    private ChatRecordGroupMapper chatRecordGroupMapper;
+    @Autowired
+    private SqliteDatabaseService sqliteDatabaseService;
 
     @Override
     public int weight() {
@@ -49,10 +57,11 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
+                String chatTableName = sqliteDatabaseService.getChatTableName(message.getGroupId(), null);
                 long l = System.currentTimeMillis();
-                List<ChatRecordSqlite> chatRecords = chatRecordSqliteMapper.groupRecordCounting(message.getGroupId(), message.getSelfId());
+                List<ChatRecordVo> recordVoList = chatRecordGroupMapper.chatStats(chatTableName, message.getSelfId());
                 log.info("聊天记录分组执行sql cost:{}",System.currentTimeMillis() - l);
-                if(CollectionUtils.isEmpty(chatRecords)){
+                if(CollectionUtils.isEmpty(recordVoList)){
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                             MessageHolder.instanceText("暂无聊天记录"));
                     return;
@@ -66,24 +75,23 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 //                    groupMemberList.removeIf(next -> longs.contains(next.getUserId()));
 //                }
 
-                List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(chatRecords.size() + 1);
+                List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(recordVoList.size() + 1);
 
-                ChatRecordSqlite chatRecord = chatRecordSqliteMapper.selectOne(new LambdaQueryWrapper<ChatRecordSqlite>()
-                        .select(ChatRecordSqlite::getTime)
-                        .eq(ChatRecordSqlite::getGroupId, message.getGroupId())
-                        .eq(ChatRecordSqlite::getSelfId, message.getSelfId())
-                        .eq(ChatRecordSqlite::getMessageType, MessageTypeEnum.group.getType())
-                        .eq(ChatRecordSqlite::getDeleted, 0)
-                        .orderByAsc(ChatRecordSqlite::getTime)
-                        .last("LIMIT 1"));
-                if(chatRecord != null && chatRecord.getTime() != null){
+                ChatRecordQueryReq param = new ChatRecordQueryReq();
+                param.setMessageType(MessageTypeEnum.group.getType());
+                param.setGroupId(message.getGroupId());
+                param.setUserId(message.getUserId());
+                param.setPageSize(1);
+                param.setSort("asc");
+                PageInfo<ChatRecordGroup> pageInfo = chatRecordService.search(param, true, false);
+                if(pageInfo != null && !pageInfo.getList().isEmpty()){
                     ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
-                            MessageHolder.instanceText("从[" + chatRecord.getTime() + "]开始统计"));
+                            MessageHolder.instanceText("从[" + pageInfo.getList().getFirst().getTime() + "]开始统计"));
                     forwardMsgItems.add(instance);
                 }
 
-                for (int i = 0; i < chatRecords.size(); i++) {
-                    ChatRecordSqlite item = chatRecords.get(i);
+                for (int i = 0; i < recordVoList.size(); i++) {
+                    ChatRecordVo item = recordVoList.get(i);
                     String name = getName(item, groupMemberList);
                     String msg =(i + 1) + "\n"
                             + name + "(" +item.getUserId() + ")"
@@ -113,7 +121,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
         return true;
     }
 
-    private String getName(ChatRecordSqlite e, List<GroupMember> groupMemberList){
+    private String getName(ChatRecordVo e, List<GroupMember> groupMemberList){
         if(Objects.isNull(e.getUserId()) || e.getUserId() == 0){
             return "匿名";
         }
@@ -136,15 +144,14 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
             return nickName;
         }
 
-        ChatRecordSqlite chatRecord = chatRecordSqliteMapper.selectOne(new LambdaQueryWrapper<ChatRecordSqlite>()
-                .select(ChatRecordSqlite::getCard,ChatRecordSqlite::getNickname)
-                .eq(ChatRecordSqlite::getUserId,e.getUserId())
-                .eq(ChatRecordSqlite::getGroupId, e.getGroupId())
-                .eq(ChatRecordSqlite::getMessageType, MessageTypeEnum.group.getType())
-                .eq(ChatRecordSqlite::getDeleted, 0)
-                .orderByDesc(ChatRecordSqlite::getTime)
-                .last("LIMIT 1"));
-        if(chatRecord != null){
+        ChatRecordQueryReq param = new ChatRecordQueryReq();
+        param.setMessageType(MessageTypeEnum.group.getType());
+        param.setGroupId(e.getGroupId());
+        param.setUserId(e.getUserId());
+        param.setPageSize(1);
+        PageInfo<ChatRecordGroup> pageInfo = chatRecordService.search(param, true, false);
+        if (!pageInfo.getList().isEmpty()) {
+            ChatRecordGroup chatRecord = pageInfo.getList().getFirst();
             return StringUtils.isNotBlank(chatRecord.getCard()) ? chatRecord.getCard()
                     : StringUtils.isNotBlank(chatRecord.getNickname()) ? chatRecord.getNickname() : "noname";
         }

@@ -5,6 +5,6 @@ import lombok.Data;
 @Data
 public class PageReq {
 
-    private int currentPage;
+    private int currentPage = 1;
     private int pageSize = 10;
 }

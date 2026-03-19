@@ -28,5 +28,14 @@
         order by `time` ${param.sort}
     </select>
 
+    <select id="chatStats" resultType="com.haruhi.botServer.entity.vo.ChatRecordVo">
+        SELECT
+            user_id,
+            count(1) as total
+        FROM ${tableName}
+        WHERE self_id = #{selfId}
+        group by user_id
+        ORDER BY total desc
+    </select>
 
 </mapper>

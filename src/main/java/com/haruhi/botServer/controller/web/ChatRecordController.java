@@ -52,7 +52,7 @@ public class ChatRecordController {
         if (MessageTypeEnum.privat.getType().equals(request.getMessageType()) && Objects.isNull(request.getSelfId())) {
             return HttpResp.fail("参数错误",null);
         }
-        return HttpResp.success(chatRecordService.search(request, true));
+        return HttpResp.success(chatRecordService.search(request, true, true));
     }
 
     @PostMapping("/extend")
