@@ -137,14 +137,26 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_FRIEND,"nickname");
     }
 
+    private static final ConcurrentHashMap<String,Boolean> tableExistsCache = new ConcurrentHashMap<>();
+
     public boolean checkTableExists(String tableName) {
         if (StringUtils.isBlank(tableName)) {
             return false;
         }
+        Boolean b = tableExistsCache.get(tableName);
+        if (b != null) {
+            return b;
+        }
         Long count = sqliteSchemaMapper.selectCount(new LambdaQueryWrapper<SqliteSchema>()
                 .eq(SqliteSchema::getType, DatabaseInfoNode.TYPE_TABLE)
                 .eq(SqliteSchema::getTblName, tableName));
-        return Objects.nonNull(count) && count > 0;
+
+        boolean b1 = Objects.nonNull(count) && count > 0;
+        if (b1) {
+            tableExistsCache.put(tableName, true);
+        }
+        return b1;
+
     }
 
     public String getChatTableName(Long groupId, Long selfId) {

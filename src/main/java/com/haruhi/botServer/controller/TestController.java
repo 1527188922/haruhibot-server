@@ -36,11 +36,14 @@ public class TestController {
     public HttpResp<String> migrateData(@RequestParam("type") String messageType,
                                         @RequestParam(value = "groupId",required = false) Long groupId,
                                         @RequestParam(value = "selfId",required = false) Long selfId){
+        Long resid = null;
         if (MessageTypeEnum.group.getType().equals(messageType)) {
             chatRecordService.migrateGroupData(groupId);
+            resid = groupId;
         }else if (MessageTypeEnum.privat.getType().equals(messageType)) {
             chatRecordService.migratePrivateData(selfId);
+            resid = selfId;
         }
-        return HttpResp.success("migrated");
+        return HttpResp.success(messageType+":"+resid,"migrated");
     }
 }
