@@ -3,6 +3,8 @@ package com.haruhi.botServer.service;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
@@ -14,12 +16,15 @@ import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.qqclient.Sender;
+import com.haruhi.botServer.entity.ChatRecordExtendSqlite;
 import com.haruhi.botServer.entity.ChatRecordExtendV2;
 import com.haruhi.botServer.entity.ChatRecordGroup;
 import com.haruhi.botServer.entity.ChatRecordPrivate;
+import com.haruhi.botServer.entity.ChatRecordSqlite;
 import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.handlers.message.chatRecord.FindGroupChatHandler;
 import com.haruhi.botServer.handlers.message.chatRecord.GroupWordCloudHandler;
+import com.haruhi.botServer.mapper.ChatRecordExtendSqliteMapper;
 import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.mapper.ChatRecordGroupMapper;
 import com.haruhi.botServer.mapper.ChatRecordPrivateMapper;
@@ -35,6 +40,7 @@ import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -66,6 +72,12 @@ public class ChatRecordService implements CommandLineRunner {
     private ChatRecordExtendV2Mapper chatRecordExtendV2Mapper;
     @Autowired
     private AbstractWebResourceConfig abstractPathConfig;
+
+
+    @Autowired
+    private ChatRecordSqliteService chatRecordSqliteService;
+    @Autowired
+    private ChatRecordExtendSqliteMapper chatRecordExtendSqliteMapper;
 
     @Override
     public void run(String... args) throws Exception {
@@ -436,6 +448,100 @@ public class ChatRecordService implements CommandLineRunner {
                 break;
         }
         return res;
+    }
+    public void migratePrivateData(Long selfId){
+        int pageSize = 1000;
+        int currentPage = 1;
+        while (true){
+            Page<ChatRecordSqlite> page = chatRecordSqliteService.page(new Page<>(currentPage, pageSize), new LambdaQueryWrapper<ChatRecordSqlite>()
+                    .eq(ChatRecordSqlite::getMessageType, MessageTypeEnum.privat.getType())
+                    .eq(ChatRecordSqlite::getSelfId, selfId));
+            if (CollectionUtils.isEmpty(page.getRecords())) {
+                log.info("执行完成：{}",selfId);
+                break;
+            }
+
+            List<ChatRecordSqlite> records = page.getRecords();
+            List<MutablePair<ChatRecordPrivate, Long>> list = records.stream().map(e -> {
+                ChatRecordPrivate chatRecordPrivate = new ChatRecordPrivate();
+                chatRecordPrivate.setTime(e.getTime());
+                chatRecordPrivate.setContent(e.getContent());
+                chatRecordPrivate.setUserId(e.getUserId());
+                chatRecordPrivate.setNickname(e.getNickname());
+                chatRecordPrivate.setDeleted(e.getDeleted());
+                chatRecordPrivate.setMessageId(e.getMessageId());
+                return MutablePair.of(chatRecordPrivate, e.getId());
+            }).toList();
+            List<Long> list1 = records.stream().map(ChatRecordSqlite::getId).toList();
+            List<ChatRecordExtendSqlite> chatRecordExtendSqlites = chatRecordExtendSqliteMapper.selectList(new LambdaQueryWrapper<ChatRecordExtendSqlite>()
+                    .in(ChatRecordExtendSqlite::getChatRecordId, list1));
+
+            for (MutablePair<ChatRecordPrivate, Long> mutablePair : list) {
+                Long oldId = mutablePair.getRight();
+                ChatRecordPrivate left = mutablePair.getLeft();
+
+                String chatTableName = sqliteDatabaseService.getChatTableName(null, selfId);
+                chatRecordPrivateMapper.insert(chatTableName, left);
+
+                chatRecordExtendSqlites.stream().filter(ex -> oldId.equals(ex.getChatRecordId())).findFirst().ifPresent(ex -> {
+                    ChatRecordExtendV2 recordExtendV2 = new ChatRecordExtendV2();
+                    recordExtendV2.setChatRecordId(left.getId());
+                    recordExtendV2.setUserId(left.getUserId());
+                    recordExtendV2.setRawWsMessage(ex.getRawWsMessage());
+                    chatRecordExtendV2Mapper.insert(recordExtendV2);
+                });
+            }
+            currentPage++;
+        }
+    }
+
+    public void migrateGroupData(Long groupId){
+        int pageSize = 1000;
+        int currentPage = 1;
+        while (true){
+            Page<ChatRecordSqlite> page = chatRecordSqliteService.page(new Page<>(currentPage, pageSize), new LambdaQueryWrapper<ChatRecordSqlite>()
+                    .eq(ChatRecordSqlite::getGroupId, groupId));
+            if (CollectionUtils.isEmpty(page.getRecords())) {
+                log.info("执行完成：{}",groupId);
+                break;
+            }
+
+            List<ChatRecordSqlite> records = page.getRecords();
+            List<MutablePair<ChatRecordGroup, Long>> list = records.stream().map(e -> {
+                ChatRecordGroup chatRecordGroup = new ChatRecordGroup();
+                chatRecordGroup.setTime(e.getTime());
+                chatRecordGroup.setContent(e.getContent());
+                chatRecordGroup.setUserId(e.getUserId());
+                chatRecordGroup.setSelfId(e.getSelfId());
+                chatRecordGroup.setCard(e.getCard());
+                chatRecordGroup.setNickname(e.getNickname());
+                chatRecordGroup.setDeleted(e.getDeleted());
+                chatRecordGroup.setMessageId(e.getMessageId());
+                return MutablePair.of(chatRecordGroup, e.getId());
+            }).toList();
+            List<Long> list1 = records.stream().map(ChatRecordSqlite::getId).toList();
+            List<ChatRecordExtendSqlite> chatRecordExtendSqlites = chatRecordExtendSqliteMapper.selectList(new LambdaQueryWrapper<ChatRecordExtendSqlite>()
+                    .in(ChatRecordExtendSqlite::getChatRecordId, list1));
+
+            for (MutablePair<ChatRecordGroup, Long> mutablePair : list) {
+                Long oldId = mutablePair.getRight();
+                ChatRecordGroup left = mutablePair.getLeft();
+
+                String chatTableName = sqliteDatabaseService.getChatTableName(groupId, null);
+                chatRecordGroupMapper.insert(chatTableName, left);
+
+                chatRecordExtendSqlites.stream().filter(ex -> oldId.equals(ex.getChatRecordId())).findFirst().ifPresent(ex -> {
+                    ChatRecordExtendV2 recordExtendV2 = new ChatRecordExtendV2();
+                    recordExtendV2.setChatRecordId(left.getId());
+                    recordExtendV2.setUserId(left.getUserId());
+                    recordExtendV2.setGroupId(groupId);
+                    recordExtendV2.setRawWsMessage(ex.getRawWsMessage());
+                    chatRecordExtendV2Mapper.insert(recordExtendV2);
+                });
+            }
+
+            currentPage++;
+        }
     }
 
 
