@@ -24,8 +24,14 @@
                     #{userId}
                 </foreach>
             </if>
-            <if test='param.startTime != null and param.startTime != "" and param.endTime != null and param.endTime != ""'>
-                and `time` between #{param.startTime} and #{param.endTime}
+            <if test="param.selfId != null">
+                and self_id = #{param.selfId}
+            </if>
+            <if test='param.startTime != null and param.startTime != ""'>
+                and `time` &gt;= #{param.startTime}
+            </if>
+            <if test='param.endTime != null and param.endTime != ""'>
+                and `time` &lt;= #{param.endTime}
             </if>
             <if test='param.content != null and param.content != ""'>
                 and content LIKE CONCAT('%',#{param.content},'%')

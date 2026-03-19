@@ -5,25 +5,32 @@ import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.BaseResp;
+import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.qqclient.Sender;
 import com.haruhi.botServer.entity.ChatRecordExtendV2;
 import com.haruhi.botServer.entity.ChatRecordGroup;
 import com.haruhi.botServer.entity.ChatRecordPrivate;
 import com.haruhi.botServer.exception.BusinessException;
+import com.haruhi.botServer.handlers.message.chatRecord.FindGroupChatHandler;
 import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.mapper.ChatRecordGroupMapper;
 import com.haruhi.botServer.mapper.ChatRecordPrivateMapper;
+import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
+import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -32,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -242,6 +250,89 @@ public class ChatRecordService implements CommandLineRunner {
             exportBody.setCreateTime(record.getTime());
             return exportBody;
         }).toList();
+    }
+
+
+    public void sendGroupChatList(Bot bot, Message message, FindGroupChatHandler.Param param) {
+        String startTime = DateTimeUtil.dateTimeFormat(limitDate(param), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+
+        ChatRecordQueryReq req = new ChatRecordQueryReq();
+        req.setMessageType(MessageTypeEnum.group.getType());
+        req.setGroupId(message.getGroupId());
+        req.setSelfId(message.getSelfId());
+        req.setStartTime(startTime);
+        req.setSort("asc");
+
+        List<String> userIds = CommonUtil.getCqParams(message.getRawMessage(), CqCodeTypeEnum.at, "qq");
+        if(!CollectionUtils.isEmpty(userIds)){
+            req.setUserIds(userIds.stream().map(Long::parseLong).toList());
+        }
+//        if(FindGroupChatHandler.MessageType.IMAGE.equals(param.getMessageType())){
+//            // 仅查询图片类型
+//            queryWrapper.like(ChatRecordSqlite::getContent,"[CQ:image").like(ChatRecordSqlite::getContent,"subType=0");
+//        }else if(FindGroupChatHandler.MessageType.TXT.equals(param.getMessageType())){
+//            queryWrapper.notLike(ChatRecordSqlite::getContent,"[CQ:");
+//        }
+        // 升序
+        PageInfo<ChatRecordGroup> pageInfo = this.search(req, false, false);
+        List<ChatRecordGroup> chatList = pageInfo.getList();
+        if(CollectionUtils.isEmpty(chatList)){
+            bot.sendGroupMessage(message.getGroupId(), "该条件下没有聊天记录。",true);
+            return;
+        }
+        int limit = 80;
+        if(chatList.size() > limit){
+            // 记录条数多于80张,分开发送
+            List<List<ChatRecordGroup>> lists = CommonUtil.averageAssignList(chatList, limit);
+            lists.forEach(list -> {
+                partSend(bot,list,message);
+            });
+        }else{
+            partSend(bot,chatList,message);
+        }
+    }
+    private void partSend(Bot bot, List<ChatRecordGroup> chatList, Message message){
+        List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(chatList.size());
+        for (ChatRecordGroup e : chatList) {
+            ForwardMsgItem instance = ForwardMsgItem.instance(e.getUserId(), getName(e), MessageHolder.instanceText(e.getContent()));
+            forwardMsgItems.add(instance);
+        }
+        bot.sendForwardMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),forwardMsgItems);
+
+    }
+    private String getName(ChatRecordGroup e){
+        try {
+            if(Strings.isNotBlank(e.getCard().trim())){
+                return e.getCard();
+            }
+            if(Strings.isNotBlank(e.getNickname().trim())){
+                return e.getNickname();
+            }
+        }catch (Exception ex){
+        }
+        return "noname";
+    }
+    private Date limitDate(FindGroupChatHandler.Param param){
+        Date res = null;
+        Date current = new Date();
+        switch (param.getUnit()){
+            case DAY:
+                if (param.getNum() > 15) {
+                    param.setNum(15);
+                }
+                res = DateTimeUtil.addDay(current,-(param.getNum()));
+                break;
+            case HOUR:
+                int limit = 15 * 24;
+                if (param.getNum() > limit) {
+                    param.setNum(limit);
+                }
+                res = DateTimeUtil.addHour(current,-(param.getNum()));
+                break;
+            default:
+                break;
+        }
+        return res;
     }
 
 }

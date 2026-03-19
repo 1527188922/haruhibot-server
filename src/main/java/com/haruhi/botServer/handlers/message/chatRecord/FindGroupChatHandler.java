@@ -5,7 +5,7 @@ import com.haruhi.botServer.constant.TimeUnitEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.service.ChatRecordSqliteService;
+import com.haruhi.botServer.service.ChatRecordService;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.AllArgsConstructor;
@@ -33,7 +33,7 @@ public class FindGroupChatHandler implements IGroupMessageEvent {
     }
 
     @Autowired
-    private ChatRecordSqliteService chatRecordSqliteService;
+    private ChatRecordService chatRecordService;
 
     @Override
     public boolean onGroup(Bot bot, final Message message) {
@@ -43,7 +43,7 @@ public class FindGroupChatHandler implements IGroupMessageEvent {
         }
 
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            chatRecordSqliteService.sendGroupChatList(bot,message,param);
+            chatRecordService.sendGroupChatList(bot,message,param);
         });
         return true;
     }
