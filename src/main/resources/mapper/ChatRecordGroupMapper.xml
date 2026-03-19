@@ -18,6 +18,12 @@
             <if test="param.userId != null">
                 and user_id = #{param.userId}
             </if>
+            <if test="param.userIds != null and param.userIds.size()>0">
+                and user_id in
+                <foreach collection="param.userIds" open="(" close=")" index="index" item="userId" separator=",">
+                    #{userId}
+                </foreach>
+            </if>
             <if test='param.startTime != null and param.startTime != "" and param.endTime != null and param.endTime != ""'>
                 and `time` between #{param.startTime} and #{param.endTime}
             </if>

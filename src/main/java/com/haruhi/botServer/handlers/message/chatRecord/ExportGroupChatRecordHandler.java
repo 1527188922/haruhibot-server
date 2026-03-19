@@ -9,7 +9,7 @@ import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.service.ChatRecordSqliteService;
+import com.haruhi.botServer.service.ChatRecordService;
 import com.haruhi.botServer.utils.*;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
     }
     
     @Autowired
-    private ChatRecordSqliteService chatRecordSqliteService;
+    private ChatRecordService chatRecordService;
     @Autowired
     private AbstractWebResourceConfig webResourceConfig;
     
@@ -73,7 +73,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageEvent {
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
                 List<String> atQQs = message.getAtQQs();
-                BaseResp<File> baseResp = chatRecordSqliteService.exportGroupChatRecord(message.getGroupId(), atQQs);
+                BaseResp<File> baseResp = chatRecordService.exportGroupChatRecord(message.getGroupId(), atQQs);
                 if (!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())) {
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(baseResp.getMsg()));
                     return;

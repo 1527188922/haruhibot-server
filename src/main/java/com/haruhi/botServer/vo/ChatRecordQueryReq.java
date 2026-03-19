@@ -2,12 +2,15 @@ package com.haruhi.botServer.vo;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class ChatRecordQueryReq extends PageReq {
 
     private String content;
     private String messageType;
     private Long userId;
+    private List<Long> userIds;
     private Long groupId;
     private String nickName;
     private String card;
