@@ -4,7 +4,6 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
@@ -16,11 +15,8 @@ import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.qqclient.Sender;
-import com.haruhi.botServer.entity.ChatRecordExtendSqlite;
-import com.haruhi.botServer.entity.ChatRecordExtendV2;
-import com.haruhi.botServer.entity.ChatRecordGroup;
-import com.haruhi.botServer.entity.ChatRecordPrivate;
-import com.haruhi.botServer.entity.ChatRecordSqlite;
+import com.haruhi.botServer.entity.*;
+import com.haruhi.botServer.entity.vo.ChatRecordVo;
 import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.handlers.message.chatRecord.FindGroupChatHandler;
 import com.haruhi.botServer.handlers.message.chatRecord.GroupWordCloudHandler;
@@ -42,6 +38,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -51,12 +48,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -78,6 +70,8 @@ public class ChatRecordService implements CommandLineRunner {
     private ChatRecordSqliteService chatRecordSqliteService;
     @Autowired
     private ChatRecordExtendSqliteMapper chatRecordExtendSqliteMapper;
+    @Autowired
+    private GroupInfoSqliteService groupInfoSqliteService;
 
     @Override
     public void run(String... args) throws Exception {
@@ -159,6 +153,52 @@ public class ChatRecordService implements CommandLineRunner {
         }
     }
 
+    public PageInfo groupChat2Vo(PageInfo pageInfo, Long groupId){
+        List<ChatRecordGroup> records = pageInfo.getList();
+        if (CollectionUtils.isEmpty(records)) {
+            return pageInfo;
+        }
+
+        Map<Long, List<GroupInfoSqlite>> groupMap = groupInfoSqliteService.selectMapByGroupIds(Collections.singletonList(groupId));
+
+        List<ChatRecordVo> list = records.stream().map(r -> {
+            ChatRecordVo e = new ChatRecordVo();
+            BeanUtils.copyProperties(r, e);
+
+            e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(), false));
+            e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(e.getSelfId(), false));
+            e.setGroupId(groupId);
+            e.setMessageType(MessageTypeEnum.group.getType());
+            List<GroupInfoSqlite> groupInfo = groupMap.get(groupId);
+            if (groupInfo != null) {
+                e.setGroupName(groupInfo.getFirst().getGroupName());
+            }
+            return e;
+        }).toList();
+        pageInfo.setList(list);
+        return pageInfo;
+    }
+
+    public PageInfo privateChat2Vo(PageInfo pageInfo, Long selfId){
+        List<ChatRecordPrivate> records = pageInfo.getList();
+        if (CollectionUtils.isEmpty(records)) {
+            return pageInfo;
+        }
+
+        List<ChatRecordVo> list = records.stream().map(r -> {
+            ChatRecordVo e = new ChatRecordVo();
+            BeanUtils.copyProperties(r, e);
+
+            e.setSelfId(selfId);
+            e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(), false));
+            e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(selfId, false));
+            e.setMessageType(MessageTypeEnum.privat.getType());
+            return e;
+        }).toList();
+        pageInfo.setList(list);
+        return pageInfo;
+    }
+
     public PageInfo search(ChatRecordQueryReq request, boolean page, boolean needCount) {
         if (MessageTypeEnum.group.getType().equals(request.getMessageType())) {
             String chatTableName = sqliteDatabaseService.getChatTableName(request.getGroupId(), null);
@@ -167,7 +207,7 @@ public class ChatRecordService implements CommandLineRunner {
                 throw new BusinessException("Table不存在："+chatTableName);
             }
 
-            return this.groupSearch(request, chatTableName, page, needCount);
+            return this.groupChat2Vo(this.groupSearch(request, chatTableName, page, needCount), request.getGroupId());
         }
         if (MessageTypeEnum.privat.getType().equals(request.getMessageType())) {
             String chatTableName = sqliteDatabaseService.getChatTableName(null, request.getSelfId());
@@ -175,7 +215,7 @@ public class ChatRecordService implements CommandLineRunner {
             if (!b){
                 throw new BusinessException("Table不存在："+chatTableName);
             }
-            return this.privateSearch(request, chatTableName, page, needCount);
+            return this.privateChat2Vo(this.privateSearch(request, chatTableName, page, needCount), request.getSelfId());
         }
         throw new BusinessException("查询消息错误："+request.getMessageType());
     }

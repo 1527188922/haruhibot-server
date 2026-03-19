@@ -3,31 +3,33 @@
     <basic-container>
       <el-row>
         <el-form :model="queryFormObj" label-width="70px" inline ref="queryForm" size="small">
-          <el-form-item label="消息内容" prop="content">
-            <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
-          </el-form-item>
-          <el-form-item label="发送人" prop="userId">
-            <number-input v-model.trim="queryFormObj.userId" class="form-input" maxlength="20" clearable
-                          placeholder="消息发送人QQ"></number-input>
-          </el-form-item>
-          <el-form-item label="群号" prop="groupId">
-            <number-input v-model.trim="queryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>
-          </el-form-item>
           <el-form-item label="消息类型" prop="messageType">
-            <el-select v-model="queryFormObj.messageType" class="form-input" clearable>
+            <el-select v-model="queryFormObj.messageType" class="form-input" >
               <el-option v-for="(value,key) in typeMap" :key="key" :value="key" :label="value">
                 <span :class="key === 'private' ? 'danger-text' : ''">{{ value }}</span>
               </el-option>
             </el-select>
           </el-form-item>
-          <el-form-item label="QQ昵称" prop="nickName">
-            <el-input v-model="queryFormObj.nickName" class="form-input" maxlength="30" clearable
-                      placeholder="消息发送人QQ昵称"></el-input>
+          <el-form-item label="群号" prop="groupId">
+            <number-input v-model.trim="queryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>
           </el-form-item>
-          <el-form-item label="群内昵称" prop="card">
-            <el-input v-model="queryFormObj.card" class="form-input" maxlength="30" clearable
-                      placeholder="消息发送人群内昵称"></el-input>
+          <el-form-item label="发送人" prop="userId">
+            <number-input v-model.trim="queryFormObj.userId" class="form-input" maxlength="20" clearable
+                          placeholder="消息发送人QQ"></number-input>
           </el-form-item>
+          <el-form-item label="消息内容" prop="content">
+            <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
+          </el-form-item>
+          <el-form-item label="机器人" prop="selfId">
+            <el-input v-model="queryFormObj.selfId" class="form-input" maxlength="30" clearable
+                      placeholder="机器人QQ号"></el-input>
+          </el-form-item>
+
+<!--          <el-form-item label="QQ昵称" prop="nickName">-->
+<!--            <el-input v-model="queryFormObj.nickName" class="form-input" maxlength="30" clearable-->
+<!--                      placeholder="消息发送人QQ昵称"></el-input>-->
+<!--          </el-form-item>-->
+
         </el-form>
       </el-row>
       <el-row class="query-form-option-buts">
@@ -116,7 +118,7 @@
 <script>
 import ChatView from "@/components/dialog/chat-view";
 import numberInput from "@/components/input/numberInput.vue"
-import {search as searchApi,selectExtend} from "@/api/chat-record";
+import {search as searchApi, selectExtend, searchV2 as searchApiV2, selectExtendV2} from "@/api/chat-record";
 
 export default {
   name:'ChatRecord',
@@ -130,11 +132,11 @@ export default {
       exportLoading:false,
       queryFormObj:{
         content:'',
-        messageType:'',
+        messageType:'group',
         userId:'',
         groupId:'',
         nickName:'',
-        card:''
+        selfId:''
       },
       typeList:[{
         value:'private',
@@ -170,7 +172,10 @@ export default {
       this.selectTableData()
     },
     showRaw(row){
-      selectExtend(row).then(({data:{data}})=>{
+      selectExtendV2({
+        chatId:row.id,
+        userId:row.userId
+      }).then(({data:{data}})=>{
         this.$alert(data.rawWsMessage, {
           customClass:"raw-message-alert",
           confirmButtonText:'关闭'
@@ -199,12 +204,12 @@ export default {
     },
     selectTableData(){
       this.tableLoading = true
-      searchApi({
+      searchApiV2({
         ...this.queryFormObj,
         currentPage:this.pagination.currentPage,
         pageSize:this.pagination.pageSize
       }).then(({data:{data}})=>{
-        this.tableData = data.records || []
+        this.tableData = data.list || []
         this.pagination.total = data.total
       }).finally(()=>{
         this.tableLoading = false
