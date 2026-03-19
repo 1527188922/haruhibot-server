@@ -257,9 +257,9 @@ public class ChatRecordService implements CommandLineRunner {
                 .distinct()
                 .map(Long::parseLong)
                 .toList() : null);
-        PageInfo<ChatRecordGroup> pageInfo = this.search(param, false, false);
+        PageInfo<ChatRecordVo> pageInfo = this.search(param, false, false);
         long l4 = System.currentTimeMillis() - l;
-        List<ChatRecordGroup> list = pageInfo.getList();
+        List<ChatRecordVo> list = pageInfo.getList();
         log.info("查询聊天记录完成，耗时：{} 数量：{}",l4, list.size());
         if(CollectionUtils.isEmpty(list)){
             return BaseResp.fail("未查到聊天记录");
@@ -303,7 +303,7 @@ public class ChatRecordService implements CommandLineRunner {
         }
     }
 
-    private List<ChatRecordExportBody> convertObjToExcelData(List<ChatRecordGroup> chatRecordList){
+    private List<ChatRecordExportBody> convertObjToExcelData(List<ChatRecordVo> chatRecordList){
         return chatRecordList.stream().map(record -> {
             ChatRecordExportBody exportBody = new ChatRecordExportBody();
             exportBody.setCard(record.getCard());
@@ -337,8 +337,8 @@ public class ChatRecordService implements CommandLineRunner {
 //            queryWrapper.notLike(ChatRecordSqlite::getContent,"[CQ:");
 //        }
         // 升序
-        PageInfo<ChatRecordGroup> pageInfo = this.search(req, false, false);
-        List<ChatRecordGroup> chatList = pageInfo.getList();
+        PageInfo<ChatRecordVo> pageInfo = this.search(req, false, false);
+        List<ChatRecordVo> chatList = pageInfo.getList();
         if(CollectionUtils.isEmpty(chatList)){
             bot.sendGroupMessage(message.getGroupId(), "该条件下没有聊天记录。",true);
             return;
@@ -346,7 +346,7 @@ public class ChatRecordService implements CommandLineRunner {
         int limit = 80;
         if(chatList.size() > limit){
             // 记录条数多于80张,分开发送
-            List<List<ChatRecordGroup>> lists = CommonUtil.averageAssignList(chatList, limit);
+            List<List<ChatRecordVo>> lists = CommonUtil.averageAssignList(chatList, limit);
             lists.forEach(list -> {
                 partSend(bot,list,message);
             });
@@ -354,16 +354,16 @@ public class ChatRecordService implements CommandLineRunner {
             partSend(bot,chatList,message);
         }
     }
-    private void partSend(Bot bot, List<ChatRecordGroup> chatList, Message message){
+    private void partSend(Bot bot, List<ChatRecordVo> chatList, Message message){
         List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(chatList.size());
-        for (ChatRecordGroup e : chatList) {
+        for (ChatRecordVo e : chatList) {
             ForwardMsgItem instance = ForwardMsgItem.instance(e.getUserId(), getName(e), MessageHolder.instanceText(e.getContent()));
             forwardMsgItems.add(instance);
         }
         bot.sendForwardMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),forwardMsgItems);
 
     }
-    private String getName(ChatRecordGroup e){
+    private String getName(ChatRecordVo e){
         try {
             if(Strings.isNotBlank(e.getCard().trim())){
                 return e.getCard();

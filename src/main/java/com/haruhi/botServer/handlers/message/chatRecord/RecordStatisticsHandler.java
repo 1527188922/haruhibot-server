@@ -83,7 +83,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 param.setUserId(message.getUserId());
                 param.setPageSize(1);
                 param.setSort("asc");
-                PageInfo<ChatRecordGroup> pageInfo = chatRecordService.search(param, true, false);
+                PageInfo<ChatRecordVo> pageInfo = chatRecordService.search(param, true, false);
                 if(pageInfo != null && !pageInfo.getList().isEmpty()){
                     ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
                             MessageHolder.instanceText("从[" + pageInfo.getList().getFirst().getTime() + "]开始统计"));
@@ -149,9 +149,9 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
         param.setGroupId(e.getGroupId());
         param.setUserId(e.getUserId());
         param.setPageSize(1);
-        PageInfo<ChatRecordGroup> pageInfo = chatRecordService.search(param, true, false);
+        PageInfo<ChatRecordVo> pageInfo = chatRecordService.search(param, true, false);
         if (!pageInfo.getList().isEmpty()) {
-            ChatRecordGroup chatRecord = pageInfo.getList().getFirst();
+            ChatRecordVo chatRecord = pageInfo.getList().getFirst();
             return StringUtils.isNotBlank(chatRecord.getCard()) ? chatRecord.getCard()
                     : StringUtils.isNotBlank(chatRecord.getNickname()) ? chatRecord.getNickname() : "noname";
         }
