@@ -1,5 +1,6 @@
 package com.haruhi.botServer.service;
 
+import cn.hutool.core.text.StrFormatter;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelReader;
@@ -101,11 +102,10 @@ public class SqliteDatabaseService{
 
 
         sqliteDatabaseInitMapper.createWordStrip(DataBaseConst.T_WORD_STRIP);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"user_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"group_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"key_word");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"create_time");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_WORD_STRIP,"modify_time");
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_WORD_STRIP,
+                StrFormatter.format("{}_group_self_idx",DataBaseConst.T_WORD_STRIP),
+                "group_id,self_id",
+                false);
 
 
         sqliteDatabaseInitMapper.createPixiv(DataBaseConst.T_PIXIV);
@@ -114,27 +114,28 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_PIXIV,"tags");
 
         sqliteDatabaseInitMapper.createSendLikeRecord(DataBaseConst.T_SEND_LIKE_RECORD);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_SEND_LIKE_RECORD,"message_type");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_SEND_LIKE_RECORD,"self_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_SEND_LIKE_RECORD,"user_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_SEND_LIKE_RECORD,"send_time");
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_SEND_LIKE_RECORD,
+                StrFormatter.format("{}_user_send_time_idx",DataBaseConst.T_SEND_LIKE_RECORD),
+                "user_id,send_time",
+                false);
 
 
         sqliteDatabaseInitMapper.createDictionary(DataBaseConst.T_DICTIONARY);
         addColumnIfNotExists(DataBaseConst.T_DICTIONARY,"remark","TEXT",false,null);
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_DICTIONARY,"key");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_DICTIONARY,"content");
 
 
         sqliteDatabaseInitMapper.createGroupInfo(DataBaseConst.T_GROUP_INFO);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_GROUP_INFO,"self_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_GROUP_INFO,"group_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_GROUP_INFO,"group_name");
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_GROUP_INFO,
+                StrFormatter.format("{}_group_self_idx",DataBaseConst.T_GROUP_INFO),
+                "group_id,self_id",
+                false);
 
         sqliteDatabaseInitMapper.createFriend(DataBaseConst.T_FRIEND);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_FRIEND,"self_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_FRIEND,"user_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_FRIEND,"nickname");
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_FRIEND,
+                StrFormatter.format("{}_user_self_idx",DataBaseConst.T_FRIEND),
+                "user_id,self_id",
+                false);
     }
 
     private static final ConcurrentHashMap<String,Boolean> tableExistsCache = new ConcurrentHashMap<>();
