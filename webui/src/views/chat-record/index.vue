@@ -25,12 +25,24 @@
             </el-autocomplete>
           </el-form-item>
           <el-form-item label="发送人" prop="userId">
-            <number-input v-model.trim="queryFormObj.userId" class="form-input" maxlength="20" clearable
-                          placeholder="消息发送人QQ"></number-input>
+<!--            <number-input v-model.trim="queryFormObj.userId" class="form-input" maxlength="20" clearable-->
+<!--                          placeholder="消息发送人QQ"></number-input>-->
+            <el-autocomplete class="form-input" v-model="queryFormObj.userId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'userIds')}"
+                             clearable
+                             popper-class="adaptive-width-autocomplete-popper"
+                             placeholder="消息发送人QQ"
+                             :maxlength="30">
+            </el-autocomplete>
           </el-form-item>
           <el-form-item label="机器人" prop="selfId">
-            <el-input v-model="queryFormObj.selfId" class="form-input" maxlength="30" clearable
-                      placeholder="机器人QQ号"></el-input>
+<!--            <el-input v-model="queryFormObj.selfId" class="form-input" maxlength="30" clearable-->
+<!--                      placeholder="机器人QQ号"></el-input>-->
+            <el-autocomplete class="form-input" v-model="queryFormObj.selfId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'selfIds')}"
+                             clearable
+                             popper-class="adaptive-width-autocomplete-popper"
+                             placeholder="机器人QQ号"
+                             :maxlength="30">
+            </el-autocomplete>
           </el-form-item>
           <el-form-item label="消息内容" prop="content">
             <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
@@ -145,6 +157,7 @@ import ChatView from "@/components/dialog/chat-view";
 import numberInput from "@/components/input/numberInput.vue"
 import {searchV2 as searchApiV2, selectExtendV2} from "@/api/chat-record";
 import {codeNameList} from "@/api/group";
+import { getStore,setStore } from "@/util/store.js";
 export default {
   name:'ChatRecord',
   components:{
@@ -249,6 +262,7 @@ export default {
         background: true,
         total: 0
       },
+      hisKey:'search-chat-his'
     }
   },
   created() {
@@ -259,8 +273,19 @@ export default {
     this.selectGroupList()
   },
   methods:{
+    fetchUsers(v,cb,field){
+      let his = getStore({
+        name:this.hisKey
+      }) || {}
+      let users = his[field] ? his[field].map(s=>{return {value:s}}) : []
+      v = v ? v.toString() : ''
+      let results = v ? users.filter((restaurant) => {
+        return (restaurant.value.toLowerCase().indexOf(v.toLowerCase()) !== -1);
+      }) : users;
+      cb(results);
+    },
     fetchGroup(v,cb){
-      v = v.toString()
+      v = v ? v.toString() : ''
       let results = v ? this.groupList.filter((restaurant) => {
         return (restaurant.name.toLowerCase().indexOf(v.toLowerCase()) !== -1) || (restaurant.code.toString().toLowerCase().indexOf(v.toLowerCase()) !== -1);
       }) : this.groupList;
@@ -285,6 +310,27 @@ export default {
     search(){
       this.pagination.currentPage = 1
       this.selectTableData()
+      this.saveLocalStory()
+    },
+    saveLocalStory(){
+      let his = getStore({
+        name: this.hisKey
+      })
+      his = his ? his : {}
+      let userIds = new Set(his.userIds ? his.userIds : [])
+      if (this.queryFormObj.userId) {
+        userIds.add(this.queryFormObj.userId)
+      }
+      let selfIds = new Set(his.selfIds ? his.selfIds : [])
+      if (this.queryFormObj.selfId) {
+        selfIds.add(this.queryFormObj.selfId)
+      }
+      setStore({
+        name:this.hisKey,
+        content:{
+          userIds,selfIds
+        }
+      })
     },
     showRaw(row){
       selectExtendV2({
