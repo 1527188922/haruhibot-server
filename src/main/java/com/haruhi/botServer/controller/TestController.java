@@ -31,7 +31,6 @@ public class TestController {
         return HttpResp.success("pong",hashMap);
     }
 
-    @IgnoreAuthentication
     @PostMapping("/migrateData")
     public HttpResp<String> migrateData(@RequestParam("type") String messageType,
                                         @RequestParam(value = "groupId",required = false) Long groupId,

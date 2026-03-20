@@ -24,6 +24,7 @@ import com.haruhi.botServer.mapper.ChatRecordExtendSqliteMapper;
 import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.mapper.ChatRecordGroupMapper;
 import com.haruhi.botServer.mapper.ChatRecordPrivateMapper;
+import com.haruhi.botServer.mapper.ChatRecordSqliteMapper;
 import com.haruhi.botServer.thread.WordSlicesTask;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
@@ -40,7 +41,6 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class ChatRecordService implements CommandLineRunner {
+public class ChatRecordService{
     @Autowired
     private ChatRecordGroupMapper chatRecordGroupMapper;
     @Autowired
@@ -67,30 +67,12 @@ public class ChatRecordService implements CommandLineRunner {
 
 
     @Autowired
-    private ChatRecordSqliteService chatRecordSqliteService;
+    private ChatRecordSqliteMapper chatRecordSqliteMapper;
     @Autowired
     private ChatRecordExtendSqliteMapper chatRecordExtendSqliteMapper;
     @Autowired
     private GroupInfoSqliteService groupInfoSqliteService;
 
-    @Override
-    public void run(String... args) throws Exception {
-//        for (int i = 0; i < 3; i++) {
-//            ChatRecordGroup chatRecordGroup = new ChatRecordGroup();
-//            chatRecordGroup.setCard("dd1d1");
-//            chatRecordGroup.setNickname("dd1d1");
-//            chatRecordGroup.setMessageId("1311314124");
-//            chatRecordGroup.setUserId(1527188922L);
-//            chatRecordGroup.setContent("ff2f23f23f23fv过了v萼绿儿");
-//            chatRecordGroup.setSelfId(1527188922L);
-//            chatRecordGroup.setTime(this.getTime(new Date().getTime()));
-//            sqliteDatabaseService.createChatRecordGroupIfNotExists(1527188922L);
-//            String tableName = DataBaseConst.T_CHAT_RECORD_GROUP_PREFIX + 1527188922L;
-//            chatRecordGroupMapper.insert(tableName, chatRecordGroup);
-//            System.out.println(tableName);
-//            System.out.println(chatRecordGroup);
-//        }
-    }
 
     public void saveChatRecord(Message record) {
         Long userId = record.getUserId();
@@ -497,7 +479,7 @@ public class ChatRecordService implements CommandLineRunner {
                 .eq(ChatRecordSqlite::getSelfId, selfId);
         while (true){
             PageInfo<ChatRecordSqlite> pageinfo = PageHelper.startPage(currentPage, pageSize, false).doSelectPageInfo(() -> {
-                chatRecordSqliteService.list(eq);
+                chatRecordSqliteMapper.selectList(eq);
             });
             if (CollectionUtils.isEmpty(pageinfo.getList())) {
                 log.info("执行完成：{}",selfId);
@@ -546,7 +528,7 @@ public class ChatRecordService implements CommandLineRunner {
             LambdaQueryWrapper<ChatRecordSqlite> eq = new LambdaQueryWrapper<ChatRecordSqlite>()
                     .eq(ChatRecordSqlite::getGroupId, groupId);
             PageInfo<ChatRecordSqlite> pageinfo = PageHelper.startPage(currentPage, pageSize, false).doSelectPageInfo(() -> {
-                chatRecordSqliteService.list(eq);
+                chatRecordSqliteMapper.selectList(eq);
             });
 
             if (CollectionUtils.isEmpty(pageinfo.getList())) {
