@@ -148,26 +148,25 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
     @Override
     public List<CodeNameResp> codeNameList(CodeNameReq request) {
         String codeOrName = request.getCodeOrName();
-        if (StringUtils.isBlank(codeOrName)) {
-            return Collections.emptyList();
-        }
         LambdaQueryWrapper<GroupInfoSqlite> queryWrapper = new LambdaQueryWrapper<GroupInfoSqlite>()
                 .select(GroupInfoSqlite::getGroupId, GroupInfoSqlite::getGroupName)
                 .last(!request.getEqCode() && !request.getEqName(),"LIMIT "+request.getLimit());
-        if(request.getEqCode()){
-            queryWrapper.eq(GroupInfoSqlite::getGroupId, codeOrName);
-        }else if(request.getEqName()){
-            queryWrapper.eq(GroupInfoSqlite::getGroupName, codeOrName);
-        }else {
-            queryWrapper.like(GroupInfoSqlite::getGroupId, codeOrName)
-                    .or()
-                    .like(GroupInfoSqlite::getGroupName, codeOrName);
+        if (StringUtils.isNotBlank(codeOrName)) {
+            if(request.getEqCode()){
+                queryWrapper.eq(GroupInfoSqlite::getGroupId, codeOrName);
+            }else if(request.getEqName()){
+                queryWrapper.eq(GroupInfoSqlite::getGroupName, codeOrName);
+            }else {
+                queryWrapper.like(GroupInfoSqlite::getGroupId, codeOrName)
+                        .or()
+                        .like(GroupInfoSqlite::getGroupName, codeOrName);
+            }
         }
         List<GroupInfoSqlite> list = this.list(queryWrapper);
         Map<String, CodeNameResp> collect = list.stream()
                 .map(e -> new CodeNameResp(e.getGroupId(), e.getGroupName()))
                 .collect(Collectors.groupingBy(e -> e.getCode() + e.getName(), Collectors.collectingAndThen(Collectors.toList(),
-                        v -> v.getFirst())));
+                        List::getFirst)));
         return new ArrayList<>(collect.values());
     }
 

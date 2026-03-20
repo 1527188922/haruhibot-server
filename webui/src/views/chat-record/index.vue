@@ -11,24 +11,49 @@
             </el-select>
           </el-form-item>
           <el-form-item label="群号" prop="groupId">
-            <number-input v-model.trim="queryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>
+<!--            <number-input v-model.trim="queryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>-->
+            <el-autocomplete class="form-input" v-model="queryFormObj.groupId"  :fetch-suggestions="fetchGroup"
+                             clearable
+                             popper-class="adaptive-width-autocomplete-popper"
+                             placeholder="输入群号或名称"
+                             @select="handleGroupSelectorSelect"
+                             :maxlength="30"
+                             @input="handleGroupSelectorInput">
+              <template slot-scope="{ item }">
+                {{ `${item.code}（${item.name}）` }}
+              </template>
+            </el-autocomplete>
           </el-form-item>
           <el-form-item label="发送人" prop="userId">
             <number-input v-model.trim="queryFormObj.userId" class="form-input" maxlength="20" clearable
                           placeholder="消息发送人QQ"></number-input>
           </el-form-item>
-          <el-form-item label="消息内容" prop="content">
-            <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
-          </el-form-item>
           <el-form-item label="机器人" prop="selfId">
             <el-input v-model="queryFormObj.selfId" class="form-input" maxlength="30" clearable
                       placeholder="机器人QQ号"></el-input>
+          </el-form-item>
+          <el-form-item label="消息内容" prop="content">
+            <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
           </el-form-item>
 
 <!--          <el-form-item label="QQ昵称" prop="nickName">-->
 <!--            <el-input v-model="queryFormObj.nickName" class="form-input" maxlength="30" clearable-->
 <!--                      placeholder="消息发送人QQ昵称"></el-input>-->
 <!--          </el-form-item>-->
+          <el-form-item label="发送时间" prop="datetimerange">
+            <el-date-picker
+                class="form-date-picker"
+                v-model="queryFormObj.datetimerange"
+                type="datetimerange"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                :default-time="['00:00:00', '23:59:59']"
+                :picker-options="pickerOptions"
+                range-separator="-"
+                start-placeholder="开始时间"
+                end-placeholder="结束时间"
+                align="right">
+            </el-date-picker>
+          </el-form-item>
 
         </el-form>
       </el-row>
@@ -118,8 +143,8 @@
 <script>
 import ChatView from "@/components/dialog/chat-view";
 import numberInput from "@/components/input/numberInput.vue"
-import {search as searchApi, selectExtend, searchV2 as searchApiV2, selectExtendV2} from "@/api/chat-record";
-
+import {searchV2 as searchApiV2, selectExtendV2} from "@/api/chat-record";
+import {codeNameList} from "@/api/group";
 export default {
   name:'ChatRecord',
   components:{
@@ -130,13 +155,79 @@ export default {
     return{
       tableLoading:false,
       exportLoading:false,
+      groupList:[],
       queryFormObj:{
         content:'',
         messageType:'group',
         userId:'',
         groupId:'',
         nickName:'',
-        selfId:''
+        selfId:'',
+        datetimerange:[]
+      },
+      pickerOptions: {
+        shortcuts: [{
+          text: '今天',
+          onClick(picker) {
+            const end = new Date();
+            end.setHours(23)
+            end.setMinutes(59)
+            end.setSeconds(59)
+            const start = new Date();
+            start.setHours(0)
+            start.setMinutes(0)
+            start.setSeconds(0)
+            picker.$emit('pick', [start, end]);
+          }
+        },{
+          text: '近一周',
+          onClick(picker) {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+            picker.$emit('pick', [start, end]);
+          }
+        }, {
+          text: '近一个月',
+          onClick(picker) {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+            picker.$emit('pick', [start, end]);
+          }
+        }, {
+          text: '近三个月',
+          onClick(picker) {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+            picker.$emit('pick', [start, end]);
+          }
+        }, {
+          text: '近六个月',
+          onClick(picker) {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 180);
+            picker.$emit('pick', [start, end]);
+          }
+        }, {
+          text: '近一年',
+          onClick(picker) {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 365);
+            picker.$emit('pick', [start, end]);
+          }
+        }, {
+          text: '近两年',
+          onClick(picker) {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * (365*2));
+            picker.$emit('pick', [start, end]);
+          }
+        }]
       },
       typeList:[{
         value:'private',
@@ -165,8 +256,32 @@ export default {
   },
   mounted() {
     // this.search()
+    this.selectGroupList()
   },
   methods:{
+    fetchGroup(v,cb){
+      v = v.toString()
+      let results = v ? this.groupList.filter((restaurant) => {
+        return (restaurant.name.toLowerCase().indexOf(v.toLowerCase()) !== -1) || (restaurant.code.toString().toLowerCase().indexOf(v.toLowerCase()) !== -1);
+      }) : this.groupList;
+      cb(results);
+    },
+    handleGroupSelectorSelect(v){
+      if(!v){
+        this.queryFormObj.groupId = ''
+      }
+      this.queryFormObj.groupId = v.code.toString()
+    },
+    handleGroupSelectorInput(v){
+
+    },
+    selectGroupList(){
+      codeNameList({
+        limit:1000
+      }).then(({data:{data}})=>{
+        this.groupList = data
+      })
+    },
     search(){
       this.pagination.currentPage = 1
       this.selectTableData()
@@ -208,7 +323,10 @@ export default {
         ...this.queryFormObj,
         currentPage:this.pagination.currentPage,
         pageSize:this.pagination.pageSize
-      }).then(({data:{data}})=>{
+      }).then(({data:{code,message,data}})=>{
+        if(code !== 200){
+          return this.$message.error(message)
+        }
         this.tableData = data.list || []
         this.pagination.total = data.total
       }).finally(()=>{
@@ -220,5 +338,8 @@ export default {
 </script>
 <style lang="scss" scoped>
 #ChatRecord{
+  .form-date-picker{
+    width: calc(180px * 2 + 70px + 12px);
+  }
 }
 </style>

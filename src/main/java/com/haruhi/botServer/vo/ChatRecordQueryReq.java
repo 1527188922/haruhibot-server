@@ -18,6 +18,9 @@ public class ChatRecordQueryReq extends PageReq {
     private Long chatId;
 
     // yyyy-MM-dd HH:mm:ss
+    private List<String> datetimerange;
+
+    // yyyy-MM-dd HH:mm:ss
     private String startTime;
     private String endTime;
     private String sort = "desc";

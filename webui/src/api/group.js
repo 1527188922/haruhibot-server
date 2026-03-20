@@ -19,3 +19,11 @@ export const refresh = (params) => request({
     timeout:60 * 1000,
     params
 });
+
+
+export const codeNameList = (data) => request({
+    url: baseUrl + `/group/list`,
+    method: 'post',
+    timeout:60 * 1000,
+    data
+});

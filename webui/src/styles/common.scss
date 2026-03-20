@@ -204,6 +204,10 @@ a{
     //}
   }
 }
+.adaptive-width-autocomplete-popper{
+  width: fit-content !important;
+}
+
 // ele样式覆盖
 @import './element-ui.scss';
 // 顶部右侧显示

@@ -182,6 +182,13 @@ public class ChatRecordService{
     }
 
     public PageInfo search(ChatRecordQueryReq request, boolean page, boolean needCount) {
+
+        if (CollectionUtils.isNotEmpty(request.getDatetimerange())) {
+            request.setStartTime(request.getDatetimerange().getFirst());
+            if (request.getDatetimerange().size() > 1) {
+                request.setEndTime(request.getDatetimerange().getLast());
+            }
+        }
         if (MessageTypeEnum.group.getType().equals(request.getMessageType())) {
             String chatTableName = sqliteDatabaseService.getChatTableName(request.getGroupId(), null);
             boolean b = sqliteDatabaseService.checkTableExists(chatTableName);
