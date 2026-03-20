@@ -73,20 +73,14 @@ public class SqliteDatabaseService{
     }
 
     public void tableInit(){
-        sqliteDatabaseInitMapper.createChatRecord(DataBaseConst.T_CHAT_RECORD);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"content");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"self_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"user_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"group_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"time");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"card");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"nickname");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD,"message_type");
-
-        sqliteDatabaseInitMapper.createChatRecordExtend(DataBaseConst.T_CHAT_RECORD_EXTEND);
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"chat_record_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"message_id");
-        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"time");
+//        sqliteDatabaseInitMapper.createChatRecord(DataBaseConst.T_CHAT_RECORD);
+//        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_CHAT_RECORD,
+//                StrFormatter.format("{}_group_user_time_idx",DataBaseConst.T_CHAT_RECORD),
+//                "group_id,user_id,time",
+//                false);
+//
+//        sqliteDatabaseInitMapper.createChatRecordExtend(DataBaseConst.T_CHAT_RECORD_EXTEND);
+//        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"chat_record_id");
 
         sqliteDatabaseInitMapper.createChatRecordExtendV2(DataBaseConst.T_CHAT_RECORD_EXTEND_V2);
         sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_CHAT_RECORD_EXTEND_V2,"chat_id_user_IDX","chat_record_id,user_id",false);
