@@ -13,6 +13,7 @@ public class BusinessException extends RuntimeException{
     private String errorMsg;
 
     public BusinessException(String errorMsg) {
+        super(errorMsg);
         this.errorCode = HttpResp.BUSI_ERROR;
         this.errorMsg = errorMsg;
     }

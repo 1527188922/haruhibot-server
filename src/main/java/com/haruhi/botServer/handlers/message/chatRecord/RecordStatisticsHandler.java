@@ -5,7 +5,6 @@ import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.*;
-import com.haruhi.botServer.entity.ChatRecordGroup;
 import com.haruhi.botServer.entity.vo.ChatRecordVo;
 import com.haruhi.botServer.event.message.IGroupMessageEvent;
 import com.haruhi.botServer.mapper.ChatRecordGroupMapper;
@@ -56,18 +55,20 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
         }
 
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
+            Long groupId = message.getGroupId();
+            Long selfId = message.getSelfId();
             try {
-                String chatTableName = sqliteDatabaseService.getChatTableName(message.getGroupId(), null);
+                String chatTableName = sqliteDatabaseService.getChatTableName(groupId, null);
                 long l = System.currentTimeMillis();
-                List<ChatRecordVo> recordVoList = chatRecordGroupMapper.chatStats(chatTableName, message.getSelfId());
+                List<ChatRecordVo> recordVoList = chatRecordGroupMapper.chatStats(chatTableName, selfId);
                 log.info("聊天记录分组执行sql cost:{}",System.currentTimeMillis() - l);
                 if(CollectionUtils.isEmpty(recordVoList)){
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                    bot.sendMessage(message.getUserId(), groupId, message.getMessageType(),
                             MessageHolder.instanceText("暂无聊天记录"));
                     return;
                 }
 
-                SyncResponse<List<GroupMember>> syncResponse = bot.getGroupMemberList(message.getGroupId(), 10 * 1000);
+                SyncResponse<List<GroupMember>> syncResponse = bot.getGroupMemberList(groupId, 10 * 1000);
 
                 List<GroupMember> groupMemberList = syncResponse.getData();
 //                if(!CollectionUtils.isEmpty(groupMemberList)){
@@ -77,22 +78,23 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 
                 List<ForwardMsgItem> forwardMsgItems = new ArrayList<>(recordVoList.size() + 1);
 
+                // 查询这个群最早一条消息
                 ChatRecordQueryReq param = new ChatRecordQueryReq();
                 param.setMessageType(MessageTypeEnum.group.getType());
-                param.setGroupId(message.getGroupId());
-                param.setUserId(message.getUserId());
+                param.setGroupId(groupId);
+                param.setSelfId(selfId);
                 param.setPageSize(1);
                 param.setSort("asc");
                 PageInfo<ChatRecordVo> pageInfo = chatRecordService.search(param, true, false);
                 if(pageInfo != null && !pageInfo.getList().isEmpty()){
-                    ForwardMsgItem instance = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
+                    ForwardMsgItem instance = ForwardMsgItem.instance(selfId, bot.getBotName(),
                             MessageHolder.instanceText("从[" + pageInfo.getList().getFirst().getTime() + "]开始统计"));
                     forwardMsgItems.add(instance);
                 }
 
                 for (int i = 0; i < recordVoList.size(); i++) {
                     ChatRecordVo item = recordVoList.get(i);
-                    String name = getName(item, groupMemberList);
+                    String name = getName(item, groupMemberList, groupId);
                     String msg =(i + 1) + "\n"
                             + name + "(" +item.getUserId() + ")"
                             + "\n发言数：" + item.getTotal();
@@ -103,7 +105,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 List<List<ForwardMsgItem>> lists = CommonUtil.averageAssignList(forwardMsgItems, 70);
                 for (int i = 0; i < lists.size(); i++) {
 
-                    bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), lists.get(i));
+                    bot.sendForwardMessage(message.getUserId(), groupId, message.getMessageType(), lists.get(i));
 
                     if(i < lists.size() - 1){
                         try {
@@ -113,7 +115,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
                 }
             }catch (Exception e){
                 log.error("聊天统计异常",e);
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                bot.sendMessage(message.getUserId(), groupId,message.getMessageType(),
                         MessageHolder.instanceText("聊天统计异常\n"+e.getMessage()));
             }
             
@@ -121,7 +123,7 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
         return true;
     }
 
-    private String getName(ChatRecordVo e, List<GroupMember> groupMemberList){
+    private String getName(ChatRecordVo e, List<GroupMember> groupMemberList, Long groupId){
         if(Objects.isNull(e.getUserId()) || e.getUserId() == 0){
             return "匿名";
         }
@@ -146,11 +148,11 @@ public class RecordStatisticsHandler implements IGroupMessageEvent {
 
         ChatRecordQueryReq param = new ChatRecordQueryReq();
         param.setMessageType(MessageTypeEnum.group.getType());
-        param.setGroupId(e.getGroupId());
+        param.setGroupId(groupId);
         param.setUserId(e.getUserId());
         param.setPageSize(1);
         PageInfo<ChatRecordVo> pageInfo = chatRecordService.search(param, true, false);
-        if (!pageInfo.getList().isEmpty()) {
+        if (pageInfo != null && !pageInfo.getList().isEmpty()) {
             ChatRecordVo chatRecord = pageInfo.getList().getFirst();
             return StringUtils.isNotBlank(chatRecord.getCard()) ? chatRecord.getCard()
                     : StringUtils.isNotBlank(chatRecord.getNickname()) ? chatRecord.getNickname() : "noname";
