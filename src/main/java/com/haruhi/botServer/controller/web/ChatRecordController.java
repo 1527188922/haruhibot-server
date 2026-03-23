@@ -7,8 +7,10 @@ import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.entity.ChatRecordExtendV2;
 import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.service.ChatRecordService;
+import com.haruhi.botServer.utils.TextCompressionUtils;
 import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,11 +18,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.Objects;
 
+@Slf4j
 @RestController
 @RequestMapping(BotConfig.CONTEXT_PATH+"/chatRecord")
-public class ChatRecordController {
+public class ChatRecordController{
     @Autowired
     private ChatRecordExtendV2Mapper chatRecordExtendV2Mapper;
     @Autowired
@@ -49,6 +53,16 @@ public class ChatRecordController {
                 .eq(ChatRecordExtendV2::getChatRecordId, request.getChatId())
                 .eq(ChatRecordExtendV2::getUserId, request.getUserId())
                 .last("limit 1"));
+
+        byte[] rawWsMessageBinary = extendV2.getRawWsMessageBinary();
+        if (Objects.nonNull(rawWsMessageBinary) && rawWsMessageBinary.length > 0) {
+            try {
+                extendV2.setRawWsMessage(TextCompressionUtils.decompress(rawWsMessageBinary));
+                extendV2.setRawWsMessageBinary(null);
+            } catch (IOException e) {
+                log.error("raw消息解压失败",e);
+            }
+        }
         return HttpResp.success(extendV2);
     }
 }

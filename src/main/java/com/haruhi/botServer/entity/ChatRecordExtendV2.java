@@ -7,7 +7,7 @@ import com.haruhi.botServer.constant.DataBaseConst;
 import lombok.Data;
 
 @Data
-@TableName(DataBaseConst.T_CHAT_RECORD_EXTEND_V2)
+@TableName(value = DataBaseConst.T_CHAT_RECORD_EXTEND_V2,autoResultMap = true)
 public class ChatRecordExtendV2 {
 
     @TableId(value = "id",type = IdType.AUTO)
@@ -16,5 +16,7 @@ public class ChatRecordExtendV2 {
     private Long userId;
     private Long groupId;
     private String rawWsMessage;
+    // 数据库类型BLOB 压缩后的二进制raw消息
+    private byte[] rawWsMessageBinary;
 
 }

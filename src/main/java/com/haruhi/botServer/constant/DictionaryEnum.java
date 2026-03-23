@@ -54,6 +54,7 @@ public enum DictionaryEnum{
     URL_CONF_BTBTLA_SEARCH(true,"url_conf.btbtla_search","https://www.btbtla.com","bt影视搜索"),
 
     DATABASE_DB_SQL_CACHE(false,"db.sql_cache","","WebUI sql编辑器内容缓存"),
+    DATABASE_DB_CHAT_EXTEND_RAW_COMPRESS(true,"db.chat_extend.raw_compress","true","是否对聊天记录扩展表raw消息压缩存储 默认开启压缩"),
 
     ;
     private final boolean needInit;

@@ -1,5 +1,6 @@
 package com.haruhi.botServer.service;
 
+import cn.hutool.core.text.StrFormatter;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
@@ -9,6 +10,7 @@ import com.github.pagehelper.PageInfo;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.DataBaseConst;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
@@ -29,6 +31,7 @@ import com.haruhi.botServer.thread.WordSlicesTask;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.FileUtil;
+import com.haruhi.botServer.utils.TextCompressionUtils;
 import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
@@ -72,6 +75,8 @@ public class ChatRecordService{
     private ChatRecordExtendSqliteMapper chatRecordExtendSqliteMapper;
     @Autowired
     private GroupInfoSqliteService groupInfoSqliteService;
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
 
 
     public void saveChatRecord(Message record) {
@@ -118,7 +123,17 @@ public class ChatRecordService{
         if (record.isGroupMsg()) {
             recordExtendV2.setGroupId(record.getGroupId());
         }
-        recordExtendV2.setRawWsMessage(record.getRawWsMsg());
+        boolean aBoolean = dictionarySqliteService.getBoolean(DictionaryEnum.DATABASE_DB_CHAT_EXTEND_RAW_COMPRESS.getKey(), true);
+        if (aBoolean) {
+            try {
+                recordExtendV2.setRawWsMessageBinary(TextCompressionUtils.compress(record.getRawWsMsg()));
+            } catch (IOException e) {
+                recordExtendV2.setRawWsMessage(record.getRawWsMsg());
+                log.error(StrFormatter.format("压缩raw异常：{}",e.getMessage()), e);
+            }
+        }else{
+            recordExtendV2.setRawWsMessage(record.getRawWsMsg());
+        }
         chatRecordExtendV2Mapper.insert(recordExtendV2);
     }
 

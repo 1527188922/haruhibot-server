@@ -64,7 +64,8 @@
           chat_record_id INTEGER NOT NULL,
           user_id INTEGER,
           group_id INTEGER,
-          raw_ws_message TEXT
+          raw_ws_message TEXT,
+          raw_ws_message_binary BLOB
         );
     </update>
 

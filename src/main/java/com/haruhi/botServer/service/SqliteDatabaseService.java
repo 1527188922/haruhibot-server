@@ -83,6 +83,7 @@ public class SqliteDatabaseService{
 //        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"chat_record_id");
 
         sqliteDatabaseInitMapper.createChatRecordExtendV2(DataBaseConst.T_CHAT_RECORD_EXTEND_V2);
+        addColumnIfNotExists(DataBaseConst.T_CHAT_RECORD_EXTEND_V2,"raw_ws_message_binary","BLOB",false,null);
         sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_CHAT_RECORD_EXTEND_V2,"chat_id_user_IDX","chat_record_id,user_id",false);
 
         sqliteDatabaseInitMapper.createPokeReply(DataBaseConst.T_POKE_REPLY);
@@ -222,7 +223,7 @@ public class SqliteDatabaseService{
         if (CollectionUtils.isEmpty(tableInfo)) {
             return 0;
         }
-        if (tableInfo.stream().map(TableInfoSqlite::getName).collect(Collectors.toList()).contains(columnName)) {
+        if (tableInfo.stream().map(TableInfoSqlite::getName).toList().contains(columnName)) {
             return 0;
         }
         return sqliteDatabaseInitMapper.addColumn(tableName,columnName,columnType,notNull,defaultValue);
