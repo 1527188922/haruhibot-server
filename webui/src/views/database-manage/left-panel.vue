@@ -234,6 +234,8 @@ export default {
 }
 
 .tree-container{
+  overflow-y: auto;
+  height: calc(100vh - 50px - 40px - 42px - 10px - 10px);
 
   .alignment {
     font-family: "Consolas", "Courier New", monospace;
