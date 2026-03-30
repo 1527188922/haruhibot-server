@@ -144,7 +144,7 @@ public class BilibiliService {
         strings.add("SESSDATA=" + sessdata);
         strings.add("bili_jct=" + jct);
         strings.add("b_lsid=" + BilibililSidUtil.generate());
-        return StringUtils.join(strings,";");
+        return StringUtils.join(strings,"; ");
     }
 
     public String getBvidInText(String text){
