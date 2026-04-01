@@ -1,5 +1,6 @@
 package com.haruhi.botServer.config.webResource;
 
+import com.haruhi.botServer.condition.ProdEnvironmentCondition;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.FileUtil;
@@ -9,7 +10,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;

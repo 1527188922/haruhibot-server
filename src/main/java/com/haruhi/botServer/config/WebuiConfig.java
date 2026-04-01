@@ -12,17 +12,18 @@ public class WebuiConfig {
 
     @Value("${login.username}")
     private String loginUserName;
-
     @Value("${login.password}")
     private String loginPassword;
-
-    @Value("${druid.loginUsername}")
-    private String druidLoginUsername;
-
-    @Value("${druid.loginPassword}")
-    private String druidLoginPassword;
-
+    // 单位分钟
     @Value("${login.expire:30}")
     private Long loginExpire;
+
+
+    @Value("${druid.enabled}")
+    private String druidEnabled;
+    @Value("${druid.loginUsername}")
+    private String druidLoginUsername;
+    @Value("${druid.loginPassword}")
+    private String druidLoginPassword;
 
 }

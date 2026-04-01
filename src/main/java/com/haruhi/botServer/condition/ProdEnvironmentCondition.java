@@ -1,4 +1,4 @@
-package com.haruhi.botServer.config.webResource;
+package com.haruhi.botServer.condition;
 
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
