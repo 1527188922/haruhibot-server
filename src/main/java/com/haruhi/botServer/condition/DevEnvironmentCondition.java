@@ -1,6 +1,5 @@
-package com.haruhi.botServer.config.webResource;
+package com.haruhi.botServer.condition;
 
-import com.haruhi.botServer.condition.ProdEnvironmentCondition;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;

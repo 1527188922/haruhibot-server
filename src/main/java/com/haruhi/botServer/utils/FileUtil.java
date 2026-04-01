@@ -29,6 +29,7 @@ public class FileUtil {
     public static final String DIR_VIDEO_BILIBILI = "bilibili";
     public static final String DIR_AUDIO_DG = "dg";
     public static final String DIR_APP_DATA = "data";
+    public static final String DIR_APP_CONFIG = "config";
 
     public static final String DIR_IMAGE = "image"; 
     public static final String DIR_IMAGE_BULLET_WORD_CLOUD = "bulletWordCloud";
@@ -49,6 +50,8 @@ public class FileUtil {
     public static final String FILE_NAME_KILL_SCRIPT_SH = "kill.sh";
 
     public static final String FILE_NAME_LOG = "haruhibot.log";
+
+    public static final String FILE_NAME_WEBUI_CONFIG = "webuiConfig.properties";
 
 
     public static String getRestartScript() {
@@ -212,6 +215,9 @@ public class FileUtil {
 
     public static String getDataDir() {
         return getAppDir() + File.separator + DIR_APP_DATA;
+    }
+    public static String getConfigDir() {
+        return getAppDir() + File.separator + DIR_APP_CONFIG;
     }
 
     // 默认sql db文件位置

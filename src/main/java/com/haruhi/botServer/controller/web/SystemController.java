@@ -8,7 +8,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.config.WebuiConfig;
 import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.constant.SqlTypeEnum;
@@ -16,6 +15,7 @@ import com.haruhi.botServer.dto.SqlExecuteResult;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.SqliteDatabaseService;
 import com.haruhi.botServer.utils.DateTimeUtil;
+import com.haruhi.botServer.utils.PropertiesUtil;
 import com.haruhi.botServer.vo.*;
 import com.haruhi.botServer.dto.qqclient.RequestBox;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
@@ -54,8 +54,6 @@ public class SystemController {
 
     @Autowired
     private SystemService systemService;
-    @Autowired
-    private WebuiConfig webuiConfig;
 
     @Autowired
     private BotServer botServer;
@@ -156,7 +154,8 @@ public class SystemController {
     public HttpResp<String> deleteFile(@RequestBody FileNode request,
                                        @RequestParam String rootType,
                                        @RequestParam String password) {
-        if (!webuiConfig.getLoginPassword().equals(password)) {
+        String loginUserPassword = PropertiesUtil.getProperty(FileUtil.FILE_NAME_WEBUI_CONFIG, PropertiesUtil.PROP_KEY_WEBUI_LOGIN_PASSWORD);
+        if (!Objects.equals(loginUserPassword, password)) {
             return HttpResp.fail("密码错误",null);
         }
         String path = request.getAbsolutePath();//绝对路径
