@@ -80,10 +80,12 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
         }
 
         if (CollectionUtils.isNotEmpty(needUpd)) {
-            // 先删除再新增
-            this.removeByIds(needUpd.stream().map(GroupInfoSqlite::getId).collect(Collectors.toList()));
-            needUpd.forEach(groupInfoSqlite -> groupInfoSqlite.setId(null));
-            this.saveBatch(needUpd);
+//            this.removeByIds(needUpd.stream().map(GroupInfoSqlite::getId).collect(Collectors.toList()));
+//            needUpd.forEach(groupInfoSqlite -> groupInfoSqlite.setId(null));
+//            this.saveBatch(needUpd);
+            for (GroupInfoSqlite entity : needUpd) {
+                this.updateAndNull(entity);
+            }
         }
         needAdd.addAll(needUpd);
 //        List<Long> groupIds = needAdd.stream().map(GroupInfoSqlite::getGroupId).distinct().collect(Collectors.toList());
@@ -170,4 +172,20 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
         return new ArrayList<>(collect.values());
     }
 
+    @Override
+    public boolean updateAndNull(GroupInfoSqlite entity) {
+        return this.lambdaUpdate()
+                .set(GroupInfoSqlite::getSelfId, entity.getSelfId())
+                .set(GroupInfoSqlite::getGroupId, entity.getGroupId())
+                .set(GroupInfoSqlite::getGroupName, entity.getGroupName())
+                .set(GroupInfoSqlite::getMemberCount, entity.getMemberCount())
+                .set(GroupInfoSqlite::getMaxMemberCount, entity.getMaxMemberCount())
+                .set(GroupInfoSqlite::getGroupAllShut, entity.getGroupAllShut())
+                .set(GroupInfoSqlite::getGroupRemark, entity.getGroupRemark())
+                .set(GroupInfoSqlite::getGroupMemo, entity.getGroupMemo())
+                .set(GroupInfoSqlite::getGroupCreateTime, entity.getGroupCreateTime())
+                .set(GroupInfoSqlite::getGroupLevel, entity.getGroupLevel())
+                .eq(GroupInfoSqlite::getId, entity.getId())
+                .update();
+    }
 }

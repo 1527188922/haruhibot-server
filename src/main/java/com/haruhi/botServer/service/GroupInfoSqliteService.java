@@ -22,4 +22,6 @@ public interface GroupInfoSqliteService extends IService<GroupInfoSqlite> {
     List<GroupInfoSqlite> selectBySelfId(Long selfId);
 
     List<CodeNameResp> codeNameList(CodeNameReq request);
+
+    boolean updateAndNull(GroupInfoSqlite entity);
 }

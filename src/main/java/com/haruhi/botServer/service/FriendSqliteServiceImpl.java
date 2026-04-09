@@ -68,14 +68,37 @@ public class FriendSqliteServiceImpl extends ServiceImpl<FriendSqliteMapper, Fri
             this.saveBatch(needAdd);
         }
         if (CollectionUtils.isNotEmpty(needUpd)) {
-            this.removeByIds(needUpd.stream().map(FriendSqlite::getId).collect(Collectors.toList()));
-            needUpd.forEach(newFriend -> newFriend.setId(null));
-            this.saveBatch(needUpd);
+//            this.removeByIds(needUpd.stream().map(FriendSqlite::getId).collect(Collectors.toList()));
+//            needUpd.forEach(newFriend -> newFriend.setId(null));
+//            this.saveBatch(needUpd);
+            for (FriendSqlite entity : needUpd) {
+                this.updateAndNull(entity);
+            }
         }
         return newFriends;
     }
 
     private FriendSqlite findByUserId(Long userId, List<FriendSqlite> dbList) {
         return dbList.stream().filter(e -> userId.equals(e.getUserId())).findFirst().orElse(null);
+    }
+
+    @Override
+    public boolean updateAndNull(FriendSqlite entity) {
+        return this.lambdaUpdate()
+                .set(FriendSqlite::getSelfId, entity.getSelfId())
+                .set(FriendSqlite::getUserId, entity.getUserId())
+                .set(FriendSqlite::getBirthdayDay, entity.getBirthdayDay())
+                .set(FriendSqlite::getBirthdayYear, entity.getBirthdayYear())
+                .set(FriendSqlite::getBirthdayMonth, entity.getBirthdayMonth())
+                .set(FriendSqlite::getCategoryId, entity.getCategoryId())
+                .set(FriendSqlite::getLevel, entity.getLevel())
+                .set(FriendSqlite::getSex, entity.getSex())
+                .set(FriendSqlite::getNickname, entity.getNickname())
+                .set(FriendSqlite::getPhoneNum, entity.getPhoneNum())
+                .set(FriendSqlite::getRemark, entity.getRemark())
+                .set(FriendSqlite::getAge, entity.getAge())
+                .set(FriendSqlite::getEmail, entity.getEmail())
+                .eq(FriendSqlite::getId, entity.getId())
+                .update();
     }
 }

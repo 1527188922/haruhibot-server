@@ -9,4 +9,6 @@ import java.util.List;
 public interface FriendSqliteService extends IService<FriendSqlite> {
 
     List<FriendSqlite> loadFriendInfo(Bot bot);
+
+    boolean updateAndNull(FriendSqlite entity);
 }
