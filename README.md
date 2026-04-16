@@ -17,7 +17,7 @@ Sqlite
 #### 安装/启动 教程
 
 * Bot安装/启动  
-  1. 安装:`java1.8`、`maven3.8`
+  1. 安装:`java21`、`maven3.8`
   2. 下载bot源码后,双击打包脚本`build.bat`(linux执行`build.sh`)  
   3. 执行打包脚本完后会出现文件：`target/haruhibotServer.zip`，解压后双击启动脚本：`startup.bat`(linux执行`startup.sh`)
 * Bot Webui安装/启动（可选步骤）
