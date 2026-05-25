@@ -1,6 +1,7 @@
 package com.haruhi.botServer.mapper;
 
 import com.haruhi.botServer.entity.ChatRecordGroup;
+import com.haruhi.botServer.entity.ChatRecordPrivate;
 import com.haruhi.botServer.entity.vo.ChatRecordVo;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import org.apache.ibatis.annotations.Mapper;
@@ -22,5 +23,13 @@ public interface ChatRecordGroupMapper {
                                                 @Param("userIds") List<Long> userIds,
                                                 @Param("startTime") String startTime,
                                                 @Param("excludeContent") List<String> excludeList);
+
+    List<ChatRecordGroup> selectUserInGroup(@Param("tableName") String tableName,
+                                            @Param("keyword") String keyword,
+                                            @Param("limit") Integer limit);
+
+    List<ChatRecordPrivate> selectUserInPrivate(@Param("tableName") String tableName,
+                                                @Param("keyword") String keyword,
+                                                @Param("limit") Integer limit);
 
 }

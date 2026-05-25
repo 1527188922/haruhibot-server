@@ -35,6 +35,7 @@ import com.haruhi.botServer.utils.TextCompressionUtils;
 import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
+import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -222,6 +223,33 @@ public class ChatRecordService{
             return this.privateChat2Vo(this.privateSearch(request, chatTableName, page, needCount), request.getSelfId());
         }
         throw new BusinessException("查询消息错误："+request.getMessageType());
+    }
+
+    public List<ChatRecordVo> queryUser(Long groupId, Long selfId, String keyword, Integer limit) {
+        if (Objects.isNull(groupId) && Objects.isNull(selfId)) {
+            return Collections.emptyList();
+        }
+        limit = limit == null ? 10 : limit;
+        String tableName = sqliteDatabaseService.getChatTableName(groupId, selfId);
+        if(groupId != null){
+            List<ChatRecordGroup> chatRecordGroups = chatRecordGroupMapper.selectUserInGroup(tableName, keyword, limit);
+            return chatRecordGroups.stream().map(e -> {
+                ChatRecordVo chatRecordVo = new ChatRecordVo();
+                chatRecordVo.setCard(e.getCard());
+                chatRecordVo.setUserId(e.getUserId());
+                chatRecordVo.setNickname(e.getNickname());
+                chatRecordVo.setTime(e.getTime());
+                return chatRecordVo;
+            }).collect(Collectors.toList());
+        }
+        List<ChatRecordPrivate> chatRecordPrivates = chatRecordGroupMapper.selectUserInPrivate(tableName, keyword, limit);
+        return chatRecordPrivates.stream().map(e -> {
+            ChatRecordVo chatRecordVo = new ChatRecordVo();
+            chatRecordVo.setUserId(e.getUserId());
+            chatRecordVo.setNickname(e.getNickname());
+            chatRecordVo.setTime(e.getTime());
+            return chatRecordVo;
+        }).collect(Collectors.toList());
     }
 
     public PageInfo groupSearch(ChatRecordQueryReq request, String tableName, boolean page, boolean needCount) {

@@ -11,7 +11,6 @@
             </el-select>
           </el-form-item>
           <el-form-item label="群号" prop="groupId">
-<!--            <number-input v-model.trim="queryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>-->
             <el-autocomplete class="form-input" v-model="queryFormObj.groupId"  :fetch-suggestions="fetchGroup"
                              clearable
                              popper-class="adaptive-width-autocomplete-popper"
@@ -25,8 +24,6 @@
             </el-autocomplete>
           </el-form-item>
           <el-form-item label="发送人" prop="userId">
-<!--            <number-input v-model.trim="queryFormObj.userId" class="form-input" maxlength="20" clearable-->
-<!--                          placeholder="消息发送人QQ"></number-input>-->
             <el-autocomplete class="form-input" v-model="queryFormObj.userId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'userIds')}"
                              clearable
                              popper-class="adaptive-width-autocomplete-popper"
@@ -35,8 +32,6 @@
             </el-autocomplete>
           </el-form-item>
           <el-form-item label="机器人" prop="selfId">
-<!--            <el-input v-model="queryFormObj.selfId" class="form-input" maxlength="30" clearable-->
-<!--                      placeholder="机器人QQ号"></el-input>-->
             <el-autocomplete class="form-input" v-model="queryFormObj.selfId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'selfIds')}"
                              clearable
                              popper-class="adaptive-width-autocomplete-popper"
@@ -48,10 +43,6 @@
             <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
           </el-form-item>
 
-<!--          <el-form-item label="QQ昵称" prop="nickName">-->
-<!--            <el-input v-model="queryFormObj.nickName" class="form-input" maxlength="30" clearable-->
-<!--                      placeholder="消息发送人QQ昵称"></el-input>-->
-<!--          </el-form-item>-->
           <el-form-item label="发送时间" prop="datetimerange">
             <el-date-picker
                 class="form-date-picker"

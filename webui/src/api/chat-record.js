@@ -14,3 +14,10 @@ export const selectExtendV2 = (data) => request({
     timeout:60 * 1000,
     data
 });
+
+export const queryUser = (param) => request({
+    url: baseUrl + '/chatRecord/group/user',
+    method: 'get',
+    timeout:60 * 1000,
+    param
+});

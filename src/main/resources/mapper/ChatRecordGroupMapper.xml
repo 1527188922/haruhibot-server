@@ -69,4 +69,28 @@
         </where>
     </select>
 
+    <select id="selectUserInGroup" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
+        SELECT user_id, max(`time`) `time`,min(card) card,min(nickname) nickname
+        FROM ${tableName}
+        <where>
+            <if test='keyword != null and keyword != ""'>
+                and (card LIKE CONCAT('%', #{keyword}, '%') or nickname LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        GROUP BY user_id
+        LIMIT ${limit}
+    </select>
+
+    <select id="selectUserInPrivate" resultType="com.haruhi.botServer.entity.ChatRecordPrivate">
+        SELECT user_id, max(`time`) `time`,min(nickname) nickname
+        FROM ${tableName}
+        <where>
+            <if test='keyword != null and keyword != ""'>
+                and nickname LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        GROUP BY user_id
+        LIMIT ${limit}
+    </select>
+
 </mapper>
