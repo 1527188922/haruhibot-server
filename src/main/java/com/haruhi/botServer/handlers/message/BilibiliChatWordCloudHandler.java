@@ -83,7 +83,7 @@ public class BilibiliChatWordCloudHandler implements IAllMessageEvent {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),textMessageHolders);
 
                 List<String> list = WordSlicesTask.execute(chatList);
-                Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(list));
+                Map<String, Integer> map = WordCloudUtil.setFrequency(list);
                 if(CollectionUtils.isEmpty(map)){
                     List<MessageHolder> textMessageHolders1 = MessageHolder.instanceText("有效词料为0，不生成");
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),textMessageHolders1);

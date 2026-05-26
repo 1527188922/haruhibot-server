@@ -27,7 +27,7 @@ public class WordSlicesTask implements Callable<List<String>> {
     public List<String> call() throws Exception {
         List<String> res = new ArrayList<>(data.size() * 2);
         for (String item : data) {
-            List<String> strings = WordCloudUtil.mmsegWordSlices(item);
+            List<String> strings = WordCloudUtil.segment(item);
             if(CollectionUtils.isEmpty(strings)){
                 continue;
             }

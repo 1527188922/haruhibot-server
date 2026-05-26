@@ -429,7 +429,7 @@ public class ChatRecordService{
             List<String> collect = corpus.stream().map(ChatRecordGroup::getContent).collect(Collectors.toList());
             List<String> strings = WordSlicesTask.execute(collect);
             // 设置权重和排除指定词语
-            Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(strings));
+            Map<String, Integer> map = WordCloudUtil.setFrequency(strings);
             if(org.springframework.util.CollectionUtils.isEmpty(map)){
                 bot.sendGroupMessage(message.getGroupId(),"分词为0，本次不生成词云图",true);
                 generateComplete(message);

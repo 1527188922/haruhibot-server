@@ -115,6 +115,12 @@
             <artifactId>mmseg4j-core</artifactId>
             <version>1.10.0</version>
         </dependency>
+        <!-- 中文分词 -->
+        <dependency>
+            <groupId>com.hankcs</groupId>
+            <artifactId>hanlp</artifactId>
+            <version>portable-1.8.6</version>
+        </dependency>
         <!-- hutool -->
         <dependency>
             <groupId>cn.hutool</groupId>
