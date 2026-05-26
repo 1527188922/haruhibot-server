@@ -1,14 +1,19 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.dto.qqclient.FriendInfo;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.entity.FriendSqlite;
 import com.haruhi.botServer.mapper.FriendSqliteMapper;
+import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.vo.FriendInfoQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,6 +85,35 @@ public class FriendSqliteServiceImpl extends ServiceImpl<FriendSqliteMapper, Fri
 
     private FriendSqlite findByUserId(Long userId, List<FriendSqlite> dbList) {
         return dbList.stream().filter(e -> userId.equals(e.getUserId())).findFirst().orElse(null);
+    }
+
+    @Override
+    public IPage<FriendSqlite> search(FriendInfoQueryReq request, boolean b) {
+        LambdaQueryWrapper<FriendSqlite> queryWrapper = new LambdaQueryWrapper<FriendSqlite>()
+                .eq(request.getSelfId() != null, FriendSqlite::getSelfId, request.getSelfId())
+                .eq(request.getUserId() != null, FriendSqlite::getUserId, request.getUserId())
+                .eq(StringUtils.isNotBlank(request.getSex()), FriendSqlite::getSex, request.getSex())
+                .like(StringUtils.isNotBlank(request.getNickname()), FriendSqlite::getNickname, request.getNickname())
+                .orderByDesc(FriendSqlite::getLevel);
+
+        IPage<FriendSqlite> pageInfo = null;
+        if (b) {
+            pageInfo = this.page(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
+        }else{
+            pageInfo = new Page<>(request.getCurrentPage(), request.getPageSize());
+            List<FriendSqlite> list = this.list(queryWrapper);
+            pageInfo.setRecords(list);
+            pageInfo.setTotal(list.size());
+        }
+
+        List<FriendSqlite> records = pageInfo.getRecords();
+        if (CollectionUtils.isNotEmpty(records)) {
+            records.forEach(e->{
+                e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(e.getSelfId(), false));
+                e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(), false));
+            });
+        }
+        return pageInfo;
     }
 
     @Override

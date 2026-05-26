@@ -232,6 +232,17 @@ const release = [{
     },
     children: []
 },{
+    label: "好友列表",
+    path: '/friend-list',
+    component: 'views/friend-list/index',
+    icon: 'icon-caidan',
+    iconBgColor: randomColor(),
+    meta: {
+        // i18n: 'friend-list',
+        keepAlive: true
+    },
+    children: []
+},{
     label: "群聊查询",
     path: '/group-list',
     component: 'views/group-list/index',
