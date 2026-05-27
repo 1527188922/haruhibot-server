@@ -138,9 +138,10 @@ public class JmcomicService {
         if(zipFile.exists()){
             zipFile.delete();
         }
+        log.info("开始打包：{}", zipFile.getAbsolutePath());
 //        ZipUtil.zip(albumDir,zipFilePath,StandardCharsets.UTF_8,false);
-
-        try (ZipFile zip = new ZipFile(zipFile, getZipPassword().toCharArray())){
+        long l = System.currentTimeMillis();
+        try (ZipFile zip = new ZipFile(zipFile, this.getZipPassword().toCharArray())){
             ZipParameters parameters = new ZipParameters();
             parameters.setEncryptFiles(true);
             parameters.setEncryptionMethod(EncryptionMethod.AES);
@@ -148,6 +149,7 @@ public class JmcomicService {
             zip.setCharset(StandardCharsets.UTF_8);
             zip.addFolder(file, parameters);
         }
+        log.info("打包完成：{} cost:{}", zipFile.getAbsolutePath(),(System.currentTimeMillis() - l));
         return BaseResp.success(zipFile);
     }
 
@@ -763,7 +765,8 @@ public class JmcomicService {
     public static void main(String[] args) {
         try {
             JmcomicService jmcomicService = new JmcomicService();
-            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum("1023584");
+//            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum("1023584");
+            jmcomicService.albumToPdf(new File("D:\\temp\\pdf\\JM1116808"), new File("D:\\temp\\pdf\\JM1116808.pdf"));
 
 //            SearchResp search = jmcomicService.search("二乃", "mv");
 //            System.out.println(search);
