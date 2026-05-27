@@ -8,7 +8,7 @@ import lombok.Data;
 
 @Data
 @TableName(value = DataBaseConst.T_FRIEND)
-public class FriendSqlite {
+public class FriendSqlite extends BaseUserInfo{
 
     @TableId(value = "id",type = IdType.AUTO)
     private Long id;

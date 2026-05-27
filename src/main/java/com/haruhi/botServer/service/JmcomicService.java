@@ -124,7 +124,7 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<File> downloadAlbumAsZip(Album album) throws Exception {
-        BaseResp<String> baseResp = downloadAlbum(album);
+        BaseResp<String> baseResp = this.downloadAlbum(album);
         if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
             return BaseResp.fail(baseResp.getMsg());
         }
@@ -138,9 +138,10 @@ public class JmcomicService {
         if(zipFile.exists()){
             zipFile.delete();
         }
+        log.info("开始打包：{}", zipFile.getAbsolutePath());
 //        ZipUtil.zip(albumDir,zipFilePath,StandardCharsets.UTF_8,false);
-
-        try (ZipFile zip = new ZipFile(zipFile, getZipPassword().toCharArray())){
+        long l = System.currentTimeMillis();
+        try (ZipFile zip = new ZipFile(zipFile, this.getZipPassword().toCharArray())){
             ZipParameters parameters = new ZipParameters();
             parameters.setEncryptFiles(true);
             parameters.setEncryptionMethod(EncryptionMethod.AES);
@@ -148,6 +149,7 @@ public class JmcomicService {
             zip.setCharset(StandardCharsets.UTF_8);
             zip.addFolder(file, parameters);
         }
+        log.info("打包完成：{} cost:{}", zipFile.getAbsolutePath(),(System.currentTimeMillis() - l));
         return BaseResp.success(zipFile);
     }
 
@@ -158,7 +160,7 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<File> downloadAlbumAsPdf(Album album) throws Exception {
-        BaseResp<String> baseResp = downloadAlbum(album);
+        BaseResp<String> baseResp = this.downloadAlbum(album);
         if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
             return BaseResp.fail(baseResp.getMsg());
         }
@@ -175,7 +177,7 @@ public class JmcomicService {
         }
         log.info("开始生成pdf文件 {}", pdfFilePath);
         long l = System.currentTimeMillis();
-        albumToPdf(file, pdfFile);
+        this.albumToPdf(file, pdfFile);
         log.info("pdf文件生成完成 cost:{} {}",(System.currentTimeMillis() - l),pdfFilePath);
         return BaseResp.success(pdfFile);
     }
@@ -186,7 +188,7 @@ public class JmcomicService {
      * @return
      */
     public void albumToPdf(File albumDir,File outputFile) throws Exception {
-        List<File> directoryList = sortFolders(Arrays.asList(FileUtil.getDirectoryList(albumDir)));
+        List<File> directoryList = this.sortFolders(Arrays.asList(FileUtil.getDirectoryList(albumDir)));
         try (PDDocument document = new PDDocument()){
 
             AccessPermission permission = new AccessPermission();
@@ -194,13 +196,17 @@ public class JmcomicService {
             // 是否可以复制和提取内容
             permission.setCanExtractContent(false);
             permission.setCanExtractForAccessibility(false);
-            String password = getPdfPassword();
-            StandardProtectionPolicy standardProtectionPolicy = new StandardProtectionPolicy(password, password, permission);
-            SecurityHandler securityHandler = new StandardSecurityHandler(standardProtectionPolicy);
-            securityHandler.prepareDocumentForEncryption(document);
-            PDEncryption encryptionOptions = new PDEncryption();
-            encryptionOptions.setSecurityHandler(securityHandler);
-            document.setEncryptionDictionary(encryptionOptions);
+            String password = this.getPdfPassword();
+            StandardProtectionPolicy policy = new StandardProtectionPolicy(password, password, permission);
+
+//            SecurityHandler securityHandler = new StandardSecurityHandler(policy);
+//            securityHandler.prepareDocumentForEncryption(document);
+//            PDEncryption encryptionOptions = new PDEncryption();
+//            encryptionOptions.setSecurityHandler(securityHandler);
+//            document.setEncryptionDictionary(encryptionOptions);
+
+            policy.setEncryptionKeyLength(128);
+            document.protect(policy);
 
             PDDocumentOutline documentOutline = new PDDocumentOutline();
             document.getDocumentCatalog().setDocumentOutline(documentOutline);
@@ -218,9 +224,10 @@ public class JmcomicService {
 
                 // 处理章节内图片
                 int chapterStartPage = document.getNumberOfPages();
-                List<File> images = sortFiles(Arrays.asList(FileUtil.getFileList(folder.getAbsolutePath())));
+                List<File> images = this.sortFiles(Arrays.asList(FileUtil.getFileList(folder.getAbsolutePath())));
+                log.info("生成pdf章节 图片数:{} name:{}",images.size(), this.getChapterNameInLog(folder));
                 for (File image : images) {
-                    addImageToPdf(document, image);
+                    this.addImageToPdf(document, image);
                 }
 
                 // 设置章节跳转目标（最后一个页面）
@@ -236,6 +243,10 @@ public class JmcomicService {
         }
     }
 
+    private String getChapterNameInLog(File chapterFile) {
+        return chapterFile.getParentFile().getName() + File.separator + chapterFile.getName();
+    }
+
     private void addImageToPdf(PDDocument document, File imageFile) throws IOException {
         BufferedImage bufferedImage = ImageIO.read(imageFile);
         PDImageXObject image = LosslessFactory.createFromImage(document, bufferedImage);
@@ -245,6 +256,7 @@ public class JmcomicService {
         try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
             contentStream.drawImage(image, 0, 0, image.getWidth(), image.getHeight());
         }
+        bufferedImage.flush();
     }
 
     private List<File> sortFolders(List<File> folders) {
@@ -258,8 +270,8 @@ public class JmcomicService {
 
     private List<File> sortFiles(List<File> files) {
         files.sort((f1, f2) -> {
-            int num1 = extractImageNumber(FileUtil.getBaseName(f1.getName()));
-            int num2 = extractImageNumber(FileUtil.getBaseName(f2.getName()));
+            int num1 = this.extractImageNumber(FileUtil.getBaseName(f1.getName()));
+            int num2 = this.extractImageNumber(FileUtil.getBaseName(f2.getName()));
             return Integer.compare(num1, num2);
         });
         return files;
@@ -305,19 +317,21 @@ public class JmcomicService {
             }
             String albumPath = FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName();
             log.info("开始下载：jm{} 共{}话", aid, album.getSeries().size());
-            for (Series series : album.getSeries()) {
-                series.setTitle("第" + series.getSort() +"话");
-                try {
-                    String chapterPath = getChapterPath(albumPath, series);
-                    Chapter chapter = requestChapter(series.getId());
-                    downloadChapter(chapter,chapterPath,series.getTitle(),-1);
-                    System.gc();
-                }catch (Exception e) {
-                    log.error("下载章节异常 a:{} c:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
+            try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()){
+                for (Series series : album.getSeries()) {
+                    series.setTitle("第" + series.getSort() +"话");
+                    try {
+                        String chapterPath = this.getChapterPath(albumPath, series);
+                        Chapter chapter = this.requestChapter(series.getId());
+                        this.downloadChapter(chapter,chapterPath,series.getTitle(),-1, executor);
+//                        System.gc();
+                    }catch (Exception e) {
+                        log.error("下载章节异常 Album:{}\nChapter:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
+                        return BaseResp.fail(StrFormatter.format("下载章节异常：{} \n{}",series.getTitle(),e.getMessage()));
+                    }
                 }
             }
-
-            String chapterPath = getChapterPath(albumPath, album.getSeries().getFirst());
+            String chapterPath = this.getChapterPath(albumPath, album.getSeries().getFirst());
             File chapterPathFile = new File(chapterPath);
             File[] files = null;
             if(!chapterPathFile.exists()
@@ -336,14 +350,15 @@ public class JmcomicService {
         return albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
     }
 
-    public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle,int lastCount) {
+    public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle,int lastCount,
+                                ExecutorService executor) {
         List<String> images = chapter.getImages();
         if (CollectionUtils.isEmpty(images)) {
             log.error("该章节无图片 c:{}",JSONObject.toJSONString(chapter));
             return;
         }
         long chapterId = chapter.getId();
-        long scrambleId = getScrambleId(chapterId);
+        long scrambleId = this.getScrambleId(chapterId);
 
         List<DownloadParam> downloadParams = images.stream().map(filename -> {
             DownloadParam downloadParam = new DownloadParam();
@@ -356,54 +371,52 @@ public class JmcomicService {
                 return downloadParam;
             }
             String filenameWithoutExt = FileUtil.getBaseName(filename);
-            downloadParam.setBlockNum(calculateBlockNum(scrambleId, chapterId, filenameWithoutExt));
+            downloadParam.setBlockNum(this.calculateBlockNum(scrambleId, chapterId, filenameWithoutExt));
             return downloadParam;
         }).filter(e -> !e.getImgFile().exists())
                 .collect(Collectors.toList());
         if (CollectionUtils.isEmpty(downloadParams)) {
-            log.info("该章节不存在需下载图片");
+            log.info("该章节无需下载图片：{}", this.getChapterNameInLog(new File(chapterPath)));
             return;
         }
         if (downloadParams.size() == lastCount) {
-            log.error("本次下载数和上次下载数相同，终止下载");
+            log.error("本次需下载数和上次需下载数相同，终止下载：{}", this.getChapterNameInLog(new File(chapterPath)));
             return;
         }
         CountDownLatch countDownLatch = new CountDownLatch(downloadParams.size());
         FileUtil.mkdirs(chapterPath);
         List<List<DownloadParam>> lists = CommonUtil.split(downloadParams, getThreads());
         int poolSize = lists.size();
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()){
-            List<CompletableFuture<Void>> taskList = lists.stream().map(list -> {
-                return CompletableFuture.runAsync(() -> {
-                    list.forEach(param -> {
-                        String imgUrl = param.getImgUrl();
-                        File tmpImgFile = new File(param.getImgFile().getAbsolutePath() + ".tmp");
+        List<CompletableFuture<Void>> taskList = lists.stream().map(list -> {
+            return CompletableFuture.runAsync(() -> {
+                list.forEach(param -> {
+                    String imgUrl = param.getImgUrl();
+                    File tmpImgFile = new File(param.getImgFile().getAbsolutePath() + ".tmp");
 
-                        downloadImage(imgUrl,tmpImgFile);
-                        if (!tmpImgFile.exists()) {
-                            return;
-                        }
-                        try {
-                            saveImg(param.getBlockNum(), tmpImgFile, param.getImgFile());
-                            log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
-                            countDownLatch.countDown();
-                        }catch (Exception e) {
-                            log.error("保存图片异常：{}", JSONObject.toJSONString(param),e);
-                        }finally {
-                            tmpImgFile.delete();
-                        }
-                    });
-                }, executor);
-            }).toList();
-            log.info("开始下载【{}】 线程数：{}",seriesTitle, poolSize);
-            long l = System.currentTimeMillis();
-            taskList.forEach(CompletableFuture::join);
-            log.info("【{}】下载完成 cost:{}", seriesTitle,(System.currentTimeMillis() - l));
-        }
+                    this.downloadImage(imgUrl,tmpImgFile);
+                    if (!tmpImgFile.exists()) {
+                        return;
+                    }
+                    try {
+                        this.saveImg(param.getBlockNum(), tmpImgFile, param.getImgFile());
+                        log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
+                        countDownLatch.countDown();
+                    }catch (Exception e) {
+                        log.error("保存图片异常：{}", JSONObject.toJSONString(param),e);
+                    }finally {
+                        tmpImgFile.delete();
+                    }
+                });
+            }, executor);
+        }).toList();
+        log.info("开始下载【{}】 线程数：{}",seriesTitle, poolSize);
+        long l = System.currentTimeMillis();
+        taskList.forEach(CompletableFuture::join);
+        log.info("【{}】下载完成 cost:{}", seriesTitle,(System.currentTimeMillis() - l));
         long count = countDownLatch.getCount();
         if (count > 0) {
             log.info("本章【{}】剩余数量：{} 开始下载剩余图片", seriesTitle,count);
-            downloadChapter(chapter, chapterPath, seriesTitle,downloadParams.size());
+            this.downloadChapter(chapter, chapterPath, seriesTitle,downloadParams.size(), executor);
         }
     }
 
@@ -752,7 +765,8 @@ public class JmcomicService {
     public static void main(String[] args) {
         try {
             JmcomicService jmcomicService = new JmcomicService();
-            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum("1023584");
+//            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum("1023584");
+            jmcomicService.albumToPdf(new File("D:\\temp\\pdf\\JM1116808"), new File("D:\\temp\\pdf\\JM1116808.pdf"));
 
 //            SearchResp search = jmcomicService.search("二乃", "mv");
 //            System.out.println(search);

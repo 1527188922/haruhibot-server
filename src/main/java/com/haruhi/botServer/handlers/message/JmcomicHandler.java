@@ -58,7 +58,7 @@ public class JmcomicHandler implements IAllMessageEvent {
         if(StringUtils.isBlank(aid)){
             return false;
         }
-        Pair<String,Boolean> pair = calcAid(aid);
+        Pair<String,Boolean> pair = this.calcAid(aid);
         if(pair == null){
             return false;
         }
@@ -84,7 +84,7 @@ public class JmcomicHandler implements IAllMessageEvent {
                 }
                 isPdf = isPdf == null || isPdf;
                 // 根据jm号下载本子
-                BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum(aid);
+                BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum(finalAid);
                 if (!albumBaseResp.isSuccess()) {
                     bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                             MessageHolder.instanceText(albumBaseResp.getMsg()));

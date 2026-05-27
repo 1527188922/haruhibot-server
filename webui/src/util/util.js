@@ -313,3 +313,28 @@ export const downloadLink = (href,fileName) =>{
 
   document.body.removeChild(link)
 }
+
+
+export function formatNumberToEmoji(num) {
+  if (typeof num !== 'number' || !Number.isInteger(num) || num < 1) {
+    return num;
+  }
+
+  const emojiMap = [
+    { weight: 64, emoji: '👑' },
+    { weight: 16, emoji: '☀️' },
+    { weight: 4, emoji: '🌙' },
+    { weight: 1, emoji: '⭐' }
+  ];
+
+  let result = '';
+  let remainder = num;
+
+  for (const item of emojiMap) {
+    const { weight, emoji } = item;
+    const count = Math.floor(remainder / weight);
+    result += emoji.repeat(count);
+    remainder = remainder % weight;
+  }
+  return result;
+}
