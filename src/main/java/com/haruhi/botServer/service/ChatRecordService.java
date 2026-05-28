@@ -35,6 +35,9 @@ import com.haruhi.botServer.utils.TextCompressionUtils;
 import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
+import com.haruhi.botServer.vo.CodeNameReq;
+import com.haruhi.botServer.vo.CodeNameResp;
+import com.haruhi.botServer.vo.GroupChatUserResp;
 import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
@@ -225,31 +228,28 @@ public class ChatRecordService{
         throw new BusinessException("查询消息错误："+request.getMessageType());
     }
 
-    public List<ChatRecordVo> queryUser(Long groupId, Long selfId, String keyword, Integer limit) {
-        if (Objects.isNull(groupId) && Objects.isNull(selfId)) {
-            return Collections.emptyList();
+    public PageInfo<GroupChatUserResp> queryUser(CodeNameReq req) {
+        String tableName = sqliteDatabaseService.getChatTableName(req.getGroupId(), null);
+        if (tableName == null) {
+            return PageInfo.emptyPageInfo();
         }
-        limit = limit == null ? 10 : limit;
-        String tableName = sqliteDatabaseService.getChatTableName(groupId, selfId);
-        if(groupId != null){
-            List<ChatRecordGroup> chatRecordGroups = chatRecordGroupMapper.selectUserInGroup(tableName, keyword, limit);
-            return chatRecordGroups.stream().map(e -> {
-                ChatRecordVo chatRecordVo = new ChatRecordVo();
-                chatRecordVo.setCard(e.getCard());
-                chatRecordVo.setUserId(e.getUserId());
-                chatRecordVo.setNickname(e.getNickname());
-                chatRecordVo.setTime(e.getTime());
-                return chatRecordVo;
-            }).collect(Collectors.toList());
+        PageInfo<GroupChatUserResp> pageInfo;
+        if (req.getNeedPage()) {
+            pageInfo = PageHelper.startPage(req.getCurrentPage(), req.getPageSize(), req.getNeedPage())
+                    .doSelectPageInfo(() -> {
+                        chatRecordGroupMapper.selectUserInGroup(tableName, req.getCodeOrName());
+                    });
+        }else{
+            List<GroupChatUserResp> list = chatRecordGroupMapper.selectUserInGroup(tableName, req.getCodeOrName());
+            pageInfo = new PageInfo<>();
+            pageInfo.setList(list);
+            pageInfo.setSize(list.size());
+            pageInfo.setTotal(list.size());
         }
-        List<ChatRecordPrivate> chatRecordPrivates = chatRecordGroupMapper.selectUserInPrivate(tableName, keyword, limit);
-        return chatRecordPrivates.stream().map(e -> {
-            ChatRecordVo chatRecordVo = new ChatRecordVo();
-            chatRecordVo.setUserId(e.getUserId());
-            chatRecordVo.setNickname(e.getNickname());
-            chatRecordVo.setTime(e.getTime());
-            return chatRecordVo;
-        }).collect(Collectors.toList());
+        pageInfo.getList().forEach(e->{
+            e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(), false));
+        });
+        return pageInfo;
     }
 
     public PageInfo groupSearch(ChatRecordQueryReq request, String tableName, boolean page, boolean needCount) {

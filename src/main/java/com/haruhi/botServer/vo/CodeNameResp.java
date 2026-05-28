@@ -12,4 +12,11 @@ import java.io.Serializable;
 public class CodeNameResp {
     private Serializable code;
     private String name;
+
+    private Long userId;
+    private String card;
+
+    private String time;
+
+    private String userAvatarUrl;
 }

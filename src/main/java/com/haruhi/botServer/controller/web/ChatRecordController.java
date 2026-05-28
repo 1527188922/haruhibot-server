@@ -5,21 +5,20 @@ import com.github.pagehelper.PageInfo;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.entity.ChatRecordExtendV2;
-import com.haruhi.botServer.entity.ChatRecordGroup;
-import com.haruhi.botServer.entity.vo.ChatRecordVo;
 import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.service.ChatRecordService;
 import com.haruhi.botServer.utils.TextCompressionUtils;
+import com.haruhi.botServer.vo.CodeNameReq;
+import com.haruhi.botServer.vo.CodeNameResp;
+import com.haruhi.botServer.vo.GroupChatUserResp;
 import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -48,12 +47,9 @@ public class ChatRecordController{
         return HttpResp.success(chatRecordService.search(request, true, true));
     }
 
-    @GetMapping("/group/user")
-    public HttpResp<List<ChatRecordVo>> queryUserInGroup(@RequestParam Long groupId,
-                                                         @RequestParam Long selfId,
-                                                         @RequestParam String keyword,
-                                                         @RequestParam Integer limit){
-        return HttpResp.success(chatRecordService.queryUser(groupId,selfId, keyword, limit));
+    @PostMapping("/group/user")
+    public HttpResp<PageInfo<GroupChatUserResp>> queryUserInGroup(@RequestBody CodeNameReq req){
+        return HttpResp.success(chatRecordService.queryUser(req));
     }
 
     @PostMapping("/v2/extend")

@@ -43,18 +43,8 @@
         </el-table-column>
         <el-table-column label="好友" prop="userId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <div class="face-and-id">
-              <img :src="row.userAvatarUrl">
-              <div>
-                <el-row :title="`QQ：${row.userId}`">
-                  {{row.userId}}
-                </el-row>
-                <el-row :title="`QQ昵称：${row.nickname}`">
-                  {{row.nickname}}
-                </el-row>
-              </div>
-            </div>
-
+            <multi-cell :image-url="row.userAvatarUrl" :text-list="[row.userId,row.nickname]"
+                        :title-list="[`QQ：${row.userId}`, `QQ昵称：${row.nickname}`]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="备注" prop="remark" min-width="100" align="center" show-tooltip-when-overflow/>
@@ -65,24 +55,17 @@
           return `${row.birthdayYear}-${row.birthdayMonth}-${row.birthdayDay}`
         }"/>
         <el-table-column label="年龄" prop="age" min-width="60" align="center" show-tooltip-when-overflow/>
-        <el-table-column label="等级" prop="level" min-width="180" align="center" show-tooltip-when-overflow >
+        <el-table-column label="等级" prop="level" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <el-row v-if="row.level">
-              {{formatNumberToEmoji(row.level)}}
-            </el-row>
-            <el-row >
-              {{row.level}}
-            </el-row>
+            <multi-cell :text-list="[formatNumberToEmoji(row.level),row.level]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="邮箱" prop="email" min-width="140" align="center" show-tooltip-when-overflow/>
         <el-table-column label="电话" prop="phoneNum" min-width="140" align="center" show-tooltip-when-overflow/>
         <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <div class="face-and-id">
-              <img :src="row.selfAvatarUrl">
-              {{row.selfId}}
-            </div>
+            <multi-cell :image-url="row.selfAvatarUrl" :text-list="[row.selfId]"
+                        :title-list="[`QQ：${row.selfId}`]"></multi-cell>
           </template>
         </el-table-column>
       </el-table>
@@ -96,10 +79,12 @@
 import numberInput from "@/components/input/numberInput.vue"
 import {search as searchApi} from "@/api/friend";
 import {formatNumberToEmoji} from "@/util/util";
+import MultiCell from "@/components/multi-cell.vue";
 
 export default {
   name:'GroupList',
   components:{
+    MultiCell,
     numberInput,
   },
   data(){

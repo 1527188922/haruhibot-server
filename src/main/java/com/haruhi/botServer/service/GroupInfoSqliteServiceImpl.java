@@ -166,7 +166,12 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
         }
         List<GroupInfoSqlite> list = this.list(queryWrapper);
         Map<String, CodeNameResp> collect = list.stream()
-                .map(e -> new CodeNameResp(e.getGroupId(), e.getGroupName()))
+                .map(e -> {
+                    CodeNameResp codeNameResp = new CodeNameResp();
+                    codeNameResp.setCode(e.getGroupId());
+                    codeNameResp.setName(e.getGroupName());
+                    return codeNameResp;
+                })
                 .collect(Collectors.groupingBy(e -> e.getCode() + e.getName(), Collectors.collectingAndThen(Collectors.toList(),
                         List::getFirst)));
         return new ArrayList<>(collect.values());

@@ -69,8 +69,8 @@
         </where>
     </select>
 
-    <select id="selectUserInGroup" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
-        SELECT user_id, max(`time`) `time`,min(card) card,min(nickname) nickname
+    <select id="selectUserInGroup" resultType="com.haruhi.botServer.vo.GroupChatUserResp">
+        SELECT user_id userId,count(user_id) `count`, max(`time`) `time`,min(card) card,min(nickname) nickname
         FROM ${tableName}
         <where>
             <if test='keyword != null and keyword != ""'>
@@ -78,7 +78,7 @@
             </if>
         </where>
         GROUP BY user_id
-        LIMIT ${limit}
+        order by `count` desc
     </select>
 
     <select id="selectUserInPrivate" resultType="com.haruhi.botServer.entity.ChatRecordPrivate">

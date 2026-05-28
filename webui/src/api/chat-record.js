@@ -15,9 +15,9 @@ export const selectExtendV2 = (data) => request({
     data
 });
 
-export const queryUser = (param) => request({
+export const queryUser = (data) => request({
     url: baseUrl + '/chatRecord/group/user',
-    method: 'get',
+    method: 'post',
     timeout:60 * 1000,
-    param
+    data
 });

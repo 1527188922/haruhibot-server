@@ -35,25 +35,21 @@
         <el-table-column fixed label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
+        <el-table-column label="操作" width="100" align="center" fixed>
+          <template slot-scope="{row}">
+            <el-button type="text" size="small" @click="showUserList(row)">发言人列表</el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="群号" prop="groupId" min-width="190" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <div class="group-cell">
-              <el-row :title="`群号：${row.groupId}`">
-                {{row.groupId}}
-              </el-row>
-              <el-row :title="`群名：${row.groupName}`">
-                {{row.groupName}}
-              </el-row>
-            </div>
-
+            <multi-cell :text-list="[row.groupId,row.groupName]"
+                        :title-list="[`群号：${row.groupId}`,`群名称：${row.groupName}`]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <div class="face-and-id">
-              <img :src="row.selfAvatarUrl">
-              {{row.selfId}}
-            </div>
+            <multi-cell :image-url="row.selfAvatarUrl" :text-list="[row.selfId]"
+                        :title-list="[`QQ：${row.selfId}`]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="群员数量" prop="memberCount" min-width="100" align="center" show-tooltip-when-overflow/>
@@ -69,18 +65,23 @@
       </div>
     </basic-container>
     <refresh-result-dialog ref="refreshResultDialog"/>
+    <user-list-dialog ref="userListDialog"></user-list-dialog>
   </div>
 </template>
 <script>
 import numberInput from "@/components/input/numberInput.vue"
 import RefreshResultDialog  from "./refresh-result-dialog";
+import UserListDialog from "./user-list-dialog.vue";
 import {search as searchApi,refresh as refreshApi} from "@/api/group";
+import MultiCell from "@/components/multi-cell.vue";
 
 export default {
   name:'GroupList',
   components:{
+    MultiCell,
     numberInput,
-    RefreshResultDialog
+    RefreshResultDialog,
+    UserListDialog
   },
   data(){
     return{
@@ -110,6 +111,9 @@ export default {
     this.search()
   },
   methods:{
+    showUserList(row){
+      this.$refs.userListDialog.open(row)
+    },
     refreshCache(){
       this.refreshLoading = true
       refreshApi().then(({data:{data,code,message}})=>{

@@ -117,31 +117,6 @@ a{
   cursor: pointer;
   //color: #4395ff;
 }
-// table cell中显示头像和userId和qq昵称
-.face-and-id{
-  display: flex;
-  align-items: center;
-  img{
-    margin-right: 5px;
-    width: 40px;
-    border-radius: 50%
-  }
-  .el-row{
-    text-align: left;
-    &:first-child {
-      border-bottom: 1px solid #d5dce8;
-    }
-  }
-}
-.group-cell{
-  width: fit-content;
-  .el-row{
-    text-align: left;
-    &:first-child {
-      border-bottom: 1px solid #d5dce8;
-    }
-  }
-}
 .info-text-btn{
   span{
     color: #909399;

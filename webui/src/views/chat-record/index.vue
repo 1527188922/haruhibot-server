@@ -76,6 +76,11 @@
         <el-table-column fixed label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
+        <el-table-column label="操作" width="100" align="center" fixed>
+          <template slot-scope="{row}">
+            <el-button type="text" size="small" @click="showRaw(row)">原始报文</el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="消息" prop="content" min-width="300">
           <template slot-scope="{row}">
             <span class="chat-content" @click="view(row)">
@@ -85,18 +90,8 @@
         </el-table-column>
         <el-table-column label="发送人" prop="userId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <div class="face-and-id">
-              <img :src="row.userAvatarUrl">
-              <div>
-                <el-row :title="`QQ：${row.userId}`">
-                  {{row.userId}}
-                </el-row>
-                <el-row :title="`QQ昵称：${row.nickname}`">
-                  {{row.nickname}}
-                </el-row>
-              </div>
-            </div>
-
+            <multi-cell :image-url="row.userAvatarUrl" :text-list="[row.userId,row.nickname]"
+                        :title-list="[`QQ：${row.userId}`, `QQ昵称：${row.nickname}`]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="发送人群昵称" prop="card" min-width="100" align="center" />
@@ -107,34 +102,19 @@
             </span>
           </template>
         </el-table-column>
-<!--        <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow />-->
-        <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow >
+        <el-table-column label="群号" prop="groupId" min-width="120" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <div class="group-cell">
-              <el-row :title="`群号：${row.groupId}`">
-                {{row.groupId}}
-              </el-row>
-              <el-row :title="`群名：${row.groupName}`">
-                {{row.groupName}}
-              </el-row>
-            </div>
-
+            <multi-cell :text-list="[row.groupId,row.groupName]"
+                        :title-list="[`群号：${row.groupId}`, `群名称：${row.groupName}`]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <div class="face-and-id">
-              <img :src="row.selfAvatarUrl">
-              {{row.selfId}}
-            </div>
+            <multi-cell :image-url="row.selfAvatarUrl" :text-list="[row.selfId]"
+                        :title-list="[`QQ：${row.selfId}`]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="发送时间" prop="time" min-width="140" align="center" show-tooltip-when-overflow/>
-        <el-table-column label="操作" width="100" align="center" >
-          <template slot-scope="{row}">
-            <el-button type="text" size="small" @click="showRaw(row)">原始报文</el-button>
-          </template>
-        </el-table-column>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
@@ -149,9 +129,11 @@ import numberInput from "@/components/input/numberInput.vue"
 import {searchV2 as searchApiV2, selectExtendV2} from "@/api/chat-record";
 import {codeNameList} from "@/api/group";
 import { getStore,setStore } from "@/util/store.js";
+import MultiCell from "@/components/multi-cell.vue";
 export default {
   name:'ChatRecord',
   components:{
+    MultiCell,
     numberInput,
     ChatView
   },

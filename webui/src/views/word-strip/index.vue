@@ -54,20 +54,15 @@
         </el-table-column>
         <el-table-column label="创建人QQ" prop="userId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <div class="face-and-id">
-              <img :src="row.userAvatarUrl">
-              {{row.userId}}
-            </div>
-
+            <multi-cell :image-url="row.userAvatarUrl" :text-list="[row.userId]"
+                        :title-list="[`QQ：${row.userId}`]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow />
         <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <div class="face-and-id">
-              <img :src="row.selfAvatarUrl">
-              {{row.selfId}}
-            </div>
+            <multi-cell :image-url="row.selfAvatarUrl" :text-list="[row.selfId]"
+                        :title-list="[`QQ：${row.selfId}`]"></multi-cell>
           </template>
         </el-table-column>
       </el-table>
@@ -83,10 +78,12 @@
 import numberInput from "@/components/input/numberInput.vue";
 import ChatView from "@/components/dialog/chat-view";
 import {search as searchApi,refresh,deleteBatch} from "@/api/word-strip";
+import MultiCell from "@/components/multi-cell.vue";
 
 export default {
   name:'WordStrip',
   components: {
+    MultiCell,
     numberInput,
     ChatView
   },
