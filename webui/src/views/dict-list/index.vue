@@ -44,16 +44,16 @@
         <el-table-column fixed label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
+        <el-table-column fixed label="操作" width="100" align="center" >
+          <template slot-scope="{row}">
+            <el-button type="text" size="small" @click="edit(row)">修改</el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="key" prop="key" min-width="190" show-tooltip-when-overflow sortable></el-table-column>
         <el-table-column label="value" prop="content" min-width="190" show-tooltip-when-overflow ></el-table-column>
         <el-table-column label="备注" prop="remark" min-width="200" ></el-table-column>
         <el-table-column label="修改时间" prop="modifyTime" min-width="140" align="center" show-tooltip-when-overflow/>
         <el-table-column label="创建时间" prop="createTime" min-width="140" align="center" show-tooltip-when-overflow/>
-        <el-table-column label="操作" width="100" align="center" >
-          <template slot-scope="{row}">
-            <el-button type="text" size="small" @click="edit(row)">修改</el-button>
-          </template>
-        </el-table-column>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
