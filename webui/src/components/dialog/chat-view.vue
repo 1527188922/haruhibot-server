@@ -1,11 +1,7 @@
 <template>
   <div id="ChatView">
     <el-dialog :visible.sync="visible" :title="title" width="600px" @closed="dialogClosed" v-dialogDrag>
-      <div slot="title" v-if="avatarUrl && avatarUrl!==''"
-       class="face-and-id">
-        <img :src="avatarUrl">
-        {{title}}
-      </div>
+      <multi-cell slot="title" :text-list="[title]" :image-url="avatarUrl"></multi-cell>
       <el-form>
         <el-form label=" ">
           <el-input type="textarea" autosize v-model="text" readonly></el-input>
@@ -21,8 +17,12 @@
 </template>
 <script>
 
+import MultiCell from "@/components/multi-cell.vue";
 export default {
   name:'ChatViewDialog',
+  components: {
+    MultiCell
+  },
   data(){
     return{
       title:'',

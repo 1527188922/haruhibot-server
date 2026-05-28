@@ -1,46 +1,51 @@
 <template>
   <div class="collapse-result-plan">
-    <el-row v-for="item in result" :key="item.selfId">
-      <el-divider content-position="left">
-        <div class="face-and-id">
-          <img :src="item.selfAvatarUrl"/>
-          {{item.selfId}}
-        </div>
-      </el-divider>
+    <template v-if="result && result.length > 0">
+      <el-row v-for="item in result" :key="item.selfId">
+        <el-divider content-position="left">
+          <multi-cell :text-list="[item.selfId]" :image-url="item.selfAvatarUrl"></multi-cell>
+        </el-divider>
 
-      <el-collapse>
-        <el-collapse-item :disabled="!item.groupList || item.groupList.length === 0">
-          <template slot="title">
-            <span>当前群数量：{{item.groupList.length}}</span>
-          </template>
-          <div v-for="group in item.groupList" :key="`current-${group.groupId}`">
-            {{`${group.groupName}（${group.groupId}）`}}
-          </div>
-        </el-collapse-item>
-        <el-collapse-item :disabled="!item.addedGroupList || item.addedGroupList.length === 0">
-          <template slot="title">
-            <span class="success-text">新增群数量：{{item.addedGroupList.length}}</span>
-          </template>
-          <div v-for="group in item.addedGroupList" class="success-text" :key="`added-${group.groupId}`">
-            {{`${group.groupName}（${group.groupId}）`}}
-          </div>
-        </el-collapse-item>
-        <el-collapse-item :disabled="!item.removedGroupList || item.removedGroupList.length === 0">
-          <template slot="title">
-            <span class="danger-text">离群数量：{{item.removedGroupList.length}}</span>
-          </template>
-          <div v-for="group in item.removedGroupList" class="danger-text" :key="`removed-${group.groupId}`">
-            {{`${group.groupName}（${group.groupId}）`}}
-          </div>
-        </el-collapse-item>
-      </el-collapse>
-    </el-row>
+        <el-collapse>
+          <el-collapse-item :disabled="!item.groupList || item.groupList.length === 0">
+            <template slot="title">
+              <span>当前群数量：{{item.groupList.length}}</span>
+            </template>
+            <div v-for="group in item.groupList" :key="`current-${group.groupId}`">
+              {{`${group.groupName}（${group.groupId}）`}}
+            </div>
+          </el-collapse-item>
+          <el-collapse-item :disabled="!item.addedGroupList || item.addedGroupList.length === 0">
+            <template slot="title">
+              <span class="success-text">新增群数量：{{item.addedGroupList.length}}</span>
+            </template>
+            <div v-for="group in item.addedGroupList" class="success-text" :key="`added-${group.groupId}`">
+              {{`${group.groupName}（${group.groupId}）`}}
+            </div>
+          </el-collapse-item>
+          <el-collapse-item :disabled="!item.removedGroupList || item.removedGroupList.length === 0">
+            <template slot="title">
+              <span class="danger-text">离群数量：{{item.removedGroupList.length}}</span>
+            </template>
+            <div v-for="group in item.removedGroupList" class="danger-text" :key="`removed-${group.groupId}`">
+              {{`${group.groupName}（${group.groupId}）`}}
+            </div>
+          </el-collapse-item>
+        </el-collapse>
+      </el-row>
+    </template>
+    <template v-else>
+      无数据
+    </template>
   </div>
 </template>
 
 <script>
+import MultiCell from "@/components/multi-cell.vue";
+
 export default {
   name:'collapse-result-plan',
+  components: {MultiCell},
   props:{
     result:{
       type:Array,

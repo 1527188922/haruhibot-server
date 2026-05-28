@@ -1,7 +1,7 @@
 <template>
   <div id="UserListDialog">
-    <el-dialog :visible.sync="visible" :title="`发言人列表：${row.groupName}（${row.groupId}）`" width="700px" @closed="dialogClosed" v-dialogDrag
-               :close-on-click-modal="false">
+    <el-dialog :visible.sync="visible" :title="row ? `发言人列表：${row.groupName}（${row.groupId}）` : '发言人列表'"
+               width="700px" @closed="dialogClosed" v-dialogDrag :close-on-click-modal="false">
 
       <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row >

@@ -81,7 +81,7 @@
             <el-button type="text" size="small" @click="showRaw(row)">原始报文</el-button>
           </template>
         </el-table-column>
-        <el-table-column label="消息" prop="content" min-width="300">
+        <el-table-column label="消息" prop="content" min-width="300" show-tooltip-when-overflow>
           <template slot-scope="{row}">
             <span class="chat-content" @click="view(row)">
               {{row.content}}

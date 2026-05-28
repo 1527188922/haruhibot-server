@@ -4,10 +4,10 @@
     :close-on-click-modal="false">
 <!--      <PopoverResultPlan :result="result"/>-->
       <CollapseResultPlan :result="result"/>
-      <div slot="footer" class="dialog-footer">
-        <el-button size="small" @click="visible = false"
-                   icon="el-icon-circle-close">关闭</el-button>
-      </div>
+<!--      <div slot="footer" class="dialog-footer">-->
+<!--        <el-button size="small" @click="visible = false"-->
+<!--                   icon="el-icon-circle-close">关闭</el-button>-->
+<!--      </div>-->
     </el-dialog>
   </div>
 </template>

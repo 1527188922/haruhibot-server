@@ -24,7 +24,7 @@ export default {
       }
     },
     titleList:{
-      type:String,
+      type:Array,
       default:()=>{
         return []
       }

@@ -235,7 +235,7 @@ public class ChatRecordService{
         }
         PageInfo<GroupChatUserResp> pageInfo;
         if (req.getNeedPage()) {
-            pageInfo = PageHelper.startPage(req.getCurrentPage(), req.getPageSize(), req.getNeedPage())
+            pageInfo = PageHelper.startPage(req.getCurrentPage(), req.getPageSize())
                     .doSelectPageInfo(() -> {
                         chatRecordGroupMapper.selectUserInGroup(tableName);
                     });
