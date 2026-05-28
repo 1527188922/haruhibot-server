@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class GroupChatUserResp {
 
-
+    private Long id;
     private Long userId;
     private String nickname;
     private String card;

@@ -70,13 +70,8 @@
     </select>
 
     <select id="selectUserInGroup" resultType="com.haruhi.botServer.vo.GroupChatUserResp">
-        SELECT user_id userId,count(user_id) `count`, max(`time`) `time`,min(card) card,min(nickname) nickname
+        SELECT user_id userId,count(user_id) `count`, max(id) id
         FROM ${tableName}
-        <where>
-            <if test='keyword != null and keyword != ""'>
-                and (card LIKE CONCAT('%', #{keyword}, '%') or nickname LIKE CONCAT('%', #{keyword}, '%'))
-            </if>
-        </where>
         GROUP BY user_id
         order by `count` desc
     </select>
@@ -91,6 +86,17 @@
         </where>
         GROUP BY user_id
         LIMIT ${limit}
+    </select>
+    <select id="selectByIds" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
+        SELECT id,card,nickname,`time`
+        FROM ${tableName}
+        where
+        <if test="ids != null and ids.size()>0">
+            id in
+            <foreach collection="ids" open="(" close=")" index="index" item="id" separator=",">
+                #{id}
+            </foreach>
+        </if>
     </select>
 
 </mapper>

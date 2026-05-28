@@ -237,16 +237,31 @@ public class ChatRecordService{
         if (req.getNeedPage()) {
             pageInfo = PageHelper.startPage(req.getCurrentPage(), req.getPageSize(), req.getNeedPage())
                     .doSelectPageInfo(() -> {
-                        chatRecordGroupMapper.selectUserInGroup(tableName, req.getCodeOrName());
+                        chatRecordGroupMapper.selectUserInGroup(tableName);
                     });
         }else{
-            List<GroupChatUserResp> list = chatRecordGroupMapper.selectUserInGroup(tableName, req.getCodeOrName());
+            List<GroupChatUserResp> list = chatRecordGroupMapper.selectUserInGroup(tableName);
             pageInfo = new PageInfo<>();
             pageInfo.setList(list);
             pageInfo.setSize(list.size());
             pageInfo.setTotal(list.size());
         }
-        pageInfo.getList().forEach(e->{
+        List<GroupChatUserResp> list = pageInfo.getList();
+        List<Long> ids = list.stream().map(GroupChatUserResp::getId).toList();
+        Map<Long, List<ChatRecordGroup>> map = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(ids)) {
+            List<ChatRecordGroup> chatRecordGroups = chatRecordGroupMapper.selectByIds(tableName, ids);
+            map = chatRecordGroups.stream().collect(Collectors.groupingBy(ChatRecordGroup::getId));
+        }
+        Map<Long, List<ChatRecordGroup>> finalMap = map;
+        list.forEach(e->{
+            List<ChatRecordGroup> chatRecordGroups = finalMap.get(e.getId());
+            if (CollectionUtils.isNotEmpty(chatRecordGroups)) {
+                ChatRecordGroup chatRecordGroup = chatRecordGroups.getFirst();
+                e.setTime(chatRecordGroup.getTime());
+                e.setCard(chatRecordGroup.getCard());
+                e.setNickname(chatRecordGroup.getNickname());
+            }
             e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(), false));
         });
         return pageInfo;
