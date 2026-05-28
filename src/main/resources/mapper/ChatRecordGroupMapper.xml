@@ -90,13 +90,10 @@
     <select id="selectByIds" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
         SELECT id,card,nickname,`time`
         FROM ${tableName}
-        where
-        <if test="ids != null and ids.size()>0">
-            id in
-            <foreach collection="ids" open="(" close=")" index="index" item="id" separator=",">
-                #{id}
-            </foreach>
-        </if>
+        where id in
+        <foreach collection="ids" open="(" close=")" index="index" item="id" separator=",">
+            #{id}
+        </foreach>
     </select>
 
 </mapper>
