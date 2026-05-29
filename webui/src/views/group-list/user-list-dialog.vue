@@ -42,7 +42,8 @@ export default {
       tableLoading:false,
       exportLoading:false,
       queryFormObj:{
-        codeOrName:''
+        prop:'',
+        order:''
       },
       tableData:[],
       row:null,
@@ -69,7 +70,9 @@ export default {
   },
   methods:{
     sortChange({ column, prop, order }){
-      this.selectTableData(order ? prop : this.defOrderProp, order)
+      this.queryFormObj.prop = order ? prop : this.defOrderProp
+      this.queryFormObj.order = order
+      this.selectTableData()
     },
     open(v){
       this.visible = true
@@ -96,15 +99,13 @@ export default {
       this.pagination.currentPage = v
       this.selectTableData()
     },
-    selectTableData(prop = null, order = null){
+    selectTableData(){
       this.tableLoading = true
       searchApi({
         ...this.queryFormObj,
         groupId:this.row.groupId,
         currentPage:this.pagination.currentPage,
-        pageSize:this.pagination.pageSize,
-        prop:prop,
-        order:order
+        pageSize:this.pagination.pageSize
       }).then(({data:{data}})=>{
         this.tableData = data.list || []
         this.pagination.total = data.total
@@ -113,6 +114,8 @@ export default {
       })
     },
     dialogClosed(){
+      this.queryFormObj.prop = ''
+      this.queryFormObj.order = ''
       this.$refs.dataTable.clearSort()
       this.row = null
       this.tableData = []
