@@ -3,7 +3,7 @@ package com.haruhi.botServer.entity.vo;
 import lombok.Data;
 
 @Data
-public class ChatRecordVo {
+public class ChatRecordVo extends AvatarInfo{
 
     private Long id;
     private String card;
@@ -20,8 +20,6 @@ public class ChatRecordVo {
 
     private Long total;
 
-    private String userAvatarUrl;
-    private String selfAvatarUrl;
     private String groupName;
 
 }

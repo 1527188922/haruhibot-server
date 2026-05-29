@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.entity.WordStripSqlite;
 import com.haruhi.botServer.handlers.message.wordStrip.WordStripHandler;
 import com.haruhi.botServer.mapper.WordStripSqliteMapper;
@@ -12,15 +13,20 @@ import com.haruhi.botServer.vo.WordStripQueryReq;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class WordStripSqliteServiceImpl extends ServiceImpl<WordStripSqliteMapper,WordStripSqlite> implements WordStripSqliteService {
 
+    @Autowired
+    private GroupInfoSqliteService groupInfoSqliteService;
     /**
      * 将数据库词条加载到缓存
      */
@@ -61,9 +67,20 @@ public class WordStripSqliteServiceImpl extends ServiceImpl<WordStripSqliteMappe
             pageInfo.setTotal(list.size());
         }
         if (pageInfo != null && CollectionUtils.isNotEmpty(pageInfo.getRecords())) {
+            List<Long> groupIds = pageInfo.getRecords().stream().map(WordStripSqlite::getGroupId).distinct().toList();
+            List<GroupInfoSqlite> groupInfoList = groupInfoSqliteService.list(new LambdaQueryWrapper<GroupInfoSqlite>()
+                    .select(GroupInfoSqlite::getGroupId, GroupInfoSqlite::getGroupName)
+                    .in(GroupInfoSqlite::getGroupId, groupIds));
+            Map<Long, List<GroupInfoSqlite>> map = groupInfoList.stream().collect(Collectors.groupingBy(GroupInfoSqlite::getGroupId));
+
             pageInfo.getRecords().forEach(e -> {
+                List<GroupInfoSqlite> groupInfoSqlites = map.get(e.getGroupId());
+                if (CollectionUtils.isNotEmpty(groupInfoSqlites)) {
+                    e.setGroupName(groupInfoSqlites.getFirst().getGroupName());
+                }
                 e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(),false));
                 e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(e.getSelfId(),false));
+                e.setGroupAvatarUrl(CommonUtil.getGroupAvatarUrl(e.getGroupId(),false));
             });
         }
         return pageInfo;

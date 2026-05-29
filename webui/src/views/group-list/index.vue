@@ -43,7 +43,8 @@
         <el-table-column label="群号" prop="groupId" min-width="190" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
             <multi-cell :text-list="[row.groupId,row.groupName]"
-                        :title-list="[`群号：${row.groupId}`,`群名称：${row.groupName}`]"></multi-cell>
+                        :title-list="[`群号：${row.groupId}`,`群名称：${row.groupName}`]"
+                        :image-url="row.groupAvatarUrl"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >

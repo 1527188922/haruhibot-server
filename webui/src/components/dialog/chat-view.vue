@@ -1,7 +1,7 @@
 <template>
   <div id="ChatView">
     <el-dialog :visible.sync="visible" :title="title" width="600px" @closed="dialogClosed" v-dialogDrag>
-      <multi-cell slot="title" :text-list="[title]" :image-url="avatarUrl"></multi-cell>
+      <multi-cell slot="title" :text-list="[title,userName]" :image-url="avatarUrl"></multi-cell>
       <el-form>
         <el-form label=" ">
           <el-input type="textarea" autosize v-model="text" readonly></el-input>
@@ -28,21 +28,25 @@ export default {
       title:'',
       visible:false,
       text:'',
-      avatarUrl:''
+      avatarUrl:'',
+      userName:''
     }
   },
   methods:{
-    open(text,title,avatarUrl = ''){
+    open(text,title,avatarUrl = '',userName=''){
       this.visible = true
       this.$nextTick(()=>{
         this.title = title
         this.text = text
         this.avatarUrl = avatarUrl
+        this.userName = userName
       })
     },
     dialogClosed(){
       this.title = ''
       this.text = ''
+      this.avatarUrl = ''
+      this.userName = ''
     }
   }
 }

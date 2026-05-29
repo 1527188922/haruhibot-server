@@ -1,15 +1,15 @@
 package com.haruhi.botServer.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.constant.DataBaseConst;
+import com.haruhi.botServer.entity.vo.AvatarInfo;
 import lombok.Data;
 
 @Data
 @TableName(value = DataBaseConst.T_GROUP_INFO)
-public class GroupInfoSqlite {
+public class GroupInfoSqlite extends AvatarInfo {
 
     @TableId(value = "id",type = IdType.AUTO)
     private Long id;
@@ -27,6 +27,4 @@ public class GroupInfoSqlite {
     private String groupCreateTime;
     private Integer groupLevel;
 
-    @TableField(exist = false)
-    private String selfAvatarUrl;
 }

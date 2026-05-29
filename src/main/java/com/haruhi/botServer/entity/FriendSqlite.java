@@ -4,11 +4,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.constant.DataBaseConst;
+import com.haruhi.botServer.entity.vo.AvatarInfo;
 import lombok.Data;
 
 @Data
 @TableName(value = DataBaseConst.T_FRIEND)
-public class FriendSqlite extends BaseUserInfo{
+public class FriendSqlite extends AvatarInfo {
 
     @TableId(value = "id",type = IdType.AUTO)
     private Long id;

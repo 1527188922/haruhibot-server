@@ -1,5 +1,6 @@
 package com.haruhi.botServer.utils;
 
+import cn.hutool.core.text.StrFormatter;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -277,8 +278,15 @@ public class CommonUtil {
 
 
     public static String getAvatarUrl(Long qq, boolean origin){
-        return origin ? MessageFormat.format("https://q1.qlogo.cn/g?b=qq&nk={0}&s=0",String.valueOf(qq))
-                : MessageFormat.format("https://q2.qlogo.cn/headimg_dl?dst_uin={0}&spec=100",String.valueOf(qq));
+        String s = String.valueOf(qq);
+        return origin ? MessageFormat.format("https://q1.qlogo.cn/g?b=qq&nk={0}&s=0", s)
+                : MessageFormat.format("https://q2.qlogo.cn/headimg_dl?dst_uin={0}&spec=100", s);
+    }
+
+    public static String getGroupAvatarUrl(Long groupId, boolean origin){
+        String s = String.valueOf(groupId);
+        return origin ? StrFormatter.format("https://p.qlogo.cn/gh/{}/{}/0", s,s)
+                : StrFormatter.format("https://p.qlogo.cn/gh/{}/{}/100", s,s);
     }
 
     public static void main(String[] args) {

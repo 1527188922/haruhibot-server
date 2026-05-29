@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.constant.DataBaseConst;
+import com.haruhi.botServer.entity.vo.AvatarInfo;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -13,7 +14,7 @@ import java.util.Date;
 
 @Data
 @TableName(value = DataBaseConst.T_WORD_STRIP)
-public class WordStripSqlite {
+public class WordStripSqlite extends AvatarInfo {
     @TableId(value = "id",type = IdType.AUTO)
     private Long id;
     private Long userId;
@@ -24,11 +25,8 @@ public class WordStripSqlite {
     private String createTime;
     private String modifyTime;
 
-
     @TableField(exist = false)
-    private String userAvatarUrl;
-    @TableField(exist = false)
-    private String selfAvatarUrl;
+    private String groupName;
 
 
     public Date createTimeParsed(){

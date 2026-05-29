@@ -1,9 +1,10 @@
 package com.haruhi.botServer.vo;
 
+import com.haruhi.botServer.entity.vo.AvatarInfo;
 import lombok.Data;
 
 @Data
-public class GroupChatUserResp {
+public class GroupChatUserResp extends AvatarInfo {
 
     private Long id;
     private Long userId;
@@ -13,5 +14,4 @@ public class GroupChatUserResp {
 
     private String time;
 
-    private String userAvatarUrl;
 }

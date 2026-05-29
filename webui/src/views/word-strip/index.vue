@@ -58,7 +58,12 @@
                         :title-list="[`QQ：${row.userId}`]"></multi-cell>
           </template>
         </el-table-column>
-        <el-table-column label="群号" prop="groupId" min-width="90" align="center" show-tooltip-when-overflow />
+        <el-table-column label="群号" prop="groupId" min-width="160" align="center" show-tooltip-when-overflow >
+          <template slot-scope="{row}">
+            <multi-cell :text-list="[row.groupId,row.groupName]"
+            :image-url="row.groupAvatarUrl"></multi-cell>
+          </template>
+        </el-table-column>
         <el-table-column label="机器人QQ" prop="selfId" min-width="130" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
             <multi-cell :image-url="row.selfAvatarUrl" :text-list="[row.selfId]"

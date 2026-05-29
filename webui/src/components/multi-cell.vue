@@ -1,10 +1,12 @@
 <template>
   <div class="multi-cell">
     <img v-if="imageUrl" :src="imageUrl">
-    <div>
-      <el-row v-for="(t,i) in textList" :key="t+i" class="text-align-left line" :title="titleList.length >= i + 1 ? titleList[i] : null">
-        {{t}}
-      </el-row>
+    <div class="row-box">
+      <template v-for="(t,i) in textList">
+        <div v-if="t" :key="t+i" class="text-align-left line" :title="titleList.length >= i + 1 ? titleList[i] : null">
+          {{t}}
+        </div>
+      </template>
     </div>
   </div>
 </template>

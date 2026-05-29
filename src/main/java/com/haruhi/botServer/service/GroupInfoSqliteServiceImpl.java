@@ -132,6 +132,7 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
         if (CollectionUtils.isNotEmpty(records)) {
             records.forEach(e->{
                 e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(e.getSelfId(), false));
+                e.setGroupAvatarUrl(CommonUtil.getGroupAvatarUrl(e.getGroupId(), false));
             });
         }
         return pageInfo;

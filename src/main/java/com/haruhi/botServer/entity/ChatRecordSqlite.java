@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.constant.DataBaseConst;
+import com.haruhi.botServer.entity.vo.AvatarInfo;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import lombok.Data;
 
@@ -12,7 +13,7 @@ import java.util.Date;
 
 @Data
 @TableName(value = DataBaseConst.T_CHAT_RECORD)
-public class ChatRecordSqlite {
+public class ChatRecordSqlite extends AvatarInfo {
 
     @TableId(value = "id",type = IdType.AUTO)
     private Long id;
@@ -31,10 +32,6 @@ public class ChatRecordSqlite {
     @TableField(exist = false)
     private Long total;
 
-    @TableField(exist = false)
-    private String userAvatarUrl;
-    @TableField(exist = false)
-    private String selfAvatarUrl;
     @TableField(exist = false)
     private String groupName;
 

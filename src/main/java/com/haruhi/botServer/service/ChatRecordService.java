@@ -168,6 +168,7 @@ public class ChatRecordService{
 
             e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(), false));
             e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(e.getSelfId(), false));
+            e.setGroupAvatarUrl(CommonUtil.getGroupAvatarUrl(groupId, false));
             e.setGroupId(groupId);
             e.setMessageType(MessageTypeEnum.group.getType());
             List<GroupInfoSqlite> groupInfo = groupMap.get(groupId);
