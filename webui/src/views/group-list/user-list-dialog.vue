@@ -4,7 +4,8 @@
                width="700px" @closed="dialogClosed" v-dialogDrag :close-on-click-modal="false">
       <multi-cell slot="title" :text-list="[title]" :image-url="avatarUrl"></multi-cell>
       <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
-                stripe max-height="800" size="small" ref="dataTable" highlight-current-row >
+                stripe max-height="800" size="small" ref="dataTable" highlight-current-row
+                @sort-change="sortChange" class="sortable-table">
         <el-table-column fixed label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
@@ -15,8 +16,10 @@
           </template>
         </el-table-column>
         <el-table-column label="群内昵称" prop="card" min-width="100" align="center" show-tooltip-when-overflow/>
-        <el-table-column label="发言数" prop="count" min-width="70" align="center" show-tooltip-when-overflow/>
-        <el-table-column label="最近发言时间" prop="time" min-width="120" align="center" show-tooltip-when-overflow/>
+        <el-table-column label="发言数" prop="count" min-width="70" align="center" show-tooltip-when-overflow
+                         sortable="custom" :sort-orders="['ascending', 'descending']"/>
+        <el-table-column label="最近发言时间" prop="time" min-width="120" align="center" show-tooltip-when-overflow
+                         sortable="custom"/>
       </el-table>
       <div class="pagination-box">
         <el-pagination small v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
@@ -51,6 +54,7 @@ export default {
         background: false,
         total: 0
       },
+      defOrderProp:'count'
     }
   },
   created() {
@@ -64,6 +68,9 @@ export default {
     }
   },
   methods:{
+    sortChange({ column, prop, order }){
+      this.selectTableData(order ? prop : this.defOrderProp, order)
+    },
     open(v){
       this.visible = true
       this.$nextTick(()=>{
@@ -89,13 +96,15 @@ export default {
       this.pagination.currentPage = v
       this.selectTableData()
     },
-    selectTableData(){
+    selectTableData(prop = null, order = null){
       this.tableLoading = true
       searchApi({
         ...this.queryFormObj,
         groupId:this.row.groupId,
         currentPage:this.pagination.currentPage,
-        pageSize:this.pagination.pageSize
+        pageSize:this.pagination.pageSize,
+        prop:prop,
+        order:order
       }).then(({data:{data}})=>{
         this.tableData = data.list || []
         this.pagination.total = data.total
@@ -104,6 +113,7 @@ export default {
       })
     },
     dialogClosed(){
+      this.$refs.dataTable.clearSort()
       this.row = null
       this.tableData = []
     }

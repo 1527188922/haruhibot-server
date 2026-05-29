@@ -234,14 +234,16 @@ public class ChatRecordService{
         if (tableName == null) {
             return PageInfo.emptyPageInfo();
         }
+        String prop = this.getProp(req.getProp());
+        String order = this.getOrder(req.getOrder());
         PageInfo<GroupChatUserResp> pageInfo;
         if (req.getNeedPage()) {
             pageInfo = PageHelper.startPage(req.getCurrentPage(), req.getPageSize())
                     .doSelectPageInfo(() -> {
-                        chatRecordGroupMapper.selectUserInGroup(tableName);
+                        chatRecordGroupMapper.selectUserInGroup(tableName, prop, order);
                     });
         }else{
-            List<GroupChatUserResp> list = chatRecordGroupMapper.selectUserInGroup(tableName);
+            List<GroupChatUserResp> list = chatRecordGroupMapper.selectUserInGroup(tableName, prop, order);
             pageInfo = new PageInfo<>();
             pageInfo.setList(list);
             pageInfo.setSize(list.size());
@@ -259,13 +261,29 @@ public class ChatRecordService{
             List<ChatRecordGroup> chatRecordGroups = finalMap.get(e.getId());
             if (CollectionUtils.isNotEmpty(chatRecordGroups)) {
                 ChatRecordGroup chatRecordGroup = chatRecordGroups.getFirst();
-                e.setTime(chatRecordGroup.getTime());
                 e.setCard(chatRecordGroup.getCard());
                 e.setNickname(chatRecordGroup.getNickname());
             }
             e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(), false));
         });
         return pageInfo;
+    }
+    private String getProp(String orderParam){
+        String defProp = "count";
+        List<String> props = Arrays.asList("time",defProp);
+        return props.contains(orderParam) ? orderParam : defProp;
+    }
+    private String getOrder(String orderParam) {
+        String order = "desc";
+        if (StringUtils.isNotBlank(orderParam)) {
+            if ("ascending".equalsIgnoreCase(orderParam)) {
+                order = "asc";
+            }
+            if ("descending".equalsIgnoreCase(orderParam)) {
+                order = "desc";
+            }
+        }
+        return order;
     }
 
     public PageInfo groupSearch(ChatRecordQueryReq request, String tableName, boolean page, boolean needCount) {

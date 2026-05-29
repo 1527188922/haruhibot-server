@@ -28,7 +28,9 @@ public interface ChatRecordGroupMapper {
                                                 @Param("startTime") String startTime,
                                                 @Param("excludeContent") List<String> excludeList);
 
-    List<GroupChatUserResp> selectUserInGroup(@Param("tableName") String tableName);
+    List<GroupChatUserResp> selectUserInGroup(@Param("tableName") String tableName,
+                                              @Param("prop") String prop,
+                                              @Param("order") String order);
 
     List<ChatRecordPrivate> selectUserInPrivate(@Param("tableName") String tableName,
                                                 @Param("keyword") String keyword,

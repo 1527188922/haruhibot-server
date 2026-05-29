@@ -183,6 +183,15 @@ a{
   width: fit-content !important;
 }
 
+.sortable-table{
+  thead {
+    .is-sortable{
+      padding: 0 0;
+    }
+  }
+}
+
+
 // ele样式覆盖
 @import './element-ui.scss';
 // 顶部右侧显示

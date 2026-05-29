@@ -14,4 +14,7 @@ public class CodeNameReq extends PageReq {
     private Long groupId;
     private Boolean needPage = true;
 
+    private String prop;
+    private String order;
+
 }

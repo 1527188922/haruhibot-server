@@ -70,10 +70,10 @@
     </select>
 
     <select id="selectUserInGroup" resultType="com.haruhi.botServer.vo.GroupChatUserResp">
-        SELECT user_id userId,count(user_id) `count`, max(id) id
+        SELECT user_id userId,count(user_id) `count`, max(id) id,max(`time`) time
         FROM ${tableName}
         GROUP BY user_id
-        order by `count` desc
+        order by ${prop} ${order}
     </select>
 
     <select id="selectUserInPrivate" resultType="com.haruhi.botServer.entity.ChatRecordPrivate">
@@ -88,7 +88,7 @@
         LIMIT ${limit}
     </select>
     <select id="selectByIds" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
-        SELECT id,card,nickname,`time`
+        SELECT id,card,nickname
         FROM ${tableName}
         where id in
         <foreach collection="ids" open="(" close=")" index="index" item="id" separator=",">
