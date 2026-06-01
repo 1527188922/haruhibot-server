@@ -203,13 +203,13 @@ public class MessageDispenser {
             List<Long> accessGroups = dictionarySqliteService.getList(DictionaryEnum.BOT_ACCESS_GROUP.getKey(), "[,，]", Long.class, Collections.emptyList());
             if(CollectionUtils.isNotEmpty(accessGroups)
                     && !accessGroups.contains(message.getGroupId())
-                    && event.getClass() != ChatRecordHandler.class){
+                    && !(event instanceof ChatRecordHandler)){
                 return true;
             }
 
             boolean disableGroup = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
             if(disableGroup
-                    && event.getClass() != ChatRecordHandler.class){
+                    && !(event instanceof ChatRecordHandler)){
                 // 本次为群消息 且开了禁用群功能 则只让聊天记录保存handler类生效
                 return true;
             }
