@@ -1,5 +1,6 @@
 package com.haruhi.botServer.service;
 
+import cn.hutool.core.lang.mutable.MutablePair;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
@@ -13,7 +14,7 @@ import java.util.Map;
 
 public interface GroupInfoSqliteService extends IService<GroupInfoSqlite> {
 
-    List<GroupInfoSqlite> loadGroupInfo(Bot bot);
+    MutablePair<List<GroupInfoSqlite>,List<GroupInfoSqlite>> loadGroupInfo(Bot bot);
 
     Map<Long,List<GroupInfoSqlite>> selectMapByGroupIds(List<Long> groupIds);
 

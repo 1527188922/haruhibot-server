@@ -1,5 +1,6 @@
 package com.haruhi.botServer.controller.web;
 
+import cn.hutool.core.lang.mutable.MutablePair;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.vo.CodeNameReq;
@@ -41,13 +42,13 @@ public class GroupController {
     @PostMapping("/refresh")
     public HttpResp refresh(@RequestParam(value = "botId",required = false) Long botId){
 
-        List<GroupInfoSqlite> groupInfoList = new ArrayList<>();
+        List<MutablePair<List<GroupInfoSqlite>,List<GroupInfoSqlite>>> groupInfoList = new ArrayList<>();
         if (Objects.nonNull(botId)) {
             Bot botById = BotContainer.getBotById(botId);
             if (botById == null) {
                 return HttpResp.fail("机器人QQ不存在或未连接："+botId,null);
             }
-            groupInfoList.addAll(groupInfoSqliteService.loadGroupInfo(botById));
+            groupInfoList.add(groupInfoSqliteService.loadGroupInfo(botById));
         }else{
             Collection<Bot> bots = BotContainer.getBots();
             if (CollectionUtils.isNotEmpty(bots)) {
@@ -56,24 +57,28 @@ public class GroupController {
                     return HttpResp.fail("当前无QQ客户端连接",null);
                 }
                 for (Bot bot : collect) {
-                    groupInfoList.addAll(groupInfoSqliteService.loadGroupInfo(bot));
+                    groupInfoList.add(groupInfoSqliteService.loadGroupInfo(bot));
                 }
             }
         }
 
         List<Map<String,Object>> list = new ArrayList<>();
-        groupInfoList.stream()
-                .collect(Collectors.groupingBy(GroupInfoSqlite::getSelfId,Collectors.toList()))
-                .forEach((k,v)->{
+        groupInfoList
+                .forEach(mu->{
+                    List<GroupInfoSqlite> newList = mu.getKey();
+                    List<GroupInfoSqlite> oldList = mu.getValue();
+                    if (newList.isEmpty()) {
+                        return;
+                    }
                     Map<String, Object> item = new HashMap<>();
-                    item.put("selfId",k);
-                    item.put("selfAvatarUrl", CommonUtil.getAvatarUrl(k,false));
-                    item.put("groupList",v);
-                    List<GroupInfoSqlite> oldGroupInfoList = groupInfoSqliteService.selectBySelfId(k);
+                    Long selfId = newList.getFirst().getSelfId();
+                    item.put("selfId", selfId);
+                    item.put("selfAvatarUrl", CommonUtil.getAvatarUrl(selfId,false));
+                    item.put("groupList",newList);
 
-                    List<GroupInfoSqlite> added = CommonUtil.findAdded(v, oldGroupInfoList, GroupInfoSqlite::getGroupId);
+                    List<GroupInfoSqlite> added = CommonUtil.findAdded(newList, oldList, GroupInfoSqlite::getGroupId);
                     item.put("addedGroupList",added);
-                    List<GroupInfoSqlite> removed = CommonUtil.findRemoved(v, oldGroupInfoList, GroupInfoSqlite::getGroupId);
+                    List<GroupInfoSqlite> removed = CommonUtil.findRemoved(newList, oldList, GroupInfoSqlite::getGroupId);
                     item.put("removedGroupList",removed);
 
                     list.add(item);

@@ -89,7 +89,6 @@ export default {
 
     },
     resetQueryForm(){
-      this.$refs.queryForm.resetFields()
     },
     sizeChange(v){
       this.pagination.pageSize = v
@@ -106,7 +105,12 @@ export default {
         groupId:this.row.groupId,
         currentPage:this.pagination.currentPage,
         pageSize:this.pagination.pageSize
-      }).then(({data:{data}})=>{
+      }).then(({data:{code,data}})=>{
+        if (code !== 200) {
+          this.tableData = []
+          this.pagination.total = 0
+          return
+        }
         this.tableData = data.list || []
         this.pagination.total = data.total
       }).finally(()=>{
@@ -118,6 +122,7 @@ export default {
       this.queryFormObj.order = ''
       this.$refs.dataTable.clearSort()
       this.row = null
+      this.pagination.total = 0
       this.tableData = []
     }
   }

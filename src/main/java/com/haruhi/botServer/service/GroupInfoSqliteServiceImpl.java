@@ -1,5 +1,6 @@
 package com.haruhi.botServer.service;
 
+import cn.hutool.core.lang.mutable.MutablePair;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -34,14 +35,14 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
      */
     @Transactional
     @Override
-    public List<GroupInfoSqlite> loadGroupInfo(Bot bot) {
+    public MutablePair<List<GroupInfoSqlite>,List<GroupInfoSqlite>> loadGroupInfo(Bot bot) {
         SyncResponse<List<GroupInfo>> syncResponse = bot.getGroupList(true, 10 * 1000);
         if (!syncResponse.isSuccess()) {
-            return Collections.emptyList();
+            return new MutablePair<>(Collections.emptyList(), Collections.emptyList());
         }
         List<GroupInfo> data = syncResponse.getData();
         if (CollectionUtils.isEmpty(data)) {
-            return Collections.emptyList();
+            return new MutablePair<>(Collections.emptyList(), Collections.emptyList());
         }
         Long selfId = bot.getId();
         List<GroupInfoSqlite> groupInfoSqlites = data.stream().map(e -> {
@@ -57,7 +58,7 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
                 }
             }
             return groupInfoSqlite;
-        }).collect(Collectors.toList());
+        }).toList();
 
         List<GroupInfoSqlite> dbList = this.list(new LambdaQueryWrapper<GroupInfoSqlite>()
                 .eq(GroupInfoSqlite::getSelfId, selfId));
@@ -93,7 +94,7 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
 //        if (CollectionUtils.isNotEmpty(groupInfoSqlites1)) {
 //            needAdd.addAll(groupInfoSqlites1);
 //        }
-        return needAdd;
+        return new MutablePair<>(needAdd, dbList);
     }
 
     private GroupInfoSqlite findByGroupId(Long groupId, List<GroupInfoSqlite> dbList) {
