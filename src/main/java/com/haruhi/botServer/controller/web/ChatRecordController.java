@@ -1,15 +1,16 @@
 package com.haruhi.botServer.controller.web;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageInfo;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.entity.ChatRecordExtendV2;
+import com.haruhi.botServer.entity.vo.ChatRecordVo;
 import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.service.ChatRecordService;
 import com.haruhi.botServer.utils.TextCompressionUtils;
 import com.haruhi.botServer.vo.CodeNameReq;
-import com.haruhi.botServer.vo.CodeNameResp;
 import com.haruhi.botServer.vo.GroupChatUserResp;
 import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
@@ -73,4 +74,20 @@ public class ChatRecordController{
         }
         return HttpResp.success(extendV2);
     }
+
+    @PostMapping("/group/context")
+    public HttpResp<List<ChatRecordVo>> selectExtendV2(@RequestBody JSONObject request){
+        Long groupId = request.getLong("groupId");
+        Long id = request.getLong("id");
+
+        if (Objects.isNull(groupId) || Objects.isNull(id)) {
+            return HttpResp.fail("参数错误",null);
+        }
+        long offset1 = request.getLongValue("offset1");
+        long offset2 = request.getLongValue("offset2");
+
+        List<ChatRecordVo> chatRecordVos = chatRecordService.groupMsgContext(groupId, id, offset1, offset2);
+        return HttpResp.success(chatRecordVos);
+    }
+
 }

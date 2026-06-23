@@ -95,5 +95,9 @@
             #{id}
         </foreach>
     </select>
-
+    <select id="selectListByIdBetween" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
+        select <include refid="base_columns"></include>
+        FROM ${tableName}
+        where id between #{start} and #{end}
+    </select>
 </mapper>

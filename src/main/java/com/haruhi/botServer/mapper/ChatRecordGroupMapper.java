@@ -4,7 +4,6 @@ import com.haruhi.botServer.entity.ChatRecordGroup;
 import com.haruhi.botServer.entity.ChatRecordPrivate;
 import com.haruhi.botServer.entity.vo.ChatRecordVo;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
-import com.haruhi.botServer.vo.CodeNameResp;
 import com.haruhi.botServer.vo.GroupChatUserResp;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -35,5 +34,8 @@ public interface ChatRecordGroupMapper {
     List<ChatRecordPrivate> selectUserInPrivate(@Param("tableName") String tableName,
                                                 @Param("keyword") String keyword,
                                                 @Param("limit") Integer limit);
+
+    List<ChatRecordGroup> selectListByIdBetween(@Param("tableName") String tableName, @Param("start") long start, @Param("end") long end);
+
 
 }

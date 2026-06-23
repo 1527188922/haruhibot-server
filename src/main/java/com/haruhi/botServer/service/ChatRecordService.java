@@ -36,9 +36,7 @@ import com.haruhi.botServer.utils.WordCloudUtil;
 import com.haruhi.botServer.utils.excel.ChatRecordExportBody;
 import com.haruhi.botServer.vo.ChatRecordQueryReq;
 import com.haruhi.botServer.vo.CodeNameReq;
-import com.haruhi.botServer.vo.CodeNameResp;
 import com.haruhi.botServer.vo.GroupChatUserResp;
-import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.ws.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -81,6 +79,23 @@ public class ChatRecordService{
     private GroupInfoSqliteService groupInfoSqliteService;
     @Autowired
     private DictionarySqliteService dictionarySqliteService;
+
+    public List<ChatRecordVo> groupMsgContext(long groupId, long id, long offset1, long offset2) {
+        long start = id + offset1;
+        long end = id + offset2;
+        if (Math.abs(end - start) > 501) {
+            throw new BusinessException("对话上下文范围过大");
+        }
+        String chatTableName = sqliteDatabaseService.getChatTableName(groupId, null);
+        List<ChatRecordGroup> chatRecordGroups = chatRecordGroupMapper.selectListByIdBetween(chatTableName, start, end);
+        if (chatRecordGroups.isEmpty()) {
+            return Collections.emptyList();
+        }
+        PageInfo<ChatRecordGroup> pageInfo = new PageInfo<>();
+        pageInfo.setList(chatRecordGroups);
+        PageInfo<ChatRecordVo> pageInfoRes = this.groupChat2Vo(pageInfo, groupId);
+        return pageInfoRes.getList();
+    }
 
 
     public void saveChatRecord(Message record) {
