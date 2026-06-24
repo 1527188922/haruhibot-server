@@ -79,6 +79,7 @@
         <el-table-column label="操作" width="100" align="center" fixed>
           <template slot-scope="{row}">
             <el-button type="text" size="small" @click="showRaw(row)">原始报文</el-button>
+            <el-button type="text" size="small" @click="positioningContext(row)">定位到聊天</el-button>
           </template>
         </el-table-column>
         <el-table-column label="消息" prop="content" min-width="300" show-tooltip-when-overflow>
@@ -122,6 +123,7 @@
       </div>
     </basic-container>
     <chat-view ref="chatView"></chat-view>
+    <chat-context-drawer ref="chatContextDrawer"></chat-context-drawer>
   </div>
 </template>
 <script>
@@ -131,12 +133,14 @@ import {searchV2 as searchApiV2, selectExtendV2} from "@/api/chat-record";
 import {codeNameList} from "@/api/group";
 import { getStore,setStore } from "@/util/store.js";
 import MultiCell from "@/components/multi-cell.vue";
+import ChatContextDrawer from "./chat-context-drawer.vue";
 export default {
   name:'ChatRecord',
   components:{
     MultiCell,
     numberInput,
-    ChatView
+    ChatView,
+    ChatContextDrawer
   },
   data(){
     return{
@@ -305,6 +309,9 @@ export default {
           userIds,selfIds
         }
       })
+    },
+    positioningContext(row){
+      this.$refs.chatContextDrawer.open(row)
     },
     showRaw(row){
       selectExtendV2({
