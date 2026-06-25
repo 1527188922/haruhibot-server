@@ -19,6 +19,8 @@ import crudCommon from '@/mixins/crud.js'
 import dayjs from 'dayjs'
 import website from '@/config/website'
 import './util/directives'
+import Print from 'vue-print-nb'
+Vue.use(Print)
 window.$crudCommon = crudCommon
 Vue.prototype.$dayjs = dayjs
 Vue.prototype.website = website;

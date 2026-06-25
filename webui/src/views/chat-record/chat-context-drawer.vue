@@ -45,12 +45,17 @@
         <el-button type="text" title="最底部"  @click="scrollToBottom">
           <i class="el-icon-bottom" style="font-size: 20px"></i>
         </el-button>
+
+        <el-divider direction="vertical"></el-divider>
+        <el-button type="text" title="打印"  @click="handlePrint" v-print="'#ChatWindow'">
+          <i class="el-icon-printer" style="font-size: 20px"></i>
+        </el-button>
       </el-row>
 
 
 
       <div class="chat-wrap" v-loading="loading">
-        <div class="chat-window" ref="chatWindow">
+        <div id="ChatWindow" class="chat-window" ref="chatWindow">
           <template v-if="errMsg">
             <span class="err-resp">
               {{ errMsg }}
@@ -65,16 +70,22 @@
                   <el-avatar :src="item.userAvatarUrl"></el-avatar>
                 </el-col>
                 <el-col :span="18">
-                  <div class="nick">{{ item.card || item.nickname }}</div>
+                  <div class="nick">{{ item.card || item.nickname }}（{{ item.userId }}）</div>
                   <div class="bubble other-bubble" :class="item.id === v.id ? 'key-message' : null">{{ item.content }}</div>
+                  <div class="alignment alignment-other">
+                    <span>{{ item.time }}</span>
+                  </div>
                 </el-col>
               </el-row>
 
               <!-- 自己消息：右 -->
               <el-row v-else  class="row-self" type="flex"  justify="end">
                 <el-col :span="18" class="text-right">
-                  <div class="nick">{{ item.card || item.nickname }}</div>
+                  <div class="nick">{{ item.card || item.nickname }}（{{ item.userId }}）</div>
                   <div class="bubble self-bubble" :class="item.id === v.id ? 'key-message' : null">{{ item.content }}</div>
+                  <div class="alignment alignment-self">
+                    <span>{{ item.time }}</span>
+                  </div>
                 </el-col>
                 <el-col :span="3" class="self-avatar-col">
                   <el-avatar :src="item.userAvatarUrl"></el-avatar>
@@ -106,8 +117,8 @@ export default {
       messageList:[],
       errMsg:null,
       offset:{
-        offset1:100,
-        offset2:100,
+        offset1:50,
+        offset2:50,
       }
     }
   },
@@ -122,6 +133,16 @@ export default {
     }
   },
   methods:{
+    handlePrint(){
+      // 关键：等待DOM更新 → 永远打印最新数据
+      // this.$nextTick(() => {
+      //   print({
+      //     id: '#ChatWindow',
+      //     standard: 'html5'
+      //   })
+      //   this.$message.success('准备打印最新聊天记录')
+      // })
+    },
     // 回到消息最顶部
     scrollToTop(smooth = true) {
       const container = this.$refs.chatWindow;
@@ -175,7 +196,7 @@ export default {
         offset1:-(this.offset.offset1),
         offset2:this.offset.offset2
       }).then(({data:{data,code,message}})=>{
-        this.errMsg = message
+        this.errMsg = code === 200 ? null : message
         this.messageList = data
       }).finally(()=>{
         this.loading = false
@@ -187,8 +208,8 @@ export default {
     },
     closed(){
       this.v = null
-      this.offset.offset1 = 100
-      this.offset.offset2 = 100
+      this.offset.offset1 = 50
+      this.offset.offset2 = 50
       this.messageList = []
       this.errMsg = null
     }
@@ -270,6 +291,7 @@ export default {
       max-width: 85%;
       word-break: break-all;
       font-size: 14px;
+      white-space: pre-wrap;
     }
 
     .other-bubble {
@@ -294,8 +316,25 @@ export default {
     .key-message{
       background-color: #e6a23c;
     }
+    .alignment {
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #999999;
 
-
+    }
+    .alignment-self{
+      padding-right: 8px;
+      span{
+        margin-left: 10px;
+      }
+    }
+    .alignment-other{
+      padding-left: 8px;
+      span{
+        margin-right: 10px;
+      }
+    }
 
   }
 }
