@@ -104,7 +104,13 @@
                         :title-list="[`QQ：${row.userId}`, `QQ昵称：${row.nickname}`]"></multi-cell>
           </template>
         </el-table-column>
-        <el-table-column label="发送人群昵称" prop="card" min-width="100" align="center" />
+        <el-table-column label="对话人" prop="targetId" min-width="190" align="center" show-tooltip-when-overflow v-if="!isQueryGroup">
+          <template slot-scope="{row}">
+            <multi-cell :image-url="row.targetAvatarUrl" :text-list="[row.targetId]"
+                        :title-list="[`QQ：${row.targetId}`]"></multi-cell>
+          </template>
+        </el-table-column>
+        <el-table-column label="发送人群昵称" prop="card" min-width="100" align="center" v-if="isQueryGroup"/>
         <el-table-column label="消息类型" prop="messageType" min-width="70" align="center" show-tooltip-when-overflow>
           <template slot-scope="{row}">
             <span :class="row.messageType === 'private' ? 'danger-text' : ''">
@@ -112,7 +118,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="群号" prop="groupId" min-width="180" align="center" show-tooltip-when-overflow >
+        <el-table-column label="群号" prop="groupId" min-width="180" align="center" show-tooltip-when-overflow v-if="isQueryGroup">
           <template slot-scope="{row}">
             <multi-cell :text-list="[row.groupId,row.groupName]"
                         :title-list="[`群号：${row.groupId}`, `群名称：${row.groupName}`]"

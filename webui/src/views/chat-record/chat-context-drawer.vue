@@ -3,7 +3,8 @@
     <el-drawer :visible.sync="visible" :direction="direction" @closed="closed" size="680px">
       <template slot="title">
         <span v-if="v">
-          <multi-cell :image-url="v.groupAvatarUrl" :text-list="[v.groupName ]" :title-list="[v.groupName ]"></multi-cell>
+          <multi-cell v-if="isGroupMsg" :image-url="v.groupAvatarUrl" :text-list="[v.groupName,v.groupId ]" :title-list="[v.groupName ]"></multi-cell>
+          <multi-cell v-else :image-url="v.targetAvatarUrl" :text-list="[v.targetId]"></multi-cell>
         </span>
       </template>
 
@@ -114,6 +115,11 @@ export default {
   },
   mounted() {
 
+  },
+  computed:{
+    isGroupMsg(){
+      return this.v.messageType === 'group'
+    }
   },
   methods:{
     // 回到消息最顶部

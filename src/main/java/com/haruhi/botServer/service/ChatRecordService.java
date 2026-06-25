@@ -260,6 +260,12 @@ public class ChatRecordService{
             e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(), false));
             e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(selfId, false));
             e.setMessageType(MessageTypeEnum.privat.getType());
+            if(!Objects.equals(selfId, e.getUserId())){
+                e.setTargetId(e.getUserId());
+            }
+            if (Objects.nonNull(e.getTargetId())) {
+                e.setTargetAvatarUrl(CommonUtil.getAvatarUrl(e.getTargetId(), false));
+            }
             return e;
         }).toList();
         pageInfo.setList(list);
