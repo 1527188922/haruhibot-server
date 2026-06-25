@@ -198,7 +198,17 @@ export default {
 <style scoped lang="scss">
 #chat-context-drawer{
    ::v-deep .el-drawer__header{
-    padding: 15px 15px 0;
+     padding: 0 15px ;
+     margin: 0;
+     height: 90px;
+     overflow-y: auto;
+     &::-webkit-scrollbar {
+       width: 4px;
+     }
+     &::-webkit-scrollbar-thumb {
+       background: #ccc;
+       border-radius: 2px;
+     }
   }
   ::v-deep .el-drawer__body{
     //padding: 0 15px 15px ;
@@ -226,7 +236,7 @@ export default {
 
     .chat-window {
       //height: 550px;
-      height: calc(100vh - 55px - 32px - 32px - 2px - 46px);//减去 （抽屉title高度55px + 抽屉title内边距32px + 抽屉title外边距32px + chat-wrap上下两条边框厚度2px - opt-row高度46px）
+      height: calc(100vh - 90px - 46px - 30px - 2px);//减去 （抽屉title高度90px + opt-row高度46px + 抽屉body内边距30px + chat-wrap上下两条边框厚度2px）
       padding: 15px;
       background: #f7f8fa;
       overflow-y: auto;
