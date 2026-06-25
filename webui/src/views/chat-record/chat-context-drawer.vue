@@ -47,7 +47,7 @@
         </el-button>
 
         <el-divider direction="vertical"></el-divider>
-        <el-button type="text" title="打印"  @click="handlePrint" v-print="'#ChatWindow'">
+        <el-button type="text" title="打印"  @click="handlePrint" v-print="printParams">
           <i class="el-icon-printer" style="font-size: 20px"></i>
         </el-button>
       </el-row>
@@ -119,6 +119,11 @@ export default {
       offset:{
         offset1:50,
         offset2:50,
+      },
+      printParams:{
+        id:'ChatWindow',
+        standard: "html5",
+        popTitle: '聊天记录打印'
       }
     }
   },
@@ -336,6 +341,106 @@ export default {
       }
     }
 
+  }
+}
+</style>
+
+
+<style>
+@media print {
+
+  @page {
+    /* 清除页面默认边距 */
+    margin: 0 !important;
+    padding: 0 !important;
+    size: auto !important;
+  }
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  #ChatWindow {
+    width: 100vw !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+    background: #f7f8fa !important;
+    font-family: "Microsoft YaHei", sans-serif !important;
+  }
+
+  #ChatWindow .message-item {
+    margin-bottom: 18px !important;
+    overflow: hidden !important;
+  }
+
+  #ChatWindow .nick {
+    font-size: 12px !important;
+    color: #999 !important;
+    margin-bottom: 4px !important;
+  }
+
+  #ChatWindow .bubble {
+    display: inline-block !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+    max-width: 85% !important;
+    word-break: break-all !important;
+    font-size: 14px !important;
+    white-space: pre-wrap !important;
+    line-height: 1.4 !important;
+  }
+
+  #ChatWindow .other-bubble {
+    background: #ffffff !important;
+    color: #333 !important;
+    text-align: left !important;
+  }
+
+  #ChatWindow .self-bubble {
+    background: #428dff !important;
+    color: #fff !important;
+    text-align: left !important;
+  }
+  #ChatWindow .other-avatar-col{
+    width: 45px;
+  }
+
+  #ChatWindow .self-avatar-col{
+    width: 45px;
+  }
+
+  #ChatWindow .key-message {
+    background-color: #e6a23c !important;
+    color: #fff !important;
+  }
+
+  #ChatWindow .row-other {
+    display: flex !important;
+    justify-content: flex-start !important;
+  }
+  #ChatWindow .row-self {
+    display: flex !important;
+    justify-content: flex-end !important;
+    text-align: right !important;
+  }
+
+  /* 时间样式 */
+  #ChatWindow .alignment {
+    font-size: 13px !important;
+    color: #999 !important;
+    margin-top: 2px !important;
+  }
+
+  /* 强制打印背景色 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 </style>
