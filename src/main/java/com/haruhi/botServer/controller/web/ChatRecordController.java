@@ -1,15 +1,12 @@
 package com.haruhi.botServer.controller.web;
 
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageInfo;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.entity.ChatRecordExtendV2;
 import com.haruhi.botServer.entity.vo.ChatRecordVo;
-import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.service.ChatRecordService;
-import com.haruhi.botServer.utils.TextCompressionUtils;
 import com.haruhi.botServer.vo.CodeNameReq;
 import com.haruhi.botServer.vo.GroupChatUserResp;
 import com.haruhi.botServer.vo.HttpResp;
@@ -22,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,8 +26,6 @@ import java.util.Objects;
 @RestController
 @RequestMapping(BotConfig.CONTEXT_PATH+"/chatRecord")
 public class ChatRecordController{
-    @Autowired
-    private ChatRecordExtendV2Mapper chatRecordExtendV2Mapper;
     @Autowired
     private ChatRecordService chatRecordService;
 
@@ -58,35 +52,44 @@ public class ChatRecordController{
         if (Objects.isNull(request.getChatId()) || Objects.isNull(request.getUserId())) {
             return HttpResp.fail("参数错误",null);
         }
-        ChatRecordExtendV2 extendV2 = chatRecordExtendV2Mapper.selectOne(new LambdaQueryWrapper<ChatRecordExtendV2>()
-                .eq(ChatRecordExtendV2::getChatRecordId, request.getChatId())
-                .eq(ChatRecordExtendV2::getUserId, request.getUserId())
-                .last("limit 1"));
-
-        byte[] rawWsMessageBinary = extendV2.getRawWsMessageBinary();
-        if (Objects.nonNull(rawWsMessageBinary) && rawWsMessageBinary.length > 0) {
-            try {
-                extendV2.setRawWsMessage(TextCompressionUtils.decompress(rawWsMessageBinary));
-                extendV2.setRawWsMessageBinary(null);
-            } catch (IOException e) {
-                log.error("raw消息解压失败",e);
-            }
-        }
-        return HttpResp.success(extendV2);
+        ChatRecordExtendV2 chatRecordExtendV2 = chatRecordService.selectChatRecordExtendOne(request.getChatId(), request.getUserId());
+        return HttpResp.success(chatRecordExtendV2);
     }
 
-    @PostMapping("/group/context")
+    @PostMapping("/context")
     public HttpResp<List<ChatRecordVo>> selectExtendV2(@RequestBody JSONObject request){
-        Long groupId = request.getLong("groupId");
         Long id = request.getLong("id");
-
-        if (Objects.isNull(groupId) || Objects.isNull(id)) {
-            return HttpResp.fail("参数错误",null);
+        if (Objects.isNull(id)) {
+            return HttpResp.fail("缺失消息id",null);
         }
+
+        String messageType = request.getString("messageType");
+        MessageTypeEnum enumByType = MessageTypeEnum.getEnumByType(messageType);
+        if (enumByType == null) {
+            return HttpResp.fail("消息类型错误："+messageType,null);
+        }
+
         long offset1 = request.getLongValue("offset1");
         long offset2 = request.getLongValue("offset2");
 
-        List<ChatRecordVo> chatRecordVos = chatRecordService.groupMsgContext(groupId, id, offset1, offset2);
+
+        if (MessageTypeEnum.group == enumByType) {
+            Long groupId = request.getLong("groupId");
+            if (Objects.isNull(groupId)) {
+                return HttpResp.fail("缺失群号",null);
+            }
+            List<ChatRecordVo> chatRecordVos = chatRecordService.groupMsgContext(groupId, id, offset1, offset2);
+            return HttpResp.success(chatRecordVos);
+        }
+        Long selfId = request.getLong("selfId");
+        Long targetId = request.getLong("targetId");
+        if (Objects.isNull(selfId)) {
+            return HttpResp.fail("参数错误",null);
+        }
+        if (Objects.isNull(targetId)) {
+            return HttpResp.fail("未获取到targetId，该消息不支持定位",null);
+        }
+        List<ChatRecordVo> chatRecordVos = chatRecordService.privateMsgContext(selfId, targetId, id, offset1, offset2);
         return HttpResp.success(chatRecordVos);
     }
 

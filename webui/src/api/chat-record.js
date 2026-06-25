@@ -23,8 +23,8 @@ export const queryUser = (data) => request({
 });
 
 
-export const groupContext = (data) => request({
-    url: baseUrl + '/chatRecord/group/context',
+export const messageContext = (data) => request({
+    url: baseUrl + '/chatRecord/context',
     method: 'post',
     timeout:60 * 1000,
     data

@@ -89,7 +89,7 @@
 </template>
 <script>
 import {deepClone} from "@/util/util";
-import {groupContext} from "@/api/chat-record";
+import {messageContext} from "@/api/chat-record";
 import MultiCell from "@/components/multi-cell.vue";
 export default {
   name:'chat-context-drawer',
@@ -164,9 +164,8 @@ export default {
     },
     queryMessageList(positioning = true, smooth = true){
       this.loading = true
-      groupContext({
-        id:this.v.id,
-        groupId:this.v.groupId,
+      messageContext({
+        ...this.v,
         offset1:-(this.offset.offset1),
         offset2:this.offset.offset2
       }).then(({data:{data,code,message}})=>{

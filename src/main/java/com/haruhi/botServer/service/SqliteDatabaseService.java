@@ -83,7 +83,10 @@ public class SqliteDatabaseService{
 //        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_CHAT_RECORD_EXTEND,"chat_record_id");
 
         sqliteDatabaseInitMapper.createChatRecordExtendV2(DataBaseConst.T_CHAT_RECORD_EXTEND_V2);
-        addColumnIfNotExists(DataBaseConst.T_CHAT_RECORD_EXTEND_V2,"raw_ws_message_binary","BLOB",false,null);
+        this.addColumnIfNotExists(DataBaseConst.T_CHAT_RECORD_EXTEND_V2,"raw_ws_message_binary","BLOB",false,null);
+        this.addColumnIfNotExists(DataBaseConst.T_CHAT_RECORD_EXTEND_V2,"self_id","INTEGER",false,null);
+        this.addColumnIfNotExists(DataBaseConst.T_CHAT_RECORD_EXTEND_V2,"message_type","TEXT",false,null);
+
         sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_CHAT_RECORD_EXTEND_V2,"chat_id_user_IDX","chat_record_id,user_id",false);
 
         sqliteDatabaseInitMapper.createPokeReply(DataBaseConst.T_POKE_REPLY);
@@ -116,7 +119,7 @@ public class SqliteDatabaseService{
 
 
         sqliteDatabaseInitMapper.createDictionary(DataBaseConst.T_DICTIONARY);
-        addColumnIfNotExists(DataBaseConst.T_DICTIONARY,"remark","TEXT",false,null);
+        this.addColumnIfNotExists(DataBaseConst.T_DICTIONARY,"remark","TEXT",false,null);
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_DICTIONARY,"key");
 
 
@@ -183,7 +186,8 @@ public class SqliteDatabaseService{
                 }
 
                 sqliteDatabaseInitMapper.createChatRecordPrivate(tableName);
-                sqliteDatabaseInitMapper.createIndexEnhance(tableName, "idx_user_time_"+selfId,"user_id,time",false);
+//                sqliteDatabaseInitMapper.createIndexEnhance(tableName, "idx_user_time_"+selfId,"user_id,time",false);
+                sqliteDatabaseInitMapper.createIndexEnhance(tableName, "idx_target_time_"+selfId,"target_id,time",false);
                 return 1;
             }
         }finally {

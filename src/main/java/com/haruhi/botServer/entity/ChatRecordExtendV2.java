@@ -14,6 +14,8 @@ public class ChatRecordExtendV2 {
     private Long id;
     private Long chatRecordId;
     private Long userId;
+    private Long selfId;
+    private String messageType;
     private Long groupId;
     private String rawWsMessage;
     // 数据库类型BLOB 压缩后的二进制raw消息

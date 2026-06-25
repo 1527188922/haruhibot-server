@@ -3,20 +3,20 @@
 <mapper namespace="com.haruhi.botServer.mapper.ChatRecordPrivateMapper">
 
     <sql id="base_columns">
-        id,nickname,message_id,user_id,content,deleted,time
+        id,nickname,message_id,user_id,target_id,content,deleted,time
     </sql>
 
     <insert id="insert" useGeneratedKeys="true" keyColumn="id" keyProperty="param.id">
-        INSERT INTO ${tableName}(nickname,message_id,user_id,content,time)
-        values(#{param.nickname},#{param.messageId},#{param.userId},#{param.content},#{param.time})
+        INSERT INTO ${tableName}(nickname,message_id,user_id,target_id,content,time)
+        values(#{param.nickname},#{param.messageId},#{param.userId},#{param.targetId},#{param.content},#{param.time})
     </insert>
 
     <select id="selectList" resultType="com.haruhi.botServer.entity.ChatRecordPrivate">
         select <include refid="base_columns"></include>
         from ${tableName}
         <where>
-            <if test="param.userId != null">
-                and user_id = #{param.userId}
+            <if test="param.targetId != null">
+                and target_id = #{param.targetId}
             </if>
             <if test='param.startTime != null and param.startTime != "" and param.endTime != null and param.endTime != ""'>
                 and `time` between #{param.startTime} and #{param.endTime}
@@ -28,4 +28,27 @@
         order by `time` ${param.sort}
     </select>
 
+
+    <select id="selectListByTime" resultType="com.haruhi.botServer.entity.ChatRecordPrivate">
+        select <include refid="base_columns"></include>
+        FROM ${tableName}
+        where target_id = #{targetId}
+        and time
+        <choose>
+            <when test="before">
+                &lt;
+            </when>
+            <otherwise>
+                &gt;
+            </otherwise>
+        </choose>
+        #{time}
+        ORDER BY time ASC
+        LIMIT ${offset}
+    </select>
+    <select id="selectById" resultType="com.haruhi.botServer.entity.ChatRecordPrivate">
+        select <include refid="base_columns"></include>
+        FROM ${tableName}
+        where id = #{id}
+    </select>
 </mapper>

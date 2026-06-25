@@ -98,6 +98,53 @@ public class ChatRecordService{
     }
 
 
+    public List<ChatRecordVo> privateMsgContext(long selfId, long targetId, long id, long offset1, long offset2) {
+        offset1 = Math.abs(offset1);
+        offset2 = Math.abs(offset2);
+        if (offset1 + offset2 > 500) {
+            throw new BusinessException("对话上下文范围过大");
+        }
+
+        String chatTableName = sqliteDatabaseService.getChatTableName(null, selfId);
+        ChatRecordPrivate chatRecordPrivate = chatRecordPrivateMapper.selectById(chatTableName, id);
+
+        List<ChatRecordPrivate> beforeMsg = chatRecordPrivateMapper.selectListByTime(chatTableName, targetId,true, chatRecordPrivate.getTime(), offset1);
+        beforeMsg.removeIf(v -> Objects.equals(v.getId(), id));
+
+        List<ChatRecordPrivate> afterMsg = chatRecordPrivateMapper.selectListByTime(chatTableName, targetId,false, chatRecordPrivate.getTime(), offset2);
+        afterMsg.removeIf(v -> Objects.equals(v.getId(), id));
+
+        beforeMsg.add(chatRecordPrivate);
+        beforeMsg.addAll(afterMsg);
+
+
+        PageInfo<ChatRecordPrivate> pageInfo = new PageInfo<>();
+        pageInfo.setList(beforeMsg);
+        PageInfo<ChatRecordVo> pageInfoRes = this.privateChat2Vo(pageInfo, selfId);
+        return pageInfoRes.getList();
+
+    }
+
+
+    public ChatRecordExtendV2 selectChatRecordExtendOne(Long chatRecordId, Long userId) {
+        ChatRecordExtendV2 extendV2 = chatRecordExtendV2Mapper.selectOne(new LambdaQueryWrapper<ChatRecordExtendV2>()
+                .eq(ChatRecordExtendV2::getChatRecordId, chatRecordId)
+                .eq(ChatRecordExtendV2::getUserId, userId)
+                .last("limit 1"));
+
+        byte[] rawWsMessageBinary = extendV2.getRawWsMessageBinary();
+        if (Objects.nonNull(rawWsMessageBinary) && rawWsMessageBinary.length > 0) {
+            try {
+                extendV2.setRawWsMessage(TextCompressionUtils.decompress(rawWsMessageBinary));
+                extendV2.setRawWsMessageBinary(null);
+            } catch (IOException e) {
+                log.error("raw消息解压失败",e);
+            }
+        }
+        return extendV2;
+    }
+
+
     public void saveChatRecord(Message record) {
         Long userId = record.getUserId();
         if (record.isGroupMsg()) {
@@ -128,6 +175,7 @@ public class ChatRecordService{
         }
         chatRecordPrivate.setMessageId(record.getMessageId());
         chatRecordPrivate.setUserId(userId);
+        chatRecordPrivate.setTargetId(record.getTargetId());
         chatRecordPrivate.setContent(record.getRawMessage());
         chatRecordPrivate.setTime(this.getTime(record.getTime()));
         sqliteDatabaseService.createChatRecordPrivateIfNotExists(record.getSelfId());
@@ -139,6 +187,8 @@ public class ChatRecordService{
         ChatRecordExtendV2 recordExtendV2 = new ChatRecordExtendV2();
         recordExtendV2.setChatRecordId(chatId);
         recordExtendV2.setUserId(record.getUserId());
+        recordExtendV2.setSelfId(record.getSelfId());
+        recordExtendV2.setMessageType(record.getMessageType());
         if (record.isGroupMsg()) {
             recordExtendV2.setGroupId(record.getGroupId());
         }

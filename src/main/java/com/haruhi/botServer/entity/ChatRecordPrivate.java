@@ -9,6 +9,7 @@ public class ChatRecordPrivate {
     private String nickname;
     private String messageId;
     private Long userId;
+    private Long targetId;
     private String content;
     private Integer deleted;
     private String time;

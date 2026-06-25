@@ -16,6 +16,7 @@ public class ChatRecordQueryReq extends PageReq {
     private String card;
     private Long selfId;
     private Long chatId;
+    private Long targetId;//对话人 私聊查询时使用
 
     // yyyy-MM-dd HH:mm:ss
     private List<String> datetimerange;

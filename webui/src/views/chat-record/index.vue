@@ -4,13 +4,14 @@
       <el-row>
         <el-form :model="queryFormObj" label-width="70px" inline ref="queryForm" size="small">
           <el-form-item label="消息类型" prop="messageType">
-            <el-select v-model="queryFormObj.messageType" class="form-input" >
+            <el-select v-model="queryFormObj.messageType" class="form-input" @change="handleMessageTypeChange">
               <el-option v-for="(value,key) in typeMap" :key="key" :value="key" :label="value">
-                <span :class="key === 'private' ? 'danger-text' : ''">{{ value }}</span>
+<!--                <span :class="key === 'private' ? 'danger-text' : ''">{{ value }}</span>-->
+                <span>{{ value }}</span>
               </el-option>
             </el-select>
           </el-form-item>
-          <el-form-item label="群号" prop="groupId">
+          <el-form-item label="群号" prop="groupId" v-show="isQueryGroup">
             <el-autocomplete class="form-input" v-model="queryFormObj.groupId"  :fetch-suggestions="fetchGroup"
                              clearable
                              popper-class="adaptive-width-autocomplete-popper"
@@ -23,7 +24,15 @@
               </template>
             </el-autocomplete>
           </el-form-item>
-          <el-form-item label="发送人" prop="userId">
+          <el-form-item label="机器人" prop="selfId">
+            <el-autocomplete class="form-input" v-model="queryFormObj.selfId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'selfIds')}"
+                             clearable
+                             popper-class="adaptive-width-autocomplete-popper"
+                             placeholder="机器人QQ号"
+                             :maxlength="30">
+            </el-autocomplete>
+          </el-form-item>
+          <el-form-item label="发送人" prop="userId" v-show="isQueryGroup">
             <el-autocomplete class="form-input" v-model="queryFormObj.userId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'userIds')}"
                              clearable
                              popper-class="adaptive-width-autocomplete-popper"
@@ -31,11 +40,11 @@
                              :maxlength="30">
             </el-autocomplete>
           </el-form-item>
-          <el-form-item label="机器人" prop="selfId">
-            <el-autocomplete class="form-input" v-model="queryFormObj.selfId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'selfIds')}"
+          <el-form-item label="对话人" prop="targetId" v-show="!isQueryGroup">
+            <el-autocomplete class="form-input" v-model="queryFormObj.targetId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'userIds')}"
                              clearable
                              popper-class="adaptive-width-autocomplete-popper"
-                             placeholder="机器人QQ号"
+                             placeholder="私聊对话人QQ"
                              :maxlength="30">
             </el-autocomplete>
           </el-form-item>
@@ -152,6 +161,7 @@ export default {
         messageType:'group',
         userId:'',
         groupId:'',
+        targetId:'',
         nickName:'',
         selfId:'',
         datetimerange:[]
@@ -250,7 +260,18 @@ export default {
     // this.search()
     this.selectGroupList()
   },
+  computed:{
+    isQueryGroup(){
+      return this.queryFormObj.messageType === 'group'
+    },
+  },
   methods:{
+    handleMessageTypeChange(v){
+      if (!this.isQueryGroup) {
+        this.queryFormObj.groupId = ''
+        this.queryFormObj.userId = ''
+      }
+    },
     fetchUsers(v,cb,field){
       let his = getStore({
         name:this.hisKey

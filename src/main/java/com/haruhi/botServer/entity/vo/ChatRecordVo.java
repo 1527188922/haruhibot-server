@@ -11,6 +11,7 @@ public class ChatRecordVo extends AvatarInfo{
     private String messageId;
     private Long groupId;
     private Long userId;
+    private Long targetId;//私聊使用
     private Long selfId;
     private String content;
     private String time;
