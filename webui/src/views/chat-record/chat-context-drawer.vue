@@ -415,10 +415,10 @@ export default {
     width: 45px;
   }
 
-  #ChatWindow .key-message {
+  /*#ChatWindow .key-message {
     background-color: #e6a23c !important;
     color: #fff !important;
-  }
+  }*/
 
   #ChatWindow .row-other {
     display: flex !important;
