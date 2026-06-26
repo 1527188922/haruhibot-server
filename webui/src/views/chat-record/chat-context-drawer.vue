@@ -13,6 +13,7 @@
       <el-row class="opt-row">
           <span class="num">
             前<el-input-number :step-strictly="true" size="mini"
+                               :controls="false"
                                v-model="offset.offset1"
                                :min="0" :max="250"
                                @change="handleNumChange($event,'offset1')"
@@ -21,6 +22,7 @@
         <el-divider direction="vertical"></el-divider>
         <span class="num">
             后<el-input-number :step-strictly="true" size="mini"
+                               :controls="false"
                                v-model="offset.offset2"
                                :min="0" :max="250"
                                @change="handleNumChange($event,'offset2')"
@@ -244,10 +246,10 @@ export default {
         font-size: 14px;
       }
       .el-input-number--mini{
-        width: 80px !important;
+        width: 28px !important;
         .el-input__inner{
           padding-left: 0px;
-          padding-right: 29px;
+          padding-right: 0px;
         }
       }
     }
@@ -324,7 +326,7 @@ export default {
     .alignment {
       align-items: center;
       justify-content: space-between;
-      font-size: 13px;
+      font-size: 12px;
       color: #999999;
 
     }
@@ -432,15 +434,23 @@ export default {
 
   /* 时间样式 */
   #ChatWindow .alignment {
-    font-size: 13px !important;
-    color: #999 !important;
-    margin-top: 2px !important;
-  }
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #999999;
 
-  /* 强制打印背景色 */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  }
+  #ChatWindow .alignment-self{
+    padding-right: 8px;
+    span{
+      margin-left: 10px;
+    }
+  }
+  #ChatWindow .alignment-other{
+    padding-left: 8px;
+    span{
+      margin-right: 10px;
+    }
   }
 }
 </style>
