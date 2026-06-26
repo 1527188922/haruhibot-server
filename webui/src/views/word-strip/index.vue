@@ -44,7 +44,13 @@
         <el-table-column fixed label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
-        <el-table-column label="关键字" prop="keyWord" min-width="100"></el-table-column>
+        <el-table-column label="关键字" prop="keyWord" min-width="100">
+          <template slot-scope="{row}">
+            <span class="chat-content" @click="view(row)">
+              {{row.keyWord}}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column label="回复内容" prop="answer" min-width="200" show-tooltip-when-overflow>
           <template slot-scope="{row}">
             <span class="chat-content" @click="view(row)">
@@ -169,7 +175,22 @@ export default {
 
     },
     view(row){
-      this.$refs.chatView.open(row.answer,`${row.userId}`,row.userAvatarUrl)
+      let selfId = row.selfId
+      let selfAvatarUrl = row.selfAvatarUrl
+      this.$refs.chatView.open([{
+        ...row,
+        selfId:row.userId,
+        time:row.createTime,
+        content:row.keyWord
+      },
+        {
+          ...row,
+          userId:selfId,
+          userAvatarUrl:selfAvatarUrl,
+          selfId:null,
+          time:row.createTime,
+          content:row.answer
+        }])
     },
     search(){
       this.pagination.currentPage = 1

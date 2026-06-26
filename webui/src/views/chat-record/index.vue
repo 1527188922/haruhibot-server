@@ -98,6 +98,7 @@
             </span>
           </template>
         </el-table-column>
+        <el-table-column label="发送时间" prop="time" min-width="140" align="center" show-tooltip-when-overflow/>
         <el-table-column label="发送人" prop="userId" min-width="190" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
             <multi-cell :image-url="row.userAvatarUrl" :text-list="[row.userId,row.nickname]"
@@ -111,13 +112,6 @@
           </template>
         </el-table-column>
         <el-table-column label="发送人群昵称" prop="card" min-width="100" align="center" v-if="isQueryGroup"/>
-        <el-table-column label="消息类型" prop="messageType" min-width="70" align="center" show-tooltip-when-overflow>
-          <template slot-scope="{row}">
-            <span :class="row.messageType === 'private' ? 'danger-text' : ''">
-              {{typeMap[row.messageType]}}
-            </span>
-          </template>
-        </el-table-column>
         <el-table-column label="群号" prop="groupId" min-width="180" align="center" show-tooltip-when-overflow v-if="isQueryGroup">
           <template slot-scope="{row}">
             <multi-cell :text-list="[row.groupId,row.groupName]"
@@ -131,7 +125,13 @@
                         :title-list="[`QQ：${row.selfId}`]"></multi-cell>
           </template>
         </el-table-column>
-        <el-table-column label="发送时间" prop="time" min-width="140" align="center" show-tooltip-when-overflow/>
+        <el-table-column label="消息类型" prop="messageType" min-width="70" align="center" show-tooltip-when-overflow>
+          <template slot-scope="{row}">
+            <span :class="row.messageType === 'private' ? 'danger-text' : ''">
+              {{typeMap[row.messageType]}}
+            </span>
+          </template>
+        </el-table-column>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
@@ -355,7 +355,7 @@ export default {
       })
     },
     view(row){
-      this.$refs.chatView.open(row.content,`${row.userId}`,row.userAvatarUrl,row.nickname)
+      this.$refs.chatView.open([row])
     },
     exportAsExcel(){
 
