@@ -1,9 +1,8 @@
 <template>
   <div id="ChatView">
     <el-dialog :visible.sync="visible" :title="title" width="600px" @closed="dialogClosed" v-dialogDrag>
-      <multi-cell slot="title" :text-list="[title,userName]" :image-url="avatarUrl"></multi-cell>
       <div class="chat-wrap">
-        <div id="ChatWindow" class="chat-window" ref="chatWindow">
+        <div class="chat-window">
           <div class="message-item" :id="'msg-' + item.id"  v-for="item in messageList" :key="item.id">
             <el-row v-if="item.userId !== item.selfId" class="row-other" type="flex"  justify="start">
               <el-col :span="3" class="other-avatar-col">
@@ -46,11 +45,9 @@
 </template>
 <script>
 
-import MultiCell from "@/components/multi-cell.vue";
 export default {
   name:'ChatViewDialog',
   components: {
-    MultiCell
   },
   data(){
     return{
@@ -60,9 +57,10 @@ export default {
     }
   },
   methods:{
-    open(list){
+    open(list, title = ''){
       this.visible = true
       this.$nextTick(()=>{
+        this.title = title
         this.messageList = list
       })
     },
@@ -94,9 +92,6 @@ export default {
     &::-webkit-scrollbar-thumb {
       background: #ccc;
       border-radius: 2px;
-    }
-    .err-resp{
-      color: #ec3636;
     }
   }
 
