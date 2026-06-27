@@ -297,7 +297,7 @@ public class ChatRecordService{
             }
             return this.privateChat2Vo(this.privateSearch(request, chatTableName, page, needCount), request.getSelfId());
         }
-        throw new BusinessException("查询消息错误："+request.getMessageType());
+        throw new BusinessException("查询消息错误：request.getMessageType() = "+request.getMessageType());
     }
 
     public PageInfo<GroupChatUserResp> queryUser(CodeNameReq req) {
