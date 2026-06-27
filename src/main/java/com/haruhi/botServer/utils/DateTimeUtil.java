@@ -1,6 +1,7 @@
 package com.haruhi.botServer.utils;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.ParseException;
@@ -13,6 +14,7 @@ public class DateTimeUtil {
     private DateTimeUtil(){}
 
     @AllArgsConstructor
+    @Getter
     public enum PatternEnum {
         yyyyMMddHHmmssSSS("yyyy-MM-dd HH:mm:ss.SSS"),
         yyyyMMddHHmmss("yyyy-MM-dd HH:mm:ss"),
@@ -23,7 +25,7 @@ public class DateTimeUtil {
         yyyyMM("yyyy-MM"),
         yyyy("yyyy");
 
-        private String pattern;
+        private final String pattern;
     }
 
     /**
