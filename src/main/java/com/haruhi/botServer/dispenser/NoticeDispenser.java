@@ -4,10 +4,10 @@ import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.event.NoticeTypeEnum;
 import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
-import com.haruhi.botServer.event.notice.IGroupDecreaseEvent;
-import com.haruhi.botServer.event.notice.IGroupIncreaseEvent;
-import com.haruhi.botServer.event.notice.INoticeEvent;
-import com.haruhi.botServer.event.notice.IPokeEvent;
+import com.haruhi.botServer.handler.notice.IGroupDecreaseHandler;
+import com.haruhi.botServer.handler.notice.IGroupIncreaseHandler;
+import com.haruhi.botServer.handler.notice.INoticeHandler;
+import com.haruhi.botServer.handler.notice.IPokeHandler;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -27,21 +27,21 @@ import java.util.Map;
 @Component
 public class NoticeDispenser {
 
-    private final Map<String, INoticeEvent> noticeEventMap;
+    private final Map<String, INoticeHandler> noticeHandlerMap;
 
-    private static List<INoticeEvent> container = new ArrayList<>();
+    private static List<INoticeHandler> container = new ArrayList<>();
     private final DictionarySqliteService dictionarySqliteService;
 
-    public NoticeDispenser(Map<String, INoticeEvent> noticeEventMap, DictionarySqliteService dictionarySqliteService) {
-        this.noticeEventMap = noticeEventMap;
+    public NoticeDispenser(Map<String, INoticeHandler> noticeHandlerMap, DictionarySqliteService dictionarySqliteService) {
+        this.noticeHandlerMap = noticeHandlerMap;
         this.dictionarySqliteService = dictionarySqliteService;
     }
 
     @PostConstruct
-    private void loadEvent(){
+    private void loadHandlers(){
         log.info("加载通知处理类...");
-        if(!CollectionUtils.isEmpty(noticeEventMap)){
-            for (INoticeEvent value : noticeEventMap.values()) {
+        if(!CollectionUtils.isEmpty(noticeHandlerMap)){
+            for (INoticeHandler value : noticeHandlerMap.values()) {
                 attach(value);
             }
             log.info("加载了{}个通知处理类",container.size());
@@ -49,8 +49,8 @@ public class NoticeDispenser {
 
 
     }
-    public void attach(INoticeEvent event){
-        container.add(event);
+    public void attach(INoticeHandler handler){
+        container.add(handler);
     }
 
     public void onEvent(final Bot bot, final Message message){
@@ -63,22 +63,22 @@ public class NoticeDispenser {
             }
             log.info("收到通知类消息：subType：{}，noticeType：{}",subType,noticeType);
             if(NoticeTypeEnum.notify.toString().equals(noticeType) && SubTypeEnum.poke.toString().equals(subType)){
-                for (INoticeEvent value : container){
-                    if(value instanceof IPokeEvent){
-                        ((IPokeEvent) value).onPoke(bot,message);
+                for (INoticeHandler value : container){
+                    if(value instanceof IPokeHandler){
+                        ((IPokeHandler) value).onPoke(bot,message);
                     }
                 }
 
             }else if(NoticeTypeEnum.group_increase.toString().equals(noticeType)){
-                for (INoticeEvent value : container){
-                    if(value instanceof IGroupIncreaseEvent){
-                        ((IGroupIncreaseEvent) value).onGroupIncrease(bot,message);
+                for (INoticeHandler value : container){
+                    if(value instanceof IGroupIncreaseHandler){
+                        ((IGroupIncreaseHandler) value).onGroupIncrease(bot,message);
                     }
                 }
             }else if(NoticeTypeEnum.group_decrease.toString().equals(noticeType)){
-                for (INoticeEvent value : container){
-                    if (value instanceof IGroupDecreaseEvent) {
-                        ((IGroupDecreaseEvent)value).onGroupDecrease(bot,message);
+                for (INoticeHandler value : container){
+                    if (value instanceof IGroupDecreaseHandler) {
+                        ((IGroupDecreaseHandler)value).onGroupDecrease(bot,message);
                     }
                 }
             }

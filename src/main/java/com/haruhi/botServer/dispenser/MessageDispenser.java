@@ -2,11 +2,11 @@ package com.haruhi.botServer.dispenser;
 
 import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
-import com.haruhi.botServer.event.message.IGroupMessageEvent;
-import com.haruhi.botServer.event.message.IAllMessageEvent;
-import com.haruhi.botServer.event.message.IMessageEvent;
-import com.haruhi.botServer.event.message.IPrivateMessageEvent;
-import com.haruhi.botServer.handlers.message.chatRecord.ChatRecordHandler;
+import com.haruhi.botServer.handler.message.IGroupMessageHandler;
+import com.haruhi.botServer.handler.message.IAllMessageHandler;
+import com.haruhi.botServer.handler.message.IMessageHandler;
+import com.haruhi.botServer.handler.message.IPrivateMessageHandler;
+import com.haruhi.botServer.handler.message.chatRecord.ChatRecordHandler;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
 import com.haruhi.botServer.ws.Bot;
@@ -31,24 +31,24 @@ public class MessageDispenser {
 
     private final DictionarySqliteService dictionarySqliteService;
 
-    public MessageDispenser(Map<String, IMessageEvent> map, DictionarySqliteService dictionarySqliteService) {
+    public MessageDispenser(Map<String, IMessageHandler> map, DictionarySqliteService dictionarySqliteService) {
         this.dictionarySqliteService = dictionarySqliteService;
-        loadEvent(map);
+        loadHandlers(map);
     }
 
     @Getter
-    private static final List<IMessageEvent> container = new CopyOnWriteArrayList<>();
-    private static final List<IMessageEvent> groupContainer = new CopyOnWriteArrayList<>();
-    private static final List<IMessageEvent> privateContainer = new CopyOnWriteArrayList<>();
+    private static final List<IMessageHandler> container = new CopyOnWriteArrayList<>();
+    private static final List<IMessageHandler> groupContainer = new CopyOnWriteArrayList<>();
+    private static final List<IMessageHandler> privateContainer = new CopyOnWriteArrayList<>();
 
-    private void loadEvent(Map<String, IMessageEvent> messageEventMap){
-        if (messageEventMap != null && !messageEventMap.isEmpty()) {
+    private void loadHandlers(Map<String, IMessageHandler> messageHandlerMap){
+        if (messageHandlerMap != null && !messageHandlerMap.isEmpty()) {
             log.info("加载消息处理类...");
-            container.addAll(messageEventMap.values());
+            container.addAll(messageHandlerMap.values());
             checkWeight();
             sortByWeight(container);
-            groupContainer.addAll(container.stream().filter(e -> e instanceof IGroupMessageEvent || e instanceof IAllMessageEvent).collect(Collectors.toList()));
-            privateContainer.addAll(container.stream().filter(e -> e instanceof IPrivateMessageEvent || e instanceof IAllMessageEvent).collect(Collectors.toList()));
+            groupContainer.addAll(container.stream().filter(e -> e instanceof IGroupMessageHandler || e instanceof IAllMessageHandler).toList());
+            privateContainer.addAll(container.stream().filter(e -> e instanceof IPrivateMessageHandler || e instanceof IAllMessageHandler).toList());
 
             printHandler();
             log.info("加载了{}个消息处理类",container.size());
@@ -60,7 +60,7 @@ public class MessageDispenser {
     }
 
     private void checkWeight(){
-        List<Integer> weights = container.stream().map(IMessageEvent::weight).collect(Collectors.toList());
+        List<Integer> weights = container.stream().map(IMessageHandler::weight).toList();
         Set<Integer> weightSet = new HashSet<>(weights);
         if(weightSet.size() != weights.size()){
             throw new RuntimeException("Duplicate weight appear");
@@ -72,8 +72,8 @@ public class MessageDispenser {
      * 降序
      * @return
      */
-    public void sortByWeight(List<IMessageEvent> list){
-        List<IMessageEvent> collect = list.stream().sorted(Comparator.comparing(IMessageEvent::weight).reversed()).collect(Collectors.toList());
+    public void sortByWeight(List<IMessageHandler> list){
+        List<IMessageHandler> collect = list.stream().sorted(Comparator.comparing(IMessageHandler::weight).reversed()).toList();
         list.clear();
         list.addAll(collect);
     }
@@ -84,22 +84,22 @@ public class MessageDispenser {
      * @param clazz 类模板对象 同一个类的模板对象必为唯一
      * @param <T>
      */
-    public <T extends IMessageEvent> void attach(Class<T> clazz){
-        T event = ApplicationContextProvider.getBean(clazz);
-        if(event instanceof IAllMessageEvent){
-            if (!groupContainer.contains(event)) {
-                groupContainer.add(event);
+    public <T extends IMessageHandler> void attach(Class<T> clazz){
+        T handler = ApplicationContextProvider.getBean(clazz);
+        if(handler instanceof IAllMessageHandler){
+            if (!groupContainer.contains(handler)) {
+                groupContainer.add(handler);
             }
-            if (!privateContainer.contains(event)) {
-                privateContainer.add(event);
+            if (!privateContainer.contains(handler)) {
+                privateContainer.add(handler);
             }
-        }else if(event instanceof IPrivateMessageEvent){
-            if (!privateContainer.contains(event)) {
-                privateContainer.add(event);
+        }else if(handler instanceof IPrivateMessageHandler){
+            if (!privateContainer.contains(handler)) {
+                privateContainer.add(handler);
             }
-        }else if (event instanceof IGroupMessageEvent){
-            if (!groupContainer.contains(event)) {
-                groupContainer.add(event);
+        }else if (handler instanceof IGroupMessageHandler){
+            if (!groupContainer.contains(handler)) {
+                groupContainer.add(handler);
             }
         }
     }
@@ -111,15 +111,15 @@ public class MessageDispenser {
      * @param clazz
      * @param <T>
      */
-    public <T extends IMessageEvent> void detach(Class<T> clazz){
-        T event = ApplicationContextProvider.getBean(clazz);
-        if(event instanceof IAllMessageEvent){
-            groupContainer.remove(event);
-            privateContainer.remove(event);
-        }else if(event instanceof IPrivateMessageEvent){
-            privateContainer.remove(event);
-        }else if (event instanceof IGroupMessageEvent){
-            groupContainer.remove(event);
+    public <T extends IMessageHandler> void detach(Class<T> clazz){
+        T handler = ApplicationContextProvider.getBean(clazz);
+        if(handler instanceof IAllMessageHandler){
+            groupContainer.remove(handler);
+            privateContainer.remove(handler);
+        }else if(handler instanceof IPrivateMessageHandler){
+            privateContainer.remove(handler);
+        }else if (handler instanceof IGroupMessageHandler){
+            groupContainer.remove(handler);
         }
     }
 
@@ -134,23 +134,23 @@ public class MessageDispenser {
         }
     }
 
-    private void executeGroupMessageHandler(List<IMessageEvent> events, Bot bot, Message message){
-        if(CollectionUtils.isEmpty(events)){
+    private void executeGroupMessageHandler(List<IMessageHandler> handlers, Bot bot, Message message){
+        if(CollectionUtils.isEmpty(handlers)){
             return;
         }
-        for (IMessageEvent element : events) {
+        for (IMessageHandler element : handlers) {
             if (toContinue(element, message)) {
                 continue;
             }
-            if (element instanceof IAllMessageEvent) {
-                IAllMessageEvent event = (IAllMessageEvent) element;
-                if (event.onMessage(bot, message)) {
+            if (element instanceof IAllMessageHandler) {
+                IAllMessageHandler handler = (IAllMessageHandler) element;
+                if (handler.onMessage(bot, message)) {
                     printLog("onMessage","群",message);
                     break;
                 }
-            } else if(element instanceof IGroupMessageEvent){
-                IGroupMessageEvent event = (IGroupMessageEvent) element;
-                if (event.onGroup(bot, message)) {
+            } else if(element instanceof IGroupMessageHandler){
+                IGroupMessageHandler handler = (IGroupMessageHandler) element;
+                if (handler.onGroup(bot, message)) {
                     printLog("onGroup","群",message);
                     break;
                 }
@@ -159,23 +159,23 @@ public class MessageDispenser {
     }
 
 
-    private void executePrivateMessageHandler(List<IMessageEvent> events, Bot bot, Message message){
-        if(CollectionUtils.isEmpty(events)){
+    private void executePrivateMessageHandler(List<IMessageHandler> handlers, Bot bot, Message message){
+        if(CollectionUtils.isEmpty(handlers)){
            return;
         }
-        for (IMessageEvent element : events) {
+        for (IMessageHandler element : handlers) {
             if (toContinue(element, message)) {
                 continue;
             }
-            if (element instanceof IAllMessageEvent) {
-                IAllMessageEvent event = (IAllMessageEvent) element;
-                if (event.onMessage(bot, message)) {
+            if (element instanceof IAllMessageHandler) {
+                IAllMessageHandler handler = (IAllMessageHandler) element;
+                if (handler.onMessage(bot, message)) {
                     printLog("onMessage","私",message);
                     break;
                 }
-            } else if (element instanceof IPrivateMessageEvent) {
-                IPrivateMessageEvent event = (IPrivateMessageEvent) element;
-                if (event.onPrivate(bot, message)) {
+            } else if (element instanceof IPrivateMessageHandler) {
+                IPrivateMessageHandler handler = (IPrivateMessageHandler) element;
+                if (handler.onPrivate(bot, message)) {
                     printLog("onPrivate","私",message);
                     break;
                 }
@@ -189,12 +189,12 @@ public class MessageDispenser {
 
     /**
      *
-     * @param event
+     * @param handler
      * @param message
      * @return true:跳过当前handler不执行
      */
-    private boolean toContinue(IMessageEvent event, Message message){
-        if(message.isSelfMsg() && !event.handleSelfMsg()){
+    private boolean toContinue(IMessageHandler handler, Message message){
+        if(message.isSelfMsg() && !handler.handleSelfMsg()){
             // 机器人self消息 且 handler类不处理self消息
             return true;
         }
@@ -203,13 +203,13 @@ public class MessageDispenser {
             List<Long> accessGroups = dictionarySqliteService.getList(DictionaryEnum.BOT_ACCESS_GROUP.getKey(), "[,，]", Long.class, Collections.emptyList());
             if(CollectionUtils.isNotEmpty(accessGroups)
                     && !accessGroups.contains(message.getGroupId())
-                    && !(event instanceof ChatRecordHandler)){
+                    && !(handler instanceof ChatRecordHandler)){
                 return true;
             }
 
             boolean disableGroup = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
             if(disableGroup
-                    && !(event instanceof ChatRecordHandler)){
+                    && !(handler instanceof ChatRecordHandler)){
                 // 本次为群消息 且开了禁用群功能 则只让聊天记录保存handler类生效
                 return true;
             }
@@ -222,9 +222,9 @@ public class MessageDispenser {
      * @param fun 可以是name也可以是id(weight)
      * @return
      */
-    public IMessageEvent findHandler(String fun){
+    public IMessageHandler findHandler(String fun){
         Integer funId;
-        IMessageEvent messageEventType;
+        IMessageHandler messageEventType;
         try {
             funId = Integer.valueOf(fun);
             messageEventType = findHandlerByWeight(funId);
@@ -233,18 +233,18 @@ public class MessageDispenser {
         }
         return messageEventType;
     }
-    private IMessageEvent findHandlerByName(String funName){
-        for (IMessageEvent event : container) {
-            if(event.funName().equals(funName)){
-                return event;
+    private IMessageHandler findHandlerByName(String funName){
+        for (IMessageHandler handler : container) {
+            if(handler.funName().equals(funName)){
+                return handler;
             }
         }
         return null;
     }
-    private IMessageEvent findHandlerByWeight(int weight){
-        for (IMessageEvent event : container) {
-            if(event.weight() == (weight)){
-                return event;
+    private IMessageHandler findHandlerByWeight(int weight){
+        for (IMessageHandler handler : container) {
+            if(handler.weight() == (weight)){
+                return handler;
             }
         }
         return null;
@@ -257,7 +257,7 @@ public class MessageDispenser {
      * @param <T>
      * @return
      */
-    public <T extends IMessageEvent> boolean exist(Class<T> tClass){
+    public <T extends IMessageHandler> boolean exist(Class<T> tClass){
         T bean = ApplicationContextProvider.getBean(tClass);
         return groupContainer.contains(bean) || privateContainer.contains(bean);
     }
