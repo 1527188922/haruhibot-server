@@ -116,6 +116,15 @@ public class BilibiliService {
         }
     }
 
+    public static void main(String[] args) {
+        BilibiliService bilibiliService = new BilibiliService();
+        PlayerInfoResp bv1bV411B7uK = bilibiliService.getPlayerInfo("BV1bV411B7uK");
+
+        System.out.println(bv1bV411B7uK.getCid());
+        BulletChatResp chatList = bilibiliService.getChatList(bv1bV411B7uK.getCid());
+        System.out.println(chatList);
+    }
+
 
 
     /**
