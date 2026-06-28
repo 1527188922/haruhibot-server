@@ -95,9 +95,38 @@
             #{id}
         </foreach>
     </select>
+    <select id="selectById" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
+        SELECT <include refid="base_columns"></include>
+        FROM ${tableName}
+        where id = #{id}
+    </select>
     <select id="selectListByIdBetween" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
         select <include refid="base_columns"></include>
         FROM ${tableName}
         where id between #{start} and #{end}
+    </select>
+    <select id="selectListByTime" resultType="com.haruhi.botServer.entity.ChatRecordGroup">
+        select <include refid="base_columns"></include>
+        FROM ${tableName}
+        where time
+        <choose>
+            <when test="before">
+                &lt;
+            </when>
+            <otherwise>
+                &gt;
+            </otherwise>
+        </choose>
+        #{time}
+        ORDER BY time
+        <choose>
+            <when test="before">
+                DESC
+            </when>
+            <otherwise>
+                ASC
+            </otherwise>
+        </choose>
+        LIMIT ${offset}
     </select>
 </mapper>

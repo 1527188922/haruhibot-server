@@ -2,7 +2,7 @@ package com.haruhi.botServer.aop;
 
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.dto.qqclient.Message;
-import com.haruhi.botServer.event.message.IMessageEvent;
+import com.haruhi.botServer.handler.message.IMessageHandler;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
 import com.haruhi.botServer.ws.Bot;
@@ -36,7 +36,7 @@ public class SuperUserAuthAspect {
         Class clazz = joinPoint.getSignature().getDeclaringType();
         Object bean = ApplicationContextProvider.getBean(clazz);
 
-        if(!(bean instanceof IMessageEvent)){
+        if(!(bean instanceof IMessageHandler)){
             return joinPoint.proceed();
         }
 

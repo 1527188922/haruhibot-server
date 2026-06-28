@@ -2,7 +2,7 @@ package com.haruhi.botServer.instructions;
 
 import com.haruhi.botServer.cache.CacheMap;
 import com.haruhi.botServer.dto.qqclient.Message;
-import com.haruhi.botServer.event.message.IAllMessageEvent;
+import com.haruhi.botServer.handler.message.IAllMessageHandler;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  */
 //@Component // 若放开注释 则启用该功能
 @Slf4j
-public class DemoHandler implements IAllMessageEvent {
+public class DemoHandler implements IAllMessageHandler {
 
     // 一分钟过期
     private final static CacheMap<String, RunnableNode> nodeCache = new CacheMap<String, RunnableNode>(60L, TimeUnit.SECONDS,500);

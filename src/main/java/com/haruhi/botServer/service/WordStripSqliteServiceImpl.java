@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.entity.WordStripSqlite;
-import com.haruhi.botServer.handlers.message.wordStrip.WordStripHandler;
+import com.haruhi.botServer.handler.message.wordStrip.WordStripHandler;
 import com.haruhi.botServer.mapper.WordStripSqliteMapper;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.vo.WordStripQueryReq;

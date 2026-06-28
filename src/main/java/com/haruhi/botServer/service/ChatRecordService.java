@@ -20,8 +20,8 @@ import com.haruhi.botServer.dto.qqclient.Sender;
 import com.haruhi.botServer.entity.*;
 import com.haruhi.botServer.entity.vo.ChatRecordVo;
 import com.haruhi.botServer.exception.BusinessException;
-import com.haruhi.botServer.handlers.message.chatRecord.FindGroupChatHandler;
-import com.haruhi.botServer.handlers.message.chatRecord.GroupWordCloudHandler;
+import com.haruhi.botServer.handler.message.chatRecord.FindGroupChatHandler;
+import com.haruhi.botServer.handler.message.chatRecord.GroupWordCloudHandler;
 import com.haruhi.botServer.mapper.ChatRecordExtendSqliteMapper;
 import com.haruhi.botServer.mapper.ChatRecordExtendV2Mapper;
 import com.haruhi.botServer.mapper.ChatRecordGroupMapper;
@@ -91,8 +91,40 @@ public class ChatRecordService{
         if (chatRecordGroups.isEmpty()) {
             return Collections.emptyList();
         }
+        chatRecordGroups.sort(Comparator.comparing(ChatRecordGroup::getTime));
         PageInfo<ChatRecordGroup> pageInfo = new PageInfo<>();
         pageInfo.setList(chatRecordGroups);
+        PageInfo<ChatRecordVo> pageInfoRes = this.groupChat2Vo(pageInfo, groupId);
+        return pageInfoRes.getList();
+    }
+
+
+    public List<ChatRecordVo> groupMsgContextByTime(long groupId, long id, long offset1, long offset2) {
+        offset1 = Math.abs(offset1);
+        offset2 = Math.abs(offset2);
+        if (offset1 + offset2 > 500) {
+            throw new BusinessException("对话上下文范围过大");
+        }
+        String tableName = sqliteDatabaseService.getChatTableName(groupId, null);
+
+        ChatRecordGroup keyMsg = chatRecordGroupMapper.selectById(tableName, id);
+
+        List<ChatRecordGroup> beforeMsg = chatRecordGroupMapper.selectListByTime(tableName, true, keyMsg.getTime(), offset1);
+        beforeMsg.removeIf(v -> Objects.equals(v.getId(), id));
+        beforeMsg.sort(Comparator.comparing(ChatRecordGroup::getTime));
+
+        beforeMsg.add(keyMsg);
+
+        List<ChatRecordGroup> afterMsg = chatRecordGroupMapper.selectListByTime(tableName, false, keyMsg.getTime(), offset2);
+        afterMsg.removeIf(v -> Objects.equals(v.getId(), id));
+
+        beforeMsg.addAll(afterMsg);
+
+        if (beforeMsg.isEmpty()) {
+            return Collections.emptyList();
+        }
+        PageInfo<ChatRecordGroup> pageInfo = new PageInfo<>();
+        pageInfo.setList(beforeMsg);
         PageInfo<ChatRecordVo> pageInfoRes = this.groupChat2Vo(pageInfo, groupId);
         return pageInfoRes.getList();
     }
@@ -110,6 +142,7 @@ public class ChatRecordService{
 
         List<ChatRecordPrivate> beforeMsg = chatRecordPrivateMapper.selectListByTime(chatTableName, targetId,true, chatRecordPrivate.getTime(), offset1);
         beforeMsg.removeIf(v -> Objects.equals(v.getId(), id));
+        beforeMsg.sort(Comparator.comparing(ChatRecordPrivate::getTime));
 
         List<ChatRecordPrivate> afterMsg = chatRecordPrivateMapper.selectListByTime(chatTableName, targetId,false, chatRecordPrivate.getTime(), offset2);
         afterMsg.removeIf(v -> Objects.equals(v.getId(), id));
@@ -297,7 +330,7 @@ public class ChatRecordService{
             }
             return this.privateChat2Vo(this.privateSearch(request, chatTableName, page, needCount), request.getSelfId());
         }
-        throw new BusinessException("查询消息错误："+request.getMessageType());
+        throw new BusinessException("查询消息错误：request.getMessageType() = "+request.getMessageType());
     }
 
     public PageInfo<GroupChatUserResp> queryUser(CodeNameReq req) {
