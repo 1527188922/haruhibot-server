@@ -43,7 +43,15 @@
             </otherwise>
         </choose>
         #{time}
-        ORDER BY time ASC
+        ORDER BY time
+        <choose>
+            <when test="before">
+                DESC
+            </when>
+            <otherwise>
+                ASC
+            </otherwise>
+        </choose>
         LIMIT ${offset}
     </select>
     <select id="selectById" resultType="com.haruhi.botServer.entity.ChatRecordPrivate">

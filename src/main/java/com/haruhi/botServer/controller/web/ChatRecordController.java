@@ -78,7 +78,7 @@ public class ChatRecordController{
             if (Objects.isNull(groupId)) {
                 return HttpResp.fail("缺失群号",null);
             }
-            List<ChatRecordVo> chatRecordVos = chatRecordService.groupMsgContext(groupId, id, offset1, offset2);
+            List<ChatRecordVo> chatRecordVos = chatRecordService.groupMsgContextByTime(groupId, id, offset1, offset2);
             return HttpResp.success(chatRecordVos);
         }
         Long selfId = request.getLong("selfId");

@@ -19,6 +19,8 @@ public interface ChatRecordGroupMapper {
 
     List<ChatRecordGroup> selectByIds(@Param("tableName") String tableName, @Param("ids") List<Long> ids);
 
+    ChatRecordGroup selectById(@Param("tableName") String tableName, @Param("id") Long id);
+
     List<ChatRecordVo> chatStats(@Param("tableName") String tableName, @Param("selfId") Long selfId);
 
     List<ChatRecordGroup> selectWordCloudCorpus(@Param("tableName") String tableName,
@@ -38,4 +40,5 @@ public interface ChatRecordGroupMapper {
     List<ChatRecordGroup> selectListByIdBetween(@Param("tableName") String tableName, @Param("start") long start, @Param("end") long end);
 
 
+    List<ChatRecordGroup> selectListByTime(String tableName, boolean before, String time, long offset);
 }
