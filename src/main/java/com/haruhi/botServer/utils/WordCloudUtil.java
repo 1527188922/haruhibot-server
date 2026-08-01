@@ -5,6 +5,7 @@ import com.chenlb.mmseg4j.Dictionary;
 import com.chenlb.mmseg4j.MMSeg;
 import com.chenlb.mmseg4j.Seg;
 import com.haruhi.botServer.constant.RegexEnum;
+import com.haruhi.botServer.wordcloud.ConcurrentWordCloud;
 import com.kennycason.kumo.CollisionMode;
 import com.kennycason.kumo.WordCloud;
 import com.kennycason.kumo.WordFrequency;
@@ -139,7 +140,7 @@ public class WordCloudUtil {
         }
         // 生成图片的像素大小  1 照片纵横比
         final Dimension dimension = new Dimension(1024, (int)(1024 * 1));
-        final WordCloud wordCloud = new WordCloud(dimension, CollisionMode.PIXEL_PERFECT);
+        final WordCloud wordCloud = new ConcurrentWordCloud(dimension, CollisionMode.PIXEL_PERFECT);
         // 调节词云的稀疏程度，越高越稀疏
         wordCloud.setPadding(10);
 
