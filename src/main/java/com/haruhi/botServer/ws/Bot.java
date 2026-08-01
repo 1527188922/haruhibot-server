@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
 
 import java.io.IOException;
 import java.util.*;
@@ -33,14 +34,25 @@ public class Bot {
     @Setter
     @Getter
     private Long id;//机器人qq号
-    @Setter
     private WebSocketSession session;
     @Getter
     private SelfInfo selfInfo;
 
+    private static final int SEND_TIME_LIMIT_MILLIS = 10 * 1000;
+    private static final int BUFFER_SIZE_LIMIT_BYTES = 512 * 1024;
+
     public Bot(Long id, WebSocketSession session) {
         this.id = id;
-        this.session = session;
+        setSession(session);
+    }
+
+    public void setSession(WebSocketSession session) {
+        if (session instanceof ConcurrentWebSocketSessionDecorator) {
+            this.session = session;
+            return;
+        }
+        this.session = new ConcurrentWebSocketSessionDecorator(
+                session, SEND_TIME_LIMIT_MILLIS, BUFFER_SIZE_LIMIT_BYTES);
     }
 
     public void close() throws IOException {
