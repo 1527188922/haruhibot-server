@@ -48,6 +48,10 @@
             <outputDirectory>${file.separator}/config</outputDirectory>
         </fileSet>
         <fileSet>
+            <directory>${project.build.directory}/classes/templates</directory>
+            <outputDirectory>${file.separator}/templates</outputDirectory>
+        </fileSet>
+        <fileSet>
             <directory>${project.basedir}/src/main/resources/build/image</directory>
             <outputDirectory>/image</outputDirectory>
         </fileSet>

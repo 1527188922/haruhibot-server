@@ -197,14 +197,9 @@
             <version>2.9.0</version>
         </dependency>
         <dependency>
-            <groupId>org.xhtmlrenderer</groupId>
-            <artifactId>flying-saucer-core</artifactId>
-            <version>9.1.22</version>
-        </dependency>
-        <dependency>
-            <groupId>org.freemarker</groupId>
-            <artifactId>freemarker</artifactId>
-            <version>2.3.34</version>
+            <groupId>com.jfinal</groupId>
+            <artifactId>enjoy</artifactId>
+            <version>5.2.2</version>
         </dependency>
         <dependency>
             <groupId>io.lindstrom</groupId>
@@ -259,6 +254,7 @@
                         <exclude>*.xml</exclude>
                         <exclude>build/**</exclude>
                         <exclude>config/**</exclude>
+                        <exclude>templates/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>

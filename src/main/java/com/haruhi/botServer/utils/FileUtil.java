@@ -38,6 +38,7 @@ public class FileUtil {
     public static final String DIR_FACE = "face";
     public static final String DIR_EXCEL = "excel";
     public static final String DIR_JMCOMIC = "jmcomic";
+    public static final String DIR_TEMPLATES = "templates";
 
     public static final String DIR_CUSTOM_REPLY = "customReply";
     
@@ -240,6 +241,9 @@ public class FileUtil {
      */
     public static String getLogsDir(){
         return getAppDir() + File.separator + DIR_LOGS;
+    }
+    public static String getTemplateDir(){
+        return getAppDir() + File.separator + DIR_TEMPLATES;
     }
     public static String getAudioDir(){
         return getAppDir() + File.separator + DIR_AUDIO;
