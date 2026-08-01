@@ -12,6 +12,7 @@ public class HttpResp<T> {
     public static int SUCCESS = 200;
     public static int BUSI_ERROR = 500;//通用业务异常
     public static int SERVER_ERROR = 501;// 服务异常
+    public static int NOT_FOUND = 404;
 
     private int code;
     private String message;
