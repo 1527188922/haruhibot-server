@@ -159,12 +159,49 @@ public class ChatRecordService{
     }
 
 
-    public ChatRecordExtendV2 selectChatRecordExtendOne(Long chatRecordId, Long userId) {
-        ChatRecordExtendV2 extendV2 = chatRecordExtendV2Mapper.selectOne(new LambdaQueryWrapper<ChatRecordExtendV2>()
+    public ChatRecordExtendV2 selectChatRecordExtendOne(ChatRecordQueryReq request) {
+        Long chatRecordId = request.getChatId();
+        Long userId = request.getUserId();
+        Long groupId = request.getGroupId();
+        Long selfId = request.getSelfId();
+        String messageType = request.getMessageType();
+        MessageTypeEnum messageTypeEnum = MessageTypeEnum.getEnumByType(messageType);
+
+        LambdaQueryWrapper<ChatRecordExtendV2> wrapper = new LambdaQueryWrapper<ChatRecordExtendV2>()
                 .eq(ChatRecordExtendV2::getChatRecordId, chatRecordId)
                 .eq(ChatRecordExtendV2::getUserId, userId)
-                .last("limit 1"));
-
+                .last("limit 1");
+        switch (messageTypeEnum) {
+            case MessageTypeEnum.group -> wrapper.eq(ChatRecordExtendV2::getGroupId, groupId);
+            case MessageTypeEnum.privat -> wrapper.eq(ChatRecordExtendV2::getSelfId, selfId)
+                    .isNull(ChatRecordExtendV2::getGroupId);
+            case null, default -> {}
+        }
+        ChatRecordExtendV2 extendV2 = chatRecordExtendV2Mapper.selectOne(wrapper);
+        if (extendV2 == null) {
+            List<ChatRecordExtendV2> chatRecordExtendV2s = chatRecordExtendV2Mapper.selectList(new LambdaQueryWrapper<ChatRecordExtendV2>()
+                    .eq(ChatRecordExtendV2::getChatRecordId, chatRecordId)
+                    .eq(ChatRecordExtendV2::getUserId, userId));
+            if (!chatRecordExtendV2s.isEmpty()) {
+                if (chatRecordExtendV2s.size() == 1) {
+                    return chatRecordExtendV2s.getFirst();
+                }
+                extendV2 = chatRecordExtendV2s.stream()
+                        .filter(ce -> {
+                            if (messageTypeEnum == null) {
+                                return false;
+                            }
+                            return switch (messageTypeEnum) {
+                                case MessageTypeEnum.group -> Objects.equals(ce.getGroupId(), groupId);
+                                case MessageTypeEnum.privat -> ce.getGroupId() == null && Objects.equals(ce.getSelfId(), selfId);
+                            };
+                        }).findFirst()
+                        .orElse(null);
+            }
+        }
+        if (extendV2 == null) {
+            return null;
+        }
         byte[] rawWsMessageBinary = extendV2.getRawWsMessageBinary();
         if (Objects.nonNull(rawWsMessageBinary) && rawWsMessageBinary.length > 0) {
             try {
