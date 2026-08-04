@@ -343,7 +343,10 @@ export default {
     showRaw(row){
       selectExtendV2({
         chatId:row.id,
-        userId:row.userId
+        groupId:row.groupId,
+        userId:row.userId,
+        messageType:row.messageType,
+        selfId:row.selfId,
       }).then(({data:{data}})=>{
         this.$alert(data.rawWsMessage, {
           customClass:"raw-message-alert",

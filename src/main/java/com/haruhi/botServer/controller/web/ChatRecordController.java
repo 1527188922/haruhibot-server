@@ -52,7 +52,7 @@ public class ChatRecordController{
         if (Objects.isNull(request.getChatId()) || Objects.isNull(request.getUserId())) {
             return HttpResp.fail("参数错误",null);
         }
-        ChatRecordExtendV2 chatRecordExtendV2 = chatRecordService.selectChatRecordExtendOne(request.getChatId(), request.getUserId());
+        ChatRecordExtendV2 chatRecordExtendV2 = chatRecordService.selectChatRecordExtendOne(request);
         return HttpResp.success(chatRecordExtendV2);
     }
 
