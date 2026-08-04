@@ -1,14 +1,16 @@
 package com.haruhi.botServer.handler.message.image;
 
 import com.haruhi.botServer.dto.qqclient.Message;
+import com.haruhi.botServer.handler.message.IAllMessageHandler;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
 @Slf4j
-public abstract class AbstractImageSearchMessageHandler implements com.haruhi.botServer.handler.message.IAllMessageHandler {
+public abstract class AbstractImageSearchMessageHandler implements IAllMessageHandler {
 
     private final ImageSearchProviderFactory imageSearchProviderFactory;
     private final ImageSearchTriggerResolver triggerResolver = new ImageSearchTriggerResolver();
@@ -62,7 +64,10 @@ public abstract class AbstractImageSearchMessageHandler implements com.haruhi.bo
     }
 
     private void startSearch(Bot bot, Message message, ImageSearchMatch match) {
-        bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), startSearchMessage(), true);
+        String s = this.startSearchMessage();
+        if (StringUtils.isNotBlank(s)) {
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), s, true);
+        }
         ThreadPoolUtil.getHandleCommandPool().execute(() -> {
             for (ImageSearchProvider provider : providers()) {
                 try {
