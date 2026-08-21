@@ -3,6 +3,7 @@
 module.exports = {
   publicPath: process.env.VUE_APP_BASE_URL,
   lintOnSave: true,
+  parallel: false,
   productionSourceMap: false,
   // configureWebpack: config => {
   //     if (process.env.NODE_ENV === 'production') {
@@ -26,7 +27,14 @@ module.exports = {
       .end()
   },
   css: {
-    extract: { ignoreOrder: true }
+    extract: { ignoreOrder: true },
+    loaderOptions: {
+      css: {
+        url: {
+          filter: url => !url.startsWith('/')
+        }
+      }
+    }
   },
   //代理服务器配置
   devServer: {
