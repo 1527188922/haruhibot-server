@@ -6,7 +6,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.mozilla.universalchardet.UniversalDetector;
-import org.springframework.core.io.ClassPathResource;
 import org.sqlite.SQLiteConfig;
 
 import java.io.*;
@@ -208,10 +207,16 @@ public class FileUtil {
      */
     public static String getAppDir() {
         try {
-            return new ClassPathResource("").getFile().getAbsolutePath();
-        } catch (IOException e) {
-            return FileUtil.class.getClassLoader().getResource("").getPath();
+            File file = new File(FileUtil.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            // 开发/测试环境 codeSource 指向 classes 目录（target/classes），打包后指向 jar 文件，
+            // 只有是真实目录时才返回该目录，否则回退到工作目录
+            if (file.isDirectory()) {
+                return file.getAbsolutePath();
+            }
+        } catch (Exception ignored) {
+            // codeSource 不可用或无法转换为 URI 时回退到工作目录
         }
+        return System.getProperty("user.dir");
     }
 
     public static String getDataDir() {
