@@ -4,6 +4,7 @@ import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -11,12 +12,16 @@ import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.Album;
 import com.haruhi.botServer.dto.jmcomic.SearchResp;
 import com.haruhi.botServer.dto.qqclient.*;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.JmcomicService;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
+import com.haruhi.botServer.utils.FileUtil;
+import com.haruhi.botServer.utils.HtmlToImageUtils;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.nodes.Entities;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,6 +53,11 @@ public class JmcomicHandler implements IAllMessageHandler {
     private JmcomicService jmcomicService;
     @Autowired
     private AbstractWebResourceConfig webResourceConfig;
+    @Autowired
+    private DictionarySqliteService dictionarySqliteService;
+
+    private static final String SEARCH_RESULT_TEMPLATE = "jmcomic-search-result.html";
+    private static final String SEARCH_RESULT_IMAGE_DIR = "search-result";
 
     @Override
     public boolean onMessage(Bot bot, Message message) {
@@ -205,6 +216,19 @@ public class JmcomicHandler implements IAllMessageHandler {
     }
 
     private void sendSearchResult(Bot bot,Message message, SearchResp searchResp){
+        boolean imageMode = dictionarySqliteService.getBoolean(DictionaryEnum.JM_SEARCH_RESULT_IMAGE_MODE.getKey(), false);
+        if (imageMode) {
+            try {
+                sendSearchResultImage(bot, message, searchResp);
+                return;
+            } catch (Exception e) {
+                log.error("JM搜索结果转图片发送异常，回退为合并消息", e);
+            }
+        }
+        sendSearchResultForward(bot, message, searchResp);
+    }
+
+    private void sendSearchResultForward(Bot bot, Message message, SearchResp searchResp) {
         List<SearchResp.ContentItem> content = searchResp.getContent();
         List<ForwardMsgItem> collect = new ArrayList<>();
         for (int i = 0; i < content.size(); i++) {
@@ -241,5 +265,56 @@ public class JmcomicHandler implements IAllMessageHandler {
             collect.add(ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), messageHolders));
         }
         bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), collect);
+    }
+
+    private void sendSearchResultImage(Bot bot, Message message, SearchResp searchResp) {
+        String template = cn.hutool.core.io.FileUtil.readString(
+                new File(FileUtil.getTemplateDir() + File.separator + SEARCH_RESULT_TEMPLATE),
+                StandardCharsets.UTF_8
+        );
+        Map<String, Object> params = new HashMap<>();
+        params.put("query", htmlEscape(searchResp.getSearchQuery()));
+        params.put("total", htmlEscape(searchResp.getTotal()));
+        params.put("items", buildSearchResultViewItems(searchResp.getContent()));
+
+        String html = HtmlToImageUtils.renderTemplate(template, params);
+        String fileName = "jm-search-" + message.getSelfId() + "-" + CommonUtil.uuid() + ".png";
+        String outputDir = FileUtil.mkdirs(FileUtil.getJmcomicDir() + File.separator + SEARCH_RESULT_IMAGE_DIR).getAbsolutePath();
+        String outputPath = outputDir + File.separator + fileName;
+        int imageHeight = Math.max(700, 230 + searchResp.getContent().size() * 250);
+        HtmlToImageUtils.htmlToImage(html, outputPath, new int[]{1000, imageHeight});
+
+        String imageUrl = BotConfig.SAME_MACHINE_QQCLIENT
+                ? "file://" + outputPath
+                : webResourceConfig.webResourcesJmcomicPath() + "/" + SEARCH_RESULT_IMAGE_DIR + "/" + fileName + "?t=" + System.currentTimeMillis();
+        bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
+                Collections.singletonList(MessageHolder.instanceImage(imageUrl)));
+    }
+
+    private List<Map<String, String>> buildSearchResultViewItems(List<SearchResp.ContentItem> content) {
+        if (CollectionUtils.isEmpty(content)) {
+            return Collections.emptyList();
+        }
+        List<Map<String, String>> items = new ArrayList<>(content.size());
+        for (int i = 0; i < content.size(); i++) {
+            SearchResp.ContentItem e = content.get(i);
+            Map<String, String> item = new HashMap<>();
+            item.put("index", String.valueOf(i + 1));
+            item.put("id", htmlEscape(e.getId()));
+            item.put("name", htmlEscape(e.getName()));
+            item.put("author", htmlEscape(e.getAuthor()));
+            item.put("image", htmlEscape(e.getImage()));
+            item.put("category", htmlEscape(Stream.of((e.getCategory() != null ? e.getCategory().getTitle() : null), (e.getCategorySub() != null ? e.getCategorySub().getTitle() : null))
+                    .filter(StringUtils::isNotBlank).distinct().collect(Collectors.joining("/"))));
+            item.put("updateAt", Objects.nonNull(e.getUpdateAt())
+                    ? DateTimeUtil.dateTimeFormat(new Date(e.getUpdateAt() * 1000), DateTimeUtil.PatternEnum.yyyyMMddHHmmss)
+                    : "");
+            items.add(item);
+        }
+        return items;
+    }
+
+    private String htmlEscape(String text) {
+        return StringUtils.isNotBlank(text) ? Entities.escape(text) : "";
     }
 }

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>JM Search Result</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f4f0ea;
+            color: #242424;
+            font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+        }
+
+        .page {
+            width: 1000px;
+            min-height: 100vh;
+            padding: 34px 42px 44px;
+            background:
+                    linear-gradient(135deg, rgba(215, 70, 70, 0.12), transparent 42%),
+                    linear-gradient(315deg, rgba(45, 120, 145, 0.10), transparent 38%),
+                    #f8f5ef;
+        }
+
+        .header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #292929;
+        }
+
+        .title {
+            font-size: 34px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .meta {
+            margin-top: 8px;
+            color: #5d5b56;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .total {
+            min-width: 136px;
+            padding: 10px 14px;
+            border: 2px solid #292929;
+            background: #ffffff;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .list {
+            margin-top: 24px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .item {
+            display: grid;
+            grid-template-columns: 142px 1fr;
+            gap: 18px;
+            min-height: 220px;
+            padding: 16px;
+            border: 2px solid #2a2926;
+            background: rgba(255, 255, 255, 0.82);
+        }
+
+        .cover {
+            width: 142px;
+            height: 188px;
+            overflow: hidden;
+            border: 1px solid #2a2926;
+            background: #ded8cc;
+        }
+
+        .cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .content {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .name {
+            margin-top: 8px;
+            font-size: 24px;
+            font-weight: 800;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        .jm-id {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #222222;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .fields {
+            margin-top: 14px;
+            display: grid;
+            gap: 8px;
+            color: #46433d;
+            font-size: 17px;
+            line-height: 1.45;
+        }
+
+        .field {
+            overflow-wrap: anywhere;
+        }
+
+        .field span {
+            color: #171717;
+            font-weight: 700;
+        }
+
+        .index {
+            align-self: flex-end;
+            color: #8c2727;
+            font-size: 36px;
+            font-weight: 900;
+            line-height: 1;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+<main class="page">
+    <section class="header">
+        <div>
+            <div class="title">JM 搜索结果</div>
+            <div class="meta">关键词：#(query)</div>
+        </div>
+        <div class="total">共 #(total) 条</div>
+    </section>
+
+    <section class="list">
+        #for(item : items)
+        <article class="item">
+            <div class="cover">
+                <img src="#(item.image)" alt="" onerror="this.style.display='none'">
+            </div>
+            <div class="content">
+                <div>
+                    <div class="jm-id">JM#(item.id)</div>
+                    <div class="name">#(item.name)</div>
+                    <div class="fields">
+                        <div class="field"><span>作者：</span>#(item.author)</div>
+                        <div class="field"><span>分类：</span>#(item.category)</div>
+                        <div class="field"><span>更新时间：</span>#(item.updateAt)</div>
+                    </div>
+                </div>
+                <div class="index">#(item.index)</div>
+            </div>
+        </article>
+        #end
+    </section>
+</main>
+</body>
+</html>

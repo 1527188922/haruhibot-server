@@ -766,7 +766,7 @@ public class JmcomicService {
         try {
             JmcomicService jmcomicService = new JmcomicService();
 //            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum("1023584");
-            jmcomicService.albumToPdf(new File("D:\\temp\\pdf\\JM1116808"), new File("D:\\temp\\pdf\\JM1116808.pdf"));
+//            jmcomicService.albumToPdf(new File("D:\\temp\\pdf\\JM1116808"), new File("D:\\temp\\pdf\\JM1116808.pdf"));
 
 //            SearchResp search = jmcomicService.search("二乃", "mv");
 //            System.out.println(search);
@@ -779,6 +779,8 @@ public class JmcomicService {
 //            long scrambleId = jmcomicService.getScrambleId(303053);
 
 //            jmcomicService.login("","");
+            SearchResp search = jmcomicService.search("碧蓝档案", "mv");
+            System.out.println(search);
 
         } catch (Exception e) {
             e.printStackTrace();
