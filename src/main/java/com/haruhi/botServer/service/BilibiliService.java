@@ -4,6 +4,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.constant.DictionaryEnum;
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,9 +36,24 @@ import java.util.regex.Pattern;
 @Slf4j
 public class BilibiliService {
 
+    private static final String BILIBILI_NAV_URL = "https://api.bilibili.com/x/web-interface/nav";
+    private static final long WBI_KEY_CACHE_MILLIS = 10 * 60 * 1000L;
+    private static final int[] WBI_MIXIN_KEY_ENC_TAB = {
+            46, 47, 18, 2, 53, 8, 23, 32,
+            15, 50, 10, 31, 58, 3, 45, 35,
+            27, 43, 5, 49, 33, 9, 42, 19,
+            29, 28, 14, 39, 12, 38, 41, 13,
+            37, 48, 7, 16, 24, 55, 40, 61,
+            26, 17, 0, 1, 60, 51, 30, 4,
+            22, 25, 54, 21, 56, 59, 6, 63,
+            57, 62, 11, 36, 20, 34, 44, 52
+    };
+
     public static final Map<String, String> HEADERS = new HashMap<String, String>() {{
         put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0");
-        put("Referer", "https://www.bilibili.com");
+        put("Referer", "https://www.bilibili.com/");
+        put("Accept", "application/json, text/plain, */*");
+        put("Accept-Language", "zh-CN,zh;q=0.9");
     }};
 
 
@@ -53,6 +70,9 @@ public class BilibiliService {
 
     @Autowired
     private DictionarySqliteService dictionarySqliteService;
+
+    private volatile String wbiMixinKey;
+    private volatile long wbiMixinKeyExpireAt;
 
 
     /**
@@ -214,7 +234,10 @@ public class BilibiliService {
     public Map<String, String> getHeaders(boolean cookie) {
         HashMap<String, String> map = new HashMap<>(HEADERS);
         if (cookie) {
-            map.put("Cookie", getCookie());
+            String cookieValue = getCookie();
+            if (StringUtils.isNotBlank(cookieValue)) {
+                map.put("Cookie", cookieValue);
+            }
         }
         return map;
     }
@@ -222,7 +245,8 @@ public class BilibiliService {
 
 
     public <T> BilibiliBaseResp<T> sendGetRequest(String url, HashMap<String, Object> urlParam, TypeReference<BilibiliBaseResp<T>> responseType){
-        String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
+        boolean wbiApi = url.contains("/wbi/");
+        String s = buildUrl(url, urlParam, wbiApi, false);
 
         Map<String, String> headers = getHeaders(true);
         HttpRequest httpRequest = HttpRequest.get(s).addHeaders(headers);
@@ -235,10 +259,131 @@ public class BilibiliService {
             BilibiliBaseResp<T> bilibiliBaseResp = JSONObject.parseObject(body,responseType);
             if (Objects.isNull(bilibiliBaseResp.getCode()) || bilibiliBaseResp.getCode() != BilibiliBaseResp.SUCCESS_CODE) {
                 log.error("b站接口响应异常 url:{} body:{}", s, body);
+                if (wbiApi) {
+                    String retryUrl = buildUrl(url, urlParam, true, true);
+                    try (HttpResponse retryResp = HttpRequest.get(retryUrl).addHeaders(headers).execute()) {
+                        if (retryResp.getStatus() != HttpStatus.HTTP_OK) {
+                            log.error("重试请求b站接口失败 url:{} status:{} body:{}", retryUrl, retryResp.getStatus(), retryResp.body());
+                            return bilibiliBaseResp;
+                        }
+                        String retryBody = retryResp.body();
+                        BilibiliBaseResp<T> retryBaseResp = JSONObject.parseObject(retryBody, responseType);
+                        retryBaseResp.setRaw(retryBody);
+                        if (Objects.isNull(retryBaseResp.getCode()) || retryBaseResp.getCode() != BilibiliBaseResp.SUCCESS_CODE) {
+                            log.error("重试后b站接口仍响应异常 url:{} body:{}", retryUrl, retryBody);
+                        }
+                        return retryBaseResp;
+                    }
+                }
             }
             bilibiliBaseResp.setRaw(body);
             return bilibiliBaseResp;
         }
+    }
+
+    private String buildUrl(String url, Map<String, Object> urlParam, boolean wbiSign, boolean refreshWbiKey) {
+        if (!wbiSign) {
+            return HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
+        }
+        Map<String, Object> signedParam = signWbiParams(urlParam, refreshWbiKey);
+        if (signedParam == null) {
+            return HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
+        }
+        return url + "?" + buildQueryString(signedParam);
+    }
+
+    private Map<String, Object> signWbiParams(Map<String, Object> params, boolean refreshWbiKey) {
+        TreeMap<String, Object> signedParam = new TreeMap<>();
+        if (params != null) {
+            params.entrySet().stream()
+                    .filter(entry -> Objects.nonNull(entry.getValue()))
+                    .forEach(entry -> signedParam.put(entry.getKey(), entry.getValue()));
+        }
+        signedParam.put("wts", System.currentTimeMillis() / 1000);
+
+        String query = buildQueryString(signedParam);
+        String mixinKey = getWbiMixinKey(refreshWbiKey);
+        if (StringUtils.isBlank(mixinKey)) {
+            return null;
+        }
+        signedParam.put("w_rid", DigestUtil.md5Hex(query + mixinKey));
+        return signedParam;
+    }
+
+    private String buildQueryString(Map<String, Object> params) {
+        StringBuilder query = new StringBuilder();
+        params.entrySet().stream()
+                .filter(entry -> Objects.nonNull(entry.getValue()))
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    if (!query.isEmpty()) {
+                        query.append("&");
+                    }
+                    query.append(encodeURIComponent(entry.getKey()))
+                            .append("=")
+                            .append(encodeURIComponent(cleanWbiValue(entry.getValue())));
+                });
+        return query.toString();
+    }
+
+    private String cleanWbiValue(Object value) {
+        return String.valueOf(value).replaceAll("[!'()*]", "");
+    }
+
+    private String encodeURIComponent(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8)
+                .replace("+", "%20")
+                .replace("%7E", "~");
+    }
+
+    private String getWbiMixinKey(boolean refresh) {
+        long now = System.currentTimeMillis();
+        if (!refresh && StringUtils.isNotBlank(wbiMixinKey) && now < wbiMixinKeyExpireAt) {
+            return wbiMixinKey;
+        }
+        synchronized (this) {
+            now = System.currentTimeMillis();
+            if (!refresh && StringUtils.isNotBlank(wbiMixinKey) && now < wbiMixinKeyExpireAt) {
+                return wbiMixinKey;
+            }
+            String mixinKey = fetchWbiMixinKey();
+            if (StringUtils.isNotBlank(mixinKey)) {
+                wbiMixinKey = mixinKey;
+                wbiMixinKeyExpireAt = now + WBI_KEY_CACHE_MILLIS;
+            }
+            return wbiMixinKey;
+        }
+    }
+
+    private String fetchWbiMixinKey() {
+        try (HttpResponse response = HttpRequest.get(BILIBILI_NAV_URL)
+                .addHeaders(getHeaders(true))
+                .timeout(10 * 1000)
+                .execute()) {
+            if (response.getStatus() != HttpStatus.HTTP_OK) {
+                log.error("获取b站wbi key失败 status:{} body:{}", response.getStatus(), response.body());
+                return null;
+            }
+            JSONObject body = JSONObject.parseObject(response.body());
+            JSONObject wbiImg = body.getJSONObject("data").getJSONObject("wbi_img");
+            String imgKey = getWbiImageKey(wbiImg.getString("img_url"));
+            String subKey = getWbiImageKey(wbiImg.getString("sub_url"));
+            String rawKey = imgKey + subKey;
+            StringBuilder mixinKey = new StringBuilder();
+            for (int index : WBI_MIXIN_KEY_ENC_TAB) {
+                mixinKey.append(rawKey.charAt(index));
+            }
+            return mixinKey.substring(0, 32);
+        } catch (Exception e) {
+            log.error("获取b站wbi key异常", e);
+            return null;
+        }
+    }
+
+    private String getWbiImageKey(String url) {
+        int slashIndex = url.lastIndexOf("/");
+        int dotIndex = url.lastIndexOf(".");
+        return url.substring(slashIndex + 1, dotIndex);
     }
 
     public void downloadVideo(String url, File file,int timeout){
