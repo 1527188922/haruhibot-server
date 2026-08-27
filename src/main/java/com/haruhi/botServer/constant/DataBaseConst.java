@@ -31,6 +31,8 @@ public class DataBaseConst {
     public final static String T_WORD_STRIP = "t_word_strip";
     // pixiv 图库表
     public final static String T_PIXIV = "t_pixiv";
+    public final static String T_JM_ALBUM = "t_jm_album";
+    public final static String T_JM_CHAPTER_IMAGE = "t_jm_chapter_image";
     public final static String T_SEND_LIKE_RECORD = "t_send_like_record";
     public final static String T_DICTIONARY = "t_dictionary";
     public final static String T_GROUP_INFO = "t_group_info";

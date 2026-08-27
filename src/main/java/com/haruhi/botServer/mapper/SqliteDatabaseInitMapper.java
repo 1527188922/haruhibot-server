@@ -67,6 +67,10 @@ public interface SqliteDatabaseInitMapper {
      */
     int createPixiv(@Param("tableName") String tableName);
 
+    int createJmAlbum(@Param("tableName") String tableName);
+
+    int createJmChapterImage(@Param("tableName") String tableName);
+
 
     int createSendLikeRecord(@Param("tableName") String tableName);
 

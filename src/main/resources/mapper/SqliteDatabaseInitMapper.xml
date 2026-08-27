@@ -129,6 +129,48 @@
             `tags` text NOT NULL
         );
     </update>
+    <update id="createJmAlbum">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY,
+            `name` TEXT,
+            `album_folder_name` TEXT,
+            `images` TEXT,
+            `add_time` TEXT,
+            `description` TEXT,
+            `total_views` TEXT,
+            `likes` TEXT,
+            `series` TEXT,
+            `series_id` TEXT,
+            `comment_total` TEXT,
+            `author` TEXT,
+            `tags` TEXT,
+            `works` TEXT,
+            `actors` TEXT,
+            `related_list` TEXT,
+            `liked` INTEGER,
+            `is_favorite` INTEGER,
+            `is_aids` INTEGER,
+            `price` TEXT,
+            `purchased` TEXT,
+            `raw` TEXT,
+            `create_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+            `modify_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
+    <update id="createJmChapterImage">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `album_id` INTEGER NOT NULL,
+            `chapter_id` INTEGER NOT NULL,
+            `chapter_name` TEXT,
+            `chapter_add_time` TEXT,
+            `series_id` TEXT,
+            `liked` INTEGER,
+            `is_favorite` INTEGER,
+            `image_file` TEXT NOT NULL,
+            `image_sort` INTEGER
+        );
+    </update>
     <update id="createSendLikeRecord">
         CREATE TABLE IF NOT EXISTS `${tableName}` (
             `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,

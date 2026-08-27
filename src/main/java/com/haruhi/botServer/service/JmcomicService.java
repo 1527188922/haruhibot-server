@@ -74,6 +74,9 @@ public class JmcomicService {
     @Autowired
     private DictionarySqliteService dictionarySqliteService;
 
+    @Autowired
+    private JmcomicSqliteService jmcomicSqliteService;
+
     public String getJmApiDomain(){
         return dictionarySqliteService.getInCache(DictionaryEnum.JM_API_DOMAIN.getKey(), DEFAULT_API_DOMAIN);
     }
@@ -323,6 +326,7 @@ public class JmcomicService {
                     try {
                         String chapterPath = this.getChapterPath(albumPath, series);
                         Chapter chapter = this.requestChapter(series.getId());
+                        jmcomicSqliteService.saveOrUpdateChapterImages(album.getId(), chapter);
                         this.downloadChapter(chapter,chapterPath,series.getTitle(),-1, executor);
 //                        System.gc();
                     }catch (Exception e) {
@@ -617,6 +621,7 @@ public class JmcomicService {
                     albumFolderName = albumFolderName.substring(0,50);
                 }
                 album.setAlbumFolderName(albumFolderName + "_JM" + aid);
+                jmcomicSqliteService.saveOrUpdateAlbum(album, data);
                 return BaseResp.success(album);
             }
         } catch (Exception e) {
@@ -721,7 +726,7 @@ public class JmcomicService {
     }
 
 
-    private String buildImgUrl(Long chapterId,String filename) {
+    public static String buildImgUrl(Long chapterId,String filename) {
         return "https://" + IMAGE_DOMAIN + "/media/photos/"+ chapterId +"/"+ filename;
     }
 

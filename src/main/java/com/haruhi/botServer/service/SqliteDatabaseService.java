@@ -111,6 +111,21 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_PIXIV,"is_r18");
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_PIXIV,"tags");
 
+        sqliteDatabaseInitMapper.createJmAlbum(DataBaseConst.T_JM_ALBUM);
+        this.addColumnIfNotExists(DataBaseConst.T_JM_ALBUM,"raw","TEXT",false,null);
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_JM_ALBUM,"name");
+        sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_JM_ALBUM,"tags");
+
+        sqliteDatabaseInitMapper.createJmChapterImage(DataBaseConst.T_JM_CHAPTER_IMAGE);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_JM_CHAPTER_IMAGE,
+                StrFormatter.format("{}_album_chapter_file_idx",DataBaseConst.T_JM_CHAPTER_IMAGE),
+                "album_id,chapter_id,image_file",
+                true);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_JM_CHAPTER_IMAGE,
+                StrFormatter.format("{}_album_chapter_sort_idx",DataBaseConst.T_JM_CHAPTER_IMAGE),
+                "album_id,chapter_id,image_sort",
+                false);
+
         sqliteDatabaseInitMapper.createSendLikeRecord(DataBaseConst.T_SEND_LIKE_RECORD);
         sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_SEND_LIKE_RECORD,
                 StrFormatter.format("{}_user_send_time_idx",DataBaseConst.T_SEND_LIKE_RECORD),

@@ -6,7 +6,10 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.Album;
 import com.haruhi.botServer.service.JmcomicService;
+import com.haruhi.botServer.service.JmcomicSqliteService;
 import com.haruhi.botServer.vo.HttpResp;
+import com.haruhi.botServer.vo.JmChapterImageResp;
+import com.haruhi.botServer.vo.JmChapterInfoResp;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -22,6 +25,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -31,6 +35,9 @@ public class JmcomicController {
 
     @Autowired
     private JmcomicService jmcomicService;
+
+    @Autowired
+    private JmcomicSqliteService jmcomicSqliteService;
 
     @IgnoreAuthentication
     @GetMapping("/download/{aid}")
@@ -70,6 +77,17 @@ public class JmcomicController {
         } catch (Exception e) {
             return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(e.getMessage())));
         }
+    }
+
+    @GetMapping("/album/{aid}/chapters")
+    public HttpResp<List<JmChapterInfoResp>> chapters(@PathVariable("aid") Long aid) {
+        return HttpResp.success(jmcomicSqliteService.listChapters(aid));
+    }
+
+    @GetMapping("/album/{aid}/chapter/{chapterId}/images")
+    public HttpResp<List<JmChapterImageResp>> chapterImages(@PathVariable("aid") Long aid,
+                                                            @PathVariable("chapterId") Long chapterId) {
+        return HttpResp.success(jmcomicSqliteService.listChapterImages(aid, chapterId));
     }
 
     private String jsonBody(HttpResp resp) {

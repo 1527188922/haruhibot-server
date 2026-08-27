@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haruhi.botServer.mapper.JmChapterImageSqliteMapper">
+
+    <sql id="baseCol">
+        id,album_id,chapter_id,chapter_name,chapter_add_time,series_id,liked,is_favorite,image_file,image_sort
+    </sql>
+
+    <select id="selectChapterList" resultType="com.haruhi.botServer.entity.JmChapterImageSqlite">
+        SELECT
+            MIN(id) AS id,
+            album_id,
+            chapter_id,
+            chapter_name,
+            chapter_add_time,
+            series_id,
+            liked,
+            is_favorite,
+            MIN(image_file) AS image_file,
+            MIN(image_sort) AS image_sort
+        FROM `t_jm_chapter_image`
+        WHERE album_id = #{albumId}
+        GROUP BY album_id, chapter_id, chapter_name, chapter_add_time, series_id, liked, is_favorite
+        ORDER BY CAST(chapter_id AS INTEGER)
+    </select>
+
+    <select id="selectImages" resultType="com.haruhi.botServer.entity.JmChapterImageSqlite">
+        SELECT <include refid="baseCol"/>
+        FROM `t_jm_chapter_image`
+        WHERE album_id = #{albumId}
+          AND chapter_id = #{chapterId}
+        ORDER BY image_sort, id
+    </select>
+</mapper>
