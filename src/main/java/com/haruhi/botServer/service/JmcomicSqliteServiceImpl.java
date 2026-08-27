@@ -138,11 +138,9 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (CollectionUtils.isEmpty(chapter.getImages())) {
             return Collections.emptyList();
         }
-        return IntStream.range(0, chapter.getImages().size()).mapToObj(i -> {
-            String image = chapter.getImages().get(i);
-            if (StringUtils.isBlank(image)) {
-                return null;
-            }
+        List<String> sortedImages = JmcomicService.sortImageFiles(chapter.getImages());
+        return IntStream.range(0, sortedImages.size()).mapToObj(i -> {
+            String image = sortedImages.get(i);
             JmChapterImageSqlite entity = new JmChapterImageSqlite();
             entity.setAlbumId(albumId);
             entity.setChapterId(chapter.getId());
@@ -156,7 +154,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
             entity.setImageFile(image);
             entity.setImageSort(i + 1);
             return entity;
-        }).filter(Objects::nonNull).collect(Collectors.toList());
+        }).collect(Collectors.toList());
     }
 
     JmChapterImageResp toChapterImageResp(JmChapterImageSqlite image) {

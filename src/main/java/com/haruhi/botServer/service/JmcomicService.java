@@ -7,10 +7,12 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.*;
 import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.utils.DbLog;
 import com.haruhi.botServer.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
@@ -273,11 +275,21 @@ public class JmcomicService {
 
     private List<File> sortFiles(List<File> files) {
         files.sort((f1, f2) -> {
-            int num1 = this.extractImageNumber(FileUtil.getBaseName(f1.getName()));
-            int num2 = this.extractImageNumber(FileUtil.getBaseName(f2.getName()));
+            int num1 = extractImageNumber(FileUtil.getBaseName(f1.getName()));
+            int num2 = extractImageNumber(FileUtil.getBaseName(f2.getName()));
             return Integer.compare(num1, num2);
         });
         return files;
+    }
+
+    public static List<String> sortImageFiles(List<String> imageFiles) {
+        if (CollectionUtils.isEmpty(imageFiles)) {
+            return Collections.emptyList();
+        }
+        return imageFiles.stream()
+                .filter(StringUtils::isNotBlank)
+                .sorted(Comparator.comparingInt(e -> extractImageNumber(FileUtil.getBaseName(e))))
+                .collect(Collectors.toList());
     }
 
     // 提取章节编号（从"第X话"格式中提取数字）
@@ -287,11 +299,13 @@ public class JmcomicService {
         return matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
     }
 
-    private int extractImageNumber(String imageName) {
+    public static int extractImageNumber(String imageName) {
         int n = 0;
         try {
             n = Integer.parseInt(imageName);
         }catch (NumberFormatException e) {
+            DbLog.error(BusinessModuleEnum.JMCOMIC,
+                    "从imageName提取数字异常：{} errMsg:{}",imageName,e.getMessage());
         }
         return n;
     }
