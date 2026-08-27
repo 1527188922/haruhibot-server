@@ -182,6 +182,28 @@
           `email` TEXT
         );
     </update>
+    <update id="createSystemLog">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          `trace_id` TEXT,
+          `business_module` TEXT,
+          `level` TEXT NOT NULL,
+          `logger_name` TEXT,
+          `class_name` TEXT,
+          `method_name` TEXT,
+          `thread_name` TEXT,
+          `message` TEXT,
+          `throwable` TEXT,
+          `request_method` TEXT,
+          `request_uri` TEXT,
+          `query_string` TEXT,
+          `client_ip` TEXT,
+          `user_name` TEXT,
+          `handler_class` TEXT,
+          `handler_method` TEXT,
+          `create_time` DATETIME NOT NULL
+        );
+    </update>
     <select id="pragmaTableInfo" resultType="com.haruhi.botServer.entity.TableInfoSqlite">
         PRAGMA table_info(${tableName})
     </select>

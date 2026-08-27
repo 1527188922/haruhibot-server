@@ -75,4 +75,6 @@ public interface SqliteDatabaseInitMapper {
     int createGroupInfo(@Param("tableName") String tableName);
 
     int createFriend(@Param("tableName") String tableName);
+
+    int createSystemLog(@Param("tableName") String tableName);
 }

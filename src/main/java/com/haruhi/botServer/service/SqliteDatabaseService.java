@@ -134,6 +134,20 @@ public class SqliteDatabaseService{
                 StrFormatter.format("{}_user_self_idx",DataBaseConst.T_FRIEND),
                 "user_id,self_id",
                 false);
+
+        sqliteDatabaseInitMapper.createSystemLog(DataBaseConst.T_SYSTEM_LOG);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_SYSTEM_LOG,
+                StrFormatter.format("{}_module_time_idx",DataBaseConst.T_SYSTEM_LOG),
+                "business_module,create_time",
+                false);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_SYSTEM_LOG,
+                StrFormatter.format("{}_level_time_idx",DataBaseConst.T_SYSTEM_LOG),
+                "level,create_time",
+                false);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_SYSTEM_LOG,
+                StrFormatter.format("{}_trace_idx",DataBaseConst.T_SYSTEM_LOG),
+                "trace_id",
+                false);
     }
 
     private static final ConcurrentHashMap<String,Boolean> tableExistsCache = new ConcurrentHashMap<>();

@@ -35,6 +35,7 @@ public class DataBaseConst {
     public final static String T_DICTIONARY = "t_dictionary";
     public final static String T_GROUP_INFO = "t_group_info";
     public final static String T_FRIEND = "t_friend";
+    public final static String T_SYSTEM_LOG = "t_system_log";
 
     public final static String SQLITE_SYS_T_SQLITE_SCHEMA = "sqlite_schema";
     public final static String SQLITE_SYS_T_SQLITE_SEQUENCE = "sqlite_sequence";

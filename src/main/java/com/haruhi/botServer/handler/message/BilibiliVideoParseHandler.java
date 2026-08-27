@@ -2,6 +2,7 @@ package com.haruhi.botServer.handler.message;
 
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
@@ -13,10 +14,7 @@ import com.haruhi.botServer.dto.qqclient.SendMsgResp;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.service.BilibiliService;
 import com.haruhi.botServer.service.DictionarySqliteService;
-import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.utils.DateTimeUtil;
-import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.utils.*;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -71,7 +69,7 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
                 Long cid = videoDetailData.getCidFirst();
                 VideoDetail.View videoDetailDataView = videoDetailData.getView();
                 if (videoDetailDataView == null) {
-                    log.error("未查询到视频信息 bvid:{} resp:{}", finalBvid, videoDetail.getRaw());
+                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频信息 bvid:{} resp:{}", finalBvid, videoDetail.getRaw());
                     return;
                 }
 
@@ -79,7 +77,7 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
 
                 PlayUrlInfo playUrlInfoData = playUrlInfo.getData();
                 if (playUrlInfoData == null) {
-                    log.error("未查询到视频下载链接信息 bvid:{} resp:{}", finalBvid, playUrlInfo.getRaw());
+                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频下载链接信息 bvid:{} resp:{}", finalBvid, playUrlInfo.getRaw());
                     return;
                 }
                 sendInfoMessage(videoDetailDataView, message, bot);
@@ -107,7 +105,7 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
                 }
                 uploadFileToQq(bot, message, bilibiliVideoFile);
             }catch (Exception e) {
-                log.error("解析b站视频异常", e);
+                DbLog.error(BusinessModuleEnum.BILIBILI,"解析b站视频异常", e);
             }
         });
         return true;

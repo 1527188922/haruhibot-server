@@ -28,8 +28,17 @@
 		</encoder>
 	</appender>
 
+	<!-- 业务数据库日志：只有 DbLog 打出的 DB_LOG Marker 日志才会入库 -->
+	<appender name="databaseAppender" class="com.haruhi.botServer.config.log.DatabaseLogAppender">
+		<queueSize>5000</queueSize>
+		<maxMessageLength>4000</maxMessageLength>
+		<maxThrowableLength>8000</maxThrowableLength>
+		<discardInfoWhenQueueFull>true</discardInfoWhenQueueFull>
+	</appender>
+
 	<root level="info">
 		<appender-ref ref="rollingFileAppender" />
 		<appender-ref ref="consoleAppender" />
+		<appender-ref ref="databaseAppender" />
 	</root>
 </configuration>
