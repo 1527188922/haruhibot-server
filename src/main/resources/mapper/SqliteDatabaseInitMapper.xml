@@ -162,6 +162,8 @@
             `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             `album_id` INTEGER NOT NULL,
             `chapter_id` INTEGER NOT NULL,
+            `chapter_sort` TEXT,
+            `chapter_title` TEXT,
             `chapter_name` TEXT,
             `chapter_add_time` TEXT,
             `series_id` TEXT,

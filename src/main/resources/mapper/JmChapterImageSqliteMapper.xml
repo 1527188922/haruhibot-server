@@ -3,7 +3,7 @@
 <mapper namespace="com.haruhi.botServer.mapper.JmChapterImageSqliteMapper">
 
     <sql id="baseCol">
-        id,album_id,chapter_id,chapter_name,chapter_add_time,series_id,liked,is_favorite,image_file,image_sort
+        id,album_id,chapter_id,chapter_sort,chapter_title,chapter_name,chapter_add_time,series_id,liked,is_favorite,image_file,image_sort
     </sql>
 
     <select id="selectChapterList" resultType="com.haruhi.botServer.entity.JmChapterImageSqlite">
@@ -11,6 +11,8 @@
             MIN(id) AS id,
             album_id,
             chapter_id,
+            chapter_sort,
+            chapter_title,
             chapter_name,
             chapter_add_time,
             series_id,
@@ -20,8 +22,8 @@
             MIN(image_sort) AS image_sort
         FROM `t_jm_chapter_image`
         WHERE album_id = #{albumId}
-        GROUP BY album_id, chapter_id, chapter_name, chapter_add_time, series_id, liked, is_favorite
-        ORDER BY CAST(chapter_id AS INTEGER)
+        GROUP BY album_id, chapter_id, chapter_sort, chapter_title, chapter_name, chapter_add_time, series_id, liked, is_favorite
+        ORDER BY CAST(chapter_sort AS INTEGER), CAST(chapter_id AS INTEGER)
     </select>
 
     <select id="selectImages" resultType="com.haruhi.botServer.entity.JmChapterImageSqlite">

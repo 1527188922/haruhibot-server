@@ -14,6 +14,8 @@ public class JmChapterImageSqlite {
     private Long id;
     private Long albumId;
     private Long chapterId;
+    private String chapterSort;
+    private String chapterTitle;
     private String chapterName;
     private String chapterAddTime;
     private String seriesId;

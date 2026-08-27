@@ -117,6 +117,8 @@ public class SqliteDatabaseService{
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_JM_ALBUM,"tags");
 
         sqliteDatabaseInitMapper.createJmChapterImage(DataBaseConst.T_JM_CHAPTER_IMAGE);
+        this.addColumnIfNotExists(DataBaseConst.T_JM_CHAPTER_IMAGE,"chapter_sort","TEXT",false,null);
+        this.addColumnIfNotExists(DataBaseConst.T_JM_CHAPTER_IMAGE,"chapter_title","TEXT",false,null);
         sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_JM_CHAPTER_IMAGE,
                 StrFormatter.format("{}_album_chapter_file_idx",DataBaseConst.T_JM_CHAPTER_IMAGE),
                 "album_id,chapter_id,image_file",

@@ -58,13 +58,19 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdateChapterImages(Long albumId, Chapter chapter) {
+        saveOrUpdateChapterImages(albumId, chapter, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveOrUpdateChapterImages(Long albumId, Chapter chapter, Series series) {
         if (albumId == null || chapter == null || chapter.getId() == null) {
             return;
         }
         jmChapterImageSqliteMapper.delete(new LambdaUpdateWrapper<JmChapterImageSqlite>()
                 .eq(JmChapterImageSqlite::getAlbumId, albumId)
                 .eq(JmChapterImageSqlite::getChapterId, chapter.getId()));
-        List<JmChapterImageSqlite> images = toChapterImageEntities(albumId, chapter);
+        List<JmChapterImageSqlite> images = toChapterImageEntities(albumId, chapter, series);
         if (CollectionUtils.isEmpty(images)) {
             return;
         }
@@ -128,7 +134,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         return entity;
     }
 
-    List<JmChapterImageSqlite> toChapterImageEntities(Long albumId, Chapter chapter) {
+    List<JmChapterImageSqlite> toChapterImageEntities(Long albumId, Chapter chapter, Series series) {
         if (CollectionUtils.isEmpty(chapter.getImages())) {
             return Collections.emptyList();
         }
@@ -140,6 +146,8 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
             JmChapterImageSqlite entity = new JmChapterImageSqlite();
             entity.setAlbumId(albumId);
             entity.setChapterId(chapter.getId());
+            entity.setChapterSort(series == null ? null : series.getSort());
+            entity.setChapterTitle(series == null ? null : series.getTitle());
             entity.setChapterName(chapter.getName());
             entity.setChapterAddTime(chapter.getAddTime());
             entity.setSeriesId(chapter.getSeriesId());
@@ -155,6 +163,8 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         JmChapterImageResp resp = new JmChapterImageResp();
         resp.setAlbumId(image.getAlbumId());
         resp.setChapterId(image.getChapterId());
+        resp.setChapterSort(image.getChapterSort());
+        resp.setChapterTitle(image.getChapterTitle());
         resp.setChapterName(image.getChapterName());
         resp.setChapterAddTime(image.getChapterAddTime());
         resp.setSeriesId(image.getSeriesId());
@@ -178,8 +188,9 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         JmChapterInfoResp resp = new JmChapterInfoResp();
         resp.setAlbumId(image.getAlbumId());
         resp.setChapterId(image.getChapterId());
+        resp.setSort(image.getChapterSort());
         resp.setName(image.getChapterName());
-        resp.setTitle(image.getChapterName());
+        resp.setTitle(StringUtils.isNotBlank(image.getChapterTitle()) ? image.getChapterTitle() : image.getChapterName());
         return resp;
     }
 

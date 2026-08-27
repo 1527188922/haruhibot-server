@@ -326,7 +326,7 @@ public class JmcomicService {
                     try {
                         String chapterPath = this.getChapterPath(albumPath, series);
                         Chapter chapter = this.requestChapter(series.getId());
-                        jmcomicSqliteService.saveOrUpdateChapterImages(album.getId(), chapter);
+                        jmcomicSqliteService.saveOrUpdateChapterImages(album.getId(), chapter, series);
                         this.downloadChapter(chapter,chapterPath,series.getTitle(),-1, executor);
 //                        System.gc();
                     }catch (Exception e) {
