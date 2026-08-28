@@ -29,8 +29,9 @@
                                controls-position="right"></el-input-number>条
           </span>
         <el-divider direction="vertical"></el-divider>
-        <el-button type="text" :loading="loading"  title="刷新" @click="queryMessageList(false, true)">
-          <i class="el-icon-refresh" style="font-size: 20px"></i>
+        <el-button type="text" :disabled="loading"  title="刷新" @click="queryMessageList(false, true)">
+          <i v-if="loading" class="el-icon-loading" style="font-size: 20px"></i>
+          <i v-else class="el-icon-refresh" style="font-size: 20px"></i>
         </el-button>
         <el-divider direction="vertical"></el-divider>
         <el-button type="text" title="定位"  @click="scrollToMessage(v.id)">
