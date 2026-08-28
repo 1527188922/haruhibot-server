@@ -2,7 +2,11 @@ package com.haruhi.botServer.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.dto.jmcomic.Album;
 import com.haruhi.botServer.dto.jmcomic.Chapter;
 import com.haruhi.botServer.dto.jmcomic.Series;
@@ -11,29 +15,52 @@ import com.haruhi.botServer.entity.JmChapterImageSqlite;
 import com.haruhi.botServer.mapper.JmAlbumSqliteMapper;
 import com.haruhi.botServer.mapper.JmChapterImageSqliteMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
+import com.haruhi.botServer.utils.FileUtil;
+import com.haruhi.botServer.vo.JmAlbumDeleteReq;
+import com.haruhi.botServer.vo.JmAlbumManageResp;
+import com.haruhi.botServer.vo.JmAlbumQueryReq;
+import com.haruhi.botServer.vo.JmChapterImageDeleteReq;
+import com.haruhi.botServer.vo.JmChapterImageManageResp;
+import com.haruhi.botServer.vo.JmChapterImageQueryReq;
 import com.haruhi.botServer.vo.JmChapterImageResp;
 import com.haruhi.botServer.vo.JmChapterInfoResp;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
+@Slf4j
 public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
+
+    private static final Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("jpg", "jpeg", "png", "gif", "webp", "bmp"));
 
     @Autowired
     private JmAlbumSqliteMapper jmAlbumSqliteMapper;
 
     @Autowired
     private JmChapterImageSqliteMapper jmChapterImageSqliteMapper;
+
+    @Autowired
+    private AbstractWebResourceConfig webResourceConfig;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -58,7 +85,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdateChapterImages(Long albumId, Chapter chapter) {
-        saveOrUpdateChapterImages(albumId, chapter, null);
+        saveOrUpdateChapterImages(albumId, chapter, chapter == null ? null : findSeries(albumId, chapter.getId()));
     }
 
     @Override
@@ -107,6 +134,97 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public IPage<JmAlbumManageResp> searchAlbums(JmAlbumQueryReq request) {
+        if (request == null) {
+            request = new JmAlbumQueryReq();
+        }
+        LambdaQueryWrapper<JmAlbumSqlite> queryWrapper = new LambdaQueryWrapper<JmAlbumSqlite>()
+                .eq(Objects.nonNull(request.getId()), JmAlbumSqlite::getId, request.getId())
+                .like(StringUtils.isNotBlank(request.getName()), JmAlbumSqlite::getName, request.getName())
+                .like(StringUtils.isNotBlank(request.getAuthor()), JmAlbumSqlite::getAuthor, request.getAuthor())
+                .like(StringUtils.isNotBlank(request.getTags()), JmAlbumSqlite::getTags, request.getTags())
+                .orderByDesc(JmAlbumSqlite::getModifyTime)
+                .orderByDesc(JmAlbumSqlite::getId);
+        IPage<JmAlbumSqlite> sourcePage = jmAlbumSqliteMapper.selectPage(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
+        Page<JmAlbumManageResp> targetPage = new Page<>(sourcePage.getCurrent(), sourcePage.getSize(), sourcePage.getTotal());
+        List<JmAlbumManageResp> records = sourcePage.getRecords().stream()
+                .map(this::toAlbumManageResp)
+                .collect(Collectors.toList());
+        targetPage.setRecords(records);
+        return targetPage;
+    }
+
+    @Override
+    public IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request) {
+        if (request == null) {
+            request = new JmChapterImageQueryReq();
+        }
+        LambdaQueryWrapper<JmChapterImageSqlite> queryWrapper = new LambdaQueryWrapper<JmChapterImageSqlite>()
+                .eq(Objects.nonNull(request.getAlbumId()), JmChapterImageSqlite::getAlbumId, request.getAlbumId())
+                .eq(Objects.nonNull(request.getChapterId()), JmChapterImageSqlite::getChapterId, request.getChapterId())
+                .like(StringUtils.isNotBlank(request.getChapterTitle()), JmChapterImageSqlite::getChapterTitle, request.getChapterTitle())
+                .like(StringUtils.isNotBlank(request.getImageFile()), JmChapterImageSqlite::getImageFile, request.getImageFile())
+                .orderByAsc(JmChapterImageSqlite::getAlbumId)
+                .orderByAsc(JmChapterImageSqlite::getChapterSort)
+                .orderByAsc(JmChapterImageSqlite::getImageSort);
+        IPage<JmChapterImageSqlite> sourcePage = jmChapterImageSqliteMapper.selectPage(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
+        Page<JmChapterImageManageResp> targetPage = new Page<>(sourcePage.getCurrent(), sourcePage.getSize(), sourcePage.getTotal());
+        List<Long> albumIds = sourcePage.getRecords().stream()
+                .map(JmChapterImageSqlite::getAlbumId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, JmAlbumSqlite> albumMap = CollectionUtils.isEmpty(albumIds) ? Collections.emptyMap()
+                : jmAlbumSqliteMapper.selectBatchIds(albumIds).stream().collect(Collectors.toMap(JmAlbumSqlite::getId, e -> e));
+        targetPage.setRecords(sourcePage.getRecords().stream()
+                .map(e -> toChapterImageManageResp(e, albumMap.get(e.getAlbumId())))
+                .collect(Collectors.toList()));
+        return targetPage;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAlbums(JmAlbumDeleteReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getIds())) {
+            return;
+        }
+        List<JmAlbumSqlite> albums = jmAlbumSqliteMapper.selectBatchIds(request.getIds());
+        for (JmAlbumSqlite album : albums) {
+            if (Boolean.TRUE.equals(request.getDeleteZip())) {
+                deleteFileUnderJmcomic(getZipFile(album));
+            }
+            if (Boolean.TRUE.equals(request.getDeletePdf())) {
+                deleteFileUnderJmcomic(getPdfFile(album));
+            }
+            if (Boolean.TRUE.equals(request.getDeleteImages())) {
+                deleteDirectoryQuietly(getAlbumDir(album));
+            }
+        }
+        jmChapterImageSqliteMapper.delete(new LambdaQueryWrapper<JmChapterImageSqlite>()
+                .in(JmChapterImageSqlite::getAlbumId, request.getIds()));
+        jmAlbumSqliteMapper.deleteBatchIds(request.getIds());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteChapterImages(JmChapterImageDeleteReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getIds())) {
+            return;
+        }
+        List<JmChapterImageSqlite> images = jmChapterImageSqliteMapper.selectBatchIds(request.getIds());
+        if (Boolean.TRUE.equals(request.getDeleteFile())) {
+            List<Long> albumIds = images.stream().map(JmChapterImageSqlite::getAlbumId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+            Map<Long, JmAlbumSqlite> albumMap = CollectionUtils.isEmpty(albumIds) ? Collections.emptyMap()
+                    : jmAlbumSqliteMapper.selectBatchIds(albumIds).stream().collect(Collectors.toMap(JmAlbumSqlite::getId, e -> e));
+            images.forEach(e -> deleteFileUnderJmcomic(getImageFile(albumMap.get(e.getAlbumId()), e)));
+        }
+        jmChapterImageSqliteMapper.deleteBatchIds(request.getIds());
+    }
+
     JmAlbumSqlite toAlbumEntity(Album album, String raw) {
         JmAlbumSqlite entity = new JmAlbumSqlite();
         entity.setId(album.getId());
@@ -146,7 +264,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
             entity.setChapterId(chapter.getId());
             entity.setChapterSort(series == null ? null : series.getSort());
             entity.setChapterTitle(series == null ? null : series.getTitle());
-            entity.setChapterName(chapter.getName());
+            entity.setChapterName(series == null ? chapter.getName() : series.getName());
             entity.setChapterAddTime(chapter.getAddTime());
             entity.setSeriesId(chapter.getSeriesId());
             entity.setLiked(chapter.getLiked());
@@ -172,6 +290,27 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         return resp;
     }
 
+    private JmAlbumManageResp toAlbumManageResp(JmAlbumSqlite album) {
+        JmAlbumManageResp resp = new JmAlbumManageResp();
+        BeanUtils.copyProperties(album, resp);
+        resp.setZipExists(getZipFile(album).exists());
+        resp.setPdfExists(getPdfFile(album).exists());
+        resp.setChapterList(listChapters(album.getId()));
+        resp.setImageCount(jmChapterImageSqliteMapper.selectCount(new LambdaQueryWrapper<JmChapterImageSqlite>()
+                .eq(JmChapterImageSqlite::getAlbumId, album.getId())));
+        resp.setActualImageCount(countActualImages(album));
+        return resp;
+    }
+
+    private JmChapterImageManageResp toChapterImageManageResp(JmChapterImageSqlite image, JmAlbumSqlite album) {
+        JmChapterImageManageResp resp = new JmChapterImageManageResp();
+        BeanUtils.copyProperties(image, resp);
+        resp.setImgUrl(JmcomicService.buildImgUrl(image.getChapterId(), image.getImageFile()));
+        resp.setImageFileExists(album != null && getImageFile(album, image).exists());
+        resp.setServerImgUrl(buildServerImgUrl(album, image));
+        return resp;
+    }
+
     private JmChapterInfoResp toChapterInfoResp(Long albumId, Series series) {
         JmChapterInfoResp resp = new JmChapterInfoResp();
         resp.setAlbumId(albumId);
@@ -192,10 +331,114 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         return resp;
     }
 
+    private Series findSeries(Long albumId, Long chapterId) {
+        JmAlbumSqlite album = jmAlbumSqliteMapper.selectById(albumId);
+        if (album == null || StringUtils.isBlank(album.getSeries())) {
+            return null;
+        }
+        List<Series> series = JSONObject.parseObject(album.getSeries(), new TypeReference<List<Series>>() {});
+        if (CollectionUtils.isEmpty(series)) {
+            return null;
+        }
+        return series.stream()
+                .filter(e -> String.valueOf(chapterId).equals(e.getId()))
+                .findFirst()
+                .orElse(null);
+    }
+
     private String toJson(Object value) {
         if (Objects.isNull(value)) {
             return null;
         }
         return JSONObject.toJSONString(value);
+    }
+
+    private File getZipFile(JmAlbumSqlite album) {
+        return new File(FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName() + ".zip");
+    }
+
+    private File getPdfFile(JmAlbumSqlite album) {
+        return new File(FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName() + ".pdf");
+    }
+
+    private File getAlbumDir(JmAlbumSqlite album) {
+        return new File(FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName());
+    }
+
+    private File getImageFile(JmAlbumSqlite album, JmChapterImageSqlite image) {
+        if (album == null || StringUtils.isBlank(album.getAlbumFolderName()) || image == null) {
+            return new File("__jmcomic_image_not_exists__");
+        }
+        return new File(getAlbumDir(album) + File.separator + getChapterFolderName(image) + File.separator + image.getImageFile());
+    }
+
+    private String buildServerImgUrl(JmAlbumSqlite album, JmChapterImageSqlite image) {
+        if (album == null || StringUtils.isBlank(album.getAlbumFolderName()) || image == null || StringUtils.isBlank(image.getImageFile())) {
+            return null;
+        }
+        return webResourceConfig.webHomePath()
+                + "/" + FileUtil.DIR_JMCOMIC
+                + "/" + urlEncode(album.getAlbumFolderName())
+                + "/" + urlEncode(getChapterFolderName(image))
+                + "/" + urlEncode(image.getImageFile());
+    }
+
+    private String getChapterFolderName(JmChapterImageSqlite image) {
+        String title = StringUtils.isNotBlank(image.getChapterTitle()) ? image.getChapterTitle() : image.getChapterName();
+        if (StringUtils.isBlank(title)) {
+            title = String.valueOf(image.getChapterId());
+        }
+        return title + (StringUtils.isBlank(image.getChapterName()) ? "" : "_" + image.getChapterName());
+    }
+
+    private Long countActualImages(JmAlbumSqlite album) {
+        File albumDir = getAlbumDir(album);
+        if (!albumDir.exists() || !albumDir.isDirectory()) {
+            return 0L;
+        }
+        return FileUtil.getAllFiles(albumDir.getAbsolutePath()).stream()
+                .filter(file -> IMAGE_EXTENSIONS.contains(StringUtils.defaultString(FileUtil.getFileExtension(file.getName()))))
+                .count();
+    }
+
+    private void deleteDirectoryQuietly(File directory) {
+        if (!directory.exists()) {
+            return;
+        }
+        if (!isUnderJmcomicDir(directory)) {
+            log.error("拒绝删除JM漫画目录外的路径：{}", directory.getAbsolutePath());
+            return;
+        }
+        try {
+            FileUtils.deleteDirectory(directory);
+        } catch (Exception e) {
+            log.error("删除JM漫画图片目录异常：{}", directory.getAbsolutePath(), e);
+        }
+    }
+
+    private void deleteFileUnderJmcomic(File file) {
+        if (file == null || !file.exists()) {
+            return;
+        }
+        if (!isUnderJmcomicDir(file)) {
+            log.error("拒绝删除JM漫画目录外的文件：{}", file.getAbsolutePath());
+            return;
+        }
+        FileUtil.deleteFile(file);
+    }
+
+    private boolean isUnderJmcomicDir(File file) {
+        try {
+            String rootPath = new File(FileUtil.getJmcomicDir()).getCanonicalPath();
+            String filePath = file.getCanonicalPath();
+            return filePath.equals(rootPath) || filePath.startsWith(rootPath + File.separator);
+        } catch (Exception e) {
+            log.error("校验JM漫画文件路径异常：{}", file.getAbsolutePath(), e);
+            return false;
+        }
+    }
+
+    private String urlEncode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }

@@ -275,6 +275,16 @@ const release = [{
         keepAlive: true
     },
     children: []
+},{
+    label: "JM漫画",
+    path: '/jmcomic',
+    component: 'views/jmcomic/index',
+    icon: 'icon-caidan',
+    iconBgColor: randomColor(),
+    meta: {
+        keepAlive: true
+    },
+    children: []
 },
 //     {
 //     label: '系统信息',
