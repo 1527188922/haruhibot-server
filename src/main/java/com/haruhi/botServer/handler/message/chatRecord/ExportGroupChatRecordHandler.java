@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -105,8 +106,10 @@ public class ExportGroupChatRecordHandler implements IGroupMessageHandler {
                 }
                 long l5 = System.currentTimeMillis();
                 log.info("开始上传qq文件：{}",filePath);
-                SyncResponse<String> stringSyncResponse = bot.uploadGroupFile(message.getGroupId(), filePath, fileName, null, -1);
-                log.info("群聊记录excel上传完成 cost:{} resp:{}",(System.currentTimeMillis()-l5),JSONObject.toJSONString(stringSyncResponse));
+                bot.uploadGroupFile(message.getGroupId(), filePath, fileName, null, Duration.ofMinutes(10).toMillis(), syncResponse -> {
+                    // 如果是串行上传模式：cost = 排队时长 + 上传耗时
+                    log.info("群聊记录excel上传完成 cost:{} resp:{}",(System.currentTimeMillis()-l5),JSONObject.toJSONString(syncResponse));
+                });
             }catch (Exception e){
                 log.info("导出群聊记录异常 groupId:{}",message.getGroupId(), e);
                 String err = "导出群聊记录异常\n"+ "群号："+ message.getGroupId() + "\n"+e.getMessage();

@@ -3,9 +3,11 @@ package com.haruhi.botServer.ws;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.QqClientActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.*;
+import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.CommonUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,9 +19,12 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -29,7 +34,7 @@ import java.util.stream.Collectors;
  *
  */
 @Slf4j
-public class Bot {
+public class Bot implements Closeable {
 
     @Setter
     @Getter
@@ -40,9 +45,17 @@ public class Bot {
 
     private static final int SEND_TIME_LIMIT_MILLIS = 10 * 1000;
     private static final int BUFFER_SIZE_LIMIT_BYTES = 512 * 1024;
+    private static final ExecutorService UPLOAD_FILE_VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+
+    private final ExecutorService uploadFileQueue;
 
     public Bot(Long id, WebSocketSession session) {
         this.id = id;
+        this.uploadFileQueue = Executors.newSingleThreadExecutor(r -> {
+            Thread thread = new Thread(r, "bot-upload-file-queue-" + session.getId());
+            thread.setDaemon(true);
+            return thread;
+        });
         setSession(session);
     }
 
@@ -55,7 +68,9 @@ public class Bot {
                 session, SEND_TIME_LIMIT_MILLIS, BUFFER_SIZE_LIMIT_BYTES);
     }
 
+    @Override
     public void close() throws IOException {
+        uploadFileQueue.shutdownNow();
         session.close();
     }
 
@@ -320,6 +335,15 @@ public class Bot {
      * @return
      */
     public SyncResponse<String> uploadPrivateFile(Long userId, String filePath, String fileName, long timeout){
+        return executeUploadFile(() -> doUploadPrivateFile(userId, filePath, fileName, timeout));
+    }
+
+    public void uploadPrivateFile(Long userId, String filePath, String fileName, long timeout,
+                                  Consumer<SyncResponse<String>> callback){
+        executeUploadFileAsync(() -> doUploadPrivateFile(userId, filePath, fileName, timeout), callback);
+    }
+
+    private SyncResponse<String> doUploadPrivateFile(Long userId, String filePath, String fileName, long timeout) {
         Map<String, Object> param = new HashMap<>(3);
         param.put("user_id",userId);
         param.put("file",filePath);
@@ -337,12 +361,77 @@ public class Bot {
      * @return
      */
     public SyncResponse<String> uploadGroupFile(Long groupId, String filePath, String fileName,String folderId, long timeout){
+        return executeUploadFile(() -> doUploadGroupFile(groupId, filePath, fileName, folderId, timeout));
+    }
+
+    public void uploadGroupFile(Long groupId, String filePath, String fileName,String folderId, long timeout,
+                                Consumer<SyncResponse<String>> callback){
+        executeUploadFileAsync(() -> doUploadGroupFile(groupId, filePath, fileName, folderId, timeout), callback);
+    }
+
+    private SyncResponse<String> doUploadGroupFile(Long groupId, String filePath, String fileName,String folderId, long timeout) {
         Map<String, Object> param = new HashMap<>(3);
         param.put("group_id",groupId);
         param.put("file",filePath);
         param.put("name",fileName);
         param.put("folder",folderId);
         return sendSyncRequest(QqClientActionEnum.UPLOAD_GROUP_FILE, param, timeout, new TypeReference<SyncResponse<String>>() {});
+    }
+
+    private SyncResponse<String> executeUploadFile(Supplier<SyncResponse<String>> uploadTask) {
+        if (isUploadFileParallel()) {
+            return uploadTask.get();
+        }
+
+        try {
+            return uploadFileQueue.submit(uploadTask::get).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("排队上传文件线程中断", e);
+        } catch (ExecutionException e) {
+            log.error("排队上传文件执行异常", e);
+        } catch (RejectedExecutionException e) {
+            log.error("排队上传文件任务提交失败", e);
+        }
+        return SyncResponse.failed();
+    }
+
+    private void executeUploadFileAsync(Supplier<SyncResponse<String>> uploadTask,
+                                        Consumer<SyncResponse<String>> callback) {
+        Executor executor = isUploadFileParallel() ? UPLOAD_FILE_VIRTUAL_EXECUTOR : uploadFileQueue;
+        try {
+            CompletableFuture
+                    .supplyAsync(uploadTask, executor)
+                    .whenComplete((response, throwable) -> handleUploadFileCallback(callback, response, throwable));
+        } catch (RejectedExecutionException e) {
+            log.error("异步上传文件任务提交失败", e);
+            handleUploadFileCallback(callback, SyncResponse.failed(), null);
+        }
+    }
+
+    private void handleUploadFileCallback(Consumer<SyncResponse<String>> callback,
+                                          SyncResponse<String> response,
+                                          Throwable throwable) {
+        SyncResponse<String> callbackResponse = response;
+        if (throwable != null) {
+            log.error("异步上传文件执行异常", throwable);
+            callbackResponse = SyncResponse.failed();
+        }
+        if (callback != null) {
+            try {
+                callback.accept(callbackResponse);
+            } catch (Exception e) {
+                log.error("异步上传文件callback执行异常", e);
+            }
+        }
+    }
+
+    private boolean isUploadFileParallel() {
+        List<String> values = DictionarySqliteService.CACHE.get(DictionaryEnum.BOT_UPLOAD_FILE_PARALLEL.getKey());
+        if (values == null || values.isEmpty() || StringUtils.isBlank(values.getFirst())) {
+            return Boolean.parseBoolean(DictionaryEnum.BOT_UPLOAD_FILE_PARALLEL.getDefaultValue());
+        }
+        return Boolean.parseBoolean(values.getFirst().trim());
     }
 
     /**

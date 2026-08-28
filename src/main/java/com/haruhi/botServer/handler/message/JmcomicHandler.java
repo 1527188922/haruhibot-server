@@ -31,7 +31,9 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -158,16 +160,16 @@ public class JmcomicHandler implements IAllMessageHandler {
             }
             absolutePath = downloadFileRes.getData().getFile();
         }
-        SyncResponse<String> response = null;
         log.info("qq客户端开始上传文件 {}",absolutePath);
         long l = System.currentTimeMillis();
+        Consumer<SyncResponse<String>> respCallback =
+                syncResponse ->
+                        log.info(isPdf ? "上传本子pdf完成 cost:{} 响应：{}" : "上传本子zip完成 cost:{} 响应：{}",(System.currentTimeMillis() - l), JSONObject.toJSONString(syncResponse));
         if (MessageTypeEnum.group.getType().equals(message.getMessageType())) {
-            response = bot.uploadGroupFile(message.getGroupId(), absolutePath, file.getName(), null, -1);
+            bot.uploadGroupFile(message.getGroupId(), absolutePath, file.getName(), null, Duration.ofMinutes(25).toMillis(), respCallback);
         }else if(MessageTypeEnum.privat.getType().equals(message.getMessageType())){
-            response = bot.uploadPrivateFile(message.getUserId(), absolutePath, file.getName(), -1);
+            bot.uploadPrivateFile(message.getUserId(), absolutePath, file.getName(), Duration.ofMinutes(25).toMillis(), respCallback);
         }
-        log.info(isPdf ? "上传本子pdf完成 cost:{} 响应：{}" : "上传本子zip完成 cost:{} 响应：{}"
-                ,(System.currentTimeMillis() - l), JSONObject.toJSONString(response));
     }
 
     private Pair<String,Boolean> calcAid(String aid){
