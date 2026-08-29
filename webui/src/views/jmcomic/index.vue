@@ -77,32 +77,89 @@
         <el-table-column label="列表章节" min-width="240" show-tooltip-when-overflow>
           <template slot-scope="{row}">{{formatChapterList(row.chapterList)}}</template>
         </el-table-column>
-        <el-table-column label="作者" prop="author" min-width="180" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="标签" prop="tags" min-width="240" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="作品" prop="works" min-width="160" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="角色" prop="actors" min-width="160" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="浏览" prop="totalViews" min-width="90" align="center"></el-table-column>
-        <el-table-column label="喜欢" prop="likes" min-width="90" align="center"></el-table-column>
-        <el-table-column label="系列ID" prop="seriesId" min-width="100" align="center"></el-table-column>
-        <el-table-column label="评论数" prop="commentTotal" min-width="90" align="center"></el-table-column>
-        <el-table-column label="已喜欢" prop="liked" min-width="80" align="center">
-          <template slot-scope="{row}">{{formatBool(row.liked)}}</template>
+        <el-table-column label="作者" prop="author" min-width="180">
+          <template slot-scope="{row}">
+            <div class="jm-tag-list">
+              <el-tag v-for="(item, index) in row.authorList" :key="`author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
+            </div>
+          </template>
         </el-table-column>
-        <el-table-column label="已收藏" prop="isFavorite" min-width="80" align="center">
-          <template slot-scope="{row}">{{formatBool(row.isFavorite)}}</template>
+        <el-table-column label="标签" prop="tags" min-width="240">
+          <template slot-scope="{row}">
+            <div v-if="row.tagsList.length > 0" class="jm-tag-summary">
+              <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`tags-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
+              <el-popover v-if="row.tagsList.length > 3" placement="bottom-start" trigger="click" width="360" popper-class="jm-tag-popover" :append-to-body="false">
+                <div class="jm-popover-title">全部标签</div>
+                <div class="jm-popover-tags">
+                  <el-tag v-for="(item, index) in row.tagsList" :key="`all-tags-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
+                </div>
+                <el-button slot="reference" type="text" size="mini">+{{hiddenCount(row.tagsList, 3)}}</el-button>
+              </el-popover>
+            </div>
+            <span v-else>-</span>
+          </template>
         </el-table-column>
-        <el-table-column label="isAids" prop="isAids" min-width="80" align="center">
-          <template slot-scope="{row}">{{formatBool(row.isAids)}}</template>
+        <el-table-column label="作品" prop="works" min-width="160">
+          <template slot-scope="{row}">
+            <div class="jm-tag-list">
+              <el-tag v-for="(item, index) in row.worksList" :key="`works-${row.id}-${index}`" size="mini" type="warning">{{item}}</el-tag>
+            </div>
+          </template>
         </el-table-column>
-        <el-table-column label="价格" prop="price" min-width="80" align="center"></el-table-column>
-        <el-table-column label="已购买" prop="purchased" min-width="90" align="center"></el-table-column>
-        <el-table-column label="添加时间" prop="addTime" min-width="150" align="center"></el-table-column>
-        <el-table-column label="创建时间" prop="createTime" min-width="150" align="center"></el-table-column>
-        <el-table-column label="修改时间" prop="modifyTime" min-width="150" align="center"></el-table-column>
+        <el-table-column label="角色" prop="actors" min-width="160">
+          <template slot-scope="{row}">
+            <div class="jm-tag-list">
+              <el-tag v-for="(item, index) in row.actorsList" :key="`actors-${row.id}-${index}`" size="mini">{{item}}</el-tag>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="描述" prop="description" min-width="280" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="封面列表" prop="images" min-width="180" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="series" prop="series" min-width="220" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="相关列表" prop="relatedList" min-width="220" show-tooltip-when-overflow></el-table-column>
+        <el-table-column label="观看数" prop="totalViews" min-width="90" align="center"></el-table-column>
+        <el-table-column label="Like数" prop="likes" min-width="90" align="center"></el-table-column>
+<!--        <el-table-column label="系列ID" prop="seriesId" min-width="100" align="center"></el-table-column>-->
+        <el-table-column label="评论数" prop="commentTotal" min-width="90" align="center"></el-table-column>
+        <el-table-column label="相关列表" prop="relatedList" min-width="300">
+          <template slot-scope="{row}">
+            <div v-if="row.relatedItems.length > 0" class="jm-related-cell">
+              <div v-for="(item, index) in visibleItems(row.relatedItems, 2)" :key="`related-${row.id}-${index}`" class="jm-related-line">
+                <el-button type="text" size="mini" @click="jumpToAlbum(item.id)">JM{{item.id}}</el-button>
+                <span class="jm-related-name">{{item.name}}</span>
+              </div>
+              <el-popover placement="bottom-start" trigger="click" width="520" popper-class="jm-related-popover" :append-to-body="false">
+                <div class="jm-popover-title">相关漫画</div>
+                <div class="jm-related-popover-list">
+                  <div v-for="(item, index) in row.relatedItems" :key="`all-related-${row.id}-${index}`" class="jm-related-popover-item">
+                    <div class="jm-related-popover-main">
+                      <el-button type="text" size="mini" @click="jumpToAlbum(item.id)">JM{{item.id}}</el-button>
+                      <span class="jm-related-popover-name">{{item.name}}</span>
+                    </div>
+                    <div v-if="item.author" class="jm-related-author">{{item.author}}</div>
+                  </div>
+                </div>
+                <el-button slot="reference" type="text" size="mini">全部 {{row.relatedItems.length}} 条</el-button>
+              </el-popover>
+            </div>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+<!--        <el-table-column label="已喜欢" prop="liked" min-width="80" align="center">-->
+<!--          <template slot-scope="{row}">{{formatBool(row.liked)}}</template>-->
+<!--        </el-table-column>-->
+<!--        <el-table-column label="已收藏" prop="isFavorite" min-width="80" align="center">-->
+<!--          <template slot-scope="{row}">{{formatBool(row.isFavorite)}}</template>-->
+<!--        </el-table-column>-->
+<!--        <el-table-column label="isAids" prop="isAids" min-width="80" align="center">-->
+<!--          <template slot-scope="{row}">{{formatBool(row.isAids)}}</template>-->
+<!--        </el-table-column>-->
+<!--        <el-table-column label="价格" prop="price" min-width="80" align="center"></el-table-column>-->
+<!--        <el-table-column label="已购买" prop="purchased" min-width="90" align="center"></el-table-column>-->
+        <el-table-column label="JM发布时间" prop="addTime" min-width="150" align="center">
+          <template slot-scope="{row}">{{row.formattedAddTime}}</template>
+        </el-table-column>
+        <el-table-column label="下载时间" prop="createTime" min-width="150" align="center"></el-table-column>
+<!--        <el-table-column label="修改时间" prop="modifyTime" min-width="150" align="center"></el-table-column>-->
+<!--        <el-table-column label="封面列表" prop="images" min-width="180" show-tooltip-when-overflow></el-table-column>-->
+<!--        <el-table-column label="series" prop="series" min-width="220" show-tooltip-when-overflow></el-table-column>-->
         <el-table-column label="raw" prop="raw" min-width="260" show-tooltip-when-overflow></el-table-column>
       </el-table>
       <div class="pagination-box">
@@ -199,8 +256,8 @@ export default {
       chapterData: [],
       albumSelection: [],
       chapterSelection: [],
-      albumDeleteOptions: { deletePdf: false, deleteZip: false, deleteImages: false },
-      chapterDeleteOptions: { deleteFile: false },
+      albumDeleteOptions: { deletePdf: true, deleteZip: true, deleteImages: true },
+      chapterDeleteOptions: { deleteFile: true },
       albumPagination: {
         currentPage: 1,
         pageSizes: [5, 10, 30, 50, 100, 500],
@@ -239,6 +296,80 @@ export default {
         return ''
       }
       return chapterList.map(e => `${e.title || e.name || ''}(${e.chapterId})`).join('，')
+    },
+    parseJsonList(value) {
+      if (!value) {
+        return []
+      }
+      if (Array.isArray(value)) {
+        return value.map(e => `${e}`).filter(e => e)
+      }
+      try {
+        const parsed = JSON.parse(value)
+        if (Array.isArray(parsed)) {
+          return parsed.map(e => `${e}`).filter(e => e)
+        }
+      } catch (e) {
+        return [`${value}`]
+      }
+      return [`${value}`]
+    },
+    parseJsonArray(value) {
+      if (!value) {
+        return []
+      }
+      if (Array.isArray(value)) {
+        return value
+      }
+      try {
+        const parsed = JSON.parse(value)
+        return Array.isArray(parsed) ? parsed : []
+      } catch (e) {
+        return []
+      }
+    },
+    parseRelatedList(value) {
+      return this.parseJsonArray(value)
+        .filter(e => e && e.id)
+        .map(e => ({
+          id: `${e.id}`,
+          name: e.name || '',
+          author: e.author || '',
+          image: e.image || ''
+        }))
+    },
+    visibleItems(list, count) {
+      return (list || []).slice(0, count)
+    },
+    hiddenCount(list, count) {
+      return Math.max((list || []).length - count, 0)
+    },
+    formatTimestamp(value) {
+      if (!value) {
+        return ''
+      }
+      const text = `${value}`.trim()
+      if (!/^\d{10}$|^\d{13}$/.test(text)) {
+        return text
+      }
+      const timestamp = text.length === 10 ? Number(text) * 1000 : Number(text)
+      const date = new Date(timestamp)
+      if (Number.isNaN(date.getTime())) {
+        return text
+      }
+      const pad = val => `${val}`.padStart(2, '0')
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    },
+    normalizeAlbum(row) {
+      return {
+        ...row,
+        authorList: this.parseJsonList(row.author),
+        tagsList: this.parseJsonList(row.tags),
+        worksList: this.parseJsonList(row.works),
+        actorsList: this.parseJsonList(row.actors),
+        relatedItems: this.parseRelatedList(row.relatedList),
+        formattedAddTime: this.formatTimestamp(row.addTime)
+      }
     },
     cleanQuery(query) {
       const res = { ...query }
@@ -297,7 +428,7 @@ export default {
         currentPage: this.albumPagination.currentPage,
         pageSize: this.albumPagination.pageSize
       }).then(({data: {data}}) => {
-        this.albumData = data.records || []
+        this.albumData = (data.records || []).map(row => this.normalizeAlbum(row))
         this.albumPagination.total = data.total
       }).finally(() => {
         this.albumLoading = false
@@ -321,6 +452,11 @@ export default {
       this.chapterQuery.albumId = row.id
       this.chapterQuery.chapterId = ''
       this.searchChaptersFirst()
+    },
+    jumpToAlbum(id) {
+      this.activeTab = 'album'
+      this.albumQuery.id = id
+      this.searchAlbumsFirst()
     },
     addAlbum() {
       this.$prompt('请输入JM ID', '新增JM主记录', {
@@ -363,14 +499,14 @@ export default {
       if (this.albumDeleteDisabled) {
         return
       }
-      this.albumDeleteOptions = { deletePdf: false, deleteZip: false, deleteImages: false }
+      this.albumDeleteOptions = { deletePdf: true, deleteZip: true, deleteImages: true }
       this.albumDeleteDialogVisible = true
     },
     openChapterDelete() {
       if (this.chapterDeleteDisabled) {
         return
       }
-      this.chapterDeleteOptions = { deleteFile: false }
+      this.chapterDeleteOptions = { deleteFile: true }
       this.chapterDeleteDialogVisible = true
     },
     deleteAlbumData() {
@@ -424,6 +560,120 @@ export default {
   a {
     color: #409eff;
     text-decoration: none;
+  }
+
+  .jm-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: 58px;
+    overflow: hidden;
+    padding: 2px 0;
+
+    .el-tag {
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .jm-tag-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 2px 0;
+
+    .el-tag {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .jm-related-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 0;
+  }
+
+  .jm-related-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .jm-related-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .jm-popover-title {
+    color: #303133;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .jm-popover-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 220px;
+    overflow: auto;
+
+    .el-tag {
+      max-width: 170px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .jm-related-popover-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow: auto;
+  }
+
+  .jm-related-popover-item {
+    border-bottom: 1px solid #ebeef5;
+    padding-bottom: 8px;
+
+    &:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+  }
+
+  .jm-related-popover-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .jm-related-popover-name {
+    color: #303133;
+    flex: 1;
+    line-height: 20px;
+    min-width: 0;
+  }
+
+  .jm-related-author {
+    color: #909399;
+    font-size: 12px;
+    line-height: 18px;
+    margin-left: 56px;
+    margin-top: 2px;
   }
 }
 </style>
