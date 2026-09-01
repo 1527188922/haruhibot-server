@@ -49,11 +49,19 @@
       <div class="data-table-option-buts">
         <el-button type="primary" size="small" plain icon="el-icon-plus" :loading="albumRequestLoading" @click="addAlbum">新增</el-button>
         <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="albumDeleteDisabled" @click="openAlbumDelete">删除</el-button>
+        <el-dropdown trigger="click" :hide-on-click="false">
+          <el-button type="primary" size="small" plain icon="el-icon-setting">列设置</el-button>
+          <el-dropdown-menu slot="dropdown" class="jm-column-dropdown">
+            <el-checkbox-group v-model="albumVisibleColumns" class="jm-column-check-group" @change="handleAlbumColumnsChange">
+              <el-checkbox v-for="column in albumColumnOptions" :key="column.key" :label="column.key">{{column.label}}</el-checkbox>
+            </el-checkbox-group>
+          </el-dropdown-menu>
+        </el-dropdown>
       </div>
       <el-table tooltip-effect="light" :data="albumData" v-loading="albumLoading" border stripe max-height="800"
                 size="small" ref="albumTable" highlight-current-row @selection-change="albumSelectionChange">
-        <el-table-column type="selection" width="50" align="center"></el-table-column>
-        <el-table-column fixed label="操作" width="96" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('selection')" type="selection" width="50" align="center"></el-table-column>
+        <el-table-column v-if="isAlbumColumnVisible('action')" fixed label="操作" width="96" align="center">
           <template slot-scope="{row}">
             <div class="jm-action-grid">
               <el-tooltip content="预览漫画" placement="top">
@@ -71,23 +79,23 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column fixed label="序号" width="50" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('index')" fixed label="序号" width="50" align="center">
           <template slot-scope="scope">{{scope.$index + 1}}</template>
         </el-table-column>
-        <el-table-column fixed label="JM ID" prop="id" min-width="110" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('id')" fixed label="JM ID" prop="id" min-width="110" align="center">
           <template slot-scope="{row}">
             <span class="primary-text" style="cursor:pointer;" @click="jumpToChapters(row)">{{row.id}}</span>
           </template>
         </el-table-column>
-        <el-table-column label="名称" prop="name" min-width="240" show-overflow-tooltip></el-table-column>
-        <el-table-column label="作者" prop="author" min-width="180">
+        <el-table-column v-if="isAlbumColumnVisible('name')" label="名称" prop="name" min-width="240" show-overflow-tooltip></el-table-column>
+        <el-table-column v-if="isAlbumColumnVisible('author')" label="作者" prop="author" min-width="180">
           <template slot-scope="{row}">
             <div class="jm-tag-list">
               <el-tag v-for="(item, index) in row.authorList" :key="`author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="标签" prop="tags" min-width="240">
+        <el-table-column v-if="isAlbumColumnVisible('tags')" label="标签" prop="tags" min-width="240">
           <template slot-scope="{row}">
             <div v-if="row.tagsList.length > 0" class="jm-tag-summary">
               <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`tags-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
@@ -102,8 +110,25 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="文件夹" prop="albumFolderName" min-width="220" show-overflow-tooltip></el-table-column>
-        <el-table-column label="ZIP" prop="zipExists" width="80" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('interactionStats')" label="互动统计" min-width="130" align="center">
+          <template slot-scope="{row}">
+            <div class="jm-stat-cell">
+              <div>观看：{{formatCount(row.totalViews)}}</div>
+              <div>Like：{{formatCount(row.likes)}}</div>
+              <div>评论：{{formatCount(row.commentTotal)}}</div>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column v-if="isAlbumColumnVisible('imageStats')" label="图片统计" min-width="130" align="center">
+          <template slot-scope="{row}">
+            <div class="jm-stat-cell">
+              <div>数据库：{{formatCount(row.imageCount)}}</div>
+              <div>文件：{{formatCount(row.actualImageCount)}}</div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="isAlbumColumnVisible('zip')" label="ZIP" prop="zipExists" width="80" align="center">
           <template slot-scope="{row}">
             <el-tooltip v-if="row.zipExists" content="点击下载ZIP文件" placement="top">
               <a :href="row.serverZipUrl" target="_blank" download>
@@ -113,7 +138,7 @@
             <el-tag v-else size="mini" type="info">{{formatBool(row.zipExists)}}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="PDF" prop="pdfExists" width="80" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('pdf')" label="PDF" prop="pdfExists" width="80" align="center">
           <template slot-scope="{row}">
             <el-tooltip v-if="row.pdfExists" content="点击下载PDF文件" placement="top">
               <a :href="row.serverPdfUrl" target="_blank" download>
@@ -123,34 +148,31 @@
             <el-tag v-else size="mini" type="info">{{formatBool(row.pdfExists)}}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="章节数" min-width="80" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('createTime')" label="下载时间" prop="createTime" min-width="150" align="center"></el-table-column>
+        <el-table-column v-if="isAlbumColumnVisible('chapterCount')" label="章节数" min-width="80" align="center">
           <template slot-scope="{row}">{{(row.chapterList || []).length}}</template>
         </el-table-column>
-        <el-table-column label="图片数" prop="imageCount" min-width="90" align="center"></el-table-column>
-        <el-table-column label="实际图片数" prop="actualImageCount" min-width="100" align="center"></el-table-column>
-        <el-table-column label="列表章节" min-width="240" show-overflow-tooltip>
+        <el-table-column v-if="isAlbumColumnVisible('chapterList')" label="列表章节" min-width="240" show-overflow-tooltip>
           <template slot-scope="{row}">{{formatChapterList(row.chapterList)}}</template>
         </el-table-column>
-        <el-table-column label="作品" prop="works" min-width="160">
+        <el-table-column v-if="isAlbumColumnVisible('works')" label="作品" prop="works" min-width="160">
           <template slot-scope="{row}">
             <div class="jm-tag-list">
               <el-tag v-for="(item, index) in row.worksList" :key="`works-${row.id}-${index}`" size="mini" type="warning">{{item}}</el-tag>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="角色" prop="actors" min-width="160">
+        <el-table-column v-if="isAlbumColumnVisible('actors')" label="角色" prop="actors" min-width="160">
           <template slot-scope="{row}">
             <div class="jm-tag-list">
               <el-tag v-for="(item, index) in row.actorsList" :key="`actors-${row.id}-${index}`" size="mini">{{item}}</el-tag>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="描述" prop="description" min-width="280" show-overflow-tooltip></el-table-column>
-        <el-table-column label="观看数" prop="totalViews" min-width="90" align="center"></el-table-column>
-        <el-table-column label="Like数" prop="likes" min-width="90" align="center"></el-table-column>
+        <el-table-column v-if="isAlbumColumnVisible('description')" label="描述" prop="description" min-width="280" show-overflow-tooltip></el-table-column>
 <!--        <el-table-column label="系列ID" prop="seriesId" min-width="100" align="center"></el-table-column>-->
-        <el-table-column label="评论数" prop="commentTotal" min-width="90" align="center"></el-table-column>
-        <el-table-column label="相关列表" prop="relatedList" min-width="300">
+        <el-table-column v-if="isAlbumColumnVisible('albumFolderName')" label="文件夹" prop="albumFolderName" min-width="220" show-overflow-tooltip></el-table-column>
+        <el-table-column v-if="isAlbumColumnVisible('relatedList')" label="相关列表" prop="relatedList" min-width="300">
           <template slot-scope="{row}">
             <div v-if="row.relatedItems.length > 0" class="jm-related-cell">
               <div v-for="(item, index) in visibleItems(row.relatedItems, 2)" :key="`related-${row.id}-${index}`" class="jm-related-line">
@@ -185,14 +207,13 @@
 <!--        </el-table-column>-->
 <!--        <el-table-column label="价格" prop="price" min-width="80" align="center"></el-table-column>-->
 <!--        <el-table-column label="已购买" prop="purchased" min-width="90" align="center"></el-table-column>-->
-        <el-table-column label="JM发布时间" prop="addTime" min-width="150" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('addTime')" label="JM发布时间" prop="addTime" min-width="150" align="center">
           <template slot-scope="{row}">{{row.formattedAddTime}}</template>
         </el-table-column>
-        <el-table-column label="下载时间" prop="createTime" min-width="150" align="center"></el-table-column>
 <!--        <el-table-column label="修改时间" prop="modifyTime" min-width="150" align="center"></el-table-column>-->
 <!--        <el-table-column label="封面列表" prop="images" min-width="180" show-overflow-tooltip></el-table-column>-->
 <!--        <el-table-column label="series" prop="series" min-width="220" show-overflow-tooltip></el-table-column>-->
-        <el-table-column label="raw" prop="raw" min-width="100" show-overflow-tooltip></el-table-column>
+        <el-table-column v-if="isAlbumColumnVisible('raw')" label="raw" prop="raw" min-width="100" show-overflow-tooltip></el-table-column>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="albumPagination" @size-change="albumSizeChange" @current-change="albumCurrentChange" />
@@ -296,6 +317,30 @@ export default {
       albumSelection: [],
       chapterSelection: [],
       albumOperationLoading: {},
+      albumVisibleColumns: ['selection', 'action', 'index', 'id', 'name', 'author', 'tags', 'zip', 'pdf', 'createTime','imageStats','interactionStats'],
+      albumColumnOptions: [
+        { key: 'selection', label: 'selection' },
+        { key: 'action', label: '操作' },
+        { key: 'index', label: '序号' },
+        { key: 'id', label: 'JM ID' },
+        { key: 'name', label: '名称' },
+        { key: 'author', label: '作者' },
+        { key: 'tags', label: '标签' },
+        { key: 'interactionStats', label: '互动统计' },
+        { key: 'imageStats', label: '图片统计' },
+        { key: 'zip', label: 'ZIP' },
+        { key: 'pdf', label: 'PDF' },
+        { key: 'createTime', label: '下载时间' },
+        { key: 'chapterCount', label: '章节数' },
+        { key: 'chapterList', label: '列表章节' },
+        { key: 'works', label: '作品' },
+        { key: 'actors', label: '角色' },
+        { key: 'description', label: '描述' },
+        { key: 'albumFolderName', label: '文件夹' },
+        { key: 'relatedList', label: '相关列表' },
+        { key: 'addTime', label: 'JM发布时间' },
+        { key: 'raw', label: 'raw' }
+      ],
       albumDeleteOptions: { deletePdf: true, deleteZip: true, deleteImages: true },
       chapterDeleteOptions: { deleteFile: true },
       albumPagination: {
@@ -330,6 +375,19 @@ export default {
   methods: {
     formatBool(value) {
       return value ? '是' : '否'
+    },
+    formatCount(value) {
+      return value === null || value === undefined || value === '' ? '-' : value
+    },
+    isAlbumColumnVisible(key) {
+      return this.albumVisibleColumns.includes(key)
+    },
+    handleAlbumColumnsChange() {
+      this.$nextTick(() => {
+        if (this.$refs.albumTable) {
+          this.$refs.albumTable.doLayout()
+        }
+      })
     },
     formatChapterList(chapterList) {
       if (!chapterList || chapterList.length === 0) {
@@ -743,10 +801,35 @@ export default {
     white-space: nowrap;
   }
 
+  .jm-stat-cell {
+    color: #606266;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
 }
 </style>
 
 <style lang="scss">
+.jm-column-dropdown {
+  max-height: 360px;
+  overflow: auto;
+  padding: 8px 12px;
+}
+
+.jm-column-check-group {
+  display: grid;
+  gap: 6px 12px;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+
+  .el-checkbox {
+    margin: 0;
+    white-space: nowrap;
+  }
+}
+
 .jm-tag-popover,
 .jm-related-popover {
   .jm-popover-title {
