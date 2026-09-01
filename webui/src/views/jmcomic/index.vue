@@ -195,7 +195,7 @@
           <template slot-scope="{row}"><a :href="row.serverImgUrl" target="_blank">{{row.serverImgUrl}}</a></template>
         </el-table-column>
         <el-table-column label="seriesId" prop="seriesId" min-width="100" align="center"></el-table-column>
-        <el-table-column label="章节添加时间" prop="chapterAddTime" min-width="150" align="center"></el-table-column>
+        <el-table-column label="章节添加时间" prop="formattedChapterAddTime" min-width="150" align="center"></el-table-column>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="chapterPagination" @size-change="chapterSizeChange" @current-change="chapterCurrentChange" />
@@ -440,7 +440,12 @@ export default {
         currentPage: this.chapterPagination.currentPage,
         pageSize: this.chapterPagination.pageSize
       }).then(({data: {data}}) => {
-        this.chapterData = data.records || []
+        this.chapterData = (data.records || []).map(row => {
+          return{
+            ...row,
+            formattedChapterAddTime: this.formatTimestamp(row.chapterAddTime)
+          }
+        })
         this.chapterPagination.total = data.total
       }).finally(() => {
         this.chapterLoading = false
