@@ -439,7 +439,8 @@ public class JmcomicService {
                         this.downloadChapter(chapter,chapterPath,series.getTitle(),-1, executor);
 //                        System.gc();
                     }catch (Exception e) {
-                        DbLog.error("下载章节异常 Album:{}\nChapter:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
+                        DbLog.error(BusinessModuleEnum.JMCOMIC,
+                                "下载章节异常 Album:{}\nChapter:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                         return BaseResp.fail(StrFormatter.format("下载章节异常：{} \n{}",series.getTitle(),e.getMessage()));
                     }
                 }

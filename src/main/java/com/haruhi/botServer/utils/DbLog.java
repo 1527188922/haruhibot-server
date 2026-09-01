@@ -29,7 +29,7 @@ public class DbLog {
         debug(getBusinessModuleName(businessModule), message, args);
     }
 
-    public static void info(String businessModule, String message, Object... args) {
+    private static void info(String businessModule, String message, Object... args) {
         StackWalker.StackFrame callerFrame = getCallerFrame();
         withMdc(businessModule, callerFrame, () -> getLogger(callerFrame).info(DB_LOG_MARKER, message, args));
     }
@@ -47,7 +47,7 @@ public class DbLog {
         warn(getBusinessModuleName(businessModule), message, args);
     }
 
-    public static void error(String businessModule, String message, Object... args) {
+    private static void error(String businessModule, String message, Object... args) {
         StackWalker.StackFrame callerFrame = getCallerFrame();
         withMdc(businessModule, callerFrame, () -> getLogger(callerFrame).error(DB_LOG_MARKER, message, args));
     }

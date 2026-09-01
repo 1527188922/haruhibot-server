@@ -1,5 +1,7 @@
 package com.haruhi.botServer.ws;
 
+import com.haruhi.botServer.constant.BusinessModuleEnum;
+import com.haruhi.botServer.utils.DbLog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -51,7 +53,7 @@ public class BotContainer {
     public static void removeClient(String sessionId){
         Bot bot = BOT_MAP.remove(sessionId);
         if(bot != null){
-            log.info("客户端断开 botId:{}  当前连接数：{}",bot.getId(),getConnections());
+            DbLog.info(BusinessModuleEnum.BOT_WS,"客户端断开 botId:{}  当前连接数：{}",bot.getId(),getConnections());
             try {
                 bot.close();
             }catch (Exception e){

@@ -4,13 +4,11 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.haruhi.botServer.constant.CqCodeTypeEnum;
-import com.haruhi.botServer.constant.DictionaryEnum;
-import com.haruhi.botServer.constant.HandlerWeightEnum;
-import com.haruhi.botServer.constant.ThirdPartyURL;
+import com.haruhi.botServer.constant.*;
 import com.haruhi.botServer.dto.qingyunke.ChatResp;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.service.DictionarySqliteService;
+import com.haruhi.botServer.utils.DbLog;
 import com.haruhi.botServer.utils.MatchResult;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
@@ -98,7 +96,7 @@ public class AiChatHandler implements IAllMessageHandler {
                     }
                 }
             }catch (Exception e){
-                log.error("青云客api请求异常",e);
+                DbLog.error(BusinessModuleEnum.MSG_HANDLE,"青云客api请求异常",e);
             }
         });
         return true;

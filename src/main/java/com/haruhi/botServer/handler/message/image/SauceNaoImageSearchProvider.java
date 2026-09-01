@@ -2,6 +2,7 @@ package com.haruhi.botServer.handler.message.image;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
@@ -11,6 +12,7 @@ import com.haruhi.botServer.picimagesearch.SearchInput;
 import com.haruhi.botServer.picimagesearch.SearchItem;
 import com.haruhi.botServer.picimagesearch.SearchResponse;
 import com.haruhi.botServer.service.DictionarySqliteService;
+import com.haruhi.botServer.utils.DbLog;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -57,7 +59,7 @@ public class SauceNaoImageSearchProvider implements ImageSearchProvider {
             sendResult(bot, resultList, message);
         } catch (Exception e) {
             bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), "搜图异常：" + e.getMessage(), true);
-            log.error("搜图异常", e);
+            DbLog.error(BusinessModuleEnum.IMAGE_SEARCH,"搜图异常", e);
         }
     }
 

@@ -1,8 +1,10 @@
 package com.haruhi.botServer.ws;
 
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.thread.MessageProcessor;
+import com.haruhi.botServer.utils.DbLog;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +42,8 @@ public class BotServer extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(final WebSocketSession session) throws Exception {
         BotContainer.add(null,session);
-        log.info("客户端连接成功,sessionId:{}，客户端数量：{}", session.getId(),BotContainer.getConnections());
+        DbLog.info(BusinessModuleEnum.BOT_WS,
+                "客户端连接成功,sessionId:{}，客户端数量：{}", session.getId(),BotContainer.getConnections());
     }
 
     @Override
@@ -65,19 +68,19 @@ public class BotServer extends TextWebSocketHandler {
             bean.setRawWsMsg(s);
             messageProcessor.execute(bot, bean);
         }catch (Exception e){
-            log.error("解析payload异常:{}",s,e);
+            DbLog.error(BusinessModuleEnum.BOT_WS,"解析payload异常:{}",s,e);
         }
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error("连接异常,sessionId:{}",session.getId(),exception);
+        DbLog.error(BusinessModuleEnum.BOT_WS,"连接异常,sessionId:{}",session.getId(),exception);
         BotContainer.removeClient(session);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
-        log.info("连接断开,sessionId:{},{}",session.getId(),closeStatus.toString());
+        DbLog.error(BusinessModuleEnum.BOT_WS,"连接断开,sessionId:{},{}",session.getId(),closeStatus.toString());
         BotContainer.removeClient(session);
     }
 

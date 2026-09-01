@@ -15,12 +15,14 @@ public enum BusinessModuleEnum {
     CUSTOM_REPLY("自定义回复"),
     PIXIV("Pixiv"),
     IMAGE_SEARCH("识图"),
-    BILIBILI("B站解析"),
+    BILIBILI("B站相关"),
     MUSIC("点歌"),
     NEWS("新闻"),
     JMCOMIC("jmcomic"),
     JOB("定时任务"),
-    AUTH("认证");
+    AUTH("认证"),
+    MSG_HANDLE("QQ消息处理"),
+    ;
 
     private final String name;
 }

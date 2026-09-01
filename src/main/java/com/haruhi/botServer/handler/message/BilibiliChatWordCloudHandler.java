@@ -2,6 +2,7 @@ package com.haruhi.botServer.handler.message;
 
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
@@ -9,6 +10,7 @@ import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.bilibili.PlayerInfoResp;
 import com.haruhi.botServer.dto.bilibili.BulletChatResp;
 import com.haruhi.botServer.service.BilibiliService;
+import com.haruhi.botServer.utils.DbLog;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.thread.WordSlicesTask;
 import com.haruhi.botServer.utils.FileUtil;
@@ -105,7 +107,7 @@ public class BilibiliChatWordCloudHandler implements IAllMessageHandler {
             }catch (Exception e){
                 List<MessageHolder> messageHolders = MessageHolder.instanceText(MessageFormat.format("弹幕词云生成异常:{0}",e.getMessage()));
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),messageHolders);
-                log.error("弹幕词云异常",e);
+                DbLog.error(BusinessModuleEnum.BILIBILI,"弹幕词云异常",e);
             }
         });
         return true;

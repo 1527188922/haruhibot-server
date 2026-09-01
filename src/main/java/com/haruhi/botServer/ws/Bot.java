@@ -3,12 +3,14 @@ package com.haruhi.botServer.ws;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.QqClientActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.utils.DbLog;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -243,7 +245,8 @@ public class Bot implements Closeable {
             log.debug("发送消息给gocq {}",text);
             session.sendMessage(new TextMessage(text));
         } catch (Exception e) {
-            log.error("发送消息发生异常,session:{},消息：{}",session,text,e);
+            DbLog.error(BusinessModuleEnum.BOT_WS,
+                    "发送消息发生异常,session:{},消息：{}",session,text,e);
         }
     }
 
