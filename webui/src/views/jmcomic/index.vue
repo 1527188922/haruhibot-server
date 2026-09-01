@@ -53,17 +53,22 @@
       <el-table tooltip-effect="light" :data="albumData" v-loading="albumLoading" border stripe max-height="800"
                 size="small" ref="albumTable" highlight-current-row @selection-change="albumSelectionChange">
         <el-table-column type="selection" width="50" align="center"></el-table-column>
-        <el-table-column fixed label="操作" width="130" align="center">
+        <el-table-column fixed label="操作" width="96" align="center">
           <template slot-scope="{row}">
-            <el-button type="text" size="mini" :loading="isAlbumOperation(row, 'download')" :disabled="isAlbumOtherOperation(row, 'download')" @click="downloadAlbumData(row)">
-              下载漫画
-            </el-button>
-            <el-button type="text" size="mini" :loading="isAlbumOperation(row, 'zip')" :disabled="isAlbumOtherOperation(row, 'zip')" @click="confirmGenerateZip(row)">
-              生成zip
-            </el-button>
-            <el-button type="text" size="mini" :loading="isAlbumOperation(row, 'pdf')" :disabled="isAlbumOtherOperation(row, 'pdf')" @click="confirmGeneratePdf(row)">
-              生成pdf
-            </el-button>
+            <div class="jm-action-grid">
+              <el-tooltip content="预览漫画" placement="top">
+                <el-button type="primary" size="mini" plain icon="el-icon-view" @click="openPreview(row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="下载漫画" placement="top">
+                <el-button type="primary" size="mini" plain icon="el-icon-download" :loading="isAlbumOperation(row, 'download')" :disabled="isAlbumOtherOperation(row, 'download')" @click="downloadAlbumData(row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="生成zip" placement="top">
+                <el-button type="success" size="mini" plain icon="el-icon-folder-add" :loading="isAlbumOperation(row, 'zip')" :disabled="isAlbumOtherOperation(row, 'zip')" @click="confirmGenerateZip(row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="生成pdf" placement="top">
+                <el-button type="warning" size="mini" plain icon="el-icon-document-add" :loading="isAlbumOperation(row, 'pdf')" :disabled="isAlbumOtherOperation(row, 'pdf')" @click="confirmGeneratePdf(row)"></el-button>
+              </el-tooltip>
+            </div>
           </template>
         </el-table-column>
         <el-table-column fixed label="序号" width="50" align="center">
@@ -99,10 +104,24 @@
         </el-table-column>
         <el-table-column label="文件夹" prop="albumFolderName" min-width="220" show-overflow-tooltip></el-table-column>
         <el-table-column label="ZIP" prop="zipExists" width="80" align="center">
-          <template slot-scope="{row}"><el-tag size="mini" :type="row.zipExists ? 'success' : 'info'">{{formatBool(row.zipExists)}}</el-tag></template>
+          <template slot-scope="{row}">
+            <el-tooltip v-if="row.zipExists" content="点击下载ZIP文件" placement="top">
+              <a :href="row.serverZipUrl" target="_blank" download>
+                <el-tag size="mini" type="success">{{formatBool(row.zipExists)}}</el-tag>
+              </a>
+            </el-tooltip>
+            <el-tag v-else size="mini" type="info">{{formatBool(row.zipExists)}}</el-tag>
+          </template>
         </el-table-column>
         <el-table-column label="PDF" prop="pdfExists" width="80" align="center">
-          <template slot-scope="{row}"><el-tag size="mini" :type="row.pdfExists ? 'success' : 'info'">{{formatBool(row.pdfExists)}}</el-tag></template>
+          <template slot-scope="{row}">
+            <el-tooltip v-if="row.pdfExists" content="点击下载PDF文件" placement="top">
+              <a :href="row.serverPdfUrl" target="_blank" download>
+                <el-tag size="mini" type="success">{{formatBool(row.pdfExists)}}</el-tag>
+              </a>
+            </el-tooltip>
+            <el-tag v-else size="mini" type="info">{{formatBool(row.pdfExists)}}</el-tag>
+          </template>
         </el-table-column>
         <el-table-column label="章节数" min-width="80" align="center">
           <template slot-scope="{row}">{{(row.chapterList || []).length}}</template>
@@ -234,10 +253,13 @@
         <el-button type="danger" size="small" :loading="chapterDeleteLoading" @click="deleteChapterData">确定</el-button>
       </span>
     </el-dialog>
+
+    <jm-preview-drawer :visible.sync="previewDrawerVisible" :album="previewAlbum" />
   </div>
 </template>
 
 <script>
+import JmPreviewDrawer from "./jm-preview-drawer.vue";
 import numberInput from "@/components/input/numberInput.vue";
 import {
   deleteAlbums,
@@ -253,7 +275,7 @@ import {
 
 export default {
   name: 'JmcomicManage',
-  components: { numberInput },
+  components: { JmPreviewDrawer, numberInput },
   data() {
     return {
       activeTab: 'album',
@@ -265,6 +287,8 @@ export default {
       chapterDeleteLoading: false,
       albumDeleteDialogVisible: false,
       chapterDeleteDialogVisible: false,
+      previewDrawerVisible: false,
+      previewAlbum: null,
       albumQuery: { id: '', name: '', author: '', tags: '' },
       chapterQuery: { albumId: '', chapterId: '', chapterTitle: '', imageFile: '' },
       albumData: [],
@@ -539,6 +563,10 @@ export default {
     downloadAlbumData(row) {
       this.executeAlbumOperation(row, 'download', downloadAlbum)
     },
+    openPreview(row) {
+      this.previewAlbum = row
+      this.previewDrawerVisible = true
+    },
     confirmGenerateZip(row) {
       this.$confirm('确认生成zip？如果本地已有旧zip文件，后端会先删除旧文件再重新生成。', '生成zip', {
         confirmButtonText: '确定',
@@ -646,6 +674,20 @@ export default {
   a {
     color: #409eff;
     text-decoration: none;
+  }
+
+  .jm-action-grid {
+    display: grid;
+    gap: 4px;
+    grid-template-columns: repeat(2, 28px);
+    justify-content: center;
+
+    .el-button {
+      height: 28px;
+      margin: 0;
+      padding: 0;
+      width: 28px;
+    }
   }
 
   .jm-tag-list {

@@ -288,7 +288,7 @@ public class JmcomicHandler implements IAllMessageHandler {
 
         String imageUrl = BotConfig.SAME_MACHINE_QQCLIENT
                 ? "file://" + outputPath
-                : webResourceConfig.webResourcesJmcomicPath() + "/" + SEARCH_RESULT_IMAGE_DIR + "/" + fileName + "?t=" + System.currentTimeMillis();
+                : webResourceConfig.webResourcesJmcomicPathInClasses() + "/" + SEARCH_RESULT_IMAGE_DIR + "/" + fileName + "?t=" + System.currentTimeMillis();
         bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                 Collections.singletonList(MessageHolder.instanceImage(imageUrl)));
     }

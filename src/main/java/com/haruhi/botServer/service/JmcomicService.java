@@ -185,7 +185,7 @@ public class JmcomicService {
             if (!albumResp.isSuccess()) {
                 return BaseResp.fail(albumResp.getMsg());
             }
-            BaseResp<File> zipResp = generateAlbumZipWithoutLock(albumResp.getData());
+            BaseResp<File> zipResp = generateLocalAlbumZipWithoutLock(albumResp.getData());
             if (!zipResp.isSuccess()) {
                 return BaseResp.fail(zipResp.getMsg());
             }
@@ -199,7 +199,7 @@ public class JmcomicService {
             if (!albumResp.isSuccess()) {
                 return BaseResp.fail(albumResp.getMsg());
             }
-            BaseResp<File> pdfResp = generateAlbumPdfWithoutLock(albumResp.getData());
+            BaseResp<File> pdfResp = generateLocalAlbumPdfWithoutLock(albumResp.getData());
             if (!pdfResp.isSuccess()) {
                 return BaseResp.fail(pdfResp.getMsg());
             }
@@ -215,20 +215,22 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<File> downloadAlbumAsZip(Album album) throws Exception {
-        return executeWithJmLock(String.valueOf(album.getId()), "生成zip", () -> generateAlbumZipWithoutLock(album));
+        return executeWithJmLock(String.valueOf(album.getId()), "生成zip", () -> {
+            BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
+            if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
+                return BaseResp.fail(baseResp.getMsg());
+            }
+            return generateLocalAlbumZipWithoutLock(album);
+        });
     }
 
-    private BaseResp<File> generateAlbumZipWithoutLock(Album album) throws Exception {
-        BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
-        if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
-            return BaseResp.fail(baseResp.getMsg());
+    private BaseResp<File> generateLocalAlbumZipWithoutLock(Album album) throws Exception {
+        BaseResp<File> albumDirResp = getLocalAlbumDir(album);
+        if (!albumDirResp.isSuccess()) {
+            return BaseResp.fail(albumDirResp.getMsg());
         }
-        String albumDir = FileUtil.getJmcomicDir() + File.separator + baseResp.getData();
-        File file = new File(albumDir);
-        if(!file.exists()){
-            return BaseResp.fail("本子不存在");
-        }
-        String zipFilePath = FileUtil.getJmcomicDir() + File.separator + (baseResp.getData() + ".zip");
+        File file = albumDirResp.getData();
+        String zipFilePath = FileUtil.getJmcomicDir() + File.separator + (album.getAlbumFolderName() + ".zip");
         File zipFile = new File(zipFilePath);
         boolean oldFileDeleted = false;
         if(zipFile.exists()){
@@ -257,20 +259,22 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<File> downloadAlbumAsPdf(Album album) throws Exception {
-        return executeWithJmLock(String.valueOf(album.getId()), "生成pdf", () -> generateAlbumPdfWithoutLock(album));
+        return executeWithJmLock(String.valueOf(album.getId()), "生成pdf", () -> {
+            BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
+            if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
+                return BaseResp.fail(baseResp.getMsg());
+            }
+            return generateLocalAlbumPdfWithoutLock(album);
+        });
     }
 
-    private BaseResp<File> generateAlbumPdfWithoutLock(Album album) throws Exception {
-        BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
-        if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
-            return BaseResp.fail(baseResp.getMsg());
+    private BaseResp<File> generateLocalAlbumPdfWithoutLock(Album album) throws Exception {
+        BaseResp<File> albumDirResp = getLocalAlbumDir(album);
+        if (!albumDirResp.isSuccess()) {
+            return BaseResp.fail(albumDirResp.getMsg());
         }
-        String albumDir = FileUtil.getJmcomicDir() + File.separator + baseResp.getData();
-        File file = new File(albumDir);
-        if(!file.exists()){
-            return BaseResp.fail("本子不存在");
-        }
-        String pdfFileName = baseResp.getData() + ".pdf";
+        File file = albumDirResp.getData();
+        String pdfFileName = album.getAlbumFolderName() + ".pdf";
         String pdfFilePath = FileUtil.getJmcomicDir() + File.separator + pdfFileName;
         File pdfFile = new File(pdfFilePath);
         boolean oldFileDeleted = false;
@@ -283,6 +287,47 @@ public class JmcomicService {
         this.albumToPdf(file, pdfFile);
         log.info("pdf文件生成完成 cost:{} {}",(System.currentTimeMillis() - l),pdfFilePath);
         return BaseResp.success(oldFileDeleted ? "旧pdf文件已删除，重新生成完成" : "pdf生成完成", pdfFile);
+    }
+
+    private BaseResp<File> getLocalAlbumDir(Album album) {
+        if (album == null || StringUtils.isBlank(album.getAlbumFolderName())) {
+            return BaseResp.fail("本子信息不完整");
+        }
+        File albumDir = new File(FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName());
+        if(!albumDir.exists() || !albumDir.isDirectory()){
+            return BaseResp.fail("本子图片目录不存在，请先下载漫画图片");
+        }
+        if (!hasLocalAlbumImage(albumDir)) {
+            return BaseResp.fail("本子图片目录中未发现图片，请先下载漫画图片");
+        }
+        return BaseResp.success(albumDir);
+    }
+
+    private boolean hasLocalAlbumImage(File albumDir) {
+        File[] chapterDirs = FileUtil.getDirectoryList(albumDir);
+        if (chapterDirs == null || chapterDirs.length == 0) {
+            return false;
+        }
+        for (File chapterDir : chapterDirs) {
+            File[] imageFiles = FileUtil.getFileList(chapterDir);
+            if (imageFiles == null) {
+                continue;
+            }
+            for (File imageFile : imageFiles) {
+                if (isImageFile(imageFile)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isImageFile(File file) {
+        if (file == null || !file.isFile()) {
+            return false;
+        }
+        String extension = FileUtil.getFileExtension(file.getName());
+        return StringUtils.equalsAny(extension, "webp", "jpg", "jpeg", "png", "gif", "bmp");
     }
 
     /**

@@ -11,6 +11,8 @@ import java.util.List;
 public class JmAlbumManageResp extends JmAlbumSqlite {
     private Boolean zipExists;
     private Boolean pdfExists;
+    private String serverZipUrl;
+    private String serverPdfUrl;
     private List<JmChapterInfoResp> chapterList;
     private Long imageCount;
     private Long actualImageCount;

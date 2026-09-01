@@ -293,8 +293,12 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     private JmAlbumManageResp toAlbumManageResp(JmAlbumSqlite album) {
         JmAlbumManageResp resp = new JmAlbumManageResp();
         BeanUtils.copyProperties(album, resp);
-        resp.setZipExists(getZipFile(album).exists());
-        resp.setPdfExists(getPdfFile(album).exists());
+        File zipFile = getZipFile(album);
+        File pdfFile = getPdfFile(album);
+        resp.setZipExists(zipFile.exists());
+        resp.setPdfExists(pdfFile.exists());
+        resp.setServerZipUrl(zipFile.exists() ? buildServerFileUrl(album.getAlbumFolderName() + ".zip") : null);
+        resp.setServerPdfUrl(pdfFile.exists() ? buildServerFileUrl(album.getAlbumFolderName() + ".pdf") : null);
         resp.setChapterList(listChapters(album.getId()));
         resp.setImageCount(jmChapterImageSqliteMapper.selectCount(new LambdaQueryWrapper<JmChapterImageSqlite>()
                 .eq(JmChapterImageSqlite::getAlbumId, album.getId())));
@@ -376,11 +380,14 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (album == null || StringUtils.isBlank(album.getAlbumFolderName()) || image == null || StringUtils.isBlank(image.getImageFile())) {
             return null;
         }
-        return webResourceConfig.webHomePath()
-                + "/" + FileUtil.DIR_JMCOMIC
+        return webResourceConfig.webResourcesJmcomicPathInClasses()
                 + "/" + urlEncode(album.getAlbumFolderName())
                 + "/" + urlEncode(getChapterFolderName(image))
                 + "/" + urlEncode(image.getImageFile());
+    }
+
+    private String buildServerFileUrl(String fileName) {
+        return webResourceConfig.webResourcesJmcomicPathInClasses() + "/" + urlEncode(fileName);
     }
 
     private String getChapterFolderName(JmChapterImageSqlite image) {
