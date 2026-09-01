@@ -91,7 +91,7 @@
           <template slot-scope="{row}">
             <div v-if="row.tagsList.length > 0" class="jm-tag-summary">
               <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`tags-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
-              <el-popover v-if="row.tagsList.length > 3" placement="bottom-start" trigger="click" width="360" popper-class="jm-tag-popover" :append-to-body="false">
+              <el-popover v-if="row.tagsList.length > 3" placement="bottom-start" trigger="click" width="360" popper-class="jm-tag-popover">
                 <div class="jm-popover-title">全部标签</div>
                 <div class="jm-popover-tags">
                   <el-tag v-for="(item, index) in row.tagsList" :key="`all-tags-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
@@ -157,7 +157,7 @@
                 <el-button type="text" size="mini" @click="jumpToAlbum(item.id)">JM{{item.id}}</el-button>
                 <span class="jm-related-name">{{item.name}}</span>
               </div>
-              <el-popover placement="bottom-start" trigger="click" width="520" popper-class="jm-related-popover" :append-to-body="false">
+              <el-popover placement="bottom-start" trigger="click" width="520" popper-class="jm-related-popover">
                 <div class="jm-popover-title">相关漫画</div>
                 <div class="jm-related-popover-list">
                   <div v-for="(item, index) in row.relatedItems" :key="`all-related-${row.id}-${index}`" class="jm-related-popover-item">
@@ -743,13 +743,21 @@ export default {
     white-space: nowrap;
   }
 
+}
+</style>
+
+<style lang="scss">
+.jm-tag-popover,
+.jm-related-popover {
   .jm-popover-title {
     color: #303133;
     font-size: 13px;
     font-weight: 600;
     margin-bottom: 10px;
   }
+}
 
+.jm-tag-popover {
   .jm-popover-tags {
     display: flex;
     flex-wrap: wrap;
@@ -764,7 +772,9 @@ export default {
       white-space: nowrap;
     }
   }
+}
 
+.jm-related-popover {
   .jm-related-popover-list {
     display: flex;
     flex-direction: column;
