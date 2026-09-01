@@ -61,22 +61,7 @@
             <el-button type="text" size="small" @click="jumpToChapters(row)">{{row.id}}</el-button>
           </template>
         </el-table-column>
-        <el-table-column label="名称" prop="name" min-width="240" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="文件夹" prop="albumFolderName" min-width="220" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="ZIP" prop="zipExists" width="80" align="center">
-          <template slot-scope="{row}"><el-tag size="mini" :type="row.zipExists ? 'success' : 'info'">{{formatBool(row.zipExists)}}</el-tag></template>
-        </el-table-column>
-        <el-table-column label="PDF" prop="pdfExists" width="80" align="center">
-          <template slot-scope="{row}"><el-tag size="mini" :type="row.pdfExists ? 'success' : 'info'">{{formatBool(row.pdfExists)}}</el-tag></template>
-        </el-table-column>
-        <el-table-column label="章节数" min-width="80" align="center">
-          <template slot-scope="{row}">{{(row.chapterList || []).length}}</template>
-        </el-table-column>
-        <el-table-column label="图片数" prop="imageCount" min-width="90" align="center"></el-table-column>
-        <el-table-column label="实际图片数" prop="actualImageCount" min-width="100" align="center"></el-table-column>
-        <el-table-column label="列表章节" min-width="240" show-tooltip-when-overflow>
-          <template slot-scope="{row}">{{formatChapterList(row.chapterList)}}</template>
-        </el-table-column>
+        <el-table-column label="名称" prop="name" min-width="240" show-overflow-tooltip></el-table-column>
         <el-table-column label="作者" prop="author" min-width="180">
           <template slot-scope="{row}">
             <div class="jm-tag-list">
@@ -99,6 +84,21 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <el-table-column label="文件夹" prop="albumFolderName" min-width="220" show-overflow-tooltip></el-table-column>
+        <el-table-column label="ZIP" prop="zipExists" width="80" align="center">
+          <template slot-scope="{row}"><el-tag size="mini" :type="row.zipExists ? 'success' : 'info'">{{formatBool(row.zipExists)}}</el-tag></template>
+        </el-table-column>
+        <el-table-column label="PDF" prop="pdfExists" width="80" align="center">
+          <template slot-scope="{row}"><el-tag size="mini" :type="row.pdfExists ? 'success' : 'info'">{{formatBool(row.pdfExists)}}</el-tag></template>
+        </el-table-column>
+        <el-table-column label="章节数" min-width="80" align="center">
+          <template slot-scope="{row}">{{(row.chapterList || []).length}}</template>
+        </el-table-column>
+        <el-table-column label="图片数" prop="imageCount" min-width="90" align="center"></el-table-column>
+        <el-table-column label="实际图片数" prop="actualImageCount" min-width="100" align="center"></el-table-column>
+        <el-table-column label="列表章节" min-width="240" show-overflow-tooltip>
+          <template slot-scope="{row}">{{formatChapterList(row.chapterList)}}</template>
+        </el-table-column>
         <el-table-column label="作品" prop="works" min-width="160">
           <template slot-scope="{row}">
             <div class="jm-tag-list">
@@ -113,7 +113,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="描述" prop="description" min-width="280" show-tooltip-when-overflow></el-table-column>
+        <el-table-column label="描述" prop="description" min-width="280" show-overflow-tooltip></el-table-column>
         <el-table-column label="观看数" prop="totalViews" min-width="90" align="center"></el-table-column>
         <el-table-column label="Like数" prop="likes" min-width="90" align="center"></el-table-column>
 <!--        <el-table-column label="系列ID" prop="seriesId" min-width="100" align="center"></el-table-column>-->
@@ -158,9 +158,9 @@
         </el-table-column>
         <el-table-column label="下载时间" prop="createTime" min-width="150" align="center"></el-table-column>
 <!--        <el-table-column label="修改时间" prop="modifyTime" min-width="150" align="center"></el-table-column>-->
-<!--        <el-table-column label="封面列表" prop="images" min-width="180" show-tooltip-when-overflow></el-table-column>-->
-<!--        <el-table-column label="series" prop="series" min-width="220" show-tooltip-when-overflow></el-table-column>-->
-        <el-table-column label="raw" prop="raw" min-width="260" show-tooltip-when-overflow></el-table-column>
+<!--        <el-table-column label="封面列表" prop="images" min-width="180" show-overflow-tooltip></el-table-column>-->
+<!--        <el-table-column label="series" prop="series" min-width="220" show-overflow-tooltip></el-table-column>-->
+        <el-table-column label="raw" prop="raw" min-width="100" show-overflow-tooltip></el-table-column>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="albumPagination" @size-change="albumSizeChange" @current-change="albumCurrentChange" />
@@ -178,21 +178,20 @@
         <el-table-column fixed label="序号" width="50" align="center">
           <template slot-scope="scope">{{scope.$index + 1}}</template>
         </el-table-column>
-        <el-table-column fixed label="ID" prop="id" min-width="80" align="center"></el-table-column>
         <el-table-column fixed label="JM ID" prop="albumId" min-width="110" align="center"></el-table-column>
         <el-table-column label="章节ID" prop="chapterId" min-width="110" align="center"></el-table-column>
         <el-table-column label="章节序号" prop="chapterSort" min-width="90" align="center"></el-table-column>
-        <el-table-column label="章节title" prop="chapterTitle" min-width="130" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="章节名称" prop="chapterName" min-width="180" show-tooltip-when-overflow></el-table-column>
-        <el-table-column label="图片文件" prop="imageFile" min-width="140" show-tooltip-when-overflow></el-table-column>
+        <el-table-column label="章节title" prop="chapterTitle" min-width="130" show-overflow-tooltip></el-table-column>
+        <el-table-column label="章节名称" prop="chapterName" min-width="180" show-overflow-tooltip></el-table-column>
+        <el-table-column label="图片文件" prop="imageFile" min-width="140" show-overflow-tooltip></el-table-column>
         <el-table-column label="图片序号" prop="imageSort" min-width="90" align="center"></el-table-column>
         <el-table-column label="文件存在" prop="imageFileExists" width="90" align="center">
           <template slot-scope="{row}"><el-tag size="mini" :type="row.imageFileExists ? 'success' : 'info'">{{formatBool(row.imageFileExists)}}</el-tag></template>
         </el-table-column>
-        <el-table-column label="图片url" prop="imgUrl" min-width="280" show-tooltip-when-overflow>
+        <el-table-column label="图片url" prop="imgUrl" min-width="280" show-overflow-tooltip>
           <template slot-scope="{row}"><a :href="row.imgUrl" target="_blank">{{row.imgUrl}}</a></template>
         </el-table-column>
-        <el-table-column label="服务器图片url" prop="serverImgUrl" min-width="300" show-tooltip-when-overflow>
+        <el-table-column label="服务器图片url" prop="serverImgUrl" min-width="300" show-overflow-tooltip>
           <template slot-scope="{row}"><a :href="row.serverImgUrl" target="_blank">{{row.serverImgUrl}}</a></template>
         </el-table-column>
         <el-table-column label="seriesId" prop="seriesId" min-width="100" align="center"></el-table-column>
@@ -261,15 +260,15 @@ export default {
       albumPagination: {
         currentPage: 1,
         pageSizes: [5, 10, 30, 50, 100, 500],
-        pageSize: 10,
+        pageSize: 5,
         layout: 'total, sizes, prev, pager, next, jumper',
         background: true,
         total: 0
       },
       chapterPagination: {
         currentPage: 1,
-        pageSizes: [10, 30, 50, 100, 500],
-        pageSize: 30,
+        pageSizes: [5, 10, 30, 50, 100, 500],
+        pageSize: 10,
         layout: 'total, sizes, prev, pager, next, jumper',
         background: true,
         total: 0

@@ -42,6 +42,19 @@ module.exports = {
     hot: true,
     host: '127.0.0.1',
     port: 8091,
+    client: {
+      overlay: {
+        warnings: false,
+        errors: true,
+        runtimeErrors: error => {
+          const message = error && error.message
+          return ![
+            'ResizeObserver loop completed with undelivered notifications.',
+            'ResizeObserver loop limit exceeded'
+          ].includes(message)
+        }
+      }
+    },
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8090',
