@@ -49,6 +49,7 @@ public class JmcomicController {
     @Autowired
     private JmcomicSqliteService jmcomicSqliteService;
 
+    /**
     @IgnoreAuthentication
     @GetMapping("/download/{aid}")
     public ResponseEntity<Object> download(@PathVariable("aid") String aid) {
@@ -87,7 +88,7 @@ public class JmcomicController {
         } catch (Exception e) {
             return ResponseEntity.ok().headers(getResponseHeader(false,null)).body(jsonBody(HttpResp.fail(e.getMessage())));
         }
-    }
+    }*/
 
     @GetMapping("/album/{aid}/chapters")
     public HttpResp<List<JmChapterInfoResp>> chapters(@PathVariable("aid") Long aid) {
@@ -112,6 +113,21 @@ public class JmcomicController {
             return HttpResp.fail(resp.getMsg(), null);
         }
         return HttpResp.success(resp.getData());
+    }
+
+    @PostMapping("/manage/album/download/{aid}")
+    public HttpResp<String> downloadAlbumManage(@PathVariable("aid") String aid) {
+        return toHttpResp(jmcomicService.manageDownloadAlbum(aid));
+    }
+
+    @PostMapping("/manage/album/generateZip/{aid}")
+    public HttpResp<String> generateZip(@PathVariable("aid") String aid) {
+        return toHttpResp(jmcomicService.manageGenerateZip(aid));
+    }
+
+    @PostMapping("/manage/album/generatePdf/{aid}")
+    public HttpResp<String> generatePdf(@PathVariable("aid") String aid) {
+        return toHttpResp(jmcomicService.manageGeneratePdf(aid));
     }
 
     @PostMapping("/manage/album/deleteBatch")
@@ -147,6 +163,13 @@ public class JmcomicController {
 
     private String jsonBody(HttpResp resp) {
         return JSONObject.toJSONString(resp);
+    }
+
+    private HttpResp<String> toHttpResp(BaseResp<String> resp) {
+        if (!resp.isSuccess()) {
+            return HttpResp.fail(resp.getMsg(), resp.getData());
+        }
+        return HttpResp.success(resp.getMsg(), resp.getData());
     }
 
     private HttpHeaders getResponseHeader(boolean isFile,File file) {

@@ -50,6 +50,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,7 +73,9 @@ public class JmcomicService {
 
     public static final String JM_DEFAULT_PASSWORD = "1234";
 
+    private static final String GLOBAL_LOCK_KEY = "__JM_GLOBAL_LOCK__";
     private static final ConcurrentHashSet<String> LOCK = new ConcurrentHashSet<>();
+    private static final ConcurrentMap<String, String> LOCK_ACTION_MAP = new ConcurrentHashMap<>();
 
     @Autowired
     private DictionarySqliteService dictionarySqliteService;
@@ -121,6 +125,88 @@ public class JmcomicService {
         return thread;
     }
 
+    protected boolean isJmOperationParallel(){
+        return dictionarySqliteService.getBoolean(DictionaryEnum.JM_OPERATION_PARALLEL_ENABLED.getKey(), false);
+    }
+
+    <T> BaseResp<T> executeWithJmLock(String aid, String actionName, JmOperation<T> operation) {
+        boolean parallel = isJmOperationParallel();
+        String lockKey = parallel ? aid : GLOBAL_LOCK_KEY;
+        synchronized (JmcomicService.class){
+            if (parallel) {
+                if (LOCK.contains(GLOBAL_LOCK_KEY)) {
+                    return BaseResp.fail("已有JM漫画任务正在执行，请稍后再试");
+                }
+                if (LOCK.contains(lockKey)) {
+                    String runningAction = LOCK_ACTION_MAP.get(lockKey);
+                    return BaseResp.fail("【JM"+aid+"】正在执行"+StringUtils.defaultIfBlank(runningAction, "其他")+"任务，请稍后再试");
+                }
+            } else {
+                if (!LOCK.isEmpty()) {
+                    return BaseResp.fail("已有JM漫画任务正在执行，请稍后再试");
+                }
+            }
+            LOCK.add(lockKey);
+            LOCK_ACTION_MAP.put(lockKey, actionName);
+        }
+        try {
+            return operation.execute();
+        } catch (Exception e) {
+            log.error("JM漫画操作异常 aid:{} action:{}", aid, actionName, e);
+            return BaseResp.fail(actionName + "异常：" + e.getMessage());
+        } finally {
+            LOCK_ACTION_MAP.remove(lockKey);
+            LOCK.remove(lockKey);
+        }
+    }
+
+    @FunctionalInterface
+    interface JmOperation<T> {
+        BaseResp<T> execute() throws Exception;
+    }
+
+    public BaseResp<String> manageDownloadAlbum(String aid) {
+        return executeWithJmLock(aid, "下载漫画", () -> {
+            BaseResp<Album> albumResp = requestAlbum(aid);
+            if (!albumResp.isSuccess()) {
+                return BaseResp.fail(albumResp.getMsg());
+            }
+            BaseResp<String> downloadResp = downloadAlbumWithoutLock(albumResp.getData());
+            if (!downloadResp.isSuccess()) {
+                return downloadResp;
+            }
+            return BaseResp.success("下载漫画完成", downloadResp.getData());
+        });
+    }
+
+    public BaseResp<String> manageGenerateZip(String aid) {
+        return executeWithJmLock(aid, "生成zip", () -> {
+            BaseResp<Album> albumResp = requestAlbum(aid);
+            if (!albumResp.isSuccess()) {
+                return BaseResp.fail(albumResp.getMsg());
+            }
+            BaseResp<File> zipResp = generateAlbumZipWithoutLock(albumResp.getData());
+            if (!zipResp.isSuccess()) {
+                return BaseResp.fail(zipResp.getMsg());
+            }
+            return BaseResp.success(zipResp.getMsg(), zipResp.getData().getAbsolutePath());
+        });
+    }
+
+    public BaseResp<String> manageGeneratePdf(String aid) {
+        return executeWithJmLock(aid, "生成pdf", () -> {
+            BaseResp<Album> albumResp = requestAlbum(aid);
+            if (!albumResp.isSuccess()) {
+                return BaseResp.fail(albumResp.getMsg());
+            }
+            BaseResp<File> pdfResp = generateAlbumPdfWithoutLock(albumResp.getData());
+            if (!pdfResp.isSuccess()) {
+                return BaseResp.fail(pdfResp.getMsg());
+            }
+            return BaseResp.success(pdfResp.getMsg(), pdfResp.getData().getAbsolutePath());
+        });
+    }
+
 
     /**
      * 下载并转zip
@@ -129,7 +215,11 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<File> downloadAlbumAsZip(Album album) throws Exception {
-        BaseResp<String> baseResp = this.downloadAlbum(album);
+        return executeWithJmLock(String.valueOf(album.getId()), "生成zip", () -> generateAlbumZipWithoutLock(album));
+    }
+
+    private BaseResp<File> generateAlbumZipWithoutLock(Album album) throws Exception {
+        BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
         if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
             return BaseResp.fail(baseResp.getMsg());
         }
@@ -140,8 +230,10 @@ public class JmcomicService {
         }
         String zipFilePath = FileUtil.getJmcomicDir() + File.separator + (baseResp.getData() + ".zip");
         File zipFile = new File(zipFilePath);
+        boolean oldFileDeleted = false;
         if(zipFile.exists()){
-            zipFile.delete();
+            FileUtil.deleteFile(zipFile);
+            oldFileDeleted = true;
         }
         log.info("开始打包：{}", zipFile.getAbsolutePath());
 //        ZipUtil.zip(albumDir,zipFilePath,StandardCharsets.UTF_8,false);
@@ -155,7 +247,7 @@ public class JmcomicService {
             zip.addFolder(file, parameters);
         }
         log.info("打包完成：{} cost:{}", zipFile.getAbsolutePath(),(System.currentTimeMillis() - l));
-        return BaseResp.success(zipFile);
+        return BaseResp.success(oldFileDeleted ? "旧zip文件已删除，重新生成完成" : "zip生成完成", zipFile);
     }
 
     /**
@@ -165,7 +257,11 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<File> downloadAlbumAsPdf(Album album) throws Exception {
-        BaseResp<String> baseResp = this.downloadAlbum(album);
+        return executeWithJmLock(String.valueOf(album.getId()), "生成pdf", () -> generateAlbumPdfWithoutLock(album));
+    }
+
+    private BaseResp<File> generateAlbumPdfWithoutLock(Album album) throws Exception {
+        BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
         if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
             return BaseResp.fail(baseResp.getMsg());
         }
@@ -177,14 +273,16 @@ public class JmcomicService {
         String pdfFileName = baseResp.getData() + ".pdf";
         String pdfFilePath = FileUtil.getJmcomicDir() + File.separator + pdfFileName;
         File pdfFile = new File(pdfFilePath);
+        boolean oldFileDeleted = false;
         if(pdfFile.exists()){
-            pdfFile.delete();
+            FileUtil.deleteFile(pdfFile);
+            oldFileDeleted = true;
         }
         log.info("开始生成pdf文件 {}", pdfFilePath);
         long l = System.currentTimeMillis();
         this.albumToPdf(file, pdfFile);
         log.info("pdf文件生成完成 cost:{} {}",(System.currentTimeMillis() - l),pdfFilePath);
-        return BaseResp.success(pdfFile);
+        return BaseResp.success(oldFileDeleted ? "旧pdf文件已删除，重新生成完成" : "pdf生成完成", pdfFile);
     }
 
     /**
@@ -317,14 +415,11 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<String> downloadAlbum(Album album) throws Exception {
+        return executeWithJmLock(String.valueOf(album.getId()), "下载漫画", () -> downloadAlbumWithoutLock(album));
+    }
+
+    private BaseResp<String> downloadAlbumWithoutLock(Album album) throws Exception {
         String aid = String.valueOf(album.getId());
-        synchronized (JmcomicService.class){
-            if (LOCK.contains(aid)) {
-                return BaseResp.fail("【JM"+aid+"】正在下载中...");
-            }
-            LOCK.add(aid);
-        }
-        try {
             if (CollectionUtils.isEmpty(album.getSeries())) {
                 Series series = new Series();
                 series.setSort("1");
@@ -344,7 +439,7 @@ public class JmcomicService {
                         this.downloadChapter(chapter,chapterPath,series.getTitle(),-1, executor);
 //                        System.gc();
                     }catch (Exception e) {
-                        log.error("下载章节异常 Album:{}\nChapter:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
+                        DbLog.error("下载章节异常 Album:{}\nChapter:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
                         return BaseResp.fail(StrFormatter.format("下载章节异常：{} \n{}",series.getTitle(),e.getMessage()));
                     }
                 }
@@ -358,9 +453,6 @@ public class JmcomicService {
                 return BaseResp.fail("【JM"+aid+"】下载失败");
             }
             return BaseResp.success(album.getAlbumFolderName());
-        }finally {
-            LOCK.remove(aid);
-        }
     }
 
 

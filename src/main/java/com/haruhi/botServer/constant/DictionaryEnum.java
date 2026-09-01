@@ -24,6 +24,7 @@ public enum DictionaryEnum{
     JM_PASSWORD_ZIP(true,"jm.password.zip", JmcomicService.JM_DEFAULT_PASSWORD,"jm本子zip包解压密码,注意：修改密码不会改变之前已经存在的zip包密码，重复下载可重新生成使用新密码的zip包"),
     JM_PASSWORD_PDF(true,"jm.password.pdf",JmcomicService.JM_DEFAULT_PASSWORD,"jm本子pdf保护密码,注意：修改密码不会改变之前已经存在的pdf文件密码，重复下载可重新生成使用新密码的pdf文件"),
     JM_DOWNLOAD_THREADS(true,"jm.download.threads",null,"下载本子时线程数量，未配置、0或小于0则等于CPU逻辑核心数量"),
+    JM_OPERATION_PARALLEL_ENABLED(true,"jm.operation.parallel.enabled","false","JM漫画操作是否允许不同JM ID并发执行，true:不同JM ID可并发，false:所有JM操作串行执行"),
     JM_ALBUM_NAME_MAX_LENGTH(true,"jm.album.name_max_length","215","jm本子名称最大长度(注意是名称的bytes.length而非名称字符个数！)，由于使用本子名做为下载后的本子文件名，文件名有长度限制，linux系统文件名称最长支持255，注意：这里配置要小于255，预留出文件名称后面拼接的jm号"),
     JM_API_DOMAIN(true,"jm.api_domain",JmcomicService.DEFAULT_API_DOMAIN,"JM API域名"),
     JM_SEARCH_RESULT_IMAGE_MODE(true,"jm.search_result.image_mode","false","JM搜索结果是否以HTML转图片方式发送，true:图片发送，false:合并消息发送"),

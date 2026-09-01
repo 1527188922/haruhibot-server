@@ -12,6 +12,24 @@ export const requestAlbum = (aid) => request({
   method: 'post'
 });
 
+export const downloadAlbum = (aid) => request({
+  url: baseUrl + `/jmcomic/manage/album/download/${aid}`,
+  timeout:60 * 1000,
+  method: 'post'
+});
+
+export const generateAlbumZip = (aid) => request({
+  url: baseUrl + `/jmcomic/manage/album/generateZip/${aid}`,
+  timeout:60 * 1000,
+  method: 'post'
+});
+
+export const generateAlbumPdf = (aid) => request({
+  url: baseUrl + `/jmcomic/manage/album/generatePdf/${aid}`,
+  timeout:60 * 1000,
+  method: 'post'
+});
+
 export const deleteAlbums = (data) => request({
   url: baseUrl + '/jmcomic/manage/album/deleteBatch',
   method: 'post',

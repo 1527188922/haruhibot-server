@@ -53,12 +53,25 @@
       <el-table tooltip-effect="light" :data="albumData" v-loading="albumLoading" border stripe max-height="800"
                 size="small" ref="albumTable" highlight-current-row @selection-change="albumSelectionChange">
         <el-table-column type="selection" width="50" align="center"></el-table-column>
+        <el-table-column fixed label="操作" width="130" align="center">
+          <template slot-scope="{row}">
+            <el-button type="text" size="mini" :loading="isAlbumOperation(row, 'download')" :disabled="isAlbumOtherOperation(row, 'download')" @click="downloadAlbumData(row)">
+              下载漫画
+            </el-button>
+            <el-button type="text" size="mini" :loading="isAlbumOperation(row, 'zip')" :disabled="isAlbumOtherOperation(row, 'zip')" @click="confirmGenerateZip(row)">
+              生成zip
+            </el-button>
+            <el-button type="text" size="mini" :loading="isAlbumOperation(row, 'pdf')" :disabled="isAlbumOtherOperation(row, 'pdf')" @click="confirmGeneratePdf(row)">
+              生成pdf
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column fixed label="序号" width="50" align="center">
           <template slot-scope="scope">{{scope.$index + 1}}</template>
         </el-table-column>
         <el-table-column fixed label="JM ID" prop="id" min-width="110" align="center">
           <template slot-scope="{row}">
-            <el-button type="text" size="small" @click="jumpToChapters(row)">{{row.id}}</el-button>
+            <span class="primary-text" style="cursor:pointer;" @click="jumpToChapters(row)">{{row.id}}</span>
           </template>
         </el-table-column>
         <el-table-column label="名称" prop="name" min-width="240" show-overflow-tooltip></el-table-column>
@@ -229,6 +242,9 @@ import numberInput from "@/components/input/numberInput.vue";
 import {
   deleteAlbums,
   deleteChapterImages,
+  downloadAlbum,
+  generateAlbumPdf,
+  generateAlbumZip,
   requestAlbum,
   requestChapterImages,
   searchAlbums,
@@ -255,6 +271,7 @@ export default {
       chapterData: [],
       albumSelection: [],
       chapterSelection: [],
+      albumOperationLoading: {},
       albumDeleteOptions: { deletePdf: true, deleteZip: true, deleteImages: true },
       chapterDeleteOptions: { deleteFile: true },
       albumPagination: {
@@ -343,6 +360,23 @@ export default {
     hiddenCount(list, count) {
       return Math.max((list || []).length - count, 0)
     },
+    handleRequestError(error) {
+      const message = error && error.data && error.data.message
+        ? error.data.message
+        : error && error.message
+          ? error.message
+          : '请求失败'
+      this.$message.error(message)
+    },
+    isAlbumOperation(row, action) {
+      return row && this.albumOperationLoading[row.id] === action
+    },
+    isAlbumOperating(row) {
+      return row && !!this.albumOperationLoading[row.id]
+    },
+    isAlbumOtherOperation(row, action) {
+      return this.isAlbumOperating(row) && !this.isAlbumOperation(row, action)
+    },
     formatTimestamp(value) {
       if (!value) {
         return ''
@@ -429,6 +463,8 @@ export default {
       }).then(({data: {data}}) => {
         this.albumData = (data.records || []).map(row => this.normalizeAlbum(row))
         this.albumPagination.total = data.total
+      }).catch(error => {
+        this.handleRequestError(error)
       }).finally(() => {
         this.albumLoading = false
       })
@@ -447,6 +483,8 @@ export default {
           }
         })
         this.chapterPagination.total = data.total
+      }).catch(error => {
+        this.handleRequestError(error)
       }).finally(() => {
         this.chapterLoading = false
       })
@@ -476,10 +514,48 @@ export default {
           }
           this.$message.success('拉取完成')
           this.searchAlbumsFirst()
+        }).catch(error => {
+          this.handleRequestError(error)
         }).finally(() => {
           this.albumRequestLoading = false
         })
+      }).catch(() => {})
+    },
+    executeAlbumOperation(row, action, requestFn) {
+      const aid = row.id
+      this.$set(this.albumOperationLoading, aid, action)
+      requestFn(aid).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message)
+        }
+        this.$message.success(message || '操作完成')
+        this.selectAlbums()
+      }).catch(error => {
+        this.handleRequestError(error)
+      }).finally(() => {
+        this.$delete(this.albumOperationLoading, aid)
       })
+    },
+    downloadAlbumData(row) {
+      this.executeAlbumOperation(row, 'download', downloadAlbum)
+    },
+    confirmGenerateZip(row) {
+      this.$confirm('确认生成zip？如果本地已有旧zip文件，后端会先删除旧文件再重新生成。', '生成zip', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.executeAlbumOperation(row, 'zip', generateAlbumZip)
+      }).catch(() => {})
+    },
+    confirmGeneratePdf(row) {
+      this.$confirm('确认生成pdf？如果本地已有旧pdf文件，后端会先删除旧文件再重新生成。', '生成pdf', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.executeAlbumOperation(row, 'pdf', generateAlbumPdf)
+      }).catch(() => {})
     },
     addChapterImages() {
       if (!this.chapterQuery.albumId || !this.chapterQuery.chapterId) {
@@ -495,6 +571,8 @@ export default {
         }
         this.$message.success(message)
         this.searchChaptersFirst()
+      }).catch(error => {
+        this.handleRequestError(error)
       }).finally(() => {
         this.chapterRequestLoading = false
       })
@@ -525,6 +603,8 @@ export default {
         this.albumDeleteDialogVisible = false
         this.$message.success(message)
         this.searchAlbumsFirst()
+      }).catch(error => {
+        this.handleRequestError(error)
       }).finally(() => {
         this.albumDeleteLoading = false
       })
@@ -541,6 +621,8 @@ export default {
         this.chapterDeleteDialogVisible = false
         this.$message.success(message)
         this.searchChaptersFirst()
+      }).catch(error => {
+        this.handleRequestError(error)
       }).finally(() => {
         this.chapterDeleteLoading = false
       })
