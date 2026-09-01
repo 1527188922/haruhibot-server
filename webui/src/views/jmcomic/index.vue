@@ -734,6 +734,17 @@ export default {
     text-decoration: none;
   }
 
+  .data-table-option-buts {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .el-button {
+      margin-left: 0;
+    }
+  }
+
   .jm-action-grid {
     display: grid;
     gap: 4px;
