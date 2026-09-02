@@ -212,8 +212,53 @@ export default {
         return
       }
       this.disconnectPreviewScrollListener()
+      if (!root.getAttribute('tabindex')) {
+        root.setAttribute('tabindex', '0')
+      }
       root.addEventListener('scroll', this.handlePreviewScroll, { passive: true })
+      root.addEventListener('keydown', this.handlePreviewKeydown)
       this.previewScrollRoot = root
+      if (root.focus) {
+        root.focus({ preventScroll: true })
+      }
+    },
+    isEditablePreviewKeyTarget(target) {
+      if (!target || target === this.previewScrollRoot) {
+        return false
+      }
+      const tagName = target.tagName ? target.tagName.toLowerCase() : ''
+      return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable
+    },
+    setPreviewScrollTop(root, top) {
+      const maxTop = Math.max(root.scrollHeight - root.clientHeight, 0)
+      const nextTop = Math.max(Math.min(top, maxTop), 0)
+      if (root.scrollTo) {
+        root.scrollTo({ top: nextTop })
+      } else {
+        root.scrollTop = nextTop
+      }
+      this.handlePreviewScroll({ target: root })
+    },
+    handlePreviewKeydown(event) {
+      const root = this.getPreviewScrollRoot()
+      if (!root || this.isEditablePreviewKeyTarget(event.target)) {
+        return
+      }
+      const smallStep = 80
+      const pageStep = Math.floor(root.clientHeight * 0.9)
+      const keyScrollMap = {
+        ArrowUp: root.scrollTop - smallStep,
+        ArrowDown: root.scrollTop + smallStep,
+        PageUp: root.scrollTop - pageStep,
+        PageDown: root.scrollTop + pageStep,
+        Home: 0,
+        End: root.scrollHeight
+      }
+      if (!Object.prototype.hasOwnProperty.call(keyScrollMap, event.key)) {
+        return
+      }
+      event.preventDefault()
+      this.setPreviewScrollTop(root, keyScrollMap[event.key])
     },
     handlePreviewScroll(event) {
       if (!this.currentPreviewHasMore || this.currentPreviewLoading) {
@@ -293,6 +338,7 @@ export default {
     disconnectPreviewScrollListener() {
       if (this.previewScrollRoot) {
         this.previewScrollRoot.removeEventListener('scroll', this.handlePreviewScroll)
+        this.previewScrollRoot.removeEventListener('keydown', this.handlePreviewKeydown)
         this.previewScrollRoot = null
       }
     },
