@@ -123,8 +123,8 @@
         <el-table-column v-if="isAlbumColumnVisible('imageStats')" label="图片统计" min-width="130" align="center">
           <template slot-scope="{row}">
             <div class="jm-stat-cell">
-              <div>数据库：{{formatCount(row.imageCount)}}</div>
-              <div>文件：{{formatCount(row.actualImageCount)}}</div>
+              <div :class="safeNumber(row.imageCount) === 0 ? 'danger-text' : ''">数据库：{{formatCount(row.imageCount)}}</div>
+              <div :class="safeNumber(row.actualImageCount) === 0 ? 'danger-text' : ''">文件：{{formatCount(row.actualImageCount)}}</div>
             </div>
           </template>
         </el-table-column>
@@ -378,6 +378,9 @@ export default {
     },
     formatCount(value) {
       return value === null || value === undefined || value === '' ? '-' : value
+    },
+    safeNumber(v){
+      return !v || !(typeof v === 'number') ? 0 : v
     },
     isAlbumColumnVisible(key) {
       return this.albumVisibleColumns.includes(key)
