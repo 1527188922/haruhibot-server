@@ -110,18 +110,26 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
             return Collections.emptyList();
         }
         JmAlbumSqlite album = jmAlbumSqliteMapper.selectById(albumId);
-        if (album != null && StringUtils.isNotBlank(album.getSeries())) {
-            List<Series> series = JSONObject.parseObject(album.getSeries(), new TypeReference<List<Series>>() {});
-            if (CollectionUtils.isNotEmpty(series)) {
-                return series.stream()
-                        .filter(e -> StringUtils.isNotBlank(e.getId()))
-                        .map(e -> toChapterInfoResp(albumId, e))
-                        .collect(Collectors.toList());
-            }
+        return this.listChapters(album);
+    }
+
+    public List<JmChapterInfoResp> listChapters(JmAlbumSqlite album) {
+        if (album == null || album.getId() == null) {
+            return Collections.emptyList();
         }
-        return jmChapterImageSqliteMapper.selectChapterList(albumId).stream()
-                .map(this::toChapterInfoResp)
-                .collect(Collectors.toList());
+        if ("[]".equals(album.getSeries()) || StringUtils.isBlank(album.getSeries())) {
+            return jmChapterImageSqliteMapper.selectChapterList(album.getId()).stream()
+                    .map(this::toChapterInfoResp)
+                    .toList();
+        }
+        List<Series> series = JSONObject.parseObject(album.getSeries(), new TypeReference<>() {});
+        if (CollectionUtils.isNotEmpty(series)) {
+            return series.stream()
+                    .filter(e -> StringUtils.isNotBlank(e.getId()))
+                    .map(e -> toChapterInfoResp(album.getId(), e))
+                    .toList();
+        }
+        return Collections.emptyList();
     }
 
     @Override
@@ -299,7 +307,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         resp.setPdfExists(pdfFile.exists());
         resp.setServerZipUrl(zipFile.exists() ? buildServerFileUrl(album.getAlbumFolderName() + ".zip") : null);
         resp.setServerPdfUrl(pdfFile.exists() ? buildServerFileUrl(album.getAlbumFolderName() + ".pdf") : null);
-        resp.setChapterList(listChapters(album.getId()));
+        resp.setChapterList(this.listChapters(album));
         resp.setImageCount(jmChapterImageSqliteMapper.selectCount(new LambdaQueryWrapper<JmChapterImageSqlite>()
                 .eq(JmChapterImageSqlite::getAlbumId, album.getId())));
         resp.setActualImageCount(countActualImages(album));
