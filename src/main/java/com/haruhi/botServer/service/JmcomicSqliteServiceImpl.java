@@ -197,7 +197,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (request == null || CollectionUtils.isEmpty(request.getIds())) {
             return;
         }
-        List<JmAlbumSqlite> albums = jmAlbumSqliteMapper.selectBatchIds(request.getIds());
+        List<JmAlbumSqlite> albums = jmAlbumSqliteMapper.selectByIds(request.getIds());
         for (JmAlbumSqlite album : albums) {
             if (Boolean.TRUE.equals(request.getDeleteZip())) {
                 deleteFileUnderJmcomic(getZipFile(album));
@@ -209,9 +209,11 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 deleteDirectoryQuietly(getAlbumDir(album));
             }
         }
-        jmChapterImageSqliteMapper.delete(new LambdaQueryWrapper<JmChapterImageSqlite>()
-                .in(JmChapterImageSqlite::getAlbumId, request.getIds()));
-        jmAlbumSqliteMapper.deleteBatchIds(request.getIds());
+        if (Boolean.TRUE.equals(request.getDeleteData())) {
+            jmChapterImageSqliteMapper.delete(new LambdaQueryWrapper<JmChapterImageSqlite>()
+                    .in(JmChapterImageSqlite::getAlbumId, request.getIds()));
+            jmAlbumSqliteMapper.deleteByIds(request.getIds());
+        }
     }
 
     @Override
@@ -220,17 +222,19 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (request == null || CollectionUtils.isEmpty(request.getIds())) {
             return;
         }
-        List<JmChapterImageSqlite> images = jmChapterImageSqliteMapper.selectBatchIds(request.getIds());
+        List<JmChapterImageSqlite> images = jmChapterImageSqliteMapper.selectByIds(request.getIds());
         if (Boolean.TRUE.equals(request.getDeleteFile())) {
             List<Long> albumIds = images.stream().map(JmChapterImageSqlite::getAlbumId)
                     .filter(Objects::nonNull)
                     .distinct()
                     .collect(Collectors.toList());
             Map<Long, JmAlbumSqlite> albumMap = CollectionUtils.isEmpty(albumIds) ? Collections.emptyMap()
-                    : jmAlbumSqliteMapper.selectBatchIds(albumIds).stream().collect(Collectors.toMap(JmAlbumSqlite::getId, e -> e));
+                    : jmAlbumSqliteMapper.selectByIds(albumIds).stream().collect(Collectors.toMap(JmAlbumSqlite::getId, e -> e));
             images.forEach(e -> deleteFileUnderJmcomic(getImageFile(albumMap.get(e.getAlbumId()), e)));
         }
-        jmChapterImageSqliteMapper.deleteBatchIds(request.getIds());
+        if (Boolean.TRUE.equals(request.getDeleteData())) {
+            jmChapterImageSqliteMapper.deleteByIds(request.getIds());
+        }
     }
 
     JmAlbumSqlite toAlbumEntity(Album album, String raw) {

@@ -255,8 +255,10 @@
       </div>
     </basic-container>
 
-    <el-dialog title="删除JM主记录" :visible.sync="albumDeleteDialogVisible" width="420px">
+    <el-dialog title="删除JM主记录" :visible.sync="albumDeleteDialogVisible" width="420px"
+               @closed="deleteAlbumDialogClosed">
       <div class="delete-tip">确认删除选中的 {{albumSelection.length}} 条JM主记录？</div>
+      <el-checkbox v-model="albumDeleteOptions.deleteData">删除DB数据</el-checkbox>
       <el-checkbox v-model="albumDeleteOptions.deletePdf">删除pdf文件</el-checkbox>
       <el-checkbox v-model="albumDeleteOptions.deleteZip">删除zip文件</el-checkbox>
       <el-checkbox v-model="albumDeleteOptions.deleteImages">删除图片</el-checkbox>
@@ -266,9 +268,11 @@
       </span>
     </el-dialog>
 
-    <el-dialog title="删除章节图片" :visible.sync="chapterDeleteDialogVisible" width="420px">
+    <el-dialog title="删除章节图片" :visible.sync="chapterDeleteDialogVisible" width="420px"
+               @closed="deleteChapterDialogClosed">
       <div class="delete-tip">确认删除选中的 {{chapterSelection.length}} 条章节图片记录？</div>
-      <el-checkbox v-model="chapterDeleteOptions.deleteFile">是否删除文件</el-checkbox>
+      <el-checkbox v-model="chapterDeleteOptions.deleteData">删除DB数据</el-checkbox>
+      <el-checkbox v-model="chapterDeleteOptions.deleteFile">删除图片文件</el-checkbox>
       <span slot="footer">
         <el-button size="small" @click="chapterDeleteDialogVisible = false">取消</el-button>
         <el-button type="danger" size="small" :loading="chapterDeleteLoading" @click="deleteChapterData">确定</el-button>
@@ -341,8 +345,8 @@ export default {
         { key: 'addTime', label: 'JM发布时间' },
         { key: 'raw', label: 'raw' }
       ],
-      albumDeleteOptions: { deletePdf: true, deleteZip: true, deleteImages: true },
-      chapterDeleteOptions: { deleteFile: true },
+      albumDeleteOptions: this.defAlbumDeleteOptions(),
+      chapterDeleteOptions: this.defChapterDeleteOptions(),
       albumPagination: {
         currentPage: 1,
         pageSizes: [5, 10, 30, 50, 100, 500],
@@ -670,15 +674,25 @@ export default {
       if (this.albumDeleteDisabled) {
         return
       }
-      this.albumDeleteOptions = { deletePdf: true, deleteZip: true, deleteImages: true }
       this.albumDeleteDialogVisible = true
     },
     openChapterDelete() {
       if (this.chapterDeleteDisabled) {
         return
       }
-      this.chapterDeleteOptions = { deleteFile: true }
       this.chapterDeleteDialogVisible = true
+    },
+    defChapterDeleteOptions(){
+      return { deleteFile: true,deleteData:false }
+    },
+    defAlbumDeleteOptions(){
+      return { deleteData: false,deletePdf: true, deleteZip: true, deleteImages: false }
+    },
+    deleteAlbumDialogClosed(){
+      this.albumDeleteOptions = this.defAlbumDeleteOptions()
+    },
+    deleteChapterDialogClosed(){
+      this.chapterDeleteOptions = this.defChapterDeleteOptions()
     },
     deleteAlbumData() {
       this.albumDeleteLoading = true

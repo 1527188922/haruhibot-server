@@ -7,6 +7,7 @@ import java.util.List;
 @Data
 public class JmAlbumDeleteReq {
     private List<Long> ids;
+    private Boolean deleteData;
     private Boolean deletePdf;
     private Boolean deleteZip;
     private Boolean deleteImages;

@@ -253,7 +253,7 @@ public class DictionarySqliteService {
         if (CollectionUtils.isEmpty(request)) {
             return 0;
         }
-        return dictionarySqliteMapper.deleteBatchIds(request.stream().map(DictionarySqlite::getId).collect(Collectors.toList()));
+        return dictionarySqliteMapper.deleteByIds(request.stream().map(DictionarySqlite::getId).collect(Collectors.toList()));
     }
 
     public int remove(String key){
