@@ -5,9 +5,23 @@
       <el-tabs v-else v-model="activePreviewChapterId" tab-position="left" @tab-click="handlePreviewTabClick">
         <el-tab-pane v-for="chapter in previewChapters" :key="chapter.chapterId" :label="formatPreviewChapterLabel(chapter)" :name="`${chapter.chapterId}`">
           <div v-if="activePreviewChapterId === `${chapter.chapterId}`" v-loading="currentPreviewLoading" class="jm-preview-content">
+            <div v-if="currentPreviewImages.length > 0" class="jm-preview-toolbar">
+              <div class="jm-preview-summary">
+                已加载 {{currentPreviewImages.length}} / {{currentPreviewTotal || currentPreviewImages.length}} 张
+              </div>
+              <div class="jm-preview-width-control">
+                <span>宽度</span>
+                <el-slider v-model="previewImageWidth" :min="40" :max="100" :step="2" :show-tooltip="true"></el-slider>
+                <span>{{previewImageWidth}}%</span>
+              </div>
+            </div>
             <el-empty v-if="currentPreviewImages.length === 0 && !currentPreviewLoading" description="暂无图片"></el-empty>
             <div v-else class="jm-preview-images">
-              <div v-for="image in currentPreviewImages" :key="previewImageKey(image)" ref="previewImageBox" :data-preview-image-key="previewImageKey(image)" class="jm-preview-image-box">
+              <div v-for="image in currentPreviewImages" :key="previewImageKey(image)" ref="previewImageBox" :data-preview-image-key="previewImageKey(image)" class="jm-preview-image-box" :style="previewImageDisplayStyle">
+                <div class="jm-preview-image-meta">
+                  <span>{{formatPreviewImageIndex(image)}}</span>
+                  <span :title="formatPreviewImageFileName(image)" class="jm-preview-image-name">{{formatPreviewImageFileName(image)}}</span>
+                </div>
                 <img v-if="isPreviewImageAvailable(image) && image.lazyVisible" :src="image.serverImgUrl" :alt="image.imageFile" class="jm-preview-image" @error="markPreviewImageLoadFailed(image)">
                 <div v-else-if="isPreviewImageAvailable(image)" class="jm-preview-image-pending">
                   <i class="el-icon-loading"></i>
@@ -58,6 +72,7 @@ export default {
       previewImageObserver: null,
       previewLoadMoreObserver: null,
       previewScrollRoot: null,
+      previewImageWidth: 72,
       previewPageSize: 10
     }
   },
@@ -90,6 +105,12 @@ export default {
     },
     currentPreviewHasMore() {
       return this.currentPreviewTotal > this.currentPreviewImages.length
+    },
+    previewImageDisplayStyle() {
+      return {
+        width: `${this.previewImageWidth}%`,
+        maxWidth: '100%'
+      }
     }
   },
   watch: {
@@ -188,6 +209,14 @@ export default {
     },
     previewImageKey(image) {
       return `${image.chapterId}-${image.imageFile}`
+    },
+    formatPreviewImageIndex(image) {
+      const index = this.currentPreviewImages.findIndex(item => this.previewImageKey(item) === this.previewImageKey(image))
+      const total = this.currentPreviewTotal || this.currentPreviewImages.length
+      return `第 ${index + 1} / ${total} 张`
+    },
+    formatPreviewImageFileName(image) {
+      return image && image.imageFile ? image.imageFile : '未知文件'
     },
     isPreviewImageAvailable(image) {
       return image && image.imageFileExists && image.serverImgUrl && !image.loadFailed
@@ -374,6 +403,36 @@ export default {
   min-height: 360px;
 }
 
+.jm-preview-toolbar {
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid #ebeef5;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 0 12px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.jm-preview-summary {
+  color: #606266;
+  flex: 0 0 auto;
+  font-size: 13px;
+}
+
+.jm-preview-width-control {
+  align-items: center;
+  color: #606266;
+  display: grid;
+  flex: 0 1 360px;
+  font-size: 13px;
+  gap: 10px;
+  grid-template-columns: auto minmax(160px, 1fr) 44px;
+}
+
 .jm-preview-images {
   align-items: center;
   display: flex;
@@ -385,14 +444,36 @@ export default {
   background: #f5f7fa;
   box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
   display: block;
-  max-width: 100%;
+  width: 100%;
   min-height: 80px;
 }
 
 .jm-preview-image-box {
+  align-items: center;
   display: flex;
+  flex-direction: column;
   justify-content: center;
+}
+
+.jm-preview-image-meta {
+  align-items: center;
+  color: #606266;
+  display: flex;
+  font-size: 13px;
+  gap: 12px;
+  justify-content: space-between;
+  line-height: 24px;
   width: 100%;
+}
+
+.jm-preview-image-name {
+  color: #909399;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .jm-preview-image-missing {
@@ -407,7 +488,7 @@ export default {
   justify-content: center;
   min-height: 160px;
   padding: 20px;
-  width: 320px;
+  width: 100%;
 
   i {
     font-size: 28px;
@@ -426,7 +507,7 @@ export default {
   justify-content: center;
   min-height: 220px;
   padding: 20px;
-  width: 320px;
+  width: 100%;
 
   i {
     font-size: 24px;
