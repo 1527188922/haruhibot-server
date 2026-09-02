@@ -176,7 +176,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 .distinct()
                 .collect(Collectors.toList());
         Map<Long, JmAlbumSqlite> albumMap = CollectionUtils.isEmpty(albumIds) ? Collections.emptyMap()
-                : jmAlbumSqliteMapper.selectBatchIds(albumIds).stream().collect(Collectors.toMap(JmAlbumSqlite::getId, e -> e));
+                : jmAlbumSqliteMapper.selectByIds(albumIds).stream().collect(Collectors.toMap(JmAlbumSqlite::getId, e -> e));
         targetPage.setRecords(sourcePage.getRecords().stream()
                 .map(e -> toChapterImageManageResp(e, albumMap.get(e.getAlbumId())))
                 .collect(Collectors.toList()));

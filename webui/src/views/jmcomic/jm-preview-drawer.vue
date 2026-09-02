@@ -1,6 +1,6 @@
 <template>
   <el-drawer :title="previewTitle" :visible.sync="visibleProxy" size="78%" direction="rtl" custom-class="jm-preview-drawer">
-    <div class="jm-preview">
+    <div v-loading="previewPreparing" class="jm-preview">
       <el-empty v-if="previewChapters.length === 0" description="暂无章节信息"></el-empty>
       <el-tabs v-else v-model="activePreviewChapterId" tab-position="left" @tab-click="handlePreviewTabClick">
         <el-tab-pane v-for="chapter in previewChapters" :key="chapter.chapterId" :label="formatPreviewChapterLabel(chapter)" :name="`${chapter.chapterId}`">
@@ -73,6 +73,8 @@ export default {
       previewLoadMoreObserver: null,
       previewScrollRoot: null,
       previewImageWidth: 72,
+      lastPreviewAlbumId: null,
+      previewPreparing: false,
       previewPageSize: 10
     }
   },
@@ -118,7 +120,7 @@ export default {
       if (value) {
         this.initPreview()
       } else {
-        this.disconnectPreviewObservers()
+        this.closePreview()
       }
     },
     album() {
@@ -128,17 +130,59 @@ export default {
     }
   },
   methods: {
-    initPreview() {
+    async initPreview() {
       this.disconnectPreviewObservers()
+      const albumId = this.album ? this.album.id : null
+      if (!albumId) {
+        this.resetPreviewScrollPosition()
+        this.resetPreviewState()
+        this.lastPreviewAlbumId = null
+        return
+      }
+      if (albumId === this.lastPreviewAlbumId && this.hasAnyPreviewState()) {
+        this.previewPreparing = false
+        this.$nextTick(this.setupPreviewObservers)
+        return
+      }
+      this.previewPreparing = true
+      this.resetPreviewScrollPosition()
+      this.resetPreviewState()
+      this.lastPreviewAlbumId = albumId
+      const firstChapter = this.previewChapters[0]
+      this.activePreviewChapterId = firstChapter ? `${firstChapter.chapterId}` : ''
+      try {
+        if (this.activePreviewChapterId) {
+          this.$set(this.previewChapterNextPageMap, this.activePreviewChapterId, 1)
+          await this.loadPreviewChapterImages(this.activePreviewChapterId)
+        }
+      } finally {
+        this.previewPreparing = false
+      }
+    },
+    closePreview() {
+      this.disconnectPreviewObservers()
+      this.previewLoadingMap = {}
+      this.previewPreparing = false
+    },
+    resetPreviewState() {
+      this.activePreviewChapterId = ''
       this.previewChapterImagesMap = {}
       this.previewChapterNextPageMap = {}
       this.previewChapterTotalMap = {}
       this.previewLoadingMap = {}
-      const firstChapter = this.previewChapters[0]
-      this.activePreviewChapterId = firstChapter ? `${firstChapter.chapterId}` : ''
-      if (this.activePreviewChapterId) {
-        this.$set(this.previewChapterNextPageMap, this.activePreviewChapterId, 1)
-        this.loadPreviewChapterImages(this.activePreviewChapterId)
+    },
+    hasAnyPreviewState() {
+      return Boolean(
+        this.activePreviewChapterId ||
+        Object.keys(this.previewChapterImagesMap).length ||
+        Object.keys(this.previewChapterNextPageMap).length ||
+        Object.keys(this.previewChapterTotalMap).length
+      )
+    },
+    resetPreviewScrollPosition() {
+      const root = this.getPreviewScrollRoot() || this.previewScrollRoot
+      if (root) {
+        root.scrollTop = 0
       }
     },
     handlePreviewTabClick(tab) {
