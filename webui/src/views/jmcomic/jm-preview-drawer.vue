@@ -57,6 +57,7 @@ export default {
       previewLoadingMap: {},
       previewImageObserver: null,
       previewLoadMoreObserver: null,
+      previewScrollRoot: null,
       previewPageSize: 10
     }
   },
@@ -123,7 +124,15 @@ export default {
       if (!this.previewChapterNextPageMap[tab.name]) {
         this.$set(this.previewChapterNextPageMap, tab.name, 1)
       }
+      if (this.hasPreviewChapterRequested(tab.name)) {
+        this.$nextTick(this.setupPreviewObservers)
+        return
+      }
       this.loadPreviewChapterImages(tab.name)
+    },
+    hasPreviewChapterRequested(chapterId) {
+      const images = this.previewChapterImagesMap[chapterId] || []
+      return images.length > 0 || this.previewChapterTotalMap[chapterId] > 0 || this.previewChapterNextPageMap[chapterId] > 1
     },
     formatPreviewChapterLabel(chapter) {
       return chapter.title || chapter.name || `章节${chapter.chapterId}`
@@ -187,8 +196,37 @@ export default {
       this.$set(image, 'loadFailed', true)
     },
     setupPreviewObservers() {
+      this.setupPreviewScrollListener()
       this.setupPreviewImageObserver()
       this.setupPreviewLoadMoreObserver()
+    },
+    getPreviewScrollRoot() {
+      return this.$el ? this.$el.querySelector('.el-tabs__content') : null
+    },
+    getFirstRef(refValue) {
+      return Array.isArray(refValue) ? refValue[0] : refValue
+    },
+    setupPreviewScrollListener() {
+      const root = this.getPreviewScrollRoot()
+      if (!root || root === this.previewScrollRoot) {
+        return
+      }
+      this.disconnectPreviewScrollListener()
+      root.addEventListener('scroll', this.handlePreviewScroll, { passive: true })
+      this.previewScrollRoot = root
+    },
+    handlePreviewScroll(event) {
+      if (!this.currentPreviewHasMore || this.currentPreviewLoading) {
+        return
+      }
+      const target = event && event.target ? event.target : this.getPreviewScrollRoot()
+      if (!target) {
+        return
+      }
+      const distanceToBottom = target.scrollHeight - target.scrollTop - target.clientHeight
+      if (distanceToBottom <= 240) {
+        this.loadPreviewChapterImages(this.activePreviewChapterId)
+      }
     },
     setupPreviewImageObserver() {
       this.disconnectPreviewImageObserver()
@@ -202,7 +240,7 @@ export default {
         this.currentPreviewImages.forEach(image => this.$set(image, 'lazyVisible', true))
         return
       }
-      const root = this.$el.querySelector('.el-tabs__content')
+      const root = this.getPreviewScrollRoot()
       this.previewImageObserver = new IntersectionObserver(entries => {
         entries.forEach(entry => {
           if (!entry.isIntersecting) {
@@ -223,11 +261,11 @@ export default {
     },
     setupPreviewLoadMoreObserver() {
       this.disconnectPreviewLoadMoreObserver()
-      const trigger = this.$refs.previewLoadMoreTrigger
+      const trigger = this.getFirstRef(this.$refs.previewLoadMoreTrigger)
       if (!trigger || !this.currentPreviewHasMore || !window.IntersectionObserver) {
         return
       }
-      const root = this.$el.querySelector('.el-tabs__content')
+      const root = this.getPreviewScrollRoot()
       this.previewLoadMoreObserver = new IntersectionObserver(entries => {
         const shouldLoadMore = entries.some(entry => entry.isIntersecting)
         if (shouldLoadMore) {
@@ -252,9 +290,16 @@ export default {
         this.previewLoadMoreObserver = null
       }
     },
+    disconnectPreviewScrollListener() {
+      if (this.previewScrollRoot) {
+        this.previewScrollRoot.removeEventListener('scroll', this.handlePreviewScroll)
+        this.previewScrollRoot = null
+      }
+    },
     disconnectPreviewObservers() {
       this.disconnectPreviewImageObserver()
       this.disconnectPreviewLoadMoreObserver()
+      this.disconnectPreviewScrollListener()
     }
   },
   beforeDestroy() {
