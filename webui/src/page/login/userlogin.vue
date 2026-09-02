@@ -140,7 +140,8 @@ export default {
         if (valid) {
           this.$store.dispatch("LoginByUsername", this.loginForm).then(() => {
             this.$router.push(this.tagWel);
-          }).catch(({code,message,data}) =>{
+          }).catch(({handled,message}) =>{
+            if (handled) return
             this.$message.error(message)
           });
         }

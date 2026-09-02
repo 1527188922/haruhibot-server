@@ -56,7 +56,7 @@ axios.interceptors.response.use(res => {
     setTimeout(()=>{
       store.dispatch('FedLogOut').then(() => router.push({ path: '/login' }));
     },1500)
-    return Promise.reject(createHttpError(res, '登录过期'))
+    return Promise.reject(createHttpError(res, '登录过期', { handled: true }))
   }
   // 如果请求为非200否者默认统一处理
   if (status !== 200) {

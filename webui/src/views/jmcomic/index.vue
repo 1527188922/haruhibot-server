@@ -443,12 +443,12 @@ export default {
       return Math.max((list || []).length - count, 0)
     },
     handleRequestError(error) {
-      const message = error && error.data && error.data.message
-        ? error.data.message
-        : error && error.message
-          ? error.message
-          : '请求失败'
-      this.$message.error(message)
+      // const message = error && error.data && error.data.message
+      //   ? error.data.message
+      //   : error && error.message
+      //     ? error.message
+      //     : '请求失败'
+      // this.$message.error(message)
     },
     isAlbumOperation(row, action) {
       return row && this.albumOperationLoading[row.id] === action
