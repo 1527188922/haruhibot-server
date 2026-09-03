@@ -10,11 +10,7 @@ import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
-import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
-import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
-import com.haruhi.botServer.dto.bilibili.PlayerInfoResp;
-import com.haruhi.botServer.dto.bilibili.VideoDetail;
-import com.haruhi.botServer.dto.bilibili.BulletChatResp;
+import com.haruhi.botServer.dto.bilibili.*;
 import com.haruhi.botServer.utils.BilibiliIdConverter;
 import com.haruhi.botServer.utils.BilibililSidUtil;
 import com.haruhi.botServer.utils.DbLog;
@@ -27,7 +23,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -244,6 +246,83 @@ public class BilibiliService {
         return map;
     }
 
+    /**
+     * Convert a byte array to a hex string.
+     *
+     * @param bytes The byte array to convert.
+     * @return The hex string representation of the given byte array.
+     */
+    public static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                sb.append('0');
+            }
+            sb.append(hex);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Generate a HMAC-SHA256 hash of the given message string using the given key
+     * string.
+     *
+     * @param key     The key string to use for the HMAC-SHA256 hash.
+     * @param message The message string to hash.
+     * @throws Exception If an error occurs during the HMAC-SHA256 hash generation.
+     * @return The HMAC-SHA256 hash of the given message string using the given key
+     *         string.
+     */
+    public static String hmacSha256(String key, String message) throws Exception {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        mac.init(secretKeySpec);
+        byte[] hash = mac.doFinal(message.getBytes(StandardCharsets.UTF_8));
+        return bytesToHex(hash);
+    }
+
+
+    public BilibiliBaseResp<BilibiliTickResp> genTicket(String csrf) throws Exception {
+        long ts = System.currentTimeMillis() / 1000;
+        String hexSign = hmacSha256("XgwSnGZ1p", "ts" + ts);
+        Map<String, Object> param = new HashMap<>(){{
+            put("csrf", csrf == null ? "" : csrf);
+            put("key_id", "ec02");
+            put("hexsign", hexSign);
+            put("context[ts]", ts);
+        }};
+        String s = HttpUtil.urlWithForm("https://api.bilibili.com/bapis/bilibili.api.ticket.v1.Ticket/GenWebTicket",
+                param,
+                StandardCharsets.UTF_8,
+                false);
+
+        HttpRequest request = HttpRequest.post(s).addHeaders(getHeaders(false));
+        try (HttpResponse response = request.execute()){
+            String body = response.body();
+            BilibiliBaseResp<BilibiliTickResp> tickResp = JSONObject.parseObject(body, new TypeReference<BilibiliBaseResp<BilibiliTickResp>>() {
+            });
+            tickResp.setRaw(body);
+            if (tickResp.isSuccess()) {
+                return tickResp;
+            }
+            DbLog.error(BusinessModuleEnum.BILIBILI,"请求b站ticket响应失败 url:{} resp:{}",s,body);
+            return tickResp;
+        } catch (Exception e) {
+            DbLog.error(BusinessModuleEnum.BILIBILI,"请求b站ticket异常 url:{}",s,e);
+            return null;
+        }
+    }
+
+    public static void main(String[] args) {
+        BilibiliService bilibiliService = new BilibiliService();
+        try {
+            BilibiliBaseResp<BilibiliTickResp> bilibiliTickRespBilibiliBaseResp = bilibiliService.genTicket(null);
+            System.out.println(bilibiliTickRespBilibiliBaseResp.getRaw());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 
     public <T> BilibiliBaseResp<T> sendGetRequest(String url, HashMap<String, Object> urlParam, TypeReference<BilibiliBaseResp<T>> responseType){
