@@ -168,6 +168,14 @@ public class BilibiliService {
         strings.add("SESSDATA=" + sessdata);
         strings.add("bili_jct=" + jct);
         strings.add("b_lsid=" + BilibililSidUtil.generate());
+        BilibiliTickResp tick = this.getTick(null);
+        if (tick != null) {
+            strings.add("bili_ticket=" + tick.getTicket());
+            Long expires = tick.expires();
+            if (expires != null) {
+                strings.add("bili_ticket_expires=" + expires);
+            }
+        }
         return StringUtils.join(strings,"; ");
     }
 
@@ -282,6 +290,40 @@ public class BilibiliService {
         return bytesToHex(hash);
     }
 
+    /**
+     * 优先从db获取ticket
+     * @param csrf
+     * @return
+     */
+    public synchronized BilibiliTickResp getTick(String csrf){
+        BilibiliTickResp tickInDb = this.getTickInDb();
+        if (tickInDb != null && !tickInDb.expired() && StringUtils.isNotBlank(tickInDb.getTicket())) {
+            return tickInDb;
+        }
+        try {
+            BilibiliBaseResp<BilibiliTickResp> ticketBaseResp = this.genTicket(csrf);
+            if (ticketBaseResp == null || !ticketBaseResp.isSuccess()) {
+                return null;
+            }
+            dictionarySqliteService.add(DictionaryEnum.BILIBILI_COOKIES_TICKET.getKey(), ticketBaseResp.getRaw());
+            return ticketBaseResp.getData();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    public BilibiliTickResp getTickInDb(){
+        String s = dictionarySqliteService.get(DictionaryEnum.BILIBILI_COOKIES_TICKET.getKey());
+        try {
+            if (StringUtils.isNotBlank(s)) {
+                BilibiliBaseResp<BilibiliTickResp> tickResp = JSONObject.parseObject(s, new TypeReference<BilibiliBaseResp<BilibiliTickResp>>() {
+                });
+                return tickResp.getData();
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     public BilibiliBaseResp<BilibiliTickResp> genTicket(String csrf) throws Exception {
         long ts = System.currentTimeMillis() / 1000;
@@ -317,8 +359,9 @@ public class BilibiliService {
     public static void main(String[] args) {
         BilibiliService bilibiliService = new BilibiliService();
         try {
-            BilibiliBaseResp<BilibiliTickResp> bilibiliTickRespBilibiliBaseResp = bilibiliService.genTicket(null);
-            System.out.println(bilibiliTickRespBilibiliBaseResp.getRaw());
+//            BilibiliBaseResp<BilibiliTickResp> bilibiliTickRespBilibiliBaseResp = bilibiliService.genTicket(null);
+//            System.out.println(bilibiliTickRespBilibiliBaseResp.getRaw());
+            System.out.println(BilibililSidUtil.generate());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -1,5 +1,7 @@
 package com.haruhi.botServer.dto.bilibili;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.LocalDateTimeUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,6 +22,24 @@ public class BilibiliTickResp {
     private Long ttl;
     private HashMap<String,Object> context;
     private Nav nav;
+
+    public Long expires(){
+        if (created_at == null || ttl == null) {
+            return null;
+        }
+        return ttl + created_at;
+    }
+
+    // true:过期
+    public boolean expired() {
+        Long expireTime = expires();
+        if (expireTime == null) {
+            return true;
+        }
+        long l = DateUtil.currentSeconds();
+        // 提前5分钟算过期
+        return l > expireTime - (5 * 60);
+    }
 
 
     @Data

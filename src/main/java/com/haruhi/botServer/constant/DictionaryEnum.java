@@ -10,6 +10,7 @@ public enum DictionaryEnum{
 
     BILIBILI_COOKIES_SESSDATA(true,"bilibili.cookies.sessdata",null,"b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
     BILIBILI_COOKIES_BILI_JCT(true,"bilibili.cookies.bili_jct",null,"b站cookie中获取，用于解析b站视频等需要调用b站api的功能"),
+    BILIBILI_COOKIES_TICKET(false,"bilibili.cookies.ticket",null,"请求b站接口获取，非必要，但是可减小风控概率"),
     BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT(true,"bilibili.upload_video.duration_limit","600","上传b站视频时长限制，单位秒"),
     BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT(true,"bilibili.download_video.duration_limit","600","下载b站视频时长限制，单位秒"),
 
