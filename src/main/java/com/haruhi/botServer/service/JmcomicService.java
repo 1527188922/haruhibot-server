@@ -503,7 +503,8 @@ public class JmcomicService {
 
 
     private String getChapterPath(String albumPath, Series series){
-        return albumPath + File.separator + (series.getTitle() + (StringUtils.isBlank(series.getName()) ? "" : "_"+series.getName()));
+        String title = StringUtils.isNotBlank(series.getTitle()) ? series.getTitle() : StringUtils.isNotBlank(series.getName()) ? series.getName() : series.getId();
+        return albumPath + File.separator + title;
     }
 
     public void downloadChapter(Chapter chapter, String chapterPath,String seriesTitle,int lastCount,
@@ -558,7 +559,8 @@ public class JmcomicService {
                         log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
                         countDownLatch.countDown();
                     }catch (Exception e) {
-                        log.error("保存图片异常：{}", JSONObject.toJSONString(param),e);
+                        DbLog.error(BusinessModuleEnum.JMCOMIC,
+                                "保存图片异常：{}", JSONObject.toJSONString(param),e);
                     }finally {
                         tmpImgFile.delete();
                     }
@@ -627,7 +629,8 @@ public class JmcomicService {
                 log.error("下载jm图片网络异常 {}", imgUrl, e);
             }
         }catch (Exception e) {
-            log.error("下载jm图片异常 {}", imgUrl, e);
+            DbLog.error(BusinessModuleEnum.JMCOMIC,
+                    "下载jm图片异常 imgUrl={} tmpImgFile={}", imgUrl, tmpImgFile.getAbsolutePath(), e);
         }
     }
 

@@ -407,7 +407,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (StringUtils.isBlank(title)) {
             title = String.valueOf(image.getChapterId());
         }
-        return title + (StringUtils.isBlank(image.getChapterName()) ? "" : "_" + image.getChapterName());
+        return title;
     }
 
     private Long countActualImages(JmAlbumSqlite album) {
