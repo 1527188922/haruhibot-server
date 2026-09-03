@@ -7,6 +7,7 @@ import cn.hutool.http.HttpUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
@@ -16,6 +17,7 @@ import com.haruhi.botServer.dto.bilibili.VideoDetail;
 import com.haruhi.botServer.dto.bilibili.BulletChatResp;
 import com.haruhi.botServer.utils.BilibiliIdConverter;
 import com.haruhi.botServer.utils.BilibililSidUtil;
+import com.haruhi.botServer.utils.DbLog;
 import com.haruhi.botServer.utils.XMLUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -245,36 +247,23 @@ public class BilibiliService {
 
 
     public <T> BilibiliBaseResp<T> sendGetRequest(String url, HashMap<String, Object> urlParam, TypeReference<BilibiliBaseResp<T>> responseType){
-        boolean wbiApi = url.contains("/wbi/");
-        String s = buildUrl(url, urlParam, wbiApi, false);
+//        boolean wbiApi = url.contains("/wbi/");
+        String s = buildUrl(url, urlParam, false, false);
 
         Map<String, String> headers = getHeaders(true);
         HttpRequest httpRequest = HttpRequest.get(s).addHeaders(headers);
         try (HttpResponse execute = httpRequest.execute()){
             if (execute.getStatus() != HttpStatus.HTTP_OK) {
-                log.error("请求b站接口失败 url:{} status:{} body:{}", s, execute.getStatus(), execute.body());
+                DbLog.error(BusinessModuleEnum.BILIBILI,
+                        "请求b站接口失败 url:{} status:{} body:{}", s, execute.getStatus(), execute.body());
                 return null;
             }
             String body = execute.body();
             BilibiliBaseResp<T> bilibiliBaseResp = JSONObject.parseObject(body,responseType);
-            if (Objects.isNull(bilibiliBaseResp.getCode()) || bilibiliBaseResp.getCode() != BilibiliBaseResp.SUCCESS_CODE) {
-                log.error("b站接口响应异常 url:{} body:{}", s, body);
-                if (wbiApi) {
-                    String retryUrl = buildUrl(url, urlParam, true, true);
-                    try (HttpResponse retryResp = HttpRequest.get(retryUrl).addHeaders(headers).execute()) {
-                        if (retryResp.getStatus() != HttpStatus.HTTP_OK) {
-                            log.error("重试请求b站接口失败 url:{} status:{} body:{}", retryUrl, retryResp.getStatus(), retryResp.body());
-                            return bilibiliBaseResp;
-                        }
-                        String retryBody = retryResp.body();
-                        BilibiliBaseResp<T> retryBaseResp = JSONObject.parseObject(retryBody, responseType);
-                        retryBaseResp.setRaw(retryBody);
-                        if (Objects.isNull(retryBaseResp.getCode()) || retryBaseResp.getCode() != BilibiliBaseResp.SUCCESS_CODE) {
-                            log.error("重试后b站接口仍响应异常 url:{} body:{}", retryUrl, retryBody);
-                        }
-                        return retryBaseResp;
-                    }
-                }
+            if (!bilibiliBaseResp.isSuccess()) {
+                DbLog.error(BusinessModuleEnum.BILIBILI,"b站接口响应异常 url:{} body:{}", s, body);
+            }else {
+                DbLog.info(BusinessModuleEnum.BILIBILI,"b站接口响应 url:{} body:{}", s, body);
             }
             bilibiliBaseResp.setRaw(body);
             return bilibiliBaseResp;

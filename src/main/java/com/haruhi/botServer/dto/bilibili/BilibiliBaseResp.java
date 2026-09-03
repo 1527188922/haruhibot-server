@@ -14,4 +14,8 @@ public class BilibiliBaseResp<T> {
 
 
     private String raw;
+
+    public boolean isSuccess() {
+        return code != null && SUCCESS_CODE == code;
+    }
 }

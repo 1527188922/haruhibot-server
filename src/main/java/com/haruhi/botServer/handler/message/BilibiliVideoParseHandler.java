@@ -69,7 +69,7 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
                 Long cid = videoDetailData.getCidFirst();
                 VideoDetail.View videoDetailDataView = videoDetailData.getView();
                 if (videoDetailDataView == null) {
-                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频信息 bvid:{} resp:{}", finalBvid, videoDetail.getRaw());
+//                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频信息 bvid:{} resp:{}", finalBvid, videoDetail.getRaw());
                     return;
                 }
 
@@ -77,7 +77,7 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
 
                 PlayUrlInfo playUrlInfoData = playUrlInfo.getData();
                 if (playUrlInfoData == null) {
-                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频下载链接信息 bvid:{} resp:{}", finalBvid, playUrlInfo.getRaw());
+//                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频下载链接信息 bvid:{} resp:{}", finalBvid, playUrlInfo.getRaw());
                     return;
                 }
                 sendInfoMessage(videoDetailDataView, message, bot);
