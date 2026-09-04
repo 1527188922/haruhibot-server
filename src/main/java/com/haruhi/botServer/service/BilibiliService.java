@@ -305,7 +305,7 @@ public class BilibiliService {
             if (ticketBaseResp == null || !ticketBaseResp.isSuccess()) {
                 return null;
             }
-            dictionarySqliteService.add(DictionaryEnum.BILIBILI_COOKIES_TICKET.getKey(), ticketBaseResp.getRaw());
+            dictionarySqliteService.put(DictionaryEnum.BILIBILI_COOKIES_TICKET.getKey(), ticketBaseResp.getRaw());
             return ticketBaseResp.getData();
         } catch (Exception e) {
             return null;
@@ -346,6 +346,7 @@ public class BilibiliService {
             });
             tickResp.setRaw(body);
             if (tickResp.isSuccess()) {
+                DbLog.info(BusinessModuleEnum.BILIBILI,"生成b站ticket url:{} resp:{}",s,body);
                 return tickResp;
             }
             DbLog.error(BusinessModuleEnum.BILIBILI,"请求b站ticket响应失败 url:{} resp:{}",s,body);
@@ -383,9 +384,9 @@ public class BilibiliService {
             String body = execute.body();
             BilibiliBaseResp<T> bilibiliBaseResp = JSONObject.parseObject(body,responseType);
             if (!bilibiliBaseResp.isSuccess()) {
-                DbLog.error(BusinessModuleEnum.BILIBILI,"b站接口响应异常 url:{} body:{}", s, body);
+                DbLog.error(BusinessModuleEnum.BILIBILI,"b站接口响应异常 url:{} headers:{} body:{}", s, JSONObject.toJSONString(headers), body);
             }else {
-                DbLog.info(BusinessModuleEnum.BILIBILI,"b站接口响应 url:{} body:{}", s, body);
+                DbLog.info(BusinessModuleEnum.BILIBILI,"b站接口响应 url:{} headers:{} body:{}", s, JSONObject.toJSONString(headers), body);
             }
             bilibiliBaseResp.setRaw(body);
             return bilibiliBaseResp;
