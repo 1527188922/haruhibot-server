@@ -285,71 +285,62 @@ const release = [{
         keepAlive: true
     },
     children: []
-},
-//     {
-//     label: '系统信息',
-//     path: '/sys',
-//     iconBgColor: randomColor(),
-//     children: [{
-//         label: '服务器文件',
-//         path: 'files',
-//         iconBgColor: randomColor(),
-//         component: 'views/system/file/index',
-//         children: []
-//     }]
-// },
-    {
+}, {
+    label: '系统管理',
+    path: '/system',
+    iconBgColor: randomColor(),
+    children: [{
         label: '服务器文件',
-        path: '/sys/files',
+        path: '/file',
         iconBgColor: randomColor(),
         component: 'views/system/file/index',
         children: []
-    },
-    {
+    }, {
+            label: '数据库管理',
+            path: '/database-manage',
+            iconBgColor: randomColor(),
+            component: 'views/system/database-manage/index',
+            children: []
+    }, {
         label: '日志监控',
-        path: PATH_LOG_MONITOR,
+        path: '/log-monitor',
         iconBgColor: randomColor(),
-        component: 'views/log-monitor/index',
+        component: 'views/system/log-monitor/index',
         children: []
-    },
-    {
-        label: '数据库管理',
-        path: '/db-manage',
-        iconBgColor: randomColor(),
-        component: 'views/database-manage/index',
-        children: []
-    }
-,{
-    label: "外部页面",
-    path: '/out',
-    icon: 'icon-caidan',
-    iconBgColor: randomColor(),
-    meta: {
-        i18n: 'out',
-    },
-    children: [{
-        label: "go-cqhttp",
-        path: 'go-cqhttp',
-        href: 'https://docs.go-cqhttp.org',
-        icon: 'icon-caidan',
-        iconBgColor: randomColor(),
-        meta: {
-            target: '_blank',
-            // i18n: 'api',
-        }
-    },{
-        label: "NapCat",
-        path: 'nap-cat',
-        href: 'https://napneko.github.io',
-        icon: 'icon-caidan',
-        iconBgColor: randomColor(),
-        meta: {
-            target: '_blank',
-            // i18n: 'api',
-        }
     }]
+}
 
-}]
+    ,{
+        label: "外部页面",
+        path: '/out',
+        icon: 'icon-caidan',
+        iconBgColor: randomColor(),
+        meta: {
+            i18n: 'out',
+        },
+        children: [{
+            label: "go-cqhttp",
+            path: 'go-cqhttp',
+            href: 'https://docs.go-cqhttp.org',
+            icon: 'icon-caidan',
+            iconBgColor: randomColor(),
+            meta: {
+                target: '_blank',
+                // i18n: 'api',
+            }
+        },{
+            label: "NapCat",
+            path: 'nap-cat',
+            href: 'https://napneko.github.io',
+            icon: 'icon-caidan',
+            iconBgColor: randomColor(),
+            meta: {
+                target: '_blank',
+                // i18n: 'api',
+            }
+        }]
+
+    }]
 
 // export default [...release,...demo]
 export default [...release]

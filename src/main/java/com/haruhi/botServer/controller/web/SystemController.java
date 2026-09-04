@@ -345,8 +345,7 @@ public class SystemController {
                 emitter.completeWithError(e);
             }
         };
-        String file = FileUtil.getLogsDir() + File.separator + FileUtil.FILE_NAME_LOG;
-        Tailer tailer = new Tailer(new File(file),
+        Tailer tailer = new Tailer(FileUtil.getCurrentLogFile(),
                 StandardCharsets.UTF_8,
                 listener,
                 initLine == null ? 30 : initLine,

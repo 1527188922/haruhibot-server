@@ -35,7 +35,7 @@
 </template>
 
 <script>
-import suggestions from "@/views/database-manage/suggestions";
+import suggestions from "@/views/system/database-manage/suggestions";
 import {getStore} from "@/util/store";
 export default {
   props: {

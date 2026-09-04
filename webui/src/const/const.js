@@ -1,1 +1,1 @@
-export const PATH_LOG_MONITOR  = "/sys/log-monitor"
+export const PATH_LOG_MONITOR  = "/system/log-monitor"

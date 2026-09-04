@@ -247,6 +247,20 @@ public class FileUtil {
     public static String getLogsDir(){
         return getAppDir() + File.separator + DIR_LOGS;
     }
+
+    public static File getCurrentLogFile(){
+        String s = getLogsDir() + File.separator + FILE_NAME_LOG;
+        File file = new File(s);
+        if (file.exists()) {
+            return file;
+        }
+        return new File(System.getProperty("user.dir")
+                + File.separator
+                + DIR_LOGS
+                + File.separator
+                + FILE_NAME_LOG);
+    }
+
     public static String getTemplateDir(){
         return getAppDir() + File.separator + DIR_TEMPLATES;
     }
