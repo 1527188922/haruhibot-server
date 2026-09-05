@@ -12,8 +12,12 @@ import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.constant.SqlTypeEnum;
 import com.haruhi.botServer.dto.SqlExecuteResult;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.haruhi.botServer.entity.SystemLogSqlite;
 import com.haruhi.botServer.service.DictionarySqliteService;
+import com.haruhi.botServer.service.EnumService;
 import com.haruhi.botServer.service.SqliteDatabaseService;
+import com.haruhi.botServer.service.SystemLogSqliteService;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.utils.PropertiesUtil;
 import com.haruhi.botServer.vo.*;
@@ -61,6 +65,10 @@ public class SystemController {
     private SqliteDatabaseService sqliteDatabaseService;
     @Autowired
     private DictionarySqliteService dictionarySqliteService;
+    @Autowired
+    private SystemLogSqliteService systemLogSqliteService;
+    @Autowired
+    private EnumService enumService;
 
 
     @IgnoreAuthentication
@@ -364,6 +372,20 @@ public class SystemController {
         });
 
         return emitter;
+    }
+
+    @PostMapping("/log/search")
+    public HttpResp<IPage<SystemLogSqlite>> searchSystemLog(@RequestBody SystemLogQueryReq request) {
+        return HttpResp.success(systemLogSqliteService.search(request));
+    }
+
+    @GetMapping("/enum/list")
+    public HttpResp<List<CodeNameResp>> enumList(@RequestParam String enumName) {
+        try {
+            return HttpResp.success(enumService.list(enumName));
+        } catch (IllegalArgumentException e) {
+            return HttpResp.fail(e.getMessage(), Collections.emptyList());
+        }
     }
 
 }

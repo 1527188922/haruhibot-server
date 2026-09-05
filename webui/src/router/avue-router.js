@@ -3,6 +3,12 @@ import website from '@/config/website'
 function isURL (s) {
   return /^http[s]?:\/\/.*/.test(s)
 }
+function joinPath (parentPath, childPath) {
+  return `${parentPath}/${childPath}`.replace(/\/+/g, '/')
+}
+function normalizePath (path) {
+  return path ? path.replace(/\/+/g, '/') : path
+}
 let RouterPlugin = function () {
   this.$router = null;
   this.$store = null;
@@ -51,7 +57,7 @@ RouterPlugin.install = function (option = {}) {
       if (aMenu.length === 0) return;
       for (let i = 0; i < aMenu.length; i++) {
         const oMenu = aMenu[i];
-        let path = oMenu[propsDefault.path],
+        let path = normalizePath(oMenu[propsDefault.path]),
           component = oMenu.component,
           name = oMenu[propsDefault.label],
           icon = oMenu[propsDefault.icon],
@@ -135,7 +141,7 @@ export const formatPath = (ele, first) => {
         child.component = iframeComponent
         child[propsDefault.query] = { url: iframeSrc(href) }
       }
-      child[propsDefault.path] = `${ele[propsDefault.path]}/${child[propsDefault.path]}`
+      child[propsDefault.path] = joinPath(ele[propsDefault.path], child[propsDefault.path])
       formatPath(child);
     })
   }
