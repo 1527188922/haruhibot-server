@@ -1,5 +1,6 @@
 package com.haruhi.botServer.handler.message;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
@@ -277,13 +278,15 @@ public class JmcomicHandler implements IAllMessageHandler {
         Map<String, Object> params = new HashMap<>();
         params.put("query", htmlEscape(searchResp.getSearchQuery()));
         params.put("total", htmlEscape(searchResp.getTotal()));
-        params.put("items", buildSearchResultViewItems(searchResp.getContent()));
+        List<SearchResp.ContentItem> content = searchResp.getContent();
+        List<SearchResp.ContentItem> sub = CollUtil.sub(content, 0, 12);//取前12条结果生成图片
+        params.put("items", buildSearchResultViewItems(sub));
 
         String html = HtmlToImageUtils.renderTemplate(template, params);
         String fileName = "jm-search-" + message.getSelfId() + "-" + CommonUtil.uuid() + ".png";
         String outputDir = FileUtil.mkdirs(FileUtil.getJmcomicDir() + File.separator + SEARCH_RESULT_IMAGE_DIR).getAbsolutePath();
         String outputPath = outputDir + File.separator + fileName;
-        int imageHeight = Math.max(700, 230 + searchResp.getContent().size() * 250);
+        int imageHeight = Math.max(700, 200 + sub.size() * 270);
         HtmlToImageUtils.htmlToImage(html, outputPath, new int[]{1000, imageHeight});
 
         String imageUrl = BotConfig.SAME_MACHINE_QQCLIENT
@@ -305,7 +308,7 @@ public class JmcomicHandler implements IAllMessageHandler {
             item.put("id", htmlEscape(e.getId()));
             item.put("name", htmlEscape(e.getName()));
             item.put("author", htmlEscape(e.getAuthor()));
-            item.put("image", htmlEscape(e.getImage()));
+            item.put("image", htmlEscape(JmcomicService.buildCoverUrl(Long.parseLong(e.getId()))));
             item.put("category", htmlEscape(Stream.of((e.getCategory() != null ? e.getCategory().getTitle() : null), (e.getCategorySub() != null ? e.getCategorySub().getTitle() : null))
                     .filter(StringUtils::isNotBlank).distinct().collect(Collectors.joining("/"))));
             item.put("updateAt", Objects.nonNull(e.getUpdateAt())

@@ -14,6 +14,7 @@ import com.haruhi.botServer.dto.jmcomic.*;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DbLog;
 import com.haruhi.botServer.utils.FileUtil;
+import com.haruhi.botServer.utils.RetryUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
@@ -49,12 +50,7 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -69,6 +65,7 @@ public class JmcomicService {
     private static final String APP_DATA_SECRET = "185Hcomic3PAPP7R";
     private static final String APP_VERSION = "2.0.13";
     private static final String IMAGE_DOMAIN = "cdn-msp2.jmapiproxy2.cc";
+    private static final String COVER_DOMAIN = "cdn-msp3.18comic.vip";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
     public static final String JM_DEFAULT_PASSWORD = "1234";
@@ -463,42 +460,86 @@ public class JmcomicService {
         return executeWithJmLock(String.valueOf(album.getId()), "下载漫画", () -> downloadAlbumWithoutLock(album));
     }
 
+    /**
+     * 下载jm封面
+     * @param jmId
+     * @param albumPath 漫画主文件夹路径
+     * @return
+     */
+    private File downloadCoverImage(Long jmId, String albumPath){
+        String suffix = ".jpg";
+        File file = new File(albumPath + File.separator + jmId + suffix);
+        if (file.exists() && file.isFile() && file.length() > 0
+                && cn.hutool.core.io.FileUtil.pathEndsWith(file, suffix)) {
+            // 封面图文件已经存在
+            return file;
+        }
+
+        cn.hutool.core.io.FileUtil.del(file);
+        String imgUrl = buildCoverUrl(jmId);
+        try {
+            boolean result = RetryUtil.retry(4, 100, false,
+                    e -> (e instanceof HttpException) && (e.getCause() instanceof SocketTimeoutException),
+                    b -> !b,
+                    () -> {
+                        HttpRequest httpRequest = HttpRequest.get(imgUrl)
+                                .header("User-Agent", USER_AGENT)
+                                .setConnectionTimeout(4 * 1000)
+                                .setReadTimeout(10 * 1000);
+                        try (HttpResponse response = httpRequest.executeAsync()) {
+                            if (!response.isOk()) {
+                                return false;
+                            }
+                            response.writeBody(file);
+                        }
+                        return file.exists() && file.length() > 0;
+                    }
+            );
+        } catch (Exception e) {
+            DbLog.error(BusinessModuleEnum.JMCOMIC, "下载jm封面异常 imgUrl:{}",imgUrl,e);
+        }
+        return file;
+    }
+
     private BaseResp<String> downloadAlbumWithoutLock(Album album) throws Exception {
         String aid = String.valueOf(album.getId());
-            if (CollectionUtils.isEmpty(album.getSeries())) {
-                Series series = new Series();
-                series.setSort("1");
-                series.setTitle("第1话");
-                series.setId(aid);
-                album.setSeries(Collections.singletonList(series));
-            }
-            String albumPath = FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName();
-            log.info("开始下载：jm{} 共{}话", aid, album.getSeries().size());
-            try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()){
-                for (Series series : album.getSeries()) {
-                    series.setTitle("第" + series.getSort() +"话");
-                    try {
-                        String chapterPath = this.getChapterPath(albumPath, series);
-                        Chapter chapter = this.requestChapter(series.getId());
-                        jmcomicSqliteService.saveOrUpdateChapterImages(album.getId(), chapter, series);
-                        this.downloadChapter(chapter,chapterPath,series.getTitle(),-1, executor);
+        if (CollectionUtils.isEmpty(album.getSeries())) {
+            Series series = new Series();
+            series.setSort("1");
+            series.setTitle("第1话");
+            series.setId(aid);
+            album.setSeries(Collections.singletonList(series));
+        }
+        String albumPath = FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName();
+        log.info("开始下载：jm{} 共{}话", aid, album.getSeries().size());
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()){
+            executor.execute(() -> {
+                this.downloadCoverImage(album.getId(), albumPath);
+            });
+            for (Series series : album.getSeries()) {
+                series.setTitle("第" + series.getSort() +"话");
+                try {
+                    String chapterPath = this.getChapterPath(albumPath, series);
+                    Chapter chapter = this.requestChapter(series.getId());
+                    jmcomicSqliteService.saveOrUpdateChapterImages(album.getId(), chapter, series);
+                    this.downloadChapter(chapter,chapterPath,series.getTitle(),-1, executor);
 //                        System.gc();
-                    }catch (Exception e) {
-                        DbLog.error(BusinessModuleEnum.JMCOMIC,
-                                "下载章节异常 Album:{}\nChapter:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
-                        return BaseResp.fail(StrFormatter.format("下载章节异常：{} \n{}",series.getTitle(),e.getMessage()));
-                    }
+                }catch (Exception e) {
+                    DbLog.error(BusinessModuleEnum.JMCOMIC,
+                            "下载章节异常 Album:{}\nChapter:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
+                    return BaseResp.fail(StrFormatter.format("下载章节异常：{} \n{}",series.getTitle(),e.getMessage()));
                 }
             }
-            String chapterPath = this.getChapterPath(albumPath, album.getSeries().getFirst());
-            File chapterPathFile = new File(chapterPath);
-            File[] files = null;
-            if(!chapterPathFile.exists()
-                    || (files = chapterPathFile.listFiles(File::isFile)) == null
-                    || files.length == 0) {
-                return BaseResp.fail("【JM"+aid+"】下载失败");
-            }
-            return BaseResp.success(album.getAlbumFolderName());
+        }
+        String chapterPath = this.getChapterPath(albumPath, album.getSeries().getFirst());
+        File chapterPathFile = new File(chapterPath);
+        File[] files = null;
+        if(!chapterPathFile.exists()
+                || (files = chapterPathFile.listFiles(File::isFile)) == null
+                || files.length == 0) {
+            return BaseResp.fail("【JM"+aid+"】下载失败");
+        }
+        return BaseResp.success(album.getAlbumFolderName());
     }
 
 
@@ -880,6 +921,10 @@ public class JmcomicService {
         return Long.parseLong(value);
     }
 
+    public static String buildCoverUrl(Long jmId) {
+        // https://cdn-msp3.18comic.vip/media/albums/{jmId}.jpg
+        return "https://" + COVER_DOMAIN + "/media/albums/"+ jmId +".jpg";
+    }
 
     public static String buildImgUrl(Long chapterId,String filename) {
         return "https://" + IMAGE_DOMAIN + "/media/photos/"+ chapterId +"/"+ filename;

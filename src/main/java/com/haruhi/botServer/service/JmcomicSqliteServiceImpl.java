@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -245,10 +246,12 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     }
 
     private void deleteAllImages(File jmcomicDirFile){
+        // 获取jm目录下所有的漫画文件夹
         File[] directoryList = FileUtil.getDirectoryList(jmcomicDirFile);
         if (directoryList == null) {
             return;
         }
+        // zip和pdf在漫画文件夹外部 所以不会误删
         for (File file : directoryList) {
             cn.hutool.core.io.FileUtil.del(file);
         }
@@ -463,9 +466,15 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (!albumDir.exists() || !albumDir.isDirectory()) {
             return 0L;
         }
-        return FileUtil.getAllFiles(albumDir.getAbsolutePath()).stream()
-                .filter(file -> IMAGE_EXTENSIONS.contains(StringUtils.defaultString(FileUtil.getFileExtension(file.getName()))))
-                .count();
+        File[] directoryList = FileUtil.getDirectoryList(albumDir);//获取下面的文件夹（章节目录）
+        long count = 0;
+        for (File cdir : directoryList) {
+            // 累加章节里面的图片数
+            count += Stream.of(FileUtil.getFileList(cdir))
+                    .filter(file -> IMAGE_EXTENSIONS.contains(StringUtils.defaultString(FileUtil.getFileExtension(file.getName()))))
+                    .count();
+        }
+        return count;
     }
 
     private void deleteDirectoryQuietly(File directory) {
