@@ -1,5 +1,6 @@
 package com.haruhi.botServer.thread;
 
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.event.MetaEventEnum;
 import com.haruhi.botServer.constant.event.PostTypeEnum;
 import com.haruhi.botServer.constant.event.SubTypeEnum;
@@ -8,6 +9,7 @@ import com.haruhi.botServer.dispenser.NoticeDispenser;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.service.FriendSqliteService;
 import com.haruhi.botServer.service.GroupInfoSqliteService;
+import com.haruhi.botServer.utils.DbLog;
 import com.haruhi.botServer.utils.ThreadPoolUtil;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +52,7 @@ public class MessageProcessor{
                     log.info("未知PostType: {}", message.getPostType());
                 }
             }catch (Exception e){
-                log.error("处理消息时异常",e);
+                DbLog.error(BusinessModuleEnum.BOT_WS,"处理消息时异常",e);
             }
         });
     }

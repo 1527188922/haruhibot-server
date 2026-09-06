@@ -1,7 +1,9 @@
 package com.haruhi.botServer.thread;
 
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.SystemService;
+import com.haruhi.botServer.utils.DbLog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -27,7 +29,7 @@ public class FirstTask implements CommandLineRunner {
             // 创建stop脚本
             systemService.writeStopScript();
         }catch (Exception e){
-            log.error("初始任务执行异常",e);
+            DbLog.error(BusinessModuleEnum.SYSTEM,"初始任务执行异常",e);
         }
     }
 

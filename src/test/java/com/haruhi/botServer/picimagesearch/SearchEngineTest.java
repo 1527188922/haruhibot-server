@@ -21,9 +21,27 @@ public class SearchEngineTest {
 
     @Test
     public void ascii2DTest() {
+        try {
+            SearchInput searchInput = SearchInput.byUrl("https://p3-passport.byteacctimg.com/img/user-avatar/05292526f2b3bd07a2151d119ba41ed8~300x300.image");
+        SearchResponse search = picImageSearchFactory.ascii2D().search(searchInput);
+//        SearchResponse search = picImageSearchFactory.ascii2D().search(SearchInput.byFile(new File("D:\\temp\\pic\\2S8sRGmW9L6.png")));
+            System.out.println(search);
+        }catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
 
-        SearchResponse response = picImageSearchFactory.ascii2D().search(SearchInput.byUrl("https://p3-passport.byteacctimg.com/img/user-avatar/05292526f2b3bd07a2151d119ba41ed8~300x300.image"));
-//        SearchResponse response = picImageSearchFactory.ascii2D().search(SearchInput.byFile(new File("D:\\temp\\pic\\2S8sRGmW9L6.png")));
-        System.out.println(response);
+    @Test
+    public void baiduTest() {
+        try {
+            SearchInput searchInput = SearchInput.byUrl("https://p3-passport.byteacctimg.com/img/user-avatar/05292526f2b3bd07a2151d119ba41ed8~300x300.image");
+            SearchResponse search = picImageSearchFactory.baidu().search(searchInput);
+            System.out.println(search);
+        }catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+
     }
 }

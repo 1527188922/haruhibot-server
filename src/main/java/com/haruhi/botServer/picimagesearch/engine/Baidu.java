@@ -3,12 +3,15 @@ package com.haruhi.botServer.picimagesearch.engine;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.picimagesearch.*;
+import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.utils.FileUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,41 +30,46 @@ public class Baidu extends AbstractSearchEngine {
         @Override
         public SearchResponse search(SearchInput input) {
             Map<String, Object> files;
+            File file = new File(FileUtil.getAppTempDir() + File.separator + CommonUtil.uuid() + ".jpg");
             if (input.hasUrl()) {
-                files = Map.of("image", download(input.url().orElseThrow()));
+                files = Map.of("image", downloadFile(input.url().orElseThrow(), file));
             } else if (input.hasFile()) {
                 files = Map.of("image", input.file().orElseThrow());
             } else {
                 throw new IllegalArgumentException("Either url or file must be provided");
             }
-            HttpData upload = postForm("upload", null, Map.of("from", "pc"), files);
-            JSONObject uploadJson = PicImageSearchUtil.parseJson(upload.body());
-            String dataUrl = PicImageSearchUtil.stringAt(uploadJson, "data.url");
-            if (StringUtils.isBlank(dataUrl)) {
-                return new SearchResponse(type(), upload.url(), uploadJson, upload.statusCode());
-            }
-            HttpData page = get(dataUrl, null);
-            List<Object> cardData = extractBaiduCardData(page.body());
-            JSONObject sameData = null;
-            for (Object obj : cardData) {
-                JSONObject card = (JSONObject) obj;
-                if ("noresult".equals(card.getString("cardName"))) {
-                    return new SearchResponse(type(), dataUrl, cardData, page.statusCode());
+            try {
+                HttpData upload = postForm("upload", null, Map.of("from", "pc"), files);
+                JSONObject uploadJson = PicImageSearchUtil.parseJson(upload.body());
+                String dataUrl = PicImageSearchUtil.stringAt(uploadJson, "data.url");
+                if (StringUtils.isBlank(dataUrl)) {
+                    return new SearchResponse(type(), upload.url(), uploadJson, upload.statusCode());
                 }
-                if ("same".equals(card.getString("cardName"))) {
-                    sameData = card.getJSONObject("tplData");
-                }
-                if ("simipic".equals(card.getString("cardName"))) {
-                    String nextUrl = PicImageSearchUtil.stringAt(card, "tplData.firstUrl");
-                    HttpData next = get(nextUrl, null);
-                    JSONObject json = PicImageSearchUtil.parseJson(next.body());
-                    if (sameData != null) {
-                        json.put("same", sameData);
+                HttpData page = get(dataUrl, null);
+                List<Object> cardData = extractBaiduCardData(page.body());
+                JSONObject sameData = null;
+                for (Object obj : cardData) {
+                    JSONObject card = (JSONObject) obj;
+                    if ("noresult".equals(card.getString("cardName"))) {
+                        return new SearchResponse(type(), dataUrl, cardData, page.statusCode());
                     }
-                    return parseBaidu(json, dataUrl, next.statusCode());
+                    if ("same".equals(card.getString("cardName"))) {
+                        sameData = card.getJSONObject("tplData");
+                    }
+                    if ("simipic".equals(card.getString("cardName"))) {
+                        String nextUrl = PicImageSearchUtil.stringAt(card, "tplData.firstUrl");
+                        HttpData next = get(nextUrl, null);
+                        JSONObject json = PicImageSearchUtil.parseJson(next.body());
+                        if (sameData != null) {
+                            json.put("same", sameData);
+                        }
+                        return parseBaidu(json, dataUrl, next.statusCode());
+                    }
                 }
+                return new SearchResponse(type(), dataUrl, cardData, page.statusCode());
+            }finally {
+                file.delete();
             }
-            return new SearchResponse(type(), dataUrl, cardData, page.statusCode());
         }
 
         private SearchResponse parseBaidu(JSONObject json, String url, int statusCode) {

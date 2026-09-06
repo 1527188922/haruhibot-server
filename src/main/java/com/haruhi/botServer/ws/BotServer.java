@@ -49,7 +49,7 @@ public class BotServer extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(final WebSocketSession session, final TextMessage message) throws Exception {
         final String s = message.getPayload();
-        log.debug("[ws server]收到消息 {}",s);
+        DbLog.debug(BusinessModuleEnum.BOT_WS,"[ws server]收到消息 {}",s);
         try {
             Bot bot = BotContainer.getBotBySession(session);
 
