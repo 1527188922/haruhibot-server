@@ -88,7 +88,7 @@ public class FileUtil {
      * @return
      */
     public static File[] getDirectoryList(File dir){
-        if(dir == null || !dir.exists()){
+        if(dir == null || !dir.exists() || !dir.isDirectory()){
             return null;
         }
         return dir.listFiles(File::isDirectory);
@@ -130,6 +130,13 @@ public class FileUtil {
             return null;
         }
         return file.listFiles(File::isFile);
+    }
+
+    public static File[] getFileList(File dirFile, String suffix){
+        if(dirFile == null || !dirFile.exists() || !dirFile.isDirectory()){
+            return null;
+        }
+        return dirFile.listFiles(f -> f.isFile() && cn.hutool.core.io.FileUtil.pathEndsWith(f, suffix));
     }
 
     /**
@@ -299,6 +306,10 @@ public class FileUtil {
         return getAppDir() + File.separator + DIR_IMAGE;
     }
 
+    /**
+     * /haruhibotServer/jmcomic
+     * @return
+     */
     public static String getJmcomicDir(){
         return getAppDir() + File.separator + DIR_JMCOMIC;
     }

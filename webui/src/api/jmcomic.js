@@ -36,6 +36,13 @@ export const deleteAlbums = (data) => request({
   data
 });
 
+export const deleteAllFile = (data) => request({
+  url: baseUrl + '/jmcomic/manage/album/deleteAllFile',
+  method: 'post',
+  timeout:60 * 1000,
+  data
+});
+
 export const searchChapterImages = (data) => request({
   url: baseUrl + '/jmcomic/manage/chapter-image/search',
   method: 'post',

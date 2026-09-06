@@ -2,7 +2,6 @@ package com.haruhi.botServer.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.Album;
@@ -20,10 +19,8 @@ import com.haruhi.botServer.vo.JmChapterImageResp;
 import com.haruhi.botServer.vo.JmChapterInfoResp;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.List;
 
 @Slf4j
@@ -135,6 +131,12 @@ public class JmcomicController {
         jmcomicSqliteService.deleteAlbums(request);
         return HttpResp.success("删除完成", null);
     }
+    @PostMapping("/manage/album/deleteAllFile")
+    public HttpResp deleteAllFile(@RequestBody JmAlbumDeleteReq request) {
+        jmcomicSqliteService.deleteAllFile(request);
+        return HttpResp.success("删除完成", null);
+    }
+
 
     @PostMapping("/manage/chapter-image/search")
     public HttpResp<IPage<JmChapterImageManageResp>> searchChapterImages(@RequestBody JmChapterImageQueryReq request) {

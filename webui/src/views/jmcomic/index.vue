@@ -48,7 +48,8 @@
     <basic-container v-if="activeTab === 'album'">
       <div class="data-table-option-buts">
         <el-button type="primary" size="small" plain icon="el-icon-plus" :loading="albumRequestLoading" @click="addAlbum">新增</el-button>
-        <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="albumDeleteDisabled" @click="openAlbumDelete">删除</el-button>
+        <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="albumDeleteDisabled" @click="openAlbumDelete">批量删除</el-button>
+        <el-button type="danger" size="small" plain icon="el-icon-delete" @click="openAllFileDelete">删除全部</el-button>
         <el-dropdown trigger="click" :hide-on-click="false">
           <el-button type="primary" size="small" plain icon="el-icon-setting">列设置</el-button>
           <el-dropdown-menu slot="dropdown" class="jm-column-dropdown">
@@ -278,6 +279,18 @@
         <el-button type="danger" size="small" :loading="chapterDeleteLoading" @click="deleteChapterData">确定</el-button>
       </span>
     </el-dialog>
+    <el-dialog title="删除所有文件" :visible.sync="deleteAllFileDialogVisible" width="420px"
+               @closed="deleteAllFileDialogClosed">
+      <div class="delete-tip">确认删除所有文件？</div>
+      <el-checkbox v-model="deleteAllFileOptions.deletePdf">删除PDF文件</el-checkbox>
+      <el-checkbox v-model="deleteAllFileOptions.deleteZip">删除ZIP文件</el-checkbox>
+      <el-checkbox v-model="deleteAllFileOptions.deleteImages">删除图片文件</el-checkbox>
+      <span slot="footer">
+        <el-button size="small" @click="deleteAllFileDialogVisible = false">取消</el-button>
+        <el-button type="danger" size="small" :loading="allFileDeleteLoading" :disabled="allFileDeleteDisabled" @click="submitDeleteAllFile">确定</el-button>
+      </span>
+    </el-dialog>
+
 
     <jm-preview-drawer :visible.sync="previewDrawerVisible" :album="previewAlbum" />
   </div>
@@ -288,6 +301,7 @@ import JmPreviewDrawer from "./jm-preview-drawer.vue";
 import numberInput from "@/components/input/numberInput.vue";
 import {
   deleteAlbums,
+  deleteAllFile,
   deleteChapterImages,
   downloadAlbum,
   generateAlbumPdf,
@@ -310,8 +324,10 @@ export default {
       chapterRequestLoading: false,
       albumDeleteLoading: false,
       chapterDeleteLoading: false,
+      allFileDeleteLoading: false,
       albumDeleteDialogVisible: false,
       chapterDeleteDialogVisible: false,
+      deleteAllFileDialogVisible: false,
       previewDrawerVisible: false,
       previewAlbum: null,
       albumQuery: { id: '', name: '', author: '', tags: '' },
@@ -347,6 +363,7 @@ export default {
       ],
       albumDeleteOptions: this.defAlbumDeleteOptions(),
       chapterDeleteOptions: this.defChapterDeleteOptions(),
+      deleteAllFileOptions: this.defDeleteAllFileOptions(),
       albumPagination: {
         currentPage: 1,
         pageSizes: [5, 10, 30, 50, 100, 500],
@@ -371,6 +388,9 @@ export default {
     },
     chapterDeleteDisabled() {
       return !this.chapterSelection || this.chapterSelection.length === 0
+    },
+    allFileDeleteDisabled(){
+      return !this.deleteAllFileOptions.deletePdf && !this.deleteAllFileOptions.deleteZip && !this.deleteAllFileOptions.deleteImages
     }
   },
   mounted() {
@@ -676,6 +696,9 @@ export default {
       }
       this.albumDeleteDialogVisible = true
     },
+    openAllFileDelete(){
+      this.deleteAllFileDialogVisible = true
+    },
     openChapterDelete() {
       if (this.chapterDeleteDisabled) {
         return
@@ -688,11 +711,17 @@ export default {
     defAlbumDeleteOptions(){
       return { deleteData: false,deletePdf: true, deleteZip: true, deleteImages: false }
     },
+    defDeleteAllFileOptions(){
+      return { deletePdf: true, deleteZip: false, deleteImages: false }
+    },
     deleteAlbumDialogClosed(){
       this.albumDeleteOptions = this.defAlbumDeleteOptions()
     },
     deleteChapterDialogClosed(){
       this.chapterDeleteOptions = this.defChapterDeleteOptions()
+    },
+    deleteAllFileDialogClosed(){
+      this.deleteAllFileOptions = this.defDeleteAllFileOptions()
     },
     deleteAlbumData() {
       this.albumDeleteLoading = true
@@ -710,6 +739,21 @@ export default {
         this.handleRequestError(error)
       }).finally(() => {
         this.albumDeleteLoading = false
+      })
+    },
+    submitDeleteAllFile(){
+      this.allFileDeleteLoading = true
+      deleteAllFile(this.deleteAllFileOptions).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message)
+        }
+        this.deleteAllFileDialogVisible = false
+        this.$message.success(message)
+        this.searchChaptersFirst()
+      }).catch(error => {
+
+      }).finally(() => {
+        this.allFileDeleteLoading = false
       })
     },
     deleteChapterData() {

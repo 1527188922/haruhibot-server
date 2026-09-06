@@ -12,6 +12,7 @@ import com.haruhi.botServer.dto.jmcomic.Chapter;
 import com.haruhi.botServer.dto.jmcomic.Series;
 import com.haruhi.botServer.entity.JmAlbumSqlite;
 import com.haruhi.botServer.entity.JmChapterImageSqlite;
+import com.haruhi.botServer.exception.BusinessException;
 import com.haruhi.botServer.mapper.JmAlbumSqliteMapper;
 import com.haruhi.botServer.mapper.JmChapterImageSqliteMapper;
 import com.haruhi.botServer.utils.DateTimeUtil;
@@ -213,6 +214,53 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
             jmChapterImageSqliteMapper.delete(new LambdaQueryWrapper<JmChapterImageSqlite>()
                     .in(JmChapterImageSqlite::getAlbumId, request.getIds()));
             jmAlbumSqliteMapper.deleteByIds(request.getIds());
+        }
+    }
+
+    /**
+     * 删除所有文件
+     * @param request
+     */
+    @Override
+    public void deleteAllFile(JmAlbumDeleteReq request) {
+        if (request == null) {
+            return;
+        }
+        File jmcomicDirFile = new File(FileUtil.getJmcomicDir());
+        if (!jmcomicDirFile.exists()) {
+            throw new BusinessException("JM目录不存在");
+        }
+        if (!jmcomicDirFile.isDirectory()) {
+            throw new BusinessException("JM目录不是文件夹");
+        }
+        if (Boolean.TRUE.equals(request.getDeleteZip())) {
+            this.deleteAllFile(jmcomicDirFile, ".zip");
+        }
+        if (Boolean.TRUE.equals(request.getDeletePdf())) {
+            this.deleteAllFile(jmcomicDirFile, ".pdf");
+        }
+        if (Boolean.TRUE.equals(request.getDeleteImages())) {
+            this.deleteAllImages(jmcomicDirFile);
+        }
+    }
+
+    private void deleteAllImages(File jmcomicDirFile){
+        File[] directoryList = FileUtil.getDirectoryList(jmcomicDirFile);
+        if (directoryList == null) {
+            return;
+        }
+        for (File file : directoryList) {
+            cn.hutool.core.io.FileUtil.del(file);
+        }
+    }
+
+    private void deleteAllFile(File jmcomicDirFile, String suffix) {
+        File[] files = FileUtil.getFileList(jmcomicDirFile, suffix);
+        if (files == null) {
+            return;
+        }
+        for (File file : files) {
+            file.delete();
         }
     }
 

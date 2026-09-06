@@ -33,5 +33,7 @@ public interface JmcomicSqliteService {
 
     void deleteAlbums(JmAlbumDeleteReq request);
 
+    void deleteAllFile(JmAlbumDeleteReq request);
+
     void deleteChapterImages(JmChapterImageDeleteReq request);
 }
