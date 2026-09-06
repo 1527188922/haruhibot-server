@@ -35,8 +35,8 @@ public class DatabaseLogAppender extends UnsynchronizedAppenderBase<ILoggingEven
     private volatile boolean running;
     private Thread worker;
     private int queueSize = 5000;
-    private int maxMessageLength = 4000;
-    private int maxThrowableLength = 8000;
+    private int maxMessageLength = -1;
+    private int maxThrowableLength = -1;
     private boolean discardInfoWhenQueueFull = true;
 
     @Override
@@ -151,6 +151,12 @@ public class DatabaseLogAppender extends UnsynchronizedAppenderBase<ILoggingEven
     }
 
     private String limit(String text, int maxLength) {
+        if (maxLength < 0) {
+            return text;
+        }
+        if (maxLength == 0) {
+            return "";
+        }
         if (StringUtils.isBlank(text) || text.length() <= maxLength) {
             return text;
         }
