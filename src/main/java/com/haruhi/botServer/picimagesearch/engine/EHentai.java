@@ -1,12 +1,15 @@
 package com.haruhi.botServer.picimagesearch.engine;
 
 import com.haruhi.botServer.picimagesearch.*;
+import com.haruhi.botServer.utils.CommonUtil;
+import com.haruhi.botServer.utils.FileUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,15 +66,20 @@ public class EHentai extends AbstractSearchEngine {
                 form.put("fs_exp", "on");
             }
             Map<String, Object> files;
-            if (input.hasUrl()) {
-                files = Map.of("sfile", download(input.url().orElseThrow()));
-            } else if (input.hasFile()) {
-                files = Map.of("sfile", input.file().orElseThrow());
-            } else {
-                throw new IllegalArgumentException("Either url or file must be provided");
+            File file = new File(FileUtil.getAppTempDir() + File.separator + CommonUtil.uuid() + ".jpg");
+            try {
+                if (input.hasUrl()) {
+                    files = Map.of("sfile", downloadFile(input.url().orElseThrow(), file));
+                } else if (input.hasFile()) {
+                    files = Map.of("sfile", input.file().orElseThrow());
+                } else {
+                    throw new IllegalArgumentException("Either url or file must be provided");
+                }
+                HttpData http = postForm(isEx ? "upld/image_lookup.php" : "image_lookup.php", null, form, files);
+                return parseEHentai(http.body(), http.url(), http.statusCode());
+            }finally {
+                file.delete();
             }
-            HttpData http = postForm(isEx ? "upld/image_lookup.php" : "image_lookup.php", null, form, files);
-            return parseEHentai(http.body(), http.url(), http.statusCode());
         }
 
         private SearchResponse parseEHentai(String html, String url, int statusCode) {

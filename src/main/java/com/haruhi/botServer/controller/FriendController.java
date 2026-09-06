@@ -1,4 +1,4 @@
-package com.haruhi.botServer.controller.web;
+package com.haruhi.botServer.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;

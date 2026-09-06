@@ -1,4 +1,4 @@
-package com.haruhi.botServer.controller.web;
+package com.haruhi.botServer.controller;
 
 import cn.hutool.core.lang.mutable.MutablePair;
 import com.baomidou.mybatisplus.core.metadata.IPage;

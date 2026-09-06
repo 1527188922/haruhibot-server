@@ -69,6 +69,10 @@ public abstract class AbstractSearchEngine implements SearchEngine {
         return file;
     }
 
+    protected String buildUrl(String url, Map<String, ?> params) {
+        return HttpUtil.urlWithForm(url, PicImageSearchUtil.toObjectMap(params), StandardCharsets.UTF_8, false);
+    }
+
     private HttpData request(String method, String endpoint, Map<String, ?> params, Map<String, ?> form,
                              Map<String, ?> files, String body) {
         String url = buildUrl(endpoint);

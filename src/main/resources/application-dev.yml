@@ -2,7 +2,7 @@ server:
   port: 8090
 
 bot:
-  internet-host:
+  internet-host: 127.0.0.1
   same-machine-qqclient: true
 
 job:

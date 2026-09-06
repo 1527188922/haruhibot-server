@@ -13,7 +13,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public HttpResp handleAllUncaughtException(Exception e) {
-        log.error("全局异常："+e.getMessage(), e);
+        log.error("全局异常：{}", e.getMessage());
         return HttpResp.fail(HttpResp.SERVER_ERROR, e.getMessage(), null);
     }
 
@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public HttpResp handleBusinessException(BusinessException e) {
-        log.error("全局业务异常："+e.getMessage(), e);
+        log.error("全局业务异常：{}", e.getMessage());
         return HttpResp.fail(e.getErrorCode(), e.getErrorMsg(), null);
     }
 

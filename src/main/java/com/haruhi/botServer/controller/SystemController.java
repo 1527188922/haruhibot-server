@@ -1,4 +1,4 @@
-package com.haruhi.botServer.controller.web;
+package com.haruhi.botServer.controller;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.io.LineHandler;

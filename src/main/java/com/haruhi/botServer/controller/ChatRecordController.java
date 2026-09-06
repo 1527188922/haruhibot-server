@@ -1,4 +1,4 @@
-package com.haruhi.botServer.controller.web;
+package com.haruhi.botServer.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageInfo;
