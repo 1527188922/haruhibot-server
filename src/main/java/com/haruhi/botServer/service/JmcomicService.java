@@ -506,7 +506,7 @@ public class JmcomicService {
             }
             DbLog.error(BusinessModuleEnum.JMCOMIC, "下载jm封面异常 imgUrl:{} error:{}",imgUrl,e.getMessage(),e);
             // 切换域名重试
-            downloadCoverImage(jmId, albumPath, IMAGE_DOMAIN, maxAttempt);
+            downloadCoverImage(jmId, albumPath, COVER_DOMAIN, maxAttempt);
         }
         return file;
     }
@@ -933,7 +933,7 @@ public class JmcomicService {
 
     public static String buildCoverUrl(Long jmId) {
         // https://cdn-msp3.18comic.vip/media/albums/{jmId}.jpg
-        return "https://" + COVER_DOMAIN + "/media/albums/"+ jmId +".jpg";
+        return "https://" + IMAGE_DOMAIN + "/media/albums/"+ jmId +".jpg";
     }
 
     public static String buildCoverUrl(Long jmId, String domain) {
