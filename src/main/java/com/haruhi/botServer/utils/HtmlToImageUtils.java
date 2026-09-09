@@ -91,7 +91,7 @@ public class HtmlToImageUtils {
      * @param fullPage true：滚动截整个网站长图
      * @param size [width height] height=0表示
      */
-    public static void urlToImage(String url, String saveFilePath, boolean fullPage, int[] size,long networkTimeout) {
+    public static void urlToImage(String url, String saveFilePath, boolean fullPage, boolean scroll, int[] size,long networkTimeout) {
         try (Playwright playwright = Playwright.create();
              Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true))) {
             Page page = browser.newPage();
@@ -103,7 +103,7 @@ public class HtmlToImageUtils {
                     .setWaitUntil(WaitUntilState.LOAD)
                     .setTimeout(networkTimeout));
 
-            if (fullPage) {
+            if (scroll) {
                 int lastHeight = 0;
                 for (int i = 0; i < 20; i++) {
                     page.evaluate("window.scrollBy(0, window.innerHeight)");
@@ -134,15 +134,16 @@ public class HtmlToImageUtils {
 
             page.screenshot(new Page.ScreenshotOptions()
                     .setPath(Paths.get(saveFilePath))
-                    .setFullPage(true));
+                    .setFullPage(fullPage));
         }
     }
 
     public static void main(String[] args) throws Exception {
         urlToImage("https://intro.limestart.cn/",
                 "D:\\temp\\ttt.png",
+                true,
                 false,
-                new int[]{1000, 2000},
+                new int[]{1920, 1080},
                 Duration.ofMinutes(3).toMillis());
 
 //        String s = FileUtil.readString(new File(
