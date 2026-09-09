@@ -314,7 +314,7 @@ public class JmcomicHandler implements IAllMessageHandler {
             item.put("id", htmlEscape(e.getId()));
             item.put("name", htmlEscape(e.getName()));
             item.put("author", htmlEscape(e.getAuthor()));
-            item.put("image", htmlEscape(JmcomicService.buildCoverUrl(Long.parseLong(e.getId()))));
+            item.put("image", htmlEscape(JmcomicService.buildCoverUrl(Long.parseLong(e.getId()), null)));
             item.put("category", htmlEscape(Stream.of((e.getCategory() != null ? e.getCategory().getTitle() : null), (e.getCategorySub() != null ? e.getCategorySub().getTitle() : null))
                     .filter(StringUtils::isNotBlank).distinct().collect(Collectors.joining("/"))));
             item.put("updateAt", Objects.nonNull(e.getUpdateAt())

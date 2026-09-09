@@ -2,6 +2,7 @@ package com.haruhi.botServer.service;
 
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.text.StrFormatter;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -64,8 +65,8 @@ public class JmcomicService {
     private static final String APP_TOKEN_SECRET_2 = "18comicAPPContent";
     private static final String APP_DATA_SECRET = "185Hcomic3PAPP7R";
     private static final String APP_VERSION = "2.0.13";
-    private static final String IMAGE_DOMAIN = "cdn-msp2.jmapiproxy2.cc";
-    private static final String COVER_DOMAIN = "cdn-msp3.18comic.vip";
+    public static final String IMAGE_DOMAIN = "cdn-msp2.jmapiproxy2.cc";
+    public static final String COVER_DOMAIN = "cdn-msp3.18comic.vip";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
     public static final String JM_DEFAULT_PASSWORD = "1234";
@@ -476,9 +477,8 @@ public class JmcomicService {
             // 封面图文件已经存在
             return file;
         }
-        boolean b = domain != null;
         cn.hutool.core.io.FileUtil.del(file);
-        String imgUrl = b ? buildCoverUrl(jmId, domain) : buildCoverUrl(jmId);
+        String imgUrl = buildCoverUrl(jmId, domain);
         try {
             boolean result = RetryUtil.retry(maxAttempt, 100, false,
                     //属于这几个异常表示需要重试
@@ -499,7 +499,7 @@ public class JmcomicService {
                     }
             );
         } catch (Exception e) {
-            if (b) {
+            if (StringUtils.isNotBlank(domain)) {
                 // 指定了域名下载失败 则不再重试 直接返回
                 DbLog.error(BusinessModuleEnum.JMCOMIC, "下载jm封面异常(指定了域名) imgUrl:{} error:{}",imgUrl,e.getMessage(),e);
                 return file;
@@ -931,14 +931,8 @@ public class JmcomicService {
         return Long.parseLong(value);
     }
 
-    public static String buildCoverUrl(Long jmId) {
-        // https://cdn-msp3.18comic.vip/media/albums/{jmId}.jpg
-        return "https://" + IMAGE_DOMAIN + "/media/albums/"+ jmId +".jpg";
-    }
-
     public static String buildCoverUrl(Long jmId, String domain) {
-        // https://cdn-msp3.18comic.vip/media/albums/{jmId}.jpg
-        return "https://" + domain + "/media/albums/"+ jmId +".jpg";
+        return "https://" + StrUtil.blankToDefault(domain, IMAGE_DOMAIN) + "/media/albums/"+ jmId +".jpg";
     }
     public static String buildImgUrl(Long chapterId,String filename) {
         return "https://" + IMAGE_DOMAIN + "/media/photos/"+ chapterId +"/"+ filename;
