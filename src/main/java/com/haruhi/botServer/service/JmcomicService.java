@@ -463,10 +463,12 @@ public class JmcomicService {
     /**
      * 下载jm封面
      * @param jmId
-     * @param albumPath 漫画主文件夹路径
+     * @param albumPath
+     * @param domain 域名=null的时候，默认使用第一个域名，若败会切换第二个域名再次重试，每个域名的重试次数=maxAttempt；指定域名则不会切换域名重试
+     * @param maxAttempt 重试次数
      * @return
      */
-    private File downloadCoverImage(Long jmId, String albumPath){
+    private File downloadCoverImage(Long jmId, String albumPath, String domain, int maxAttempt){
         String suffix = ".jpg";
         File file = new File(albumPath + File.separator + jmId + suffix);
         if (file.exists() && file.isFile() && file.length() > 0
@@ -474,13 +476,14 @@ public class JmcomicService {
             // 封面图文件已经存在
             return file;
         }
-
+        boolean b = domain != null;
         cn.hutool.core.io.FileUtil.del(file);
-        String imgUrl = buildCoverUrl(jmId);
+        String imgUrl = b ? buildCoverUrl(jmId, domain) : buildCoverUrl(jmId);
         try {
-            boolean result = RetryUtil.retry(4, 100, false,
+            boolean result = RetryUtil.retry(maxAttempt, 100, false,
+                    //属于这几个异常表示需要重试
                     e -> (e instanceof HttpException) && (e.getCause() instanceof SocketTimeoutException),
-                    b -> !b,
+                    _result -> !_result,
                     () -> {
                         HttpRequest httpRequest = HttpRequest.get(imgUrl)
                                 .header("User-Agent", USER_AGENT)
@@ -496,7 +499,14 @@ public class JmcomicService {
                     }
             );
         } catch (Exception e) {
-            DbLog.error(BusinessModuleEnum.JMCOMIC, "下载jm封面异常 imgUrl:{}",imgUrl,e);
+            if (b) {
+                // 指定了域名下载失败 则不再重试 直接返回
+                DbLog.error(BusinessModuleEnum.JMCOMIC, "下载jm封面异常(指定了域名) imgUrl:{} error:{}",imgUrl,e.getMessage(),e);
+                return file;
+            }
+            DbLog.error(BusinessModuleEnum.JMCOMIC, "下载jm封面异常 imgUrl:{} error:{}",imgUrl,e.getMessage(),e);
+            // 切换域名重试
+            downloadCoverImage(jmId, albumPath, IMAGE_DOMAIN, maxAttempt);
         }
         return file;
     }
@@ -514,7 +524,7 @@ public class JmcomicService {
         log.info("开始下载：jm{} 共{}话", aid, album.getSeries().size());
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()){
             executor.execute(() -> {
-                this.downloadCoverImage(album.getId(), albumPath);
+                this.downloadCoverImage(album.getId(), albumPath, null, 4);
             });
             for (Series series : album.getSeries()) {
                 series.setTitle("第" + series.getSort() +"话");
@@ -926,6 +936,10 @@ public class JmcomicService {
         return "https://" + COVER_DOMAIN + "/media/albums/"+ jmId +".jpg";
     }
 
+    public static String buildCoverUrl(Long jmId, String domain) {
+        // https://cdn-msp3.18comic.vip/media/albums/{jmId}.jpg
+        return "https://" + domain + "/media/albums/"+ jmId +".jpg";
+    }
     public static String buildImgUrl(Long chapterId,String filename) {
         return "https://" + IMAGE_DOMAIN + "/media/photos/"+ chapterId +"/"+ filename;
     }

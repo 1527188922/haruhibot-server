@@ -29,6 +29,7 @@ public enum DictionaryEnum{
     JM_ALBUM_NAME_MAX_LENGTH(true,"jm.album.name_max_length","215","jm本子名称最大长度(注意是名称的bytes.length而非名称字符个数！)，由于使用本子名做为下载后的本子文件名，文件名有长度限制，linux系统文件名称最长支持255，注意：这里配置要小于255，预留出文件名称后面拼接的jm号"),
     JM_API_DOMAIN(true,"jm.api_domain",JmcomicService.DEFAULT_API_DOMAIN,"JM API域名"),
     JM_SEARCH_RESULT_IMAGE_MODE(true,"jm.search_result.image_mode","false","JM搜索结果是否以HTML转图片方式发送，true:图片发送，false:合并消息发送"),
+    JM_SEARCH_RESULT_LIMIT(true,"jm.search_result.limit","12","JM搜索结果返回条数上限，图片和合并消息共用；未配置、无效或小于等于0时使用12条"),
 
     BOT_ACCESS_TOKEN(true,"bot.access_token",null,"机器人Websocket服务，建立连接握手时认证token，未配置表示无需认证"),
     BOT_SUPERUSERS(true,"bot.superusers","1527188922","机器人超级管理员qq号，多个qq号逗号分割,注意：未配置超级用户则一些超级用户功能不可使用"),

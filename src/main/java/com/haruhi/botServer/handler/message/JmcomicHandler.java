@@ -231,8 +231,15 @@ public class JmcomicHandler implements IAllMessageHandler {
         sendSearchResultForward(bot, message, searchResp);
     }
 
+    private List<SearchResp.ContentItem> limitSearchResultItems(List<SearchResp.ContentItem> content) {
+        DictionaryEnum limitConfig = DictionaryEnum.JM_SEARCH_RESULT_LIMIT;
+        int defaultLimit = Integer.parseInt(limitConfig.getDefaultValue());
+        int limit = dictionarySqliteService.getInt(limitConfig.getKey(), defaultLimit);
+        return CollUtil.sub(content, 0, limit > 0 ? limit : defaultLimit);
+    }
+
     private void sendSearchResultForward(Bot bot, Message message, SearchResp searchResp) {
-        List<SearchResp.ContentItem> content = searchResp.getContent();
+        List<SearchResp.ContentItem> content = limitSearchResultItems(searchResp.getContent());
         List<ForwardMsgItem> collect = new ArrayList<>();
         for (int i = 0; i < content.size(); i++) {
             SearchResp.ContentItem e = content.get(i);
@@ -279,15 +286,14 @@ public class JmcomicHandler implements IAllMessageHandler {
         params.put("query", htmlEscape(searchResp.getSearchQuery()));
         params.put("total", htmlEscape(searchResp.getTotal()));
         List<SearchResp.ContentItem> content = searchResp.getContent();
-        List<SearchResp.ContentItem> sub = CollUtil.sub(content, 0, 12);//取前12条结果生成图片
+        List<SearchResp.ContentItem> sub = limitSearchResultItems(content);
         params.put("items", buildSearchResultViewItems(sub));
 
         String html = HtmlToImageUtils.renderTemplate(template, params);
         String fileName = "jm-search-" + message.getSelfId() + "-" + CommonUtil.uuid() + ".png";
         String outputDir = FileUtil.mkdirs(FileUtil.getJmcomicDir() + File.separator + SEARCH_RESULT_IMAGE_DIR).getAbsolutePath();
         String outputPath = outputDir + File.separator + fileName;
-        int imageHeight = Math.max(700, 200 + sub.size() * 270);
-        HtmlToImageUtils.htmlToImage(html, outputPath, new int[]{1000, imageHeight});
+        HtmlToImageUtils.htmlToImage(html, outputPath, 1000);
 
         String imageUrl = BotConfig.SAME_MACHINE_QQCLIENT
                 ? "file://" + outputPath
