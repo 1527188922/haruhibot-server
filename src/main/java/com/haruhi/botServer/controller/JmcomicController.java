@@ -168,7 +168,7 @@ public class JmcomicController {
     }
 
     private HttpResp<String> toHttpResp(BaseResp<String> resp) {
-        if (!resp.isSuccess()) {
+        if (!resp.isSuccess() && !resp.isQueued()) {
             return HttpResp.fail(resp.getMsg(), resp.getData());
         }
         return HttpResp.success(resp.getMsg(), resp.getData());

@@ -96,6 +96,7 @@ public class JmcomicHandler implements IAllMessageHandler {
                     return;
                 }
                 isPdf = isPdf == null || isPdf;
+                boolean generatePdf = isPdf;
                 // 根据jm号下载本子
                 BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum(finalAid);
                 if (!albumBaseResp.isSuccess()) {
@@ -106,38 +107,22 @@ public class JmcomicHandler implements IAllMessageHandler {
                 Album album = albumBaseResp.getData();
                 sendAlbumInfo(bot, message, album);
 
-                BaseResp<File> resp = isPdf ? jmcomicService.downloadAlbumAsPdf(album) : jmcomicService.downloadAlbumAsZip(album);
-                if(!BaseResp.SUCCESS_CODE.equals(resp.getCode())){
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                            MessageHolder.instanceText(resp.getMsg()));
-                    return;
+                Consumer<BaseResp<File>> onDownloadResult = fileResp -> {
+                    if(!BaseResp.SUCCESS_CODE.equals(fileResp.getCode())){
+                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                                MessageHolder.instanceText(fileResp.getMsg()));
+                        return;
+                    }
+                    sendDownloadResult(bot, message, finalAid, generatePdf, fileResp.getData());
+                };
+
+                BaseResp<File> resp = generatePdf
+                        ? jmcomicService.downloadAlbumAsPdf(album, onDownloadResult)
+                        : jmcomicService.downloadAlbumAsZip(album, onDownloadResult);
+                if (resp.isQueued()) {
+//                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+//                            MessageHolder.instanceText(resp.getMsg()));
                 }
-
-                List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
-                ForwardMsgItem instance1 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
-//                        MessageHolder.instanceText(
-//                                MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...\n也可通过浏览器打开下方链接进行下载", finalAid)
-//                        )
-                        MessageHolder.instanceText(
-                                MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...", finalAid)
-                        )
-                );
-                forwardMsgs.add(instance1);
-
-                String fileUrl = isPdf ? webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/pdf/"+finalAid
-                        : webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/"+finalAid;
-//                ForwardMsgItem instance2 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(fileUrl));
-//                forwardMsgs.add(instance2);
-
-
-                ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
-                        MessageHolder.instanceText(
-                                isPdf ? "PDF保护密码："+jmcomicService.getPdfPassword() : "ZIP解压密码："+jmcomicService.getZipPassword())
-                        );
-                forwardMsgs.add(instance3);
-
-                bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
-                uploadFile(bot, message, resp.getData(),fileUrl,isPdf);
             } catch (Exception e) {
                 bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
                         MessageHolder.instanceText(MessageFormat.format("下载【JM{0}】异常"+e.getMessage(), finalAid)));
@@ -145,6 +130,28 @@ public class JmcomicHandler implements IAllMessageHandler {
             }
         });
         return true;
+    }
+
+    private void sendDownloadResult(Bot bot, Message message, String aid, boolean isPdf, File file) {
+        List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
+        ForwardMsgItem instance1 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
+                MessageHolder.instanceText(
+                        MessageFormat.format("【JM{0}】下载完成,正在上传QQ文件...", aid)
+                )
+        );
+        forwardMsgs.add(instance1);
+
+        String fileUrl = isPdf ? webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/pdf/"+aid
+                : webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/"+aid;
+
+        ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
+                MessageHolder.instanceText(
+                        isPdf ? "PDF保护密码："+jmcomicService.getPdfPassword() : "ZIP解压密码："+jmcomicService.getZipPassword())
+                );
+        forwardMsgs.add(instance3);
+
+        bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
+        uploadFile(bot, message, file, fileUrl, isPdf);
     }
 
     private void uploadFile(Bot bot,Message message,File file, String fileUrl, boolean isPdf){

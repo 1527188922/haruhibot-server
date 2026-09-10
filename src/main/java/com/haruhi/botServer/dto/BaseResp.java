@@ -12,6 +12,7 @@ public class BaseResp<T> {
     public static final String SUCCESS_CODE = "000";
     public static final String SUCCESS_MESSAGE = "成功";
     public static final String FAIL_CODE = "100";
+    public static final String QUEUED_CODE = "101";
 
     private String code;
     private String msg;
@@ -19,6 +20,10 @@ public class BaseResp<T> {
 
     public boolean isSuccess() {
         return SUCCESS_CODE.equals(code);
+    }
+
+    public boolean isQueued() {
+        return QUEUED_CODE.equals(code);
     }
 
     public static BaseResp fail(String msg){
@@ -35,6 +40,9 @@ public class BaseResp<T> {
     }
     public static <T> BaseResp<T> success(T data){
         return new BaseResp<T>(SUCCESS_CODE,null,data);
+    }
+    public static <T> BaseResp<T> queued(String msg){
+        return new BaseResp<T>(QUEUED_CODE,msg,null);
     }
 
 }

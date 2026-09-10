@@ -1,6 +1,5 @@
 package com.haruhi.botServer.service;
 
-import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpException;
@@ -52,6 +51,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -71,9 +71,13 @@ public class JmcomicService {
 
     public static final String JM_DEFAULT_PASSWORD = "1234";
 
-    private static final String GLOBAL_LOCK_KEY = "__JM_GLOBAL_LOCK__";
-    private static final ConcurrentHashSet<String> LOCK = new ConcurrentHashSet<>();
+    // Tracks both running and queued aids; all scheduling state is guarded by JmcomicService.class.
     private static final ConcurrentMap<String, String> LOCK_ACTION_MAP = new ConcurrentHashMap<>();
+    private static final ExecutorService SERIAL_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "jm-serial-queue");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     @Autowired
     private DictionarySqliteService dictionarySqliteService;
@@ -128,33 +132,58 @@ public class JmcomicService {
     }
 
     <T> BaseResp<T> executeWithJmLock(String aid, String actionName, JmOperation<T> operation) {
+        return executeWithJmLock(aid, actionName, operation, null);
+    }
+
+    <T> BaseResp<T> executeWithJmLock(String aid, String actionName, JmOperation<T> operation, Consumer<BaseResp<T>> onComplete) {
         boolean parallel = isJmOperationParallel();
-        String lockKey = parallel ? aid : GLOBAL_LOCK_KEY;
-        synchronized (JmcomicService.class){
-            if (parallel) {
-                if (LOCK.contains(GLOBAL_LOCK_KEY)) {
-                    return BaseResp.fail("已有JM漫画任务正在执行，请稍后再试");
-                }
-                if (LOCK.contains(lockKey)) {
-                    String runningAction = LOCK_ACTION_MAP.get(lockKey);
-                    return BaseResp.fail("【JM"+aid+"】正在执行"+StringUtils.defaultIfBlank(runningAction, "其他")+"任务，请稍后再试");
-                }
+        BaseResp<T> rejected = null;
+        synchronized (JmcomicService.class) {
+            if (LOCK_ACTION_MAP.containsKey(aid)) {
+                String runningAction = LOCK_ACTION_MAP.get(aid);
+                rejected = BaseResp.fail("此JM" + aid + "正在执行或排队等待"
+                        + StringUtils.defaultIfBlank(runningAction, "操作") + "，请勿重复提交");
             } else {
-                if (!LOCK.isEmpty()) {
-                    return BaseResp.fail("已有JM漫画任务正在执行，请稍后再试");
-                }
+                LOCK_ACTION_MAP.put(aid, actionName);
             }
-            LOCK.add(lockKey);
-            LOCK_ACTION_MAP.put(lockKey, actionName);
         }
+        if (rejected != null) {
+            notifyResult(onComplete, rejected);
+            return rejected;
+        }
+        if (parallel) {
+            BaseResp<T> result = doExecuteWithLock(aid, actionName, operation);
+            notifyResult(onComplete, result);
+            return result;
+        }
+        SERIAL_EXECUTOR.execute(() -> {
+            BaseResp<T> result = doExecuteWithLock(aid, actionName, operation);
+            notifyResult(onComplete, result);
+        });
+        return BaseResp.queued(StrFormatter.format("【{}】已加入队列，等待执行", actionName));
+    }
+
+    private <T> BaseResp<T> doExecuteWithLock(String aid, String actionName, JmOperation<T> operation) {
         try {
             return operation.execute();
         } catch (Exception e) {
             log.error("JM漫画操作异常 aid:{} action:{}", aid, actionName, e);
             return BaseResp.fail(actionName + "异常：" + e.getMessage());
         } finally {
-            LOCK_ACTION_MAP.remove(lockKey);
-            LOCK.remove(lockKey);
+            synchronized (JmcomicService.class) {
+                LOCK_ACTION_MAP.remove(aid);
+            }
+        }
+    }
+
+    private <T> void notifyResult(Consumer<BaseResp<T>> onComplete, BaseResp<T> result) {
+        if (onComplete == null) {
+            return;
+        }
+        try {
+            onComplete.accept(result);
+        } catch (Exception e) {
+            log.error("JM漫画操作完成回调异常", e);
         }
     }
 
@@ -213,13 +242,17 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<File> downloadAlbumAsZip(Album album) throws Exception {
+        return downloadAlbumAsZip(album, null);
+    }
+
+    public BaseResp<File> downloadAlbumAsZip(Album album, Consumer<BaseResp<File>> onComplete) throws Exception {
         return executeWithJmLock(String.valueOf(album.getId()), "生成zip", () -> {
             BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
             if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
                 return BaseResp.fail(baseResp.getMsg());
             }
             return generateLocalAlbumZipWithoutLock(album);
-        });
+        }, onComplete);
     }
 
     private BaseResp<File> generateLocalAlbumZipWithoutLock(Album album) throws Exception {
@@ -257,13 +290,17 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<File> downloadAlbumAsPdf(Album album) throws Exception {
+        return downloadAlbumAsPdf(album, null);
+    }
+
+    public BaseResp<File> downloadAlbumAsPdf(Album album, Consumer<BaseResp<File>> onComplete) throws Exception {
         return executeWithJmLock(String.valueOf(album.getId()), "生成pdf", () -> {
             BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
             if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
                 return BaseResp.fail(baseResp.getMsg());
             }
             return generateLocalAlbumPdfWithoutLock(album);
-        });
+        }, onComplete);
     }
 
     private BaseResp<File> generateLocalAlbumPdfWithoutLock(Album album) throws Exception {
