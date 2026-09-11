@@ -158,6 +158,86 @@ public class BilibiliService {
         }
     }
 
+    /**
+     * 单次请求最多查询的主播数量
+     */
+    public static final int LIVE_STATUS_UID_BATCH_SIZE = 100;
+
+    /**
+     * 根据uid批量获取直播间状态
+     * 该接口会被定时任务高频调用，日志只输出到文件，不写库
+     * @param uids b站主播uid
+     * @return key: uid  value: 直播间状态；全部请求都失败时返回空map，查询失败的批次对应的uid不会出现在返回结果中
+     */
+    public Map<Long, LiveStatusInfo> getLiveStatusInfoByUids(Collection<Long> uids){
+        if (CollectionUtils.isEmpty(uids)) {
+            return Collections.emptyMap();
+        }
+        List<Long> uidList = new ArrayList<>(uids);
+        Map<Long, LiveStatusInfo> result = new HashMap<>(uidList.size());
+        for (int i = 0; i < uidList.size(); i += LIVE_STATUS_UID_BATCH_SIZE) {
+            List<Long> batch = uidList.subList(i, Math.min(i + LIVE_STATUS_UID_BATCH_SIZE, uidList.size()));
+            Map<Long, LiveStatusInfo> batchResult = requestLiveStatus(batch);
+            if (batchResult != null) {
+                result.putAll(batchResult);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 请求一次直播状态接口
+     * @return 请求或响应异常返回null
+     */
+    private Map<Long, LiveStatusInfo> requestLiveStatus(List<Long> uids){
+        JSONObject body = new JSONObject();
+        body.put("uids", uids);
+
+        String url = ThirdPartyURL.BILIBILI_LIVE_STATUS;
+        HttpRequest httpRequest = HttpRequest.post(url)
+                .addHeaders(getLiveHeaders())
+                .contentType("application/json")
+                .body(body.toJSONString())
+                .timeout(10 * 1000);
+        try (HttpResponse response = httpRequest.execute()){
+            String respBody = response.body();
+            if (response.getStatus() != HttpStatus.HTTP_OK || StringUtils.isBlank(respBody)) {
+                DbLog.error(BusinessModuleEnum.BILIBILI,"请求b站直播状态接口失败 url:{} status:{} body:{}",url,response.getStatus(),respBody);
+                return null;
+            }
+            BilibiliBaseResp<Map<String, LiveStatusInfo>> resp = JSONObject.parseObject(respBody, new TypeReference<BilibiliBaseResp<Map<String, LiveStatusInfo>>>(){});
+            if (resp == null || !resp.isSuccess() || resp.getData() == null) {
+                log.error("b站直播状态接口响应异常 url:{} body:{}",url,respBody);
+                return null;
+            }
+            log.debug("b站直播状态接口响应 url:{} body:{}",url,respBody);
+            Map<Long, LiveStatusInfo> result = new HashMap<>(resp.getData().size());
+            for (Map.Entry<String, LiveStatusInfo> entry : resp.getData().entrySet()) {
+                try {
+                    result.put(Long.parseLong(entry.getKey()), entry.getValue());
+                }catch (NumberFormatException e){
+                    DbLog.error(BusinessModuleEnum.BILIBILI,"b站直播状态接口返回的uid不是数字 uid:{}",entry.getKey());
+                }
+            }
+            return result;
+        }catch (Exception e){
+            DbLog.error(BusinessModuleEnum.BILIBILI,"请求b站直播状态接口异常 url:{}",url,e);
+            return null;
+        }
+    }
+
+    /**
+     * 请求b站直播接口的请求头
+     */
+    private Map<String, String> getLiveHeaders(){
+        Map<String, String> headers = new HashMap<>(HEADERS);
+//        String cookie = dictionarySqliteService.getInCache(DictionaryEnum.BILIBILI_LIVE_COOKIE.getKey(), DictionaryEnum.BILIBILI_LIVE_COOKIE.getDefaultValue());
+//        if (StringUtils.isNotBlank(cookie)) {
+//            headers.put("Cookie", cookie);
+//        }
+        return headers;
+    }
+
     public String getCookie(){
         String sessdata = dictionarySqliteService.getInCache(DictionaryEnum.BILIBILI_COOKIES_SESSDATA.getKey(), null);
         String jct = dictionarySqliteService.getInCache(DictionaryEnum.BILIBILI_COOKIES_BILI_JCT.getKey(), null);

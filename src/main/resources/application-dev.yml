@@ -8,7 +8,10 @@ bot:
 job:
   downloadPixiv:
     cron: 0/15 * 0-7 * * ? *
-    enable: 1
+    enable: 0
+  bilibiliLive:
+    cron: 0/30 * * * * ?
+    enable: 0
 
 logging:
   level:

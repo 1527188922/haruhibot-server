@@ -12,6 +12,8 @@ public class ThirdPartyURL {
     public static String BILIBILI_URL = "https://www.bilibili.com/video";
     // b站 获取cid
     public static String PLAYER_CID = "https://api.bilibili.com/x/player/pagelist";
+    // b站 根据uid批量获取直播间状态
+    public static String BILIBILI_LIVE_STATUS = "https://api.live.bilibili.com/room/v1/Room/get_status_info_by_uids";
     // lolicon
     public static String LOLICON = "https://api.lolicon.app/setu/v2";
     // 预览磁力链接

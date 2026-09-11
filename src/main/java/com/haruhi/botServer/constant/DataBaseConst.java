@@ -38,6 +38,8 @@ public class DataBaseConst {
     public final static String T_GROUP_INFO = "t_group_info";
     public final static String T_FRIEND = "t_friend";
     public final static String T_SYSTEM_LOG = "t_system_log";
+    // 订阅推送表（如b站直播开播推送）
+    public final static String T_BILIBILI_SUBSCRIBE = "t_bilibili_subscribe";
 
     public final static String SQLITE_SYS_T_SQLITE_SCHEMA = "sqlite_schema";
     public final static String SQLITE_SYS_T_SQLITE_SEQUENCE = "sqlite_sequence";

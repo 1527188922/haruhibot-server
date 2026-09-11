@@ -81,4 +81,11 @@ public interface SqliteDatabaseInitMapper {
     int createFriend(@Param("tableName") String tableName);
 
     int createSystemLog(@Param("tableName") String tableName);
+
+    /**
+     * 订阅推送表
+     * @param tableName
+     * @return
+     */
+    int createBilibiliSubscribe(@Param("tableName") String tableName);
 }

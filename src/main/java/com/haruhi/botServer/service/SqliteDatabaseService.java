@@ -165,6 +165,12 @@ public class SqliteDatabaseService{
                 StrFormatter.format("{}_trace_idx",DataBaseConst.T_SYSTEM_LOG),
                 "trace_id",
                 false);
+
+        sqliteDatabaseInitMapper.createBilibiliSubscribe(DataBaseConst.T_BILIBILI_SUBSCRIBE);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_BILIBILI_SUBSCRIBE,
+                StrFormatter.format("{}_uid_update_time_idx",DataBaseConst.T_BILIBILI_SUBSCRIBE),
+                "uid,update_time",
+                false);
     }
 
     private static final ConcurrentHashMap<String,Boolean> tableExistsCache = new ConcurrentHashMap<>();
