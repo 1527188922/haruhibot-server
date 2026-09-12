@@ -102,7 +102,7 @@ public class BilibiliLiveSubscribeHandler extends AbstractBilibiliSubscribeHandl
             subscribe.setSubType(BilibiliSubscribeTypeEnum.LIVE.getType());
             subscribe.setSelfId(selfId);
             subscribe.setEnableStatus(BilibiliSubscribeSqlite.ENABLE_STATUS_ENABLE);
-            subscribe.setOffNotify(BilibiliSubscribeSqlite.OFF_NOTIFY_DISABLE);
+            subscribe.setOffNotify(BilibiliSubscribeSqlite.OFF_NOTIFY_ENABLE);
             if (Objects.nonNull(info)) {
                 subscribe.setUname(info.getUname());
                 subscribe.setFace(info.faceUrl());
