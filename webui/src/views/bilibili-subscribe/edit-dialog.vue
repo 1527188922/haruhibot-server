@@ -19,7 +19,7 @@
         </el-form-item>
         <el-form-item label="订阅类型" prop="subType">
           <el-select v-model="formData.subType" placeholder="请选择">
-            <el-option label="b站主播开播推送" value="live"></el-option>
+            <el-option label="直播开播推送" value="live"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="推送群号" prop="groupIds">

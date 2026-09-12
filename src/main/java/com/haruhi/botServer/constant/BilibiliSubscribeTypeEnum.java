@@ -14,7 +14,7 @@ public enum BilibiliSubscribeTypeEnum {
     /**
      * b站主播开播/下播推送
      */
-    LIVE("live", "b站主播开播推送"),
+    LIVE("live", "直播开播推送"),
     ;
 
     private final String type;
