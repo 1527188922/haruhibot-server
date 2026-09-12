@@ -22,12 +22,12 @@
         <div class="box-title">添加{{typeLabel}}</div>
         <el-select ref="picker" v-model="pendingIds" multiple filterable remote reserve-keyword
                    :remote-method="remoteSearch" :loading="searchLoading" size="small"
+                   popper-class="bili-target-select-popper"
                    placeholder="输入群号/群名或QQ号/昵称搜索" @change="pickerChange">
           <el-option v-for="o in options" :key="o.id" :label="optionLabel(o)" :value="o.id">
             <div class="option-item">
               <img v-if="o.avatarUrl" class="target-avatar" :src="o.avatarUrl" referrerpolicy="no-referrer">
-              <span class="option-name">{{ o.name || o.id }}</span>
-              <span class="option-code">{{ o.id }}</span>
+              <span class="option-name">{{ `${o.name || o.id}（${o.id}）` }}</span>
             </div>
           </el-option>
         </el-select>
@@ -264,20 +264,6 @@ export default {
   .target-code{
     color: #909399;
   }
-  .option-item{
-    display: flex;
-    align-items: center;
-    .option-name{
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .option-code{
-      color: #909399;
-      font-size: 12px;
-      margin-left: 8px;
-    }
-  }
   .empty-tip{
     font-size: 12px;
     color: #c0c4cc;
@@ -298,6 +284,39 @@ export default {
   }
   .el-select{
     width: 100%;
+  }
+}
+</style>
+<style lang="scss">
+/**
+ * el-select的下拉框默认append到body下(不在本组件dom树内)，scoped样式匹配不到，
+ * 所以这里不写scoped，用popper-class做命名空间
+ */
+.bili-target-select-popper{
+  .el-select-dropdown__item{
+    padding-right: 40px !important; // 给选中时的对勾留位置
+    padding-left: 10px !important;
+  }
+  .option-item{
+    display: flex;
+    align-items: center;
+  }
+  .target-avatar{
+    display: block;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .option-name{
+    padding: 0 !important;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    float: left;
   }
 }
 </style>

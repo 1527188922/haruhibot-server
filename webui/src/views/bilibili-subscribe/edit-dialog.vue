@@ -9,11 +9,11 @@
         <el-form-item label="机器人QQ" prop="selfId"
                       :rules="[{required: true, message:'请选择或输入机器人QQ号',trigger: 'change'}]">
           <el-select v-model="formData.selfId" class="full-width" filterable allow-create default-first-option
+                     popper-class="bili-bot-select-popper"
                      placeholder="选择当前已连接的机器人，或直接输入QQ号" @focus="loadBots">
             <el-option v-for="b in botList" :key="b.id" :label="botLabel(b)" :value="b.id">
-              <img v-if="b.avatarUrl" class="bot-avatar" :src="b.avatarUrl">
-              <span>{{b.name || b.id}}</span>
-              <span class="bot-id">{{b.id}}</span>
+              <img v-if="b.avatarUrl" class="bot-avatar" :src="b.avatarUrl" referrerpolicy="no-referrer">
+              <span class="bot-name">{{`${b.name || b.id}（${b.id}）`}}</span>
             </el-option>
           </el-select>
         </el-form-item>
@@ -173,23 +173,41 @@ export default {
   .full-width{
     width: 100%;
   }
-  .bot-avatar{
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    margin-right: 5px;
-    vertical-align: middle;
-  }
-  .bot-id{
-    color: #909399;
-    font-size: 12px;
-    margin-left: 8px;
-    float: right;
-  }
   .form-tip{
     font-size: 12px;
     color: #909399;
     line-height: 18px;
+  }
+}
+</style>
+<style lang="scss">
+.bili-bot-select-popper{
+  .el-select-dropdown__item{
+
+    /* 关键：改成 flex 并垂直居中 */
+    display: flex;
+    align-items: center;
+    height: 34px;
+    line-height: normal;      // 避免继承 34px 行高
+    padding-right: 40px !important;
+    padding-left: 10px !important;
+  }
+  .bot-avatar{
+    display: block;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .bot-name{
+    padding: 0 !important;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    float: left;
   }
 }
 </style>
