@@ -9,8 +9,8 @@
                   :type="t.found ? 'success' : 'danger'" :title="targetTitle(t)" closable
                   @close="remove(t.id)">
             <img v-if="t.avatarUrl" class="target-avatar" :src="t.avatarUrl"
-                 referrerpolicy="no-referrer">{{ t.name || t.id }}<span
-              v-if="t.name" class="target-code">（{{t.id}}）</span>
+                 referrerpolicy="no-referrer">{{ t.name || t.id }}
+            <span v-if="t.name" class="target-code">（{{t.id}}）</span>
           </el-tag>
           <span v-if="!selectedInfos.length" class="empty-tip">暂未选择</span>
         </div>
@@ -237,6 +237,9 @@ export default {
     margin-bottom: 6px;
   }
   .chip-box{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     min-height: 34px;
     border: 1px solid #dcdfe6;
     border-radius: 4px;
