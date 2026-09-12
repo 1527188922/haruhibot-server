@@ -129,6 +129,10 @@ public class BilibiliLiveSubscribeHandler extends AbstractBilibiliSubscribeHandl
                 ? info.getUname() : subscribe.getUname();
         StringBuilder text = new StringBuilder("订阅成功：").append(this.displayName(uid, uname));
         text.append("\n开播/下播消息将").append(groupMsg ? "推送到本群" : "私聊推送给您");
+        if (Objects.nonNull(info) && info.isLiving()) {
+            // 订阅时主播正在直播，直接提示
+            text.append("\nup正在直播中哦~");
+        }
         if (StringUtils.isBlank(uname)) {
             text.append("\n未查询到主播信息，请确认uid是否正确");
         }
