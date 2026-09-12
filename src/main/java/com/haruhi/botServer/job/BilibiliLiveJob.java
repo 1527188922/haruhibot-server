@@ -146,17 +146,19 @@ public class BilibiliLiveJob extends AbstractJob {
             Integer oldStatus = LAST_STATUS.get(uid);
             if (oldStatus == null) {
                 // 首次检测到该主播，只记录状态
-                recordStatus(uid, info, newStatus);
+                updateStatusAndGetLiveStartTime(uid, info, newStatus);
                 continue;
             }
             if (oldStatus == newStatus) {
                 continue;
             }
-            recordStatus(uid, info, newStatus);
 
             boolean live = newStatus == LiveStatusInfo.STATUS_LIVE;
+            // 注意：必须先取开播时间再更新状态缓存，见方法说明
+            Long liveStartTime = updateStatusAndGetLiveStartTime(uid, info, newStatus);
+
             DbLog.info(BusinessModuleEnum.JOB, "检测到b站主播{}：{}（{}）", live ? "开播" : "下播", info.getUname(), uid);
-            List<MessageHolder> message = live ? buildLiveMessage(info) : buildOffMessage(uid, info);
+            List<MessageHolder> message = live ? buildLiveMessage(info) : buildOffMessage(info, liveStartTime);
             for (BilibiliSubscribeSqlite subscribe : entry.getValue()) {
                 if (!live && !isOffNotify(subscribe)) {
                     continue;
@@ -167,13 +169,25 @@ public class BilibiliLiveJob extends AbstractJob {
         log.debug("b站直播状态检测完成，目前开播{}人，总共{}人", living, uidSubscribes.size());
     }
 
-    private void recordStatus(Long uid, LiveStatusInfo info, int newStatus) {
+    /**
+     * 更新内存中的直播状态，并返回本次需要展示的开播时间(单位秒)
+     * 开播：接口返回的live_time；下播：之前记录的开播时间(下播时接口返回的live_time为0)
+     * 由于下播会清理LIVE_START_TIME，所以开播时间必须在更新缓存之前取出，因此这里把两者放在一个方法里
+     *
+     * @return 开播时间，没有记录时返回null
+     */
+    static Long updateStatusAndGetLiveStartTime(Long uid, LiveStatusInfo info, int newStatus) {
+        boolean live = newStatus == LiveStatusInfo.STATUS_LIVE;
+        boolean hasLiveTime = Objects.nonNull(info.getLiveTime()) && info.getLiveTime() > 0;
+        Long liveStartTime = live && hasLiveTime ? info.getLiveTime() : LIVE_START_TIME.get(uid);
+
         LAST_STATUS.put(uid, newStatus);
-        if (newStatus == LiveStatusInfo.STATUS_LIVE && info.getLiveTime() != null && info.getLiveTime() > 0) {
+        if (live && hasLiveTime) {
             LIVE_START_TIME.put(uid, info.getLiveTime());
         } else {
             LIVE_START_TIME.remove(uid);
         }
+        return liveStartTime;
     }
 
     /**
@@ -266,9 +280,9 @@ public class BilibiliLiveJob extends AbstractJob {
 
     /**
      * 下播消息：主播名 直播时长
+     * @param startTime 本次开播时间 单位秒，由调用方在updateStatusAndGetLiveStartTime清理状态缓存之前取出
      */
-    private List<MessageHolder> buildOffMessage(Long uid, LiveStatusInfo info) {
-        Long startTime = LIVE_START_TIME.remove(uid);
+    private List<MessageHolder> buildOffMessage(LiveStatusInfo info, Long startTime) {
         String duration = "。";
         if (startTime != null && startTime > 0) {
             long seconds = Math.max(0, System.currentTimeMillis() / 1000 - startTime);
