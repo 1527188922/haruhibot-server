@@ -7,5 +7,6 @@ public enum MessageHolderTypeEnum {
     video,
     record,
     at,
-    json
+    json,
+    music
 }
