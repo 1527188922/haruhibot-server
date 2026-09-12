@@ -1,9 +1,6 @@
 package com.haruhi.botServer.service;
 
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpStatus;
-import cn.hutool.http.HttpUtil;
+import cn.hutool.http.*;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
@@ -196,7 +193,7 @@ public class BilibiliService {
         String url = ThirdPartyURL.BILIBILI_LIVE_STATUS;
         HttpRequest httpRequest = HttpRequest.post(url)
                 .addHeaders(getLiveHeaders())
-                .contentType("application/json")
+                .contentType(ContentType.JSON.getValue())
                 .body(body.toJSONString())
                 .timeout(10 * 1000);
         try (HttpResponse response = httpRequest.execute()){
@@ -210,7 +207,7 @@ public class BilibiliService {
                 log.error("b站直播状态接口响应异常 url:{} body:{}",url,respBody);
                 return null;
             }
-            log.debug("b站直播状态接口响应 url:{} body:{}",url,respBody);
+            DbLog.debug(BusinessModuleEnum.BILIBILI,"b站直播状态接口响应 url:{} body:{}",url,respBody);
             Map<Long, LiveStatusInfo> result = new HashMap<>(resp.getData().size());
             for (Map.Entry<String, LiveStatusInfo> entry : resp.getData().entrySet()) {
                 try {
@@ -442,7 +439,9 @@ public class BilibiliService {
         try {
 //            BilibiliBaseResp<BilibiliTickResp> bilibiliTickRespBilibiliBaseResp = bilibiliService.genTicket(null);
 //            System.out.println(bilibiliTickRespBilibiliBaseResp.getRaw());
-            System.out.println(BilibililSidUtil.generate());
+//            System.out.println(BilibililSidUtil.generate());
+            Map<Long, LiveStatusInfo> liveStatusInfoByUids = bilibiliService.getLiveStatusInfoByUids(List.of(63231L, 416376577L));
+            System.out.println(liveStatusInfoByUids);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

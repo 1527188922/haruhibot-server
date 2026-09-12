@@ -284,6 +284,17 @@ const release = [{
     },
     children: []
 }, {
+    label: "BILIBILI订阅",
+    path: '/bilibili-subscribe',
+    component: 'views/bilibili-subscribe/index',
+    icon: 'icon-caidan',
+    iconBgColor: randomColor(),
+    meta: {
+        // i18n: 'bilibili-subscribe',
+        keepAlive: true
+    },
+    children: []
+}, {
     label: '系统管理',
     path: '/system',
     iconBgColor: randomColor(),

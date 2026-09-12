@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.haruhi.botServer.constant.BilibiliSubscribeTypeEnum;
 import com.haruhi.botServer.constant.DataBaseConst;
+import com.haruhi.botServer.entity.vo.AvatarInfo;
 import lombok.Data;
 
 /**
@@ -13,7 +14,7 @@ import lombok.Data;
  */
 @Data
 @TableName(value = DataBaseConst.T_BILIBILI_SUBSCRIBE)
-public class BilibiliSubscribeSqlite {
+public class BilibiliSubscribeSqlite extends AvatarInfo {
 
     /**
      * 启用
@@ -44,6 +45,16 @@ public class BilibiliSubscribeSqlite {
      * 订阅类型 {@link BilibiliSubscribeTypeEnum}
      */
     private String subType;
+
+    /**
+     * b站主播昵称，由定时任务每次请求到直播状态数据时更新
+     */
+    private String uname;
+
+    /**
+     * b站主播头像，由定时任务每次请求到直播状态数据时更新
+     */
+    private String face;
 
     /**
      * 推送消息的机器人qq号

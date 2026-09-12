@@ -167,6 +167,8 @@ public class SqliteDatabaseService{
                 false);
 
         sqliteDatabaseInitMapper.createBilibiliSubscribe(DataBaseConst.T_BILIBILI_SUBSCRIBE);
+        this.addColumnIfNotExists(DataBaseConst.T_BILIBILI_SUBSCRIBE,"uname","TEXT",false,null);
+        this.addColumnIfNotExists(DataBaseConst.T_BILIBILI_SUBSCRIBE,"face","TEXT",false,null);
         sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_BILIBILI_SUBSCRIBE,
                 StrFormatter.format("{}_uid_update_time_idx",DataBaseConst.T_BILIBILI_SUBSCRIBE),
                 "uid,update_time",

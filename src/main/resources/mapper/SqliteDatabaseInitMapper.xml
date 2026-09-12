@@ -253,6 +253,8 @@
             `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             `uid` INTEGER NOT NULL,
             `sub_type` TEXT NOT NULL,
+            `uname` TEXT,
+            `face` TEXT,
             `self_id` INTEGER NOT NULL,
             `group_ids` TEXT,
             `friend_ids` TEXT,
