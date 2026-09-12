@@ -45,7 +45,20 @@ public enum RegexEnum {
     RECORD_STATISTICS("聊天统计|聊天排名"),
     EXPORT_CHAT_RECORD("导出聊天记录|导出聊天excel|导出聊天EXCEL|生成聊天excel|生成聊天EXCEL"),
     JM_COMIC_DOWNLOAD("jm|JM"),
-    
+
+    /**
+     * b站直播订阅
+     * b站订阅{uid} | 订阅b站{uid} | 订阅b站up{uid} | 订阅b站直播{uid}
+     * 不区分大小写
+     */
+    BILIBILI_LIVE_SUBSCRIBE("(?i)^(?:b站订阅|订阅b站直播|订阅b站up|订阅b站)\\s*(\\d+)$"),
+    /**
+     * 取消b站直播订阅
+     * 取消b站订阅{uid} | 取消订阅up{uid} | 取消订阅b站up{uid} | 取消订阅b站主播{uid}
+     * 不区分大小写
+     */
+    BILIBILI_LIVE_UNSUBSCRIBE("(?i)^(?:取消b站订阅|取消订阅b站主播|取消订阅b站up|取消订阅up)\\s*(\\d+)$"),
+
     ;
 
 

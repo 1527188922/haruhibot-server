@@ -181,8 +181,8 @@ public class BilibiliLiveJob extends AbstractJob {
      */
     private void refreshLiveInfo(Long uid, LiveStatusInfo info, List<BilibiliSubscribeSqlite> subscribes) {
         String uname = info.getUname();
-        String face = normalizeFace(info.getFace());
-        Long roomId = roomId(info);
+        String face = info.faceUrl();
+        Long roomId = info.liveRoomId();
         if (StringUtils.isBlank(uname) && StringUtils.isBlank(face) && Objects.isNull(roomId)) {
             return;
         }
@@ -194,29 +194,6 @@ public class BilibiliLiveJob extends AbstractJob {
             return;
         }
         bilibiliSubscribeSqliteService.refreshLiveInfo(uid, uname, face, roomId);
-    }
-
-    /**
-     * 直播间id，取不到真实房间号时使用短号
-     */
-    private static Long roomId(LiveStatusInfo info) {
-        if (Objects.nonNull(info.getRoomId()) && info.getRoomId() > 0) {
-            return info.getRoomId();
-        }
-        if (Objects.nonNull(info.getShortId()) && info.getShortId() > 0) {
-            return info.getShortId();
-        }
-        return null;
-    }
-
-    /**
-     * 头像地址兼容协议相对路径
-     */
-    private static String normalizeFace(String face) {
-        if (StringUtils.isBlank(face)) {
-            return null;
-        }
-        return face.startsWith("//") ? "https:" + face : face;
     }
 
     /**

@@ -78,6 +78,29 @@ public class LiveStatusInfo implements Serializable {
     }
 
     /**
+     * 直播间id，取不到真实房间号时使用短号
+     */
+    public Long liveRoomId() {
+        if (roomId != null && roomId > 0) {
+            return roomId;
+        }
+        if (shortId != null && shortId > 0) {
+            return shortId;
+        }
+        return null;
+    }
+
+    /**
+     * 主播头像地址，兼容协议相对路径(//i0.hdslb.com/xxx)
+     */
+    public String faceUrl() {
+        if (StringUtils.isBlank(face)) {
+            return null;
+        }
+        return face.startsWith("//") ? "https:" + face : face;
+    }
+
+    /**
      * 直播间封面，优先使用主播自己上传的封面
      */
     public String cover() {
