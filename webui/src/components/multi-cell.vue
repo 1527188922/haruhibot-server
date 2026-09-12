@@ -1,6 +1,7 @@
 <template>
   <div class="multi-cell">
-    <img v-if="imageUrl" :src="imageUrl">
+    <!-- b站等第三方图片存在防盗链，不带Referer才能正常加载 -->
+    <img v-if="imageUrl" :src="imageUrl" referrerpolicy="no-referrer">
     <div class="row-box">
       <template v-for="(t,i) in textList">
         <div v-if="t" :key="t+i" class="text-align-left line" :title="titleList.length >= i + 1 ? titleList[i] : null">

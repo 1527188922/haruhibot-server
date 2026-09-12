@@ -79,10 +79,10 @@
             <div class="target-line">
               <template v-if="row.groupInfos && row.groupInfos.length">
                 <el-tag v-for="t in row.groupInfos" :key="'g'+t.id" class="target-chip"
-                        size="mini" :type="t.found ? 'success' : 'danger'"
+                        size="small" :type="t.found ? 'success' : 'danger'"
                         :title="targetTitle(t,'群')" closable
                         @close="removeTarget(row,'group',t)">
-                  <img class="target-avatar" :src="t.avatarUrl">{{ t.name || t.id }}
+                  <img class="target-avatar" :src="t.avatarUrl" referrerpolicy="no-referrer">{{ t.name || t.id }}
                 </el-tag>
               </template>
               <span v-else class="target-empty">未配置</span>
@@ -96,10 +96,10 @@
             <div class="target-line">
               <template v-if="row.friendInfos && row.friendInfos.length">
                 <el-tag v-for="t in row.friendInfos" :key="'f'+t.id" class="target-chip"
-                        size="mini" :type="t.found ? 'success' : 'danger'"
+                        size="small" :type="t.found ? 'success' : 'danger'"
                         :title="targetTitle(t,'好友')" closable
                         @close="removeTarget(row,'friend',t)">
-                  <img class="target-avatar" :src="t.avatarUrl">{{ t.name || t.id }}
+                  <img class="target-avatar" :src="t.avatarUrl" referrerpolicy="no-referrer">{{ t.name || t.id }}
                 </el-tag>
               </template>
               <span v-else class="target-empty">未配置</span>
@@ -450,13 +450,22 @@ export default {
       color: #909399;
     }
     .target-chip{
+      display: inline-flex;
+      align-items: center;
       margin: 1px 4px 1px 0;
       img.target-avatar{
+        display: block;
+        flex: none;
         width: 16px;
         height: 16px;
         border-radius: 50%;
-        margin-right: 3px;
-        vertical-align: middle;
+        margin-right: 4px;
+      }
+      // element给close图标加了top:-1px(为inline-block布局做的补偿)，flex布局下会偏上，这里还原
+      ::v-deep .el-tag__close{
+        top: 0;
+        align-self: center;
+        flex: none;
       }
     }
     .target-empty{

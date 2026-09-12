@@ -8,7 +8,8 @@
           <el-tag v-for="t in selectedInfos" :key="t.id" class="target-chip" size="small"
                   :type="t.found ? 'success' : 'danger'" :title="targetTitle(t)" closable
                   @close="remove(t.id)">
-            <img v-if="t.avatarUrl" class="target-avatar" :src="t.avatarUrl">{{ t.name || t.id }}<span
+            <img v-if="t.avatarUrl" class="target-avatar" :src="t.avatarUrl"
+                 referrerpolicy="no-referrer">{{ t.name || t.id }}<span
               v-if="t.name" class="target-code">（{{t.id}}）</span>
           </el-tag>
           <span v-if="!selectedInfos.length" class="empty-tip">暂未选择</span>
@@ -24,7 +25,7 @@
                    placeholder="输入群号/群名或QQ号/昵称搜索" @change="pickerChange">
           <el-option v-for="o in options" :key="o.id" :label="optionLabel(o)" :value="o.id">
             <div class="option-item">
-              <img v-if="o.avatarUrl" class="target-avatar" :src="o.avatarUrl">
+              <img v-if="o.avatarUrl" class="target-avatar" :src="o.avatarUrl" referrerpolicy="no-referrer">
               <span class="option-name">{{ o.name || o.id }}</span>
               <span class="option-code">{{ o.id }}</span>
             </div>
@@ -242,14 +243,23 @@ export default {
     padding: 4px 6px;
   }
   .target-chip{
+    display: inline-flex;
+    align-items: center;
     margin: 2px 4px 2px 0;
+    // element给close图标加了top:-1px(为inline-block布局做的补偿)，flex布局下会偏上，这里还原
+    ::v-deep .el-tag__close{
+      top: 0;
+      align-self: center;
+      flex: none;
+    }
   }
   .target-avatar{
+    display: block;
+    flex: none;
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    margin-right: 3px;
-    vertical-align: middle;
+    margin-right: 4px;
   }
   .target-code{
     color: #909399;
