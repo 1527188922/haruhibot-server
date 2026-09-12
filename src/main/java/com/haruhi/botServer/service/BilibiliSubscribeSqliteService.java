@@ -1,6 +1,5 @@
 package com.haruhi.botServer.service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.haruhi.botServer.constant.BilibiliSubscribeTypeEnum;
 import com.haruhi.botServer.entity.BilibiliSubscribeSqlite;
@@ -21,9 +20,10 @@ public interface BilibiliSubscribeSqliteService extends IService<BilibiliSubscri
     List<BilibiliSubscribeSqlite> listEnabled(String subType);
 
     /**
-     * web管理界面分页查询
+     * web管理界面查询
+     * 不分页，正在开播的排在最前面，其余按更新时间倒序
      */
-    IPage<BilibiliSubscribeResp> search(BilibiliSubscribeQueryReq request, boolean isPage);
+    List<BilibiliSubscribeResp> search(BilibiliSubscribeQueryReq request);
 
     /**
      * 新增订阅
@@ -41,9 +41,9 @@ public interface BilibiliSubscribeSqliteService extends IService<BilibiliSubscri
     boolean updateTargets(Long id, List<Long> groupIds, List<Long> friendIds);
 
     /**
-     * 更新主播昵称与头像，定时任务请求到直播状态数据时调用
+     * 更新主播昵称、头像、直播间id，定时任务请求到直播状态数据时调用
      */
-    boolean refreshLiveInfo(Long uid, String uname, String face);
+    boolean refreshLiveInfo(Long uid, String uname, String face, Long roomId);
 
     /**
      * 查询可选的推送目标(群/好友)，用于web管理界面选择

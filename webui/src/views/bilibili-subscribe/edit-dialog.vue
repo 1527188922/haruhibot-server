@@ -6,8 +6,16 @@
         <el-form-item label="主播UID" prop="uid" :rules="[{required: true, message:'请输入b站主播uid',trigger: 'blur'}]">
           <number-input v-model.trim="formData.uid" maxlength="20" placeholder="b站主播uid"></number-input>
         </el-form-item>
-        <el-form-item label="机器人QQ" prop="selfId" :rules="[{required: true, message:'请输入机器人QQ号',trigger: 'blur'}]">
-          <number-input v-model.trim="formData.selfId" maxlength="20" placeholder="推送消息的机器人QQ号"></number-input>
+        <el-form-item label="机器人QQ" prop="selfId"
+                      :rules="[{required: true, message:'请选择或输入机器人QQ号',trigger: 'change'}]">
+          <el-select v-model="formData.selfId" class="full-width" filterable allow-create default-first-option
+                     placeholder="选择当前已连接的机器人，或直接输入QQ号" @focus="loadBots">
+            <el-option v-for="b in botList" :key="b.id" :label="botLabel(b)" :value="b.id">
+              <img v-if="b.avatarUrl" class="bot-avatar" :src="b.avatarUrl">
+              <span>{{b.name || b.id}}</span>
+              <span class="bot-id">{{b.id}}</span>
+            </el-option>
+          </el-select>
         </el-form-item>
         <el-form-item label="订阅类型" prop="subType">
           <el-select v-model="formData.subType" placeholder="请选择">
@@ -40,6 +48,7 @@
 import numberInput from "@/components/input/numberInput.vue";
 import {deepClone} from "@/util/util";
 import {add, update} from "@/api/bilibili-subscribe";
+import {botList as botListApi} from "@/api/system";
 
 export default {
   name:'BilibiliSubscribeEditDialog',
@@ -52,6 +61,7 @@ export default {
       submitLoading:false,
       isAdd:false,
       title:'',
+      botList:[],
       formData:this.emptyData()
     }
   },
@@ -67,12 +77,39 @@ export default {
         offNotify:0
       }
     },
+    botLabel(bot){
+      return bot.name ? `${bot.name}（${bot.id}）` : String(bot.id)
+    },
+    parseNumber(value){
+      if(value === '' || value === null || value === undefined){
+        return null
+      }
+      const num = Number(value)
+      return isNaN(num) ? null : num
+    },
+    /**
+     * 加载当前ws连接中的机器人，供选择；也允许自定义输入QQ号
+     */
+    loadBots(){
+      botListApi().then(({data:{code,data}})=>{
+        if(code !== 200){
+          return
+        }
+        let list = data || []
+        const current = this.parseNumber(this.formData.selfId)
+        if(current && !list.some(e=>e.id === current)){
+          list = [{id:current, name:'未连接', avatarUrl:null}].concat(list)
+        }
+        this.botList = list
+      })
+    },
     open(row){
       this.visible = true;
       this.isAdd = row ? false : true;
       this.title = this.isAdd ? '新增BILIBILI订阅' : '修改BILIBILI订阅';
       this.$nextTick(()=>{
         this.formData = row ? this.toFormData(row) : this.emptyData()
+        this.loadBots()
       })
     },
     toFormData(row){
@@ -89,6 +126,10 @@ export default {
       }
     },
     submit(){
+      const selfId = this.parseNumber(this.formData.selfId)
+      if(!selfId){
+        return this.$message.warning('请选择或输入正确的机器人QQ号')
+      }
       this.$refs.editForm.validate((valid)=>{
         if(!valid){
           return
@@ -99,8 +140,9 @@ export default {
           type: 'warning'
         }).then(()=>{
           const fun = this.isAdd ? add : update
+          const payload = Object.assign({}, this.formData, {selfId})
           this.submitLoading = true
-          fun(this.formData).then(({data:{code,message}})=>{
+          fun(payload).then(({data:{code,message}})=>{
             if(code !== 200){
               return this.$message.error(message)
             }
@@ -128,6 +170,22 @@ export default {
 </script>
 <style lang="scss" scoped>
 #BilibiliSubscribeEditDialog{
+  .full-width{
+    width: 100%;
+  }
+  .bot-avatar{
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .bot-id{
+    color: #909399;
+    font-size: 12px;
+    margin-left: 8px;
+    float: right;
+  }
   .form-tip{
     font-size: 12px;
     color: #909399;

@@ -1,15 +1,13 @@
 <template>
   <div id="BilibiliSubscribe">
     <basic-container>
+      <el-alert v-if="jobInfo" class="job-alert" :type="jobAlert.type" :title="jobAlert.title"
+                :description="jobAlert.description" :closable="false" show-icon></el-alert>
       <el-row>
         <el-form :model="queryFormObj" label-width="80px" inline ref="queryForm" size="small">
           <el-form-item label="主播UID" prop="uid">
             <number-input v-model.trim="queryFormObj.uid" class="form-input" maxlength="20" clearable
                           placeholder="b站主播uid"></number-input>
-          </el-form-item>
-          <el-form-item label="机器人" prop="selfId">
-            <number-input v-model.trim="queryFormObj.selfId" class="form-input" maxlength="20" clearable
-                          placeholder="机器人QQ号"></number-input>
           </el-form-item>
           <el-form-item label="主播昵称" prop="uname">
             <el-input v-model="queryFormObj.uname" class="form-input" maxlength="50" clearable
@@ -58,11 +56,12 @@
             <el-button type="text" size="small" @click="edit(row)">修改</el-button>
           </template>
         </el-table-column>
-        <el-table-column label="主播" prop="uid" min-width="210" show-tooltip-when-overflow>
+        <el-table-column label="主播" prop="uid" min-width="230" show-tooltip-when-overflow>
           <template slot-scope="{row}">
             <multi-cell :image-url="row.face"
-                        :text-list="[row.uname, `UID：${row.uid}`]"
-                        :title-list="[row.uname ? `主播昵称：${row.uname}` : '', `UID：${row.uid}`]"></multi-cell>
+                        :text-list="[row.uname, `UID：${row.uid}`, row.roomId ? `直播间：${row.roomId}` : '']"
+                        :link-list="[spaceUrl(row.uid), spaceUrl(row.uid), row.roomId ? liveUrl(row.roomId) : null]"
+                        :title-list="[`主播昵称：${row.uname || ''}，点击进入b站个人主页`, `UID：${row.uid}，点击进入b站个人主页`, `直播间id：${row.roomId}，点击进入直播间`]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="直播状态" prop="living" min-width="150" align="center">
@@ -140,9 +139,6 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pagination-box">
-        <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
-      </div>
     </basic-container>
     <edit-dialog ref="editDialog"></edit-dialog>
     <target-dialog ref="targetDialog"></target-dialog>
@@ -153,7 +149,8 @@ import numberInput from "@/components/input/numberInput.vue";
 import MultiCell from "@/components/multi-cell.vue";
 import EditDialog from "./edit-dialog.vue";
 import TargetDialog from "./target-dialog.vue";
-import {search as searchApi, update as updateApi, updateTargets, deleteBatch} from "@/api/bilibili-subscribe";
+import {search as searchApi, update as updateApi, updateTargets, deleteBatch, jobInfo as jobInfoApi}
+  from "@/api/bilibili-subscribe";
 
 export default {
   name: 'BilibiliSubscribe',
@@ -169,36 +166,54 @@ export default {
       firstActivated:true,
       nowTs: Math.floor(Date.now() / 1000),
       timer:null,
+      jobInfo:null,
       statusOptions:[
         {label:'启用',value:1},
         {label:'禁用',value:0}
       ],
       queryFormObj:{
         uid:'',
-        selfId:'',
         uname:'',
         enableStatus:'',
         offNotify:''
       },
       tableData:[],
-      multipleSelection: [],
-      pagination:{
-        currentPage: 1,
-        pageSizes: [5, 10, 30, 50, 100, 500],
-        pageSize: 10,
-        layout: 'total, sizes, prev, pager, next, jumper',
-        background: true,
-        total: 0
-      },
+      multipleSelection: []
     }
   },
   computed:{
     deleteBatchDisabled(){
       return !this.multipleSelection || this.multipleSelection.length === 0
+    },
+    jobAlert(){
+      const info = this.jobInfo
+      if(!info){
+        return {type:'info', title:'', description:''}
+      }
+      if(!info.enable){
+        return {
+          type:'warning',
+          title:'BILIBILI直播推送定时任务未开启',
+          description:'配置 job.bilibiliLive.enable 未设置为 1，订阅不会推送开播/下播消息'
+        }
+      }
+      if(!info.registered){
+        return {
+          type:'warning',
+          title:'BILIBILI直播推送定时任务已开启但未注册成功',
+          description:'配置 job.bilibiliLive.enable = 1，但定时任务未注册到调度器，请检查启动日志'
+        }
+      }
+      return {
+        type:'success',
+        title:'BILIBILI直播推送定时任务已开启',
+        description: info.cron ? `cron表达式：${info.cron}` : '未配置cron表达式(job.bilibiliLive.cron)'
+      }
     }
   },
   mounted() {
     this.search()
+    this.loadJobInfo()
   },
   activated(){
     // 页面被keep-alive缓存，重新进入时刷新一次，保证直播状态是最新的
@@ -208,6 +223,7 @@ export default {
     }
     this.nowTs = Math.floor(Date.now() / 1000)
     this.selectTableData()
+    this.loadJobInfo()
   },
   deactivated() {
     this.clearTimer()
@@ -227,6 +243,20 @@ export default {
     },
     manageTarget(row, type){
       this.$refs.targetDialog.open(row, type, ()=>this.selectTableData())
+    },
+    spaceUrl(uid){
+      return uid ? `https://space.bilibili.com/${uid}` : null
+    },
+    liveUrl(roomId){
+      return roomId ? `https://live.bilibili.com/${roomId}` : null
+    },
+    loadJobInfo(){
+      jobInfoApi().then(({data:{code,data}})=>{
+        if(code !== 200){
+          return
+        }
+        this.jobInfo = data
+      })
     },
     targetTitle(t, type){
       if(t.found){
@@ -355,7 +385,6 @@ export default {
       })
     },
     search(){
-      this.pagination.currentPage = 1
       this.selectTableData()
     },
     resetQueryForm(){
@@ -363,27 +392,15 @@ export default {
       this.queryFormObj.enableStatus = ''
       this.queryFormObj.offNotify = ''
     },
-    sizeChange(v){
-      this.pagination.pageSize = v
-      this.selectTableData()
-    },
-    currentChange(v){
-      this.pagination.currentPage = v
-      this.selectTableData()
-    },
     selectTableData(){
       this.tableLoading = true
       searchApi({
         uid:this.queryFormObj.uid || null,
-        selfId:this.queryFormObj.selfId || null,
         uname:this.queryFormObj.uname,
         enableStatus:this.queryFormObj.enableStatus === '' ? null : this.queryFormObj.enableStatus,
-        offNotify:this.queryFormObj.offNotify === '' ? null : this.queryFormObj.offNotify,
-        currentPage:this.pagination.currentPage,
-        pageSize:this.pagination.pageSize
+        offNotify:this.queryFormObj.offNotify === '' ? null : this.queryFormObj.offNotify
       }).then(({data:{data}})=>{
-        this.tableData = data.records || []
-        this.pagination.total = data.total
+        this.tableData = data || []
         if(this.tableData.some(e=>e.living)){
           this.startTimer()
         }else{
@@ -398,6 +415,9 @@ export default {
 </script>
 <style lang="scss" scoped>
 #BilibiliSubscribe{
+  .job-alert{
+    margin-bottom: 10px;
+  }
   .switch-line{
     display: flex;
     align-items: center;

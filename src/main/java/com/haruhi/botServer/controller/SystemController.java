@@ -242,6 +242,22 @@ public class SystemController {
         return HttpResp.success(systemService.getBotWebSocketInfo());
     }
 
+    /**
+     * 当前ws连接中的机器人列表
+     */
+    @PostMapping("/bot/list")
+    public HttpResp<List<BotInfoResp>> botList() {
+        Map<Long, BotInfoResp> map = new LinkedHashMap<>();
+        for (Bot bot : BotContainer.getBots()) {
+            if (Objects.isNull(bot.getId())) {
+                continue;
+            }
+            map.putIfAbsent(bot.getId(), new BotInfoResp(bot.getId(), bot.getBotName(),
+                    CommonUtil.getAvatarUrl(bot.getId(), false)));
+        }
+        return HttpResp.success(new ArrayList<>(map.values()));
+    }
+
     @PostMapping("/botws/opt")
     public HttpResp botWebSocketOperation(@RequestParam String command) {
         if ("1".equals(command)) {

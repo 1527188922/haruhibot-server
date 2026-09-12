@@ -4,9 +4,10 @@ import lombok.Data;
 
 /**
  * bilibili订阅查询条件
+ * 列表不分页，因此不需要分页参数
  */
 @Data
-public class BilibiliSubscribeQueryReq extends PageReq {
+public class BilibiliSubscribeQueryReq {
 
     /**
      * 订阅的目标id(b站主播uid)

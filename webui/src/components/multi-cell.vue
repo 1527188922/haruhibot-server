@@ -4,7 +4,9 @@
     <div class="row-box">
       <template v-for="(t,i) in textList">
         <div v-if="t" :key="t+i" class="text-align-left line" :title="titleList.length >= i + 1 ? titleList[i] : null">
-          {{t}}
+          <a v-if="linkList && linkList[i]" class="link-text" :href="linkList[i]" target="_blank"
+             rel="noopener noreferrer">{{t}}</a>
+          <template v-else>{{t}}</template>
         </div>
       </template>
     </div>
@@ -30,6 +32,13 @@ export default {
       default:()=>{
         return []
       }
+    },
+    // 与textList一一对应，某项不为空时该行渲染为可点击的链接
+    linkList:{
+      type:Array,
+      default:()=>{
+        return []
+      }
     }
   }
 }
@@ -46,6 +55,14 @@ export default {
   }
   .text-align-left{
     text-align: left;
+  }
+  .link-text{
+    color: #409EFF;
+    text-decoration: none;
+    cursor: pointer;
+    &:hover{
+      text-decoration: underline;
+    }
   }
   .line{
     &:not(:first-child) {

@@ -1,12 +1,13 @@
 package com.haruhi.botServer.controller;
 
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.BilibiliSubscribeTypeEnum;
 import com.haruhi.botServer.entity.BilibiliSubscribeSqlite;
+import com.haruhi.botServer.job.BilibiliLiveJob;
 import com.haruhi.botServer.service.BilibiliSubscribeSqliteService;
 import com.haruhi.botServer.utils.PushTargetUtil;
+import com.haruhi.botServer.vo.BilibiliJobInfoResp;
 import com.haruhi.botServer.vo.BilibiliSubscribeQueryReq;
 import com.haruhi.botServer.vo.BilibiliSubscribeResp;
 import com.haruhi.botServer.vo.BilibiliSubscribeTargetReq;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,9 +39,33 @@ public class BilibiliSubscribeController {
     @Autowired
     private BilibiliSubscribeSqliteService bilibiliSubscribeSqliteService;
 
+    /**
+     * job.bilibiliLive.enable = 1 时该bean才会被创建，为null说明定时任务未开启
+     */
+    @Autowired(required = false)
+    private BilibiliLiveJob bilibiliLiveJob;
+
+    @Value("${job.bilibiliLive.enable:0}")
+    private String jobEnable;
+
+    @Value("${job.bilibiliLive.cron:}")
+    private String jobCron;
+
     @PostMapping("/search")
-    public HttpResp<IPage<BilibiliSubscribeResp>> search(@RequestBody BilibiliSubscribeQueryReq request) {
-        return HttpResp.success(bilibiliSubscribeSqliteService.search(request, true));
+    public HttpResp<List<BilibiliSubscribeResp>> search(@RequestBody BilibiliSubscribeQueryReq request) {
+        return HttpResp.success(bilibiliSubscribeSqliteService.search(request));
+    }
+
+    /**
+     * 直播推送定时任务信息，用于web端提示任务是否开启
+     */
+    @PostMapping("/job/info")
+    public HttpResp<BilibiliJobInfoResp> jobInfo() {
+        BilibiliJobInfoResp resp = new BilibiliJobInfoResp();
+        resp.setEnable("1".equals(StringUtils.trim(jobEnable)));
+        resp.setCron(StringUtils.trimToNull(jobCron));
+        resp.setRegistered(Objects.nonNull(bilibiliLiveJob));
+        return HttpResp.success(resp);
     }
 
     @PostMapping("/add")

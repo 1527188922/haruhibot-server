@@ -177,21 +177,36 @@ public class BilibiliLiveJob extends AbstractJob {
     }
 
     /**
-     * 主播昵称/头像有变化时更新订阅表
+     * 主播昵称/头像/直播间id有变化时更新订阅表
      */
     private void refreshLiveInfo(Long uid, LiveStatusInfo info, List<BilibiliSubscribeSqlite> subscribes) {
         String uname = info.getUname();
         String face = normalizeFace(info.getFace());
-        if (StringUtils.isBlank(uname) && StringUtils.isBlank(face)) {
+        Long roomId = roomId(info);
+        if (StringUtils.isBlank(uname) && StringUtils.isBlank(face) && Objects.isNull(roomId)) {
             return;
         }
         boolean changed = subscribes.stream().anyMatch(e ->
                 (StringUtils.isNotBlank(uname) && !uname.equals(e.getUname()))
-                        || (StringUtils.isNotBlank(face) && !face.equals(e.getFace())));
+                        || (StringUtils.isNotBlank(face) && !face.equals(e.getFace()))
+                        || (Objects.nonNull(roomId) && !roomId.equals(e.getRoomId())));
         if (!changed) {
             return;
         }
-        bilibiliSubscribeSqliteService.refreshLiveInfo(uid, uname, face);
+        bilibiliSubscribeSqliteService.refreshLiveInfo(uid, uname, face, roomId);
+    }
+
+    /**
+     * 直播间id，取不到真实房间号时使用短号
+     */
+    private static Long roomId(LiveStatusInfo info) {
+        if (Objects.nonNull(info.getRoomId()) && info.getRoomId() > 0) {
+            return info.getRoomId();
+        }
+        if (Objects.nonNull(info.getShortId()) && info.getShortId() > 0) {
+            return info.getShortId();
+        }
+        return null;
     }
 
     /**

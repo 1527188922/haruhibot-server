@@ -42,6 +42,11 @@ public class BilibiliSubscribeSqlite extends AvatarInfo {
     private Long uid;
 
     /**
+     * b站直播间id，由定时任务每次请求到直播状态数据时更新
+     */
+    private Long roomId;
+
+    /**
      * 订阅类型 {@link BilibiliSubscribeTypeEnum}
      */
     private String subType;

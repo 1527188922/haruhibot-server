@@ -63,3 +63,12 @@ export const targetList = (data) => request({
     timeout,
     data
 });
+
+/**
+ * 直播推送定时任务信息(是否开启、cron)
+ */
+export const jobInfo = () => request({
+    url: baseUrl + '/bilibili/subscribe/job/info',
+    method: 'post',
+    timeout
+});

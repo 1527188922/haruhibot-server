@@ -1,8 +1,6 @@
 package com.haruhi.botServer.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botServer.constant.BilibiliSubscribeTypeEnum;
 import com.haruhi.botServer.constant.PushTargetTypeEnum;
@@ -29,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -67,7 +66,7 @@ public class BilibiliSubscribeSqliteServiceImpl extends ServiceImpl<BilibiliSubs
     }
 
     @Override
-    public IPage<BilibiliSubscribeResp> search(BilibiliSubscribeQueryReq request, boolean isPage) {
+    public List<BilibiliSubscribeResp> search(BilibiliSubscribeQueryReq request) {
         LambdaQueryWrapper<BilibiliSubscribeSqlite> queryWrapper = new LambdaQueryWrapper<BilibiliSubscribeSqlite>()
                 .eq(Objects.nonNull(request.getUid()), BilibiliSubscribeSqlite::getUid, request.getUid())
                 .eq(Objects.nonNull(request.getSelfId()), BilibiliSubscribeSqlite::getSelfId, request.getSelfId())
@@ -75,23 +74,13 @@ public class BilibiliSubscribeSqliteServiceImpl extends ServiceImpl<BilibiliSubs
                 .eq(StringUtils.isNotBlank(request.getSubType()), BilibiliSubscribeSqlite::getSubType, request.getSubType())
                 .eq(Objects.nonNull(request.getEnableStatus()), BilibiliSubscribeSqlite::getEnableStatus, request.getEnableStatus())
                 .eq(Objects.nonNull(request.getOffNotify()), BilibiliSubscribeSqlite::getOffNotify, request.getOffNotify())
+                .orderByDesc(BilibiliSubscribeSqlite::getUpdateTime)
                 .orderByDesc(BilibiliSubscribeSqlite::getId);
 
-        IPage<BilibiliSubscribeSqlite> pageInfo;
-        if (isPage) {
-            pageInfo = this.page(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
-        } else {
-            pageInfo = new Page<>(request.getCurrentPage(), request.getPageSize());
-            List<BilibiliSubscribeSqlite> list = this.list(queryWrapper);
-            pageInfo.setRecords(list);
-            pageInfo.setTotal(list.size());
-        }
-
-        IPage<BilibiliSubscribeResp> respPage = new Page<>(pageInfo.getCurrent(), pageInfo.getSize(), pageInfo.getTotal());
-        List<BilibiliSubscribeSqlite> records = pageInfo.getRecords();
+        // 订阅数据量不大，这里不分页，直接查全部
+        List<BilibiliSubscribeSqlite> records = this.list(queryWrapper);
         if (CollectionUtils.isEmpty(records)) {
-            respPage.setRecords(new ArrayList<>());
-            return respPage;
+            return new ArrayList<>();
         }
 
         // 批量查询推送目标(群/好友)的名称，避免逐条查询
@@ -106,10 +95,12 @@ public class BilibiliSubscribeSqliteServiceImpl extends ServiceImpl<BilibiliSubs
         Map<Long, GroupInfoSqlite> groupMap = this.selectGroupMap(groupIds);
         Map<Long, FriendSqlite> friendMap = this.selectFriendMap(friendIds);
 
-        respPage.setRecords(records.stream()
+        List<BilibiliSubscribeResp> result = records.stream()
                 .map(e -> this.toResp(e, groupMap, friendMap))
-                .collect(Collectors.toList()));
-        return respPage;
+                .collect(Collectors.toList());
+        // 正在开播的排到最前面，其余保持sql的更新时间倒序(排序是稳定的)
+        result.sort(Comparator.comparing(e -> Boolean.TRUE.equals(e.getLiving()) ? 0 : 1));
+        return result;
     }
 
     @Override
@@ -168,14 +159,16 @@ public class BilibiliSubscribeSqliteServiceImpl extends ServiceImpl<BilibiliSubs
     }
 
     @Override
-    public boolean refreshLiveInfo(Long uid, String uname, String face) {
-        if (Objects.isNull(uid) || (StringUtils.isBlank(uname) && StringUtils.isBlank(face))) {
+    public boolean refreshLiveInfo(Long uid, String uname, String face, Long roomId) {
+        if (Objects.isNull(uid)
+                || (StringUtils.isBlank(uname) && StringUtils.isBlank(face) && Objects.isNull(roomId))) {
             return false;
         }
         String now = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
         return this.lambdaUpdate()
                 .set(StringUtils.isNotBlank(uname), BilibiliSubscribeSqlite::getUname, uname)
                 .set(StringUtils.isNotBlank(face), BilibiliSubscribeSqlite::getFace, face)
+                .set(Objects.nonNull(roomId), BilibiliSubscribeSqlite::getRoomId, roomId)
                 .set(BilibiliSubscribeSqlite::getUpdateTime, now)
                 .eq(BilibiliSubscribeSqlite::getUid, uid)
                 .eq(BilibiliSubscribeSqlite::getSubType, BilibiliSubscribeTypeEnum.LIVE.getType())

@@ -69,6 +69,15 @@ export const botWsInfo = () => request({
     method: 'get'
 })
 
+/**
+ * 当前ws连接中的机器人列表
+ * @returns {AxiosPromise}
+ */
+export const botList = () => request({
+    url: baseUrl + '/sys/bot/list',
+    method: 'post'
+})
+
 export const botWsOperation = (command) => request({
     url: `${baseUrl}/sys/botws/opt?command=${command}`,
     method: 'post'
