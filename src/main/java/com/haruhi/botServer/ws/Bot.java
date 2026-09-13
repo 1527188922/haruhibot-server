@@ -329,6 +329,12 @@ public class Bot implements Closeable {
         });
     }
 
+
+    public SyncResponse<GroupAtAllRemainInfo> getGroupAtAllRemain(Long groupId, long timeout){
+        return sendSyncRequest(QqClientActionEnum.GET_GROUP_AT_ALL_REMAIN, Map.of("group_id",groupId), timeout, new TypeReference<SyncResponse<GroupAtAllRemainInfo>>() {});
+    }
+
+
     /**
      * 发送私聊文件
      * @param userId

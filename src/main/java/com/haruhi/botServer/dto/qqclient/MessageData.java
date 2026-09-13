@@ -20,7 +20,15 @@ public class MessageData{
         private String text;
         // at
         private String qq;
+        private String name;
 
         // json
         private String data;//json格式字符串
+
+
+        private String type;//音乐平台： qq 163 kugou migu kuwo custom
+        private String audio;
+        private String title;
+        private String image;
+        private String content;
 }

@@ -18,6 +18,7 @@ public enum QqClientActionEnum {
 
     GET_FRIEND_LIST("get_friend_list","获取好友列表"),
     GET_GROUP_MEMBER_LIST("get_group_member_list","获取群成员列表"),
+    GET_GROUP_AT_ALL_REMAIN("get_group_at_all_remain","获取群艾特全体剩余次数"),
     GET_FORWARD_MSG("get_forward_msg","获取合并转发内容"),
     GET_WORD_SLICES(".get_word_slices","获取中文分词"),
     GET_MSG("get_msg","根据message_id获取消息详情"),

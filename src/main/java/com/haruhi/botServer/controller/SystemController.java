@@ -73,13 +73,13 @@ public class SystemController {
 
     @IgnoreAuthentication
     @PostMapping("/bot/action/{action}")
-    public HttpResp sendMessage(@RequestBody JSONObject params,
+    public HttpResp sendMessage(@RequestBody Object params,
                                 @RequestParam(value = "botId",required = false) Long botId,
                                 @RequestParam(value = "async",required = false) String async,
                                 @RequestParam(value = "echo",required = false) String echo,
                                 @RequestParam(value = "timeout",required = false,defaultValue = "10000") Long timeout,
                                 @PathVariable(value = "action") String action) {
-        RequestBox<JSONObject> request = new RequestBox<>();
+        RequestBox<Object> request = new RequestBox<>();
         request.setAction(action);
         request.setParams(params);
         request.setEcho(echo);

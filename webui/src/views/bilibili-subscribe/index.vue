@@ -41,8 +41,6 @@
         <el-button @click="deleteData" type="danger" size="small" plain
                    :disabled="deleteBatchDisabled"
                    icon="el-icon-delete">删除</el-button>
-        <el-button @click="selectTableData" type="primary" size="small" plain
-                   icon="el-icon-refresh">刷新</el-button>
       </div>
       <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row

@@ -66,9 +66,38 @@ public class MessageHolder{
         return messageHolders;
     }
 
+    public static List<MessageHolder> instanceAtAll(){
+        List<MessageHolder> messageHolders = new ArrayList<>();
+        MessageData messageData = new MessageData();
+        messageData.setQq("all");
+        messageHolders.add(new MessageHolder(MessageHolderTypeEnum.at.name(),messageData));
+        return messageHolders;
+    }
+
     public static MessageHolder instanceJson(String json){
         MessageData messageData = new MessageData();
         messageData.setData(json);
         return new MessageHolder(MessageHolderTypeEnum.json.name(),messageData);
     }
+
+
+    /**
+     *
+     * @param songId
+     * @param platform qq 163 kugou migu kuwo custom
+     * @param url 跳转url
+     * @param image 封面
+     * @return
+     */
+    public static List<MessageHolder> instanceMusic(String songId, String platform, String url, String image){
+        List<MessageHolder> messageHolders = new ArrayList<>();
+        MessageData messageData = new MessageData();
+        messageData.setId(songId);
+        messageData.setType(platform);
+        messageData.setUrl(url);
+        messageData.setImage(image);
+        messageHolders.add(new MessageHolder(MessageHolderTypeEnum.music.name(), messageData));
+        return messageHolders;
+    }
+
 }
