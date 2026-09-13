@@ -36,9 +36,16 @@ public interface BilibiliSubscribeSqliteService extends IService<BilibiliSubscri
     boolean updateSubscribe(BilibiliSubscribeSqlite entity);
 
     /**
-     * 修改推送的群与好友
+     * 修改推送的群与好友，不修改开播@全体成员的开关
+     * (群被移除时，该群的@全体成员开关也会一并移除)
      */
     boolean updateTargets(Long id, List<Long> groupIds, List<Long> friendIds);
+
+    /**
+     * 修改推送的群与好友，同时设置开播消息需要@全体成员的群
+     * @param atAllGroupIds @全体成员的群，会自动与groupIds取交集
+     */
+    boolean updateTargets(Long id, List<Long> groupIds, List<Long> atAllGroupIds, List<Long> friendIds);
 
     /**
      * 更新主播昵称、头像、直播间id，定时任务请求到直播状态数据时调用

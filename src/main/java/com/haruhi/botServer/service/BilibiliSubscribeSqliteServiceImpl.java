@@ -117,6 +117,9 @@ public class BilibiliSubscribeSqliteServiceImpl extends ServiceImpl<BilibiliSubs
             entity.setOffNotify(BilibiliSubscribeSqlite.OFF_NOTIFY_DISABLE);
         }
         entity.setGroupIds(PushTargetUtil.joinIds(PushTargetUtil.parseIds(entity.getGroupIds())));
+        entity.setAtAllGroupIds(PushTargetUtil.joinIds(PushTargetUtil.intersect(
+                PushTargetUtil.parseIds(entity.getAtAllGroupIds()),
+                PushTargetUtil.parseIds(entity.getGroupIds()))));
         entity.setFriendIds(PushTargetUtil.joinIds(PushTargetUtil.parseIds(entity.getFriendIds())));
         entity.setCreateTime(now);
         entity.setUpdateTime(now);
@@ -128,15 +131,31 @@ public class BilibiliSubscribeSqliteServiceImpl extends ServiceImpl<BilibiliSubs
         if (Objects.isNull(entity) || Objects.isNull(entity.getId())) {
             return false;
         }
+        BilibiliSubscribeSqlite current = this.getById(entity.getId());
+        if (Objects.isNull(current)) {
+            return false;
+        }
+        // @全体成员的群始终是推送群的子集，所以群列表与开关任一变化都要重新取交集，
+        // 未传的字段用库里的当前值参与计算
+        List<Long> groupIds = Objects.nonNull(entity.getGroupIds())
+                ? PushTargetUtil.parseIds(entity.getGroupIds())
+                : PushTargetUtil.parseIds(current.getGroupIds());
+        List<Long> atAllGroupIds = Objects.nonNull(entity.getAtAllGroupIds())
+                ? PushTargetUtil.parseIds(entity.getAtAllGroupIds())
+                : PushTargetUtil.parseIds(current.getAtAllGroupIds());
+        List<Long> friendIds = Objects.nonNull(entity.getFriendIds())
+                ? PushTargetUtil.parseIds(entity.getFriendIds())
+                : PushTargetUtil.parseIds(current.getFriendIds());
+
         String now = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
         return this.lambdaUpdate()
                 .set(Objects.nonNull(entity.getUid()), BilibiliSubscribeSqlite::getUid, entity.getUid())
                 .set(StringUtils.isNotBlank(entity.getSubType()), BilibiliSubscribeSqlite::getSubType, entity.getSubType())
                 .set(Objects.nonNull(entity.getSelfId()), BilibiliSubscribeSqlite::getSelfId, entity.getSelfId())
-                .set(Objects.nonNull(entity.getGroupIds()), BilibiliSubscribeSqlite::getGroupIds,
-                        PushTargetUtil.joinIds(PushTargetUtil.parseIds(entity.getGroupIds())))
-                .set(Objects.nonNull(entity.getFriendIds()), BilibiliSubscribeSqlite::getFriendIds,
-                        PushTargetUtil.joinIds(PushTargetUtil.parseIds(entity.getFriendIds())))
+                .set(BilibiliSubscribeSqlite::getGroupIds, PushTargetUtil.joinIds(groupIds))
+                .set(BilibiliSubscribeSqlite::getAtAllGroupIds,
+                        PushTargetUtil.joinIds(PushTargetUtil.intersect(atAllGroupIds, groupIds)))
+                .set(BilibiliSubscribeSqlite::getFriendIds, PushTargetUtil.joinIds(friendIds))
                 .set(Objects.nonNull(entity.getEnableStatus()), BilibiliSubscribeSqlite::getEnableStatus, entity.getEnableStatus())
                 .set(Objects.nonNull(entity.getOffNotify()), BilibiliSubscribeSqlite::getOffNotify, entity.getOffNotify())
                 .set(BilibiliSubscribeSqlite::getUpdateTime, now)
@@ -149,9 +168,25 @@ public class BilibiliSubscribeSqliteServiceImpl extends ServiceImpl<BilibiliSubs
         if (Objects.isNull(id)) {
             return false;
         }
+        BilibiliSubscribeSqlite current = this.getById(id);
+        if (Objects.isNull(current)) {
+            return false;
+        }
+        // 未指定@全体成员的群，沿用库里的当前值，由updateTargets统一与新的群列表取交集
+        return this.updateTargets(id, groupIds, PushTargetUtil.parseIds(current.getAtAllGroupIds()), friendIds);
+    }
+
+    @Override
+    public boolean updateTargets(Long id, List<Long> groupIds, List<Long> atAllGroupIds, List<Long> friendIds) {
+        if (Objects.isNull(id)) {
+            return false;
+        }
+        List<Long> groups = PushTargetUtil.parseIds(PushTargetUtil.joinIds(groupIds));
         String now = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
         return this.lambdaUpdate()
-                .set(BilibiliSubscribeSqlite::getGroupIds, PushTargetUtil.joinIds(groupIds))
+                .set(BilibiliSubscribeSqlite::getGroupIds, PushTargetUtil.joinIds(groups))
+                .set(BilibiliSubscribeSqlite::getAtAllGroupIds,
+                        PushTargetUtil.joinIds(PushTargetUtil.intersect(atAllGroupIds, groups)))
                 .set(BilibiliSubscribeSqlite::getFriendIds, PushTargetUtil.joinIds(friendIds))
                 .set(BilibiliSubscribeSqlite::getUpdateTime, now)
                 .eq(BilibiliSubscribeSqlite::getId, id)

@@ -258,6 +258,7 @@
             `face` TEXT,
             `self_id` INTEGER NOT NULL,
             `group_ids` TEXT,
+            `at_all_group_ids` TEXT,
             `friend_ids` TEXT,
             `enable_status` INTEGER NOT NULL DEFAULT 1,
             `off_notify` INTEGER NOT NULL DEFAULT 0,

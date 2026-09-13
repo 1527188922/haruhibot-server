@@ -170,6 +170,7 @@ public class SqliteDatabaseService{
         this.addColumnIfNotExists(DataBaseConst.T_BILIBILI_SUBSCRIBE,"uname","TEXT",false,null);
         this.addColumnIfNotExists(DataBaseConst.T_BILIBILI_SUBSCRIBE,"face","TEXT",false,null);
         this.addColumnIfNotExists(DataBaseConst.T_BILIBILI_SUBSCRIBE,"room_id","INTEGER",false,null);
+        this.addColumnIfNotExists(DataBaseConst.T_BILIBILI_SUBSCRIBE,"at_all_group_ids","TEXT",false,null);
         sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_BILIBILI_SUBSCRIBE,
                 StrFormatter.format("{}_uid_update_time_idx",DataBaseConst.T_BILIBILI_SUBSCRIBE),
                 "uid,update_time",

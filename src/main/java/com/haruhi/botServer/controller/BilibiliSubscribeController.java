@@ -108,7 +108,7 @@ public class BilibiliSubscribeController {
     }
 
     /**
-     * 修改推送的群与好友
+     * 修改推送的群与好友，以及开播消息需要@全体成员的群
      */
     @PostMapping("/updateTargets")
     public HttpResp updateTargets(@RequestBody BilibiliSubscribeTargetReq request) {
@@ -116,7 +116,8 @@ public class BilibiliSubscribeController {
             return HttpResp.fail("缺少订阅id", null);
         }
         try {
-            boolean update = bilibiliSubscribeSqliteService.updateTargets(request.getId(), request.getGroupIds(), request.getFriendIds());
+            boolean update = bilibiliSubscribeSqliteService.updateTargets(request.getId(),
+                    request.getGroupIds(), request.getAtAllGroupIds(), request.getFriendIds());
             return update ? HttpResp.success("修改成功", null) : HttpResp.fail("修改失败，订阅不存在", null);
         } catch (Exception e) {
             log.error("[webui][/bilibili/subscribe]修改推送目标异常：{}", JSONObject.toJSONString(request), e);

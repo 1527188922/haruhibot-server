@@ -6,7 +6,10 @@ import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.BilibiliSubscribeTypeEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.bilibili.LiveStatusInfo;
+import com.haruhi.botServer.dto.qqclient.GroupAtAllRemainInfo;
+import com.haruhi.botServer.dto.qqclient.GroupMember;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
+import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.entity.BilibiliSubscribeSqlite;
 import com.haruhi.botServer.entity.FriendSqlite;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
@@ -52,6 +55,11 @@ import java.util.stream.Collectors;
 @Component
 @ConditionalOnProperty(name = "job.bilibiliLive.enable", havingValue = "1")
 public class BilibiliLiveJob extends AbstractJob {
+
+    /**
+     * 判断是否可以@全体成员时，请求群成员信息/剩余次数的超时时间
+     */
+    private static final long AT_ALL_CHECK_TIMEOUT_MILLIS = 5 * 1000;
 
     @Value("${job.bilibiliLive.cron}")
     private String cron;
@@ -163,7 +171,7 @@ public class BilibiliLiveJob extends AbstractJob {
                 if (!live && !isOffNotify(subscribe)) {
                     continue;
                 }
-                push(subscribe, message, joinedGroupIds, joinedFriendIds);
+                push(subscribe, message, live, joinedGroupIds, joinedFriendIds);
             }
         }
         log.debug("b站直播状态检测完成，目前开播{}人，总共{}人", living, uidSubscribes.size());
@@ -294,8 +302,9 @@ public class BilibiliLiveJob extends AbstractJob {
     /**
      * 推送到订阅配置的群和好友
      * 发送前先判断机器人是否加入了该群、是否添加了该好友，未加入/未添加的直接跳过并打印警告
+     * 群开启了@全体成员时，开播消息最前面会加上at全体成员(需要满足发送条件，见canSendAtAll)
      */
-    private void push(BilibiliSubscribeSqlite subscribe, List<MessageHolder> message,
+    private void push(BilibiliSubscribeSqlite subscribe, List<MessageHolder> message, boolean live,
                       Map<Long, Set<Long>> joinedGroupIds, Map<Long, Set<Long>> joinedFriendIds) {
         List<Long> groupIds = PushTargetUtil.parseIds(subscribe.getGroupIds());
         List<Long> friendIds = PushTargetUtil.parseIds(subscribe.getFriendIds());
@@ -308,6 +317,10 @@ public class BilibiliLiveJob extends AbstractJob {
             DbLog.warn(BusinessModuleEnum.JOB,"推送b站直播消息失败，机器人未连接 self_id:{} uid:{}", selfId, subscribe.getUid());
             return;
         }
+        // @全体成员只对开播消息生效
+        Set<Long> atAllGroupIds = live
+                ? new HashSet<>(PushTargetUtil.parseIds(subscribe.getAtAllGroupIds()))
+                : Collections.emptySet();
         Set<Long> joinedGroups = joinedGroupIds.getOrDefault(selfId, Collections.emptySet());
         for (Long groupId : groupIds) {
             if (!joinedGroups.contains(groupId)) {
@@ -315,7 +328,10 @@ public class BilibiliLiveJob extends AbstractJob {
                         selfId, groupId, subscribe.getUid());
                 continue;
             }
-            bot.sendMessage(null, groupId, MessageTypeEnum.group.getType(), message);
+            List<MessageHolder> groupMessage = atAllGroupIds.contains(groupId)
+                    ? this.messageWithAtAll(bot, selfId, groupId, subscribe.getUid(), message)
+                    : message;
+            bot.sendMessage(null, groupId, MessageTypeEnum.group.getType(), groupMessage);
         }
         Set<Long> joinedFriends = joinedFriendIds.getOrDefault(selfId, Collections.emptySet());
         for (Long friendId : friendIds) {
@@ -326,5 +342,67 @@ public class BilibiliLiveJob extends AbstractJob {
             }
             bot.sendMessage(friendId, null, MessageTypeEnum.privat.getType(), message);
         }
+    }
+
+    /**
+     * 在消息最前面插入一个at全体成员
+     * 不满足发送条件时返回原消息，不影响正常的消息推送
+     */
+    private List<MessageHolder> messageWithAtAll(Bot bot, Long selfId, Long groupId, Long uid,
+                                                 List<MessageHolder> message) {
+        if (!this.canSendAtAll(bot, selfId, groupId, uid)) {
+            return message;
+        }
+        List<MessageHolder> atAllMessage = new ArrayList<>(MessageHolder.instanceAtAll());
+        atAllMessage.addAll(message);
+        return atAllMessage;
+    }
+
+    /**
+     * 是否可以@全体成员
+     * 1.机器人在群内是群主或管理员
+     * 2.群允许@全体成员
+     * 3.还有剩余的@全体成员次数
+     */
+    private boolean canSendAtAll(Bot bot, Long selfId, Long groupId, Long uid) {
+        SyncResponse<GroupMember> memberResp = bot.getGroupMemberInfo(groupId, selfId, AT_ALL_CHECK_TIMEOUT_MILLIS);
+        if (!memberResp.isSuccess() || Objects.isNull(memberResp.getData())) {
+            DbLog.warn(BusinessModuleEnum.JOB,"b站直播消息未@全体成员，获取群成员信息失败 self_id:{} group_id:{} uid:{}",
+                    selfId, groupId, uid);
+            return false;
+        }
+        GroupMember member = memberResp.getData();
+        if (!member.isOwner() && !member.isAdmin()) {
+            DbLog.warn(BusinessModuleEnum.JOB,"b站直播消息未@全体成员，机器人在群内不是群主/管理员 self_id:{} group_id:{} role:{} uid:{}",
+                    selfId, groupId, member.getRole(), uid);
+            return false;
+        }
+
+        SyncResponse<GroupAtAllRemainInfo> remainResp = bot.getGroupAtAllRemain(groupId, AT_ALL_CHECK_TIMEOUT_MILLIS);
+        if (!remainResp.isSuccess() || Objects.isNull(remainResp.getData())) {
+            DbLog.warn(BusinessModuleEnum.JOB,"b站直播消息未@全体成员，获取@全体成员剩余次数失败 self_id:{} group_id:{} uid:{}",
+                    selfId, groupId, uid);
+            return false;
+        }
+        GroupAtAllRemainInfo remain = remainResp.getData();
+        if (!Boolean.TRUE.equals(remain.getCanAtAll())) {
+            DbLog.warn(BusinessModuleEnum.JOB,"b站直播消息未@全体成员，该群不允许@全体成员 self_id:{} group_id:{} uid:{}",
+                    selfId, groupId, uid);
+            return false;
+        }
+        if (noRemainAtAllCount(remain.getRemainAtAllCountForGroup())
+                || noRemainAtAllCount(remain.getRemainAtAllCountForUin())) {
+            DbLog.warn(BusinessModuleEnum.JOB,"b站直播消息未@全体成员，@全体成员次数已用完 self_id:{} group_id:{} 群剩余:{} 个人剩余:{} uid:{}",
+                    selfId, groupId, remain.getRemainAtAllCountForGroup(), remain.getRemainAtAllCountForUin(), uid);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 剩余次数为null时表示接口未返回，按未知处理(不阻止@全体成员)
+     */
+    private static boolean noRemainAtAllCount(Integer count) {
+        return Objects.nonNull(count) && count <= 0;
     }
 }

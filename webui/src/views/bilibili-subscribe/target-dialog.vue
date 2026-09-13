@@ -4,7 +4,22 @@
                :close-on-click-modal="false">
       <div class="box">
         <div class="box-title">已选{{typeLabel}}（{{selectedIds.length}}）</div>
-        <div class="chip-box">
+        <!-- 群需要单独控制是否@全体成员，所以用列表展示，每个群一个开关 -->
+        <div v-if="type === 'group'" class="selected-list">
+          <div v-for="t in selectedInfos" :key="t.id" class="selected-row">
+            <img v-if="t.avatarUrl" class="target-avatar" :src="t.avatarUrl" referrerpolicy="no-referrer">
+            <span class="selected-name" :class="{'not-found': !t.found}" :title="targetTitle(t)">{{ t.name || t.id }}</span>
+            <span v-if="t.name" class="target-code">（{{t.id}}）</span>
+            <span class="row-space"></span>
+            <span class="at-all-label">@全体成员</span>
+            <el-switch :value="atAllIds.includes(t.id)" :disabled="submitLoading"
+                       @change="v => toggleAtAll(t.id, v)"></el-switch>
+            <el-button class="row-remove" type="text" size="mini" icon="el-icon-close"
+                       title="移除" @click="remove(t.id)"></el-button>
+          </div>
+          <span v-if="!selectedInfos.length" class="empty-tip">暂未选择</span>
+        </div>
+        <div v-else class="chip-box">
           <el-tag v-for="t in selectedInfos" :key="t.id" class="target-chip" size="small"
                   :type="t.found ? 'success' : 'danger'" :title="targetTitle(t)" closable
                   @close="remove(t.id)">
@@ -15,7 +30,10 @@
           <span v-if="!selectedInfos.length" class="empty-tip">暂未选择</span>
         </div>
         <div class="form-tip">
-          红色标签表示未在{{type === 'group' ? '群列表' : '好友列表'}}中查询到，可能是机器人未加群/未添加好友，消息将不会推送给该目标
+          红色{{type === 'group' ? '群名' : '标签'}}表示未在{{type === 'group' ? '群列表' : '好友列表'}}中查询到，可能是机器人未加群/未添加好友，消息将不会推送给该目标
+        </div>
+        <div v-if="type === 'group'" class="form-tip">
+          开启@全体成员后，开播消息会在该群@全体成员。需要机器人在群内是群主或管理员、群允许@全体成员且还有剩余次数，否则只推送消息不@全体成员
         </div>
       </div>
       <div class="box">
@@ -64,6 +82,7 @@ export default {
       pendingIds:[],
       manualId:'',
       selectedIds:[],
+      atAllIds:[],
       infoMap:{}
     }
   },
@@ -84,6 +103,7 @@ export default {
       this.callback = callback
       this.title = `管理推送${this.type === 'group' ? '群' : '好友'} - ${row.uname || row.uid}`
       this.selectedIds = this.parseIds(type === 'group' ? row.groupIds : row.friendIds)
+      this.atAllIds = this.parseIds(row.atAllGroupIds)
       this.infoMap = {}
       const infos = (type === 'group' ? row.groupInfos : row.friendInfos) || []
       infos.forEach(info=>this.$set(this.infoMap, info.id, info))
@@ -181,6 +201,17 @@ export default {
     },
     remove(id){
       this.selectedIds = this.selectedIds.filter(e=>e !== id)
+      // 群被移除后，该群的@全体成员开关也要一并移除
+      this.atAllIds = this.atAllIds.filter(e=>e !== id)
+    },
+    toggleAtAll(id, value){
+      if(value){
+        if(!this.atAllIds.includes(id)){
+          this.atAllIds.push(id)
+        }
+      }else{
+        this.atAllIds = this.atAllIds.filter(e=>e !== id)
+      }
     },
     parseIds(ids){
       if(!ids){
@@ -195,6 +226,7 @@ export default {
       const payload = {
         id: this.row.id,
         groupIds: this.type === 'group' ? this.selectedIds.slice() : this.parseIds(this.row.groupIds),
+        atAllGroupIds: this.type === 'group' ? this.atAllIds.slice() : this.parseIds(this.row.atAllGroupIds),
         friendIds: this.type === 'friend' ? this.selectedIds.slice() : this.parseIds(this.row.friendIds)
       }
       this.submitLoading = true
@@ -220,6 +252,7 @@ export default {
       this.pendingIds = []
       this.manualId = ''
       this.selectedIds = []
+      this.atAllIds = []
       this.infoMap = {}
       this.title = ''
     }
@@ -244,6 +277,53 @@ export default {
     border: 1px solid #dcdfe6;
     border-radius: 4px;
     padding: 4px 6px;
+  }
+  .selected-list{
+    min-height: 34px;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    padding: 4px 6px;
+  }
+  .selected-row{
+    display: flex;
+    align-items: center;
+    line-height: 26px;
+    & + .selected-row{
+      border-top: 1px dashed #ebeef5;
+    }
+    .selected-name{
+      font-size: 13px;
+      color: #303133;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      &.not-found{
+        color: #f56c6c;
+      }
+    }
+    .target-code{
+      flex: none;
+      color: #909399;
+      font-size: 12px;
+    }
+    .row-space{
+      flex: 1;
+    }
+    .at-all-label{
+      flex: none;
+      font-size: 12px;
+      color: #909399;
+      margin-right: 6px;
+    }
+    .row-remove{
+      flex: none;
+      margin-left: 6px;
+      color: #909399;
+      &:hover{
+        color: #f56c6c;
+      }
+    }
   }
   .target-chip{
     display: inline-flex;

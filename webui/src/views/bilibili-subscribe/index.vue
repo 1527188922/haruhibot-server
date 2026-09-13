@@ -80,6 +80,7 @@
                         size="small" :type="t.found ? 'success' : 'danger'"
                         :title="targetTitle(t,'群')" closable
                         @close="removeTarget(row,'group',t)">
+                  <span v-if="isAtAll(row,t.id)" class="at-all-badge">@全体</span>
                   <img class="target-avatar" :src="t.avatarUrl" referrerpolicy="no-referrer">{{ t.name || t.id }}
                 </el-tag>
               </template>
@@ -307,6 +308,7 @@ export default {
         subType:row.subType,
         selfId:row.selfId,
         groupIds:row.groupIds,
+        atAllGroupIds:row.atAllGroupIds,
         friendIds:row.friendIds,
         enableStatus:row.enableStatus,
         offNotify:row.offNotify
@@ -340,6 +342,10 @@ export default {
         const payload = {
           id: row.id,
           groupIds: type === 'group' ? this.parseIds(rest) : this.parseIds(row.groupIds),
+          // 群被移除时，该群的@全体成员开关也要一并移除
+          atAllGroupIds: type === 'group'
+            ? this.parseIds(row.atAllGroupIds).filter(id=>id !== target.id)
+            : this.parseIds(row.atAllGroupIds),
           friendIds: type === 'friend' ? this.parseIds(rest) : this.parseIds(row.friendIds)
         }
         updateTargets(payload).then(({data:{code,message}})=>{
@@ -361,6 +367,9 @@ export default {
         .filter(e=>e)
         .map(e=>Number(e))
         .filter(e=>!isNaN(e))
+    },
+    isAtAll(row, groupId){
+      return this.parseIds(row.atAllGroupIds).includes(groupId)
     },
     deleteData(){
       if(this.deleteBatchDisabled){
@@ -458,6 +467,16 @@ export default {
         height: 16px;
         border-radius: 50%;
         margin-right: 4px;
+      }
+      .at-all-badge{
+        flex: none;
+        margin-right: 4px;
+        font-size: 11px;
+        line-height: 14px;
+        padding: 0 3px;
+        border-radius: 2px;
+        color: #fff;
+        background-color: #f56c6c;
       }
       // element给close图标加了top:-1px(为inline-block布局做的补偿)，flex布局下会偏上，这里还原
       ::v-deep .el-tag__close{

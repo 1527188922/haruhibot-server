@@ -7,8 +7,10 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -56,5 +58,20 @@ public class PushTargetUtil {
                 .distinct()
                 .map(String::valueOf)
                 .collect(Collectors.joining(","));
+    }
+
+    /**
+     * 取交集，保持left的顺序，用于保证@全体成员的群始终在推送群列表内
+     */
+    public static List<Long> intersect(Collection<Long> left, Collection<Long> right) {
+        if (CollectionUtils.isEmpty(left) || CollectionUtils.isEmpty(right)) {
+            return Collections.emptyList();
+        }
+        Set<Long> rightSet = new HashSet<>(right);
+        return left.stream()
+                .filter(Objects::nonNull)
+                .filter(rightSet::contains)
+                .distinct()
+                .collect(Collectors.toList());
     }
 }

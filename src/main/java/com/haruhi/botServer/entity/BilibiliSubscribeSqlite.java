@@ -72,6 +72,12 @@ public class BilibiliSubscribeSqlite extends AvatarInfo {
     private String groupIds;
 
     /**
+     * 开播消息需要@全体成员的群，多个群号用逗号分割，始终是group_ids的子集
+     * 为空表示所有群都不@全体成员(默认关闭)
+     */
+    private String atAllGroupIds;
+
+    /**
      * 私聊推送给哪些人，多个qq号用逗号分割
      */
     private String friendIds;

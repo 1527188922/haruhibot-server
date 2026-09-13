@@ -315,6 +315,20 @@ public class Bot implements Closeable {
         });
     }
 
+    /**
+     * 获取群成员信息
+     * @param groupId 群号
+     * @param userId 群成员qq号
+     * @return
+     */
+    public SyncResponse<GroupMember> getGroupMemberInfo(Long groupId, Long userId, long timeout){
+        Map<String, Object> params = new HashMap<>(3);
+        params.put("group_id",groupId);
+        params.put("user_id",userId);
+        return sendSyncRequest(QqClientActionEnum.GET_GROUP_MEMBER_INFO, params, timeout, new TypeReference<SyncResponse<GroupMember>>() {
+        });
+    }
+
     public SyncResponse<List<GroupInfo>> getGroupList(boolean noCache,long timeout){
         Map<String, Object> params = new HashMap<>(1);
         params.put("no_cache",noCache);

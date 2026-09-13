@@ -36,8 +36,8 @@ export const update = (data) => request({
 });
 
 /**
- * 修改推送的群与好友
- * @param data {id,groupIds:[],friendIds:[]}
+ * 修改推送的群与好友，以及开播消息需要@全体成员的群
+ * @param data {id,groupIds:[],atAllGroupIds:[],friendIds:[]}
  */
 export const updateTargets = (data) => request({
     url: baseUrl + '/bilibili/subscribe/updateTargets',

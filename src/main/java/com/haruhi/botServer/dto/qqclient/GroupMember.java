@@ -4,6 +4,7 @@ import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * 群成员信息
@@ -23,6 +24,7 @@ public class GroupMember implements Serializable {
     private Long lastSentTime;
     private String level;
     private String nickname;
+    //owner admin member
     private String role;
     private String sex;
     @JSONField(name = "shut_up_timestamp")
@@ -33,4 +35,17 @@ public class GroupMember implements Serializable {
     private Boolean unfriendly;
     @JSONField(name = "user_id")
     private Long userId;
+
+
+    public boolean isOwner(){
+        return Objects.equals(role, "owner");
+    }
+
+    public boolean isAdmin(){
+        return Objects.equals(role, "admin");
+    }
+
+    public boolean isMember(){
+        return Objects.equals(role, "member");
+    }
 }
