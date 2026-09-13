@@ -36,6 +36,8 @@ public class DataBaseConst {
     public final static String T_SEND_LIKE_RECORD = "t_send_like_record";
     public final static String T_DICTIONARY = "t_dictionary";
     public final static String T_GROUP_INFO = "t_group_info";
+    // 群成员表
+    public final static String T_GROUP_MEMBER = "t_group_member";
     public final static String T_FRIEND = "t_friend";
     public final static String T_SYSTEM_LOG = "t_system_log";
     // 订阅推送表（如b站直播开播推送）

@@ -78,6 +78,13 @@ public interface SqliteDatabaseInitMapper {
 
     int createGroupInfo(@Param("tableName") String tableName);
 
+    /**
+     * 群成员表
+     * @param tableName
+     * @return
+     */
+    int createGroupMember(@Param("tableName") String tableName);
+
     int createFriend(@Param("tableName") String tableName);
 
     int createSystemLog(@Param("tableName") String tableName);

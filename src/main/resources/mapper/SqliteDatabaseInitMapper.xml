@@ -208,6 +208,31 @@
           `group_level` INTEGER
         );
     </update>
+    <update id="createGroupMember">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          `self_id` INTEGER NOT NULL,
+          `group_id` INTEGER NOT NULL,
+          `user_id` INTEGER NOT NULL,
+          `nickname` TEXT,
+          `card` TEXT,
+          `sex` TEXT,
+          `age` INTEGER,
+          `area` TEXT,
+          `level` TEXT,
+          `role` TEXT,
+          `title` TEXT,
+          `join_time` INTEGER,
+          `last_sent_time` INTEGER,
+          `shut_up_timestamp` INTEGER,
+          `title_expire_time` INTEGER,
+          `unfriendly` INTEGER,
+          `card_changeable` INTEGER,
+          `left_flag` INTEGER NOT NULL DEFAULT 0,
+          `create_time` DATETIME,
+          `modify_time` DATETIME
+        );
+    </update>
     <update id="createFriend">
         CREATE TABLE IF NOT EXISTS `${tableName}` (
           `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,

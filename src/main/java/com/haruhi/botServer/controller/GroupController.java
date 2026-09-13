@@ -7,9 +7,13 @@ import com.haruhi.botServer.vo.CodeNameReq;
 import com.haruhi.botServer.vo.CodeNameResp;
 import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
+import com.haruhi.botServer.entity.GroupMemberSqlite;
 import com.haruhi.botServer.service.GroupInfoSqliteService;
+import com.haruhi.botServer.service.GroupMemberSqliteService;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.vo.GroupInfoQueryReq;
+import com.haruhi.botServer.vo.GroupMemberQueryReq;
+import com.haruhi.botServer.vo.GroupMemberRefreshResp;
 import com.haruhi.botServer.ws.Bot;
 import com.haruhi.botServer.ws.BotContainer;
 import org.apache.commons.collections4.CollectionUtils;
@@ -26,6 +30,9 @@ public class GroupController {
 
     @Autowired
     private GroupInfoSqliteService groupInfoSqliteService;
+
+    @Autowired
+    private GroupMemberSqliteService groupMemberSqliteService;
 
 
     @PostMapping("/list")
@@ -85,4 +92,32 @@ public class GroupController {
                 });
         return HttpResp.success("刷新完成",list);
     }
+
+    @PostMapping("/member/search")
+    public HttpResp<IPage<GroupMemberSqlite>> searchMember(@RequestBody GroupMemberQueryReq request){
+        return HttpResp.success(groupMemberSqliteService.search(request));
+    }
+
+    /**
+     * 刷新指定群的群成员
+     * 最新数据中不存在的群员标记为离群（只标记不删除）
+     */
+    @PostMapping("/member/refresh")
+    public HttpResp<GroupMemberRefreshResp> refreshMember(@RequestParam(value = "botId",required = false) Long botId,
+                                                          @RequestParam(value = "groupId",required = false) Long groupId){
+        if (Objects.isNull(botId) || Objects.isNull(groupId)) {
+            return HttpResp.fail("缺少机器人QQ或群号",null);
+        }
+        Bot bot = BotContainer.getBotById(botId);
+        if (bot == null) {
+            return HttpResp.fail("机器人QQ不存在或未连接："+botId,null);
+        }
+        GroupMemberRefreshResp resp = groupMemberSqliteService.refreshGroupMember(bot, groupId, MEMBER_REFRESH_TIMEOUT);
+        return HttpResp.success("刷新完成",resp);
+    }
+
+    /**
+     * 获取群成员超时时间
+     */
+    private static final long MEMBER_REFRESH_TIMEOUT = 30 * 1000L;
 }

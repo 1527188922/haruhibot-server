@@ -146,6 +146,16 @@ public class SqliteDatabaseService{
                 "group_id,self_id",
                 false);
 
+        sqliteDatabaseInitMapper.createGroupMember(DataBaseConst.T_GROUP_MEMBER);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_GROUP_MEMBER,
+                StrFormatter.format("{}_group_user_idx",DataBaseConst.T_GROUP_MEMBER),
+                "group_id,user_id",
+                false);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_GROUP_MEMBER,
+                StrFormatter.format("{}_user_idx",DataBaseConst.T_GROUP_MEMBER),
+                "user_id",
+                false);
+
         sqliteDatabaseInitMapper.createFriend(DataBaseConst.T_FRIEND);
         sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_FRIEND,
                 StrFormatter.format("{}_user_self_idx",DataBaseConst.T_FRIEND),
