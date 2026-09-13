@@ -150,6 +150,7 @@ import EditDialog from "./edit-dialog.vue";
 import TargetDialog from "./target-dialog.vue";
 import {search as searchApi, update as updateApi, updateTargets, deleteBatch, jobInfo as jobInfoApi}
   from "@/api/bilibili-subscribe";
+import {parseIds} from "@/util/bili-subscribe";
 
 export default {
   name: 'BilibiliSubscribe',
@@ -341,12 +342,12 @@ export default {
       }).then(()=>{
         const payload = {
           id: row.id,
-          groupIds: type === 'group' ? this.parseIds(rest) : this.parseIds(row.groupIds),
+          groupIds: type === 'group' ? parseIds(rest) : parseIds(row.groupIds),
           // 群被移除时，该群的@全体成员开关也要一并移除
           atAllGroupIds: type === 'group'
-            ? this.parseIds(row.atAllGroupIds).filter(id=>id !== target.id)
-            : this.parseIds(row.atAllGroupIds),
-          friendIds: type === 'friend' ? this.parseIds(rest) : this.parseIds(row.friendIds)
+            ? parseIds(row.atAllGroupIds).filter(id=>id !== target.id)
+            : parseIds(row.atAllGroupIds),
+          friendIds: type === 'friend' ? parseIds(rest) : parseIds(row.friendIds)
         }
         updateTargets(payload).then(({data:{code,message}})=>{
           if(code !== 200){
@@ -359,17 +360,8 @@ export default {
         })
       })
     },
-    parseIds(ids){
-      if(!ids){
-        return []
-      }
-      return String(ids).split(/[,，\s]+/)
-        .filter(e=>e)
-        .map(e=>Number(e))
-        .filter(e=>!isNaN(e))
-    },
     isAtAll(row, groupId){
-      return this.parseIds(row.atAllGroupIds).includes(groupId)
+      return parseIds(row.atAllGroupIds).includes(groupId)
     },
     deleteData(){
       if(this.deleteBatchDisabled){

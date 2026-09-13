@@ -1,6 +1,6 @@
 <template>
   <div id="BilibiliSubscribeEditDialog">
-    <el-dialog :visible.sync="visible" :title="title" width="520px" @closed="dialogClosed" v-dialogDrag
+    <el-dialog :visible.sync="visible" :title="title" width="660px" @closed="dialogClosed" v-dialogDrag
                :close-on-click-modal="false">
       <el-form :model="formData" label-position="right" ref="editForm" label-width="100px" size="small">
         <el-form-item label="主播UID" prop="uid" :rules="[{required: true, message:'请输入b站主播uid',trigger: 'blur'}]">
@@ -10,7 +10,8 @@
                       :rules="[{required: true, message:'请选择或输入机器人QQ号',trigger: 'change'}]">
           <el-select v-model="formData.selfId" class="full-width" filterable allow-create default-first-option
                      popper-class="bili-bot-select-popper"
-                     placeholder="选择当前已连接的机器人，或直接输入QQ号" @focus="loadBots">
+                     placeholder="选择当前已连接的机器人，或直接输入QQ号" @focus="loadBots"
+                     @change="selfIdChange">
             <el-option v-for="b in botList" :key="b.id" :label="botLabel(b)" :value="b.id">
               <img v-if="b.avatarUrl" class="bot-avatar" :src="b.avatarUrl" referrerpolicy="no-referrer">
               <span class="bot-name">{{`${b.name || b.id}（${b.id}）`}}</span>
@@ -23,12 +24,14 @@
           </el-select>
         </el-form-item>
         <el-form-item label="推送群号" prop="groupIds">
-          <el-input v-model="formData.groupIds" type="textarea" :autosize="{ minRows: 2}"
-                    placeholder="多个群号用逗号分割，可不填"></el-input>
+          <push-target-select ref="groupSelect" type="group"
+                              :ids.sync="formData.groupIds" :at-all-ids.sync="formData.atAllGroupIds"
+                              :disabled="submitLoading"></push-target-select>
         </el-form-item>
         <el-form-item label="推送好友QQ" prop="friendIds">
-          <el-input v-model="formData.friendIds" type="textarea" :autosize="{ minRows: 2}"
-                    placeholder="多个QQ号用逗号分割，可不填"></el-input>
+          <push-target-select ref="friendSelect" type="friend"
+                              :ids.sync="formData.friendIds"
+                              :disabled="submitLoading"></push-target-select>
         </el-form-item>
         <el-form-item label="是否启用" prop="enableStatus">
           <el-switch v-model="formData.enableStatus" :active-value="1" :inactive-value="0"></el-switch>
@@ -46,14 +49,17 @@
 </template>
 <script>
 import numberInput from "@/components/input/numberInput.vue";
+import PushTargetSelect from "./push-target-select.vue";
 import {deepClone} from "@/util/util";
+import {parseIds, joinIds} from "@/util/bili-subscribe";
 import {add, update} from "@/api/bilibili-subscribe";
 import {botList as botListApi} from "@/api/system";
 
 export default {
   name:'BilibiliSubscribeEditDialog',
   components:{
-    numberInput
+    numberInput,
+    PushTargetSelect
   },
   data(){
     return{
@@ -71,11 +77,24 @@ export default {
         uid:'',
         selfId:'',
         subType:'live',
-        groupIds:'',
-        friendIds:'',
+        groupIds:[],
+        atAllGroupIds:[],
+        friendIds:[],
         enableStatus:1,
         offNotify:0
       }
+    },
+    /**
+     * 切换机器人后，推送目标候选(该机器人已加入的群/已添加的好友)会变化，重新加载一次
+     * change事件会带上最新的qq号，不需要等prop更新
+     */
+    selfIdChange(selfId){
+      this.loadTargets(selfId)
+    },
+    loadTargets(selfId){
+      const botId = this.parseNumber(selfId)
+      this.$refs.groupSelect.load(botId)
+      this.$refs.friendSelect.load(botId)
     },
     botLabel(bot){
       return bot.name ? `${bot.name}（${bot.id}）` : String(bot.id)
@@ -110,6 +129,7 @@ export default {
       this.$nextTick(()=>{
         this.formData = row ? this.toFormData(row) : this.emptyData()
         this.loadBots()
+        this.loadTargets(this.formData.selfId)
       })
     },
     toFormData(row){
@@ -119,8 +139,9 @@ export default {
         uid:data.uid || '',
         selfId:data.selfId || '',
         subType:data.subType || 'live',
-        groupIds:data.groupIds || '',
-        friendIds:data.friendIds || '',
+        groupIds:parseIds(data.groupIds),
+        atAllGroupIds:parseIds(data.atAllGroupIds),
+        friendIds:parseIds(data.friendIds),
         enableStatus:data.enableStatus === 0 ? 0 : 1,
         offNotify:data.offNotify === 1 ? 1 : 0
       }
@@ -140,7 +161,13 @@ export default {
           type: 'warning'
         }).then(()=>{
           const fun = this.isAdd ? add : update
-          const payload = Object.assign({}, this.formData, {selfId})
+          const payload = Object.assign({}, this.formData, {
+            selfId,
+            // 后端推送目标以逗号分割的字符串存储
+            groupIds: joinIds(this.formData.groupIds),
+            atAllGroupIds: joinIds(this.formData.atAllGroupIds),
+            friendIds: joinIds(this.formData.friendIds)
+          })
           this.submitLoading = true
           fun(payload).then(({data:{code,message}})=>{
             if(code !== 200){
@@ -164,6 +191,8 @@ export default {
       this.title = ''
       this.isAdd = false
       this.formData = this.emptyData()
+      this.$refs.groupSelect.reset()
+      this.$refs.friendSelect.reset()
     }
   }
 }
