@@ -116,8 +116,7 @@
         </el-table-column>
         <el-table-column label="群成员" prop="userId" min-width="170" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <multi-cell :image-url="row.userAvatarUrl" :text-list="[row.userId,row.nickname]"
-                        :title-list="[`QQ：${row.userId}`, `QQ昵称：${row.nickname}`]"></multi-cell>
+            <multi-cell :image-url="row.userAvatarUrl" :text-list="[row.userId,row.card || row.nickname]"></multi-cell>
           </template>
         </el-table-column>
         <el-table-column label="群昵称" prop="card" min-width="110" align="center" show-tooltip-when-overflow/>
@@ -131,9 +130,9 @@
         <el-table-column label="身份" prop="role" min-width="80" align="center" show-tooltip-when-overflow>
           <template slot-scope="{row}">{{formatRole(row.role)}}</template>
         </el-table-column>
-        <el-table-column label="性别" prop="sex" min-width="60" align="center" show-tooltip-when-overflow>
-          <template slot-scope="{row}">{{formatSex(row.sex)}}</template>
-        </el-table-column>
+<!--        <el-table-column label="性别" prop="sex" min-width="60" align="center" show-tooltip-when-overflow>-->
+<!--          <template slot-scope="{row}">{{formatSex(row.sex)}}</template>-->
+<!--        </el-table-column>-->
         <el-table-column label="等级" prop="level" min-width="60" align="center" show-tooltip-when-overflow/>
         <el-table-column label="入群时间" prop="joinTime" min-width="150" align="center" show-tooltip-when-overflow>
           <template slot-scope="{row}">{{row.formattedJoinTime}}</template>
@@ -141,9 +140,9 @@
         <el-table-column label="最近发言时间" prop="lastSentTime" min-width="150" align="center" show-tooltip-when-overflow>
           <template slot-scope="{row}">{{row.formattedLastSentTime}}</template>
         </el-table-column>
-        <el-table-column label="名片可修改" prop="cardChangeable" min-width="100" align="center" show-tooltip-when-overflow>
-          <template slot-scope="{row}">{{formatBool(row.cardChangeable)}}</template>
-        </el-table-column>
+<!--        <el-table-column label="名片可修改" prop="cardChangeable" min-width="100" align="center" show-tooltip-when-overflow>-->
+<!--          <template slot-scope="{row}">{{formatBool(row.cardChangeable)}}</template>-->
+<!--        </el-table-column>-->
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="memberPagination" @size-change="memberSizeChange" @current-change="memberCurrentChange" />

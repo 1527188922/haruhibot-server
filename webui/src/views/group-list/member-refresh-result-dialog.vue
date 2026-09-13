@@ -16,8 +16,7 @@
             </template>
             <div v-for="member in addedList" :key="`added-${member.userId}`" class="member-line">
               <multi-cell :image-url="member.userAvatarUrl"
-                          :text-list="[member.userId, member.nickname, member.card]"
-                          :title-list="[`QQ：${member.userId}`, `QQ昵称：${member.nickname}`, `群昵称：${member.card}`]"></multi-cell>
+                          :text-list="[member.userId, member.card || member.nickname]"></multi-cell>
             </div>
           </el-collapse-item>
           <el-collapse-item name="left" :disabled="!hasData(leftList)">
@@ -26,8 +25,7 @@
             </template>
             <div v-for="member in leftList" :key="`left-${member.userId}`" class="member-line">
               <multi-cell :image-url="member.userAvatarUrl"
-                          :text-list="[member.userId, member.nickname, member.card]"
-                          :title-list="[`QQ：${member.userId}`, `QQ昵称：${member.nickname}`, `群昵称：${member.card}`]"></multi-cell>
+                          :text-list="[member.userId, member.card || member.nickname]"></multi-cell>
             </div>
           </el-collapse-item>
           <el-collapse-item name="rejoin" :disabled="!hasData(rejoinList)">
@@ -36,8 +34,7 @@
             </template>
             <div v-for="member in rejoinList" :key="`rejoin-${member.userId}`" class="member-line">
               <multi-cell :image-url="member.userAvatarUrl"
-                          :text-list="[member.userId, member.nickname, member.card]"
-                          :title-list="[`QQ：${member.userId}`, `QQ昵称：${member.nickname}`, `群昵称：${member.card}`]"></multi-cell>
+                          :text-list="[member.userId, member.card || member.nickname]"></multi-cell>
             </div>
           </el-collapse-item>
         </el-collapse>
