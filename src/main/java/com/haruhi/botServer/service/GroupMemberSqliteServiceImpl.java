@@ -143,7 +143,7 @@ public class GroupMemberSqliteServiceImpl extends ServiceImpl<GroupMemberSqliteM
                 .last("""
                         ORDER BY group_id asc,
                         CASE role WHEN 'owner' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END asc,
-                        left_flag desc,
+                        left_flag asc,
                         last_sent_time desc,
                         user_id ASC
                         """);

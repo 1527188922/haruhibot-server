@@ -11,7 +11,7 @@ public class GroupMemberQueryReq extends PageReq {
     private String nickname;
     private String card;
     /**
-     * 是否离群  null:全部 true:已离群 false:在群
+     * 是否离群  null:全部 1:已离群 0:在群
      */
     private Integer leftFlag;
 }

@@ -68,10 +68,11 @@
         <el-table-column fixed label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" align="center" fixed>
+        <el-table-column label="操作" width="230" align="center" fixed>
           <template slot-scope="{row}">
+            <el-button type="text" size="small" @click="showMemberList(row)">查看群员</el-button>
             <el-button type="text" size="small" @click="showUserList(row)">发言人列表</el-button>
-            <el-button type="text" size="small" :loading="isMemberRefreshing(row)"
+            <el-button type="text" class="danger-text" size="small" :loading="isMemberRefreshing(row)"
                        @click="refreshGroupMember(row)">刷新成员</el-button>
           </template>
         </el-table-column>
@@ -301,6 +302,19 @@ export default {
     },
     showUserList(row){
       this.$refs.userListDialog.open(row)
+    },
+    /**
+     * 跳转到群成员tab，并带上当前行的机器人与群号查询条件
+     */
+    showMemberList(row){
+      this.activeTab = 'member'
+      this.memberQueryFormObj.groupId = row.groupId
+      this.memberQueryFormObj.selfId = row.selfId
+      this.memberQueryFormObj.userId = ''
+      this.memberQueryFormObj.nickname = ''
+      this.memberQueryFormObj.card = ''
+      this.memberQueryFormObj.leftFlag = null
+      this.searchMember()
     },
     refreshCache(){
       this.refreshLoading = true
