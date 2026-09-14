@@ -24,12 +24,16 @@ import {codeNameList} from "@/api/group";
 
 /**
  * 群号选择器
- * 下拉候选(群号/群名/群头像)由组件内部调用群列表接口(带关键字远程搜索)获取，使用方只需v-model绑定群号
+ * 下拉候选(群号/群名/群头像)由组件内部调用群列表接口获取，使用方只需v-model绑定群号
  * 与推送目标选择器(push-target-select)的下拉option样式保持一致
- * 支持直接输入群号(allow-create)，群号不在群列表(机器人未加群)时也能作为查询条件使用
+ *
+ * limit>0：按关键字远程搜索(输入防抖)；输入框没有过滤值时每次展开下拉都重新请求一次，避免只展示上一次搜索的结果
+ * limit<=0：候选为全量群列表，只在首次展开时请求一次接口，之后(关键字搜索、清空关键字)都只在内存中过滤
+ * 输入框里直接输入群号(纯数字)可以选中群列表中不存在的群号，方便机器人未加群时按群号查询
  *
  * 用法：
  * <group-select v-model="queryFormObj.groupId" width="180px" placeholder="输入群号或群名"/>
+ * <group-select v-model="queryFormObj.groupId" :limit="0"/>   全量候选，只在首次展开时请求一次
  * 事件：change(value, group)  group为选中项({code,name,avatarUrl})，手动输入且群列表查不到时为null
  */
 export default {
@@ -74,6 +78,7 @@ export default {
     },
     /**
      * 候选数量上限
+     * 小于等于0表示不限制数量(全量候选)，此时只在首次展开时请求一次接口，之后都在内存中过滤
      */
     limit:{
       type:Number,
@@ -89,7 +94,12 @@ export default {
   },
   data(){
     return{
+      // 下拉框当前展示的候选
       options:[],
+      // 全量模式(limit<=0)下缓存的全量候选
+      allOptions:[],
+      // 全量候选是否已请求过
+      fullLoaded:false,
       loading:false,
       // 当前输入的关键字，el-select的输入框内容不对外暴露，这里在remote-method里自己记录
       keyword:'',
@@ -118,6 +128,12 @@ export default {
       return this.normalizeValue(this.value)
     },
     /**
+     * 全量模式：候选就是整个群列表，不需要每次搜索都请求接口
+     */
+    fullMode(){
+      return !(this.limit > 0)
+    },
+    /**
      * 只有输入的是群号(纯数字)才允许创建候选，避免把群名当成群号提交
      */
     allowCreateOption(){
@@ -137,6 +153,16 @@ export default {
     remoteSearch(keyword){
       this.keyword = keyword || ''
       this.clearSearchTimer()
+      // 全量模式：只在内存中过滤，只有还没拿到全量候选时才请求一次
+      if(this.fullMode){
+        this.ensureFullOptions()
+        return
+      }
+      // 没有过滤值：立即拉取(避免展示上一次搜索的结果)，有关键字时防抖
+      if(!this.keyword){
+        this.loadOptions('')
+        return
+      }
       this.searchTimer = setTimeout(()=>{
         this.searchTimer = null
         this.loadOptions(this.keyword)
@@ -149,11 +175,31 @@ export default {
       }
     },
     /**
-     * 下拉框展开时(未输入关键字)加载候选，el-select首次展开不会触发remote-method，所以这里主动请求一次
+     * 下拉框展开时加载候选
+     * el-select首次展开不会触发remote-method，所以这里主动请求一次
+     * 非全量模式每次展开都没有过滤值，重新请求一次，避免只展示上一次搜索的结果
      */
     handleVisibleChange(visible){
       this.keyword = ''
-      if(visible && !this.options.length){
+      if(!visible){
+        return
+      }
+      this.clearSearchTimer()
+      if(this.fullMode){
+        this.ensureFullOptions()
+        return
+      }
+      this.loadOptions('')
+    },
+    /**
+     * 全量模式：全量候选只请求一次，之后(含关键字搜索)都只在内存中过滤
+     */
+    ensureFullOptions(){
+      if(this.fullLoaded){
+        this.options = this.filterFromAll(this.keyword)
+        return
+      }
+      if(!this.loading){
         this.loadOptions('')
       }
     },
@@ -161,8 +207,9 @@ export default {
       const seq = ++this.searchSeq
       this.loading = true
       codeNameList({
-        codeOrName:keyword,
-        limit:this.limit
+        // 全量模式不带过滤条件(limit<=0时后端不会加LIMIT)，拿到全量后在内存中过滤
+        codeOrName:this.fullMode ? '' : (keyword || ''),
+        limit:this.fullMode ? 0 : this.limit
       }).then(({data:{code,message,data}})=>{
         if(seq !== this.searchSeq){
           return
@@ -171,6 +218,13 @@ export default {
           return this.$message.error(message || '群列表查询失败')
         }
         const list = data || []
+        if(this.fullMode){
+          this.fullLoaded = true
+          this.allOptions = list
+          // 请求期间用户可能已经输入了关键字，这里按当前关键字过滤
+          this.options = this.filterFromAll(this.keyword)
+          return
+        }
         // 已选中的群如果不在本次候选里(如手动输入的群号)，保留其名称/头像
         const selected = this.findOption(this.value)
         if(selected && !this.contains(list,selected.code)){
@@ -188,11 +242,36 @@ export default {
       })
     },
     /**
+     * 全量候选的内存过滤，关键字为空时返回全量
+     */
+    filterFromAll(keyword){
+      const k = (keyword || '').toLowerCase()
+      if(!k){
+        return this.allOptions.slice()
+      }
+      return this.allOptions.filter(o=>this.matchKeyword(o,k))
+    },
+    /**
+     * keyword需要是已经转成小写的
+     */
+    matchKeyword(o,keyword){
+      return String(o.code).toLowerCase().indexOf(keyword) !== -1
+        || (o.name || '').toLowerCase().indexOf(keyword) !== -1
+    },
+    /**
      * 查询群号对应的群名/头像，用于外部赋值的群号回显
      * 查不到(机器人未加群或被删除)时不处理，el-select会直接展示群号
      */
     resolveValue(value){
-      if(value === '' || value === null || value === undefined || this.findOption(value)){
+      if(value === '' || value === null || value === undefined){
+        return
+      }
+      // 全量候选已在内存中，直接取
+      if(this.fullLoaded){
+        this.pushOption(this.findIn(this.allOptions,value))
+        return
+      }
+      if(this.findOption(value)){
         return
       }
       const code = String(value)
@@ -208,10 +287,7 @@ export default {
         if(respCode !== 200){
           return
         }
-        const info = (data || []).find(e=>String(e.code) === code)
-        if(info && !this.findOption(info.code)){
-          this.options.push(info)
-        }
+        this.pushOption((data || []).find(e=>String(e.code) === code))
       }).catch(()=>{
         // 回显失败静默处理，不影响组件使用
       }).finally(()=>{
@@ -219,6 +295,11 @@ export default {
           this.resolvingValue = null
         }
       })
+    },
+    pushOption(info){
+      if(info && !this.contains(this.options,info.code)){
+        this.options.push(info)
+      }
     },
     handleChange(v){
       const value = this.normalizeValue(v)
@@ -240,11 +321,14 @@ export default {
     contains(list,code){
       return list.some(e=>String(e.code) === String(code))
     },
-    findOption(code){
+    findIn(list,code){
       if(code === '' || code === null || code === undefined){
         return null
       }
-      return this.options.find(e=>String(e.code) === String(code)) || null
+      return list.find(e=>String(e.code) === String(code)) || null
+    },
+    findOption(code){
+      return this.findIn(this.options,code)
     }
   }
 }
