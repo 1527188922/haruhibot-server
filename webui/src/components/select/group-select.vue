@@ -159,13 +159,15 @@ export default {
         return
       }
       // 没有过滤值：立即拉取(避免展示上一次搜索的结果)，有关键字时防抖
-      if(!this.keyword){
+      const current = this.keyword
+      if(!current){
         this.loadOptions('')
         return
       }
       this.searchTimer = setTimeout(()=>{
         this.searchTimer = null
-        this.loadOptions(this.keyword)
+        // 用发起时捕获的关键字，避免定时器触发前关键字被清掉(下拉收起)导致搜索被丢掉
+        this.loadOptions(current)
       },300)
     },
     clearSearchTimer(){
@@ -180,10 +182,10 @@ export default {
      * 非全量模式每次展开都没有过滤值，重新请求一次，避免只展示上一次搜索的结果
      */
     handleVisibleChange(visible){
-      this.keyword = ''
       if(!visible){
         return
       }
+      this.keyword = ''
       this.clearSearchTimer()
       if(this.fullMode){
         this.ensureFullOptions()
@@ -225,10 +227,13 @@ export default {
           this.options = this.filterFromAll(this.keyword)
           return
         }
-        // 已选中的群如果不在本次候选里(如手动输入的群号)，保留其名称/头像
-        const selected = this.findOption(this.value)
-        if(selected && !this.contains(list,selected.code)){
-          list.push(selected)
+        // 只有"无过滤值"的候选才保留已选中的群(手动输入的群号在群列表里查不到名称/头像，需要它来展示名称)
+        // 关键字搜索的结果里不能塞：过滤后列表里混进一个不匹配的项，看起来就像"过滤完只剩选中的那个"
+        if(!keyword){
+          const selected = this.findOption(this.value)
+          if(selected && !this.contains(list,selected.code)){
+            list.push(selected)
+          }
         }
         this.options = list
       }).catch(e=>{
@@ -297,7 +302,9 @@ export default {
       })
     },
     pushOption(info){
-      if(info && !this.contains(this.options,info.code)){
+      // 有关键字过滤时不往候选里补，避免过滤结果里混进不匹配的项
+      // (此时选中的群是从过滤结果里选的，el-select自己缓存了它的label，不影响输入框展示)
+      if(info && !this.keyword && !this.contains(this.options,info.code)){
         this.options.push(info)
       }
     },
