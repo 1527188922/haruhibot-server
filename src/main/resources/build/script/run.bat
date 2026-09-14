@@ -1,1 +1,4 @@
-java -jar -Xms1024m -Xmx1024m haruhibotServer.jar
+chcp 65001
+call java -jar -Xms512m -Xmx512m -Xss256k -XX:+UseG1GC haruhibotServer.jar
+
+pause
