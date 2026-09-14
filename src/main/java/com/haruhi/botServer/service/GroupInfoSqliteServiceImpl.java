@@ -12,7 +12,7 @@ import com.haruhi.botServer.mapper.GroupInfoSqliteMapper;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DateTimeUtil;
 import com.haruhi.botServer.vo.CodeNameReq;
-import com.haruhi.botServer.vo.CodeNameResp;
+import com.haruhi.botServer.vo.GroupCodeNameResp;
 import com.haruhi.botServer.vo.GroupInfoQueryReq;
 import com.haruhi.botServer.ws.Bot;
 import org.apache.commons.collections4.CollectionUtils;
@@ -150,11 +150,13 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
 
 
     @Override
-    public List<CodeNameResp> codeNameList(CodeNameReq request) {
+    public List<GroupCodeNameResp> codeNameList(CodeNameReq request) {
         String codeOrName = request.getCodeOrName();
         LambdaQueryWrapper<GroupInfoSqlite> queryWrapper = new LambdaQueryWrapper<GroupInfoSqlite>()
-                .select(GroupInfoSqlite::getGroupId, GroupInfoSqlite::getGroupName)
-                .last(!request.getEqCode() && !request.getEqName(),"LIMIT "+request.getLimit());
+                .select(GroupInfoSqlite::getGroupId, GroupInfoSqlite::getGroupName);
+        if (request.getLimit() > 0) {
+            queryWrapper.last("limit " + request.getLimit());
+        }
         if (StringUtils.isNotBlank(codeOrName)) {
             if(request.getEqCode()){
                 queryWrapper.eq(GroupInfoSqlite::getGroupId, codeOrName);
@@ -167,13 +169,8 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
             }
         }
         List<GroupInfoSqlite> list = this.list(queryWrapper);
-        Map<String, CodeNameResp> collect = list.stream()
-                .map(e -> {
-                    CodeNameResp codeNameResp = new CodeNameResp();
-                    codeNameResp.setCode(e.getGroupId());
-                    codeNameResp.setName(e.getGroupName());
-                    return codeNameResp;
-                })
+        Map<String, GroupCodeNameResp> collect = list.stream()
+                .map(e -> new GroupCodeNameResp(e.getGroupId(), e.getGroupName(), CommonUtil.getGroupAvatarUrl(e.getGroupId(), false)))
                 .collect(Collectors.groupingBy(e -> e.getCode() + e.getName(), Collectors.collectingAndThen(Collectors.toList(),
                         List::getFirst)));
         return new ArrayList<>(collect.values());

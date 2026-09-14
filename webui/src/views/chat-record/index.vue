@@ -12,17 +12,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="群号" prop="groupId" v-show="isQueryGroup">
-            <el-autocomplete class="form-input" v-model="queryFormObj.groupId"  :fetch-suggestions="fetchGroup"
-                             clearable
-                             popper-class="adaptive-width-autocomplete-popper"
-                             placeholder="输入群号或名称"
-                             @select="handleGroupSelectorSelect"
-                             :maxlength="30"
-                             @input="handleGroupSelectorInput">
-              <template slot-scope="{ item }">
-                {{ `${item.code}（${item.name}）` }}
-              </template>
-            </el-autocomplete>
+            <group-select v-model="queryFormObj.groupId" width="180px" placeholder="输入群号或群名" :limit="-1"/>
           </el-form-item>
           <el-form-item label="机器人" prop="selfId">
             <el-autocomplete class="form-input" v-model="queryFormObj.selfId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'selfIds')}"
@@ -143,25 +133,23 @@
 </template>
 <script>
 import ChatView from "@/components/dialog/chat-view";
-import numberInput from "@/components/input/numberInput.vue"
 import {searchV2 as searchApiV2, selectExtendV2} from "@/api/chat-record";
-import {codeNameList} from "@/api/group";
 import { getStore,setStore } from "@/util/store.js";
 import MultiCell from "@/components/multi-cell.vue";
+import GroupSelect from "@/components/select/group-select.vue";
 import ChatContextDrawer from "./chat-context-drawer.vue";
 export default {
   name:'ChatRecord',
   components:{
     MultiCell,
-    numberInput,
     ChatView,
+    GroupSelect,
     ChatContextDrawer
   },
   data(){
     return{
       tableLoading:false,
       exportLoading:false,
-      groupList:[],
       queryFormObj:{
         content:'',
         messageType:'group',
@@ -262,17 +250,13 @@ export default {
   created() {
 
   },
-  mounted() {
-    // this.search()
-    this.selectGroupList()
-  },
   computed:{
     isQueryGroup(){
       return this.queryFormObj.messageType === 'group'
     },
   },
   methods:{
-    handleMessageTypeChange(v){
+    handleMessageTypeChange(){
       if (!this.isQueryGroup) {
         this.queryFormObj.groupId = ''
         this.queryFormObj.userId = ''
@@ -288,29 +272,6 @@ export default {
         return (restaurant.value.toLowerCase().indexOf(v.toLowerCase()) !== -1);
       }) : users;
       cb(results);
-    },
-    fetchGroup(v,cb){
-      v = v ? v.toString() : ''
-      let results = v ? this.groupList.filter((restaurant) => {
-        return (restaurant.name.toLowerCase().indexOf(v.toLowerCase()) !== -1) || (restaurant.code.toString().toLowerCase().indexOf(v.toLowerCase()) !== -1);
-      }) : this.groupList;
-      cb(results);
-    },
-    handleGroupSelectorSelect(v){
-      if(!v){
-        this.queryFormObj.groupId = ''
-      }
-      this.queryFormObj.groupId = v.code.toString()
-    },
-    handleGroupSelectorInput(v){
-
-    },
-    selectGroupList(){
-      codeNameList({
-        limit:1000
-      }).then(({data:{data}})=>{
-        this.groupList = data
-      })
     },
     search(){
       this.pagination.currentPage = 1

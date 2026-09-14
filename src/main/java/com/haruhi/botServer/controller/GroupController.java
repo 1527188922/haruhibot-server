@@ -4,7 +4,7 @@ import cn.hutool.core.lang.mutable.MutablePair;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.vo.CodeNameReq;
-import com.haruhi.botServer.vo.CodeNameResp;
+import com.haruhi.botServer.vo.GroupCodeNameResp;
 import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.entity.GroupInfoSqlite;
 import com.haruhi.botServer.entity.GroupMemberSqlite;
@@ -35,8 +35,11 @@ public class GroupController {
     private GroupMemberSqliteService groupMemberSqliteService;
 
 
+    /**
+     * 群列表(群号/群名/群头像)，供群号选择组件远程搜索使用
+     */
     @PostMapping("/list")
-    public HttpResp<List<CodeNameResp>> list(@RequestBody CodeNameReq request){
+    public HttpResp<List<GroupCodeNameResp>> list(@RequestBody CodeNameReq request){
         return HttpResp.success(groupInfoSqliteService.codeNameList(request));
     }
 
