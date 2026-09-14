@@ -122,11 +122,16 @@
         <el-table-column label="群昵称" prop="card" min-width="110" align="center" show-tooltip-when-overflow/>
         <el-table-column label="所属群" prop="groupId" min-width="190" align="center" show-tooltip-when-overflow >
           <template slot-scope="{row}">
-            <multi-cell :text-list="[row.groupId,row.groupName]"
-                        :title-list="[`群号：${row.groupId}`,`群名称：${row.groupName}`]"></multi-cell>
+            <multi-cell :image-url="row.groupAvatarUrl"
+                :text-list="[row.groupId,row.groupName]"></multi-cell>
           </template>
         </el-table-column>
-        <el-table-column label="机器人QQ" prop="selfId" min-width="120" align="center" show-tooltip-when-overflow/>
+        <el-table-column label="机器人QQ" prop="selfId" min-width="120" align="center" show-tooltip-when-overflow>
+          <template slot-scope="{row}">
+            <multi-cell :image-url="row.selfAvatarUrl"
+                        :text-list="[row.selfId]"></multi-cell>
+          </template>
+        </el-table-column>
         <el-table-column label="身份" prop="role" min-width="80" align="center" show-tooltip-when-overflow>
           <template slot-scope="{row}">{{formatRole(row.role)}}</template>
         </el-table-column>

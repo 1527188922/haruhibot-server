@@ -142,6 +142,7 @@ public class GroupMemberSqliteServiceImpl extends ServiceImpl<GroupMemberSqliteM
                 .eq(Objects.nonNull(request.getLeftFlag()), GroupMemberSqlite::getLeftFlag, request.getLeftFlag())
                 // 在群的排前面
                 .orderByAsc(GroupMemberSqlite::getLeftFlag)
+                .orderByAsc(GroupMemberSqlite::getGroupId)
                 .orderByDesc(GroupMemberSqlite::getLastSentTime)
                 .orderByAsc(GroupMemberSqlite::getUserId);
         IPage<GroupMemberSqlite> pageInfo = this.page(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
@@ -156,6 +157,8 @@ public class GroupMemberSqliteServiceImpl extends ServiceImpl<GroupMemberSqliteM
             Map<Long, List<GroupInfoSqlite>> groupMap = groupInfoSqliteService.selectMapByGroupIds(groupIds);
             records.forEach(e -> {
                 e.setUserAvatarUrl(CommonUtil.getAvatarUrl(e.getUserId(), false));
+                e.setGroupAvatarUrl(CommonUtil.getGroupAvatarUrl(e.getGroupId(), false));
+                e.setSelfAvatarUrl(CommonUtil.getAvatarUrl(e.getSelfId(), false));
                 e.setGroupName(findGroupName(groupMap.get(e.getGroupId()), e.getSelfId()));
             });
         }
