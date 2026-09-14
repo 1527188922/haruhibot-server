@@ -40,9 +40,9 @@ public class GroupMemberSqlite extends AvatarInfo {
     private Boolean cardChangeable;
     /**
      * 是否已离群
-     * 离群的人只标记不删除
+     * 离群的人只标记不删除 0在 1离
      */
-    private Boolean leftFlag;
+    private Integer leftFlag;
     private String createTime;
     private String modifyTime;
 

@@ -13,5 +13,5 @@ public class GroupMemberQueryReq extends PageReq {
     /**
      * 是否离群  null:全部 true:已离群 false:在群
      */
-    private Boolean leftFlag;
+    private Integer leftFlag;
 }

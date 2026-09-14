@@ -80,7 +80,7 @@ public class GroupMemberSqliteServiceImpl extends ServiceImpl<GroupMemberSqliteM
             GroupMemberSqlite dbData = dbMap.get(member.getUserId());
             if (Objects.isNull(dbData)) {
                 // 新成员
-                entity.setLeftFlag(false);
+                entity.setLeftFlag(0);
                 entity.setCreateTime(now);
                 needAdd.add(entity);
                 resp.getAddedList().add(entity);
@@ -88,24 +88,24 @@ public class GroupMemberSqliteServiceImpl extends ServiceImpl<GroupMemberSqliteM
             }
             entity.setId(dbData.getId());
             entity.setCreateTime(dbData.getCreateTime());
-            if (Boolean.TRUE.equals(dbData.getLeftFlag())) {
+            if (Integer.valueOf(1).equals(dbData.getLeftFlag())) {
                 // 之前标记为离群，本次又出现在群成员列表中
                 GroupMemberSqlite rejoin = new GroupMemberSqlite();
                 BeanUtils.copyProperties(entity, rejoin);
-                rejoin.setLeftFlag(false);
+                rejoin.setLeftFlag(0);
                 rejoinList.add(rejoin);
             }
-            entity.setLeftFlag(false);
+            entity.setLeftFlag(0);
             needUpdate.add(entity);
         }
 
         // 数据库中在群、但本次未获取到的群员 = 已离群
         List<GroupMemberSqlite> leftList = dbMap.values().stream()
-                .filter(e -> !Boolean.TRUE.equals(e.getLeftFlag()))
+                .filter(e -> !Integer.valueOf(1).equals(e.getLeftFlag()))
                 .filter(e -> !fetchedUserIds.contains(e.getUserId()))
                 .collect(Collectors.toList());
         leftList.forEach(e -> {
-            e.setLeftFlag(true);
+            e.setLeftFlag(1);
             e.setModifyTime(now);
         });
 
@@ -140,11 +140,13 @@ public class GroupMemberSqliteServiceImpl extends ServiceImpl<GroupMemberSqliteM
                 .like(StringUtils.isNotBlank(request.getNickname()), GroupMemberSqlite::getNickname, request.getNickname())
                 .like(StringUtils.isNotBlank(request.getCard()), GroupMemberSqlite::getCard, request.getCard())
                 .eq(Objects.nonNull(request.getLeftFlag()), GroupMemberSqlite::getLeftFlag, request.getLeftFlag())
-                // 在群的排前面
-                .orderByAsc(GroupMemberSqlite::getLeftFlag)
-                .orderByAsc(GroupMemberSqlite::getGroupId)
-                .orderByDesc(GroupMemberSqlite::getLastSentTime)
-                .orderByAsc(GroupMemberSqlite::getUserId);
+                .last("""
+                        ORDER BY group_id asc,
+                        CASE role WHEN 'owner' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END asc,
+                        left_flag desc,
+                        last_sent_time desc,
+                        user_id ASC
+                        """);
         IPage<GroupMemberSqlite> pageInfo = this.page(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
 
         List<GroupMemberSqlite> records = pageInfo.getRecords();

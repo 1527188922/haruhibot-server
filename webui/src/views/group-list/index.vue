@@ -38,8 +38,8 @@
             </el-form-item>
             <el-form-item label="状态" prop="leftFlag">
               <el-select v-model="memberQueryFormObj.leftFlag" class="form-input" clearable placeholder="全部">
-                <el-option label="在群" :value="false"></el-option>
-                <el-option label="已离群" :value="true"></el-option>
+                <el-option label="在群" :value="0"></el-option>
+                <el-option label="已离群" :value="1"></el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="机器人" prop="selfId">
@@ -111,7 +111,7 @@
         </el-table-column>
         <el-table-column label="状态" prop="leftFlag" width="80" align="center" fixed>
           <template slot-scope="{row}">
-            <el-tag size="mini" :type="row.leftFlag ? 'danger' : 'success'">{{row.leftFlag ? '已离群' : '在群'}}</el-tag>
+            <el-tag size="mini" :type="row.leftFlag === 1 ? 'danger' : 'success'">{{row.leftFlag === 1 ? '已离群' : '在群'}}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="群成员" prop="userId" min-width="170" align="center" show-tooltip-when-overflow >
@@ -199,7 +199,7 @@ export default {
         userId:'',
         nickname:'',
         card:'',
-        leftFlag:''
+        leftFlag:null
       },
       tableData:[],
       memberTableData:[],
