@@ -354,6 +354,8 @@ public class BilibiliLiveJob extends AbstractJob {
             return message;
         }
         List<MessageHolder> atAllMessage = new ArrayList<>(MessageHolder.instanceAtAll());
+        String text = message.getFirst().getData().getText();
+        message.getFirst().getData().setText(" " + text);
         atAllMessage.addAll(message);
         return atAllMessage;
     }
