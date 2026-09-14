@@ -24,10 +24,6 @@
         </el-tab-pane>
         <el-tab-pane label="群成员" name="member">
           <el-form :model="memberQueryFormObj" label-width="60px" inline ref="memberQueryForm" size="small">
-            <el-form-item label="机器人" prop="selfId">
-              <number-input v-model.trim="memberQueryFormObj.selfId" class="form-input" maxlength="20" clearable
-                            placeholder="机器人QQ"></number-input>
-            </el-form-item>
             <el-form-item label="群号" prop="groupId">
               <number-input v-model.trim="memberQueryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>
             </el-form-item>
@@ -45,6 +41,10 @@
                 <el-option label="在群" :value="false"></el-option>
                 <el-option label="已离群" :value="true"></el-option>
               </el-select>
+            </el-form-item>
+            <el-form-item label="机器人" prop="selfId">
+              <number-input v-model.trim="memberQueryFormObj.selfId" class="form-input" maxlength="20" clearable
+                            placeholder="机器人QQ"></number-input>
             </el-form-item>
           </el-form>
           <el-row class="query-form-option-buts">
@@ -119,21 +119,13 @@
             <multi-cell :image-url="row.userAvatarUrl" :text-list="[row.userId,row.card || row.nickname]"></multi-cell>
           </template>
         </el-table-column>
-        <el-table-column label="群昵称" prop="card" min-width="110" align="center" show-tooltip-when-overflow/>
-        <el-table-column label="所属群" prop="groupId" min-width="190" align="center" show-tooltip-when-overflow >
-          <template slot-scope="{row}">
-            <multi-cell :image-url="row.groupAvatarUrl"
-                :text-list="[row.groupId,row.groupName]"></multi-cell>
-          </template>
-        </el-table-column>
-        <el-table-column label="机器人QQ" prop="selfId" min-width="120" align="center" show-tooltip-when-overflow>
-          <template slot-scope="{row}">
-            <multi-cell :image-url="row.selfAvatarUrl"
-                        :text-list="[row.selfId]"></multi-cell>
-          </template>
-        </el-table-column>
+<!--        <el-table-column label="群昵称" prop="card" min-width="110" align="center" show-tooltip-when-overflow/>-->
         <el-table-column label="身份" prop="role" min-width="80" align="center" show-tooltip-when-overflow>
-          <template slot-scope="{row}">{{formatRole(row.role)}}</template>
+          <template slot-scope="{row}">
+            <el-tag v-if="row.role === 'owner'" type="warning" size="small" effect="dark">{{formatRole(row.role)}}</el-tag>
+            <el-tag v-if="row.role === 'admin'" type="success" size="small" effect="dark">{{formatRole(row.role)}}</el-tag>
+            <el-tag v-if="row.role === 'member'" type="info" size="small" effect="dark">{{formatRole(row.role)}}</el-tag>
+            </template>
         </el-table-column>
 <!--        <el-table-column label="性别" prop="sex" min-width="60" align="center" show-tooltip-when-overflow>-->
 <!--          <template slot-scope="{row}">{{formatSex(row.sex)}}</template>-->
@@ -148,6 +140,18 @@
 <!--        <el-table-column label="名片可修改" prop="cardChangeable" min-width="100" align="center" show-tooltip-when-overflow>-->
 <!--          <template slot-scope="{row}">{{formatBool(row.cardChangeable)}}</template>-->
 <!--        </el-table-column>-->
+        <el-table-column label="所属群" prop="groupId" min-width="190" align="center" show-tooltip-when-overflow >
+          <template slot-scope="{row}">
+            <multi-cell :image-url="row.groupAvatarUrl"
+                        :text-list="[row.groupId,row.groupName]"></multi-cell>
+          </template>
+        </el-table-column>
+        <el-table-column label="机器人QQ" prop="selfId" min-width="120" align="center" show-tooltip-when-overflow>
+          <template slot-scope="{row}">
+            <multi-cell :image-url="row.selfAvatarUrl"
+                        :text-list="[row.selfId]"></multi-cell>
+          </template>
+        </el-table-column>
       </el-table>
       <div class="pagination-box">
         <el-pagination v-bind="memberPagination" @size-change="memberSizeChange" @current-change="memberCurrentChange" />
