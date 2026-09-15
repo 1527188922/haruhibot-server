@@ -573,7 +573,7 @@ public class JmcomicService {
 //                        System.gc();
                 }catch (Exception e) {
                     DbLog.error(BusinessModuleEnum.JMCOMIC,
-                            "下载章节异常 Album:{}\nChapter:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series));
+                            "下载章节异常 Album:{}\nChapter:{}",JSONObject.toJSONString(album), JSONObject.toJSONString(series), e);
                     return BaseResp.fail(StrFormatter.format("下载章节异常：{} \n{}",series.getTitle(),e.getMessage()));
                 }
             }
