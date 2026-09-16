@@ -14,7 +14,7 @@
               <el-input v-model="albumQuery.author" class="form-input" clearable @keyup.enter.native="searchAlbumsFirst"></el-input>
             </el-form-item>
             <el-form-item label="标签" prop="tags">
-              <el-input v-model="albumQuery.tags" class="form-input" clearable @keyup.enter.native="searchAlbumsFirst"></el-input>
+              <jm-tag-select ref="tagSelect" v-model="albumQuery.tags" class="form-input" @keyup.enter.native="searchAlbumsFirst"></jm-tag-select>
             </el-form-item>
           </el-form>
           <el-row class="query-form-option-buts">
@@ -298,6 +298,7 @@
 
 <script>
 import JmPreviewDrawer from "./jm-preview-drawer.vue";
+import JmTagSelect from "./jm-tag-select.vue";
 import numberInput from "@/components/input/numberInput.vue";
 import {
   deleteAlbums,
@@ -314,7 +315,7 @@ import {
 
 export default {
   name: 'JmcomicManage',
-  components: { JmPreviewDrawer, numberInput },
+  components: { JmPreviewDrawer, JmTagSelect, numberInput },
   data() {
     return {
       activeTab: 'album',
@@ -330,7 +331,7 @@ export default {
       deleteAllFileDialogVisible: false,
       previewDrawerVisible: false,
       previewAlbum: null,
-      albumQuery: { id: '', name: '', author: '', tags: '' },
+      albumQuery: { id: '', name: '', author: '', tags: [] },
       chapterQuery: { albumId: '', chapterId: '', chapterTitle: '', imageFile: '' },
       albumData: [],
       chapterData: [],
@@ -477,6 +478,14 @@ export default {
       //     : '请求失败'
       // this.$message.error(message)
     },
+    /**
+     * 标签候选由组件在首次展开下拉时拉取，新增/删除JM记录后标签可能变化，通知组件重新拉取
+     */
+    refreshTagOptions() {
+      if (this.$refs.tagSelect) {
+        this.$refs.tagSelect.refresh()
+      }
+    },
     isAlbumOperation(row, action) {
       return row && this.albumOperationLoading[row.id] === action
     },
@@ -517,6 +526,9 @@ export default {
       const res = { ...query }
       Object.keys(res).forEach(key => {
         if (res[key] === '') {
+          res[key] = null
+        } else if (Array.isArray(res[key]) && res[key].length === 0) {
+          // 标签等数组参数没有选中项时传null，避免后端把它当成一个有效的过滤条件
           res[key] = null
         }
       })
@@ -622,6 +634,7 @@ export default {
             return this.$message.error(message)
           }
           this.$message.success('拉取完成')
+          this.refreshTagOptions()
           this.searchAlbumsFirst()
         }).catch(error => {
           this.handleRequestError(error)
@@ -734,6 +747,7 @@ export default {
         }
         this.albumDeleteDialogVisible = false
         this.$message.success(message)
+        this.refreshTagOptions()
         this.searchAlbumsFirst()
       }).catch(error => {
         this.handleRequestError(error)

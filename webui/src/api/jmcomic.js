@@ -7,6 +7,14 @@ export const searchAlbums = (data) => request({
   data
 });
 
+/**
+ * 全部JM标签(已去重)，用于标签下拉候选
+ */
+export const allTags = () => request({
+  url: baseUrl + '/jmcomic/manage/tags',
+  method: 'get'
+});
+
 export const requestAlbum = (aid) => request({
   url: baseUrl + `/jmcomic/manage/album/request/${aid}`,
   method: 'post'
