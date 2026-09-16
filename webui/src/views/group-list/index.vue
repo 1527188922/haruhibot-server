@@ -25,16 +25,14 @@
         <el-tab-pane label="群成员" name="member">
           <el-form :model="memberQueryFormObj" label-width="60px" inline ref="memberQueryForm" size="small">
             <el-form-item label="群号" prop="groupId">
-              <number-input v-model.trim="memberQueryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>
+<!--              <number-input v-model.trim="memberQueryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>-->
+              <group-select v-model="memberQueryFormObj.groupId" width="180px" placeholder="输入群号或群名" :limit="-1"/>
             </el-form-item>
             <el-form-item label="QQ" prop="userId">
               <number-input v-model.trim="memberQueryFormObj.userId" class="form-input" maxlength="20" clearable></number-input>
             </el-form-item>
             <el-form-item label="昵称" prop="nickname">
               <el-input v-model="memberQueryFormObj.nickname" class="form-input" maxlength="60" clearable></el-input>
-            </el-form-item>
-            <el-form-item label="群昵称" prop="card">
-              <el-input v-model="memberQueryFormObj.card" class="form-input" maxlength="60" clearable></el-input>
             </el-form-item>
             <el-form-item label="状态" prop="leftFlag">
               <el-select v-model="memberQueryFormObj.leftFlag" class="form-input" clearable placeholder="全部">
@@ -170,6 +168,7 @@ import MemberRefreshResultDialog from "./member-refresh-result-dialog.vue";
 import UserListDialog from "./user-list-dialog.vue";
 import {search as searchApi,refresh as refreshApi,searchMember as searchMemberApi,refreshMember as refreshMemberApi} from "@/api/group";
 import MultiCell from "@/components/multi-cell.vue";
+import GroupSelect from "@/components/select/group-select.vue";
 
 export default {
   name:'GroupList',
@@ -178,7 +177,8 @@ export default {
     numberInput,
     RefreshResultDialog,
     MemberRefreshResultDialog,
-    UserListDialog
+    UserListDialog,
+    GroupSelect
   },
   data(){
     return{

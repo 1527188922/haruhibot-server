@@ -133,12 +133,15 @@ public class GroupMemberSqliteServiceImpl extends ServiceImpl<GroupMemberSqliteM
         if (Objects.isNull(request)) {
             request = new GroupMemberQueryReq();
         }
+        GroupMemberQueryReq[] requests = new GroupMemberQueryReq[]{request};
         LambdaQueryWrapper<GroupMemberSqlite> queryWrapper = new LambdaQueryWrapper<GroupMemberSqlite>()
                 .eq(Objects.nonNull(request.getSelfId()), GroupMemberSqlite::getSelfId, request.getSelfId())
                 .eq(Objects.nonNull(request.getGroupId()), GroupMemberSqlite::getGroupId, request.getGroupId())
                 .eq(Objects.nonNull(request.getUserId()), GroupMemberSqlite::getUserId, request.getUserId())
-                .like(StringUtils.isNotBlank(request.getNickname()), GroupMemberSqlite::getNickname, request.getNickname())
-                .like(StringUtils.isNotBlank(request.getCard()), GroupMemberSqlite::getCard, request.getCard())
+                .and(StringUtils.isNotBlank(requests[0].getNickname()),
+                        e -> e.like(GroupMemberSqlite::getNickname, requests[0].getNickname())
+                                .or()
+                                .like(GroupMemberSqlite::getCard, requests[0].getNickname()))
                 .eq(Objects.nonNull(request.getLeftFlag()), GroupMemberSqlite::getLeftFlag, request.getLeftFlag())
                 .last("""
                         ORDER BY group_id asc,
