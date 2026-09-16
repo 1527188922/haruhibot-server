@@ -29,6 +29,8 @@ public interface JmcomicSqliteService {
 
     IPage<JmAlbumManageResp> searchAlbums(JmAlbumQueryReq request);
 
+    List<String> allTag();
+
     IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request);
 
     void deleteAlbums(JmAlbumDeleteReq request);

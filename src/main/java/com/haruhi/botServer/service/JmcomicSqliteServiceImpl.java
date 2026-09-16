@@ -190,6 +190,23 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     }
 
     @Override
+    public List<String> allTag() {
+        List<JmAlbumSqlite> jmAlbumSqlites = this.jmAlbumSqliteMapper.selectList(new LambdaQueryWrapper<JmAlbumSqlite>()
+                .select(JmAlbumSqlite::getTags)
+                .isNotNull(JmAlbumSqlite::getTags));
+        if (jmAlbumSqlites.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return jmAlbumSqlites.stream()
+                .map(JmAlbumSqlite::getTags)
+                .filter(StringUtils::isNotBlank)
+                .flatMap(e -> Stream.of(e.split(",")))
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .toList();
+    }
+
+    @Override
     public IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request) {
         if (request == null) {
             request = new JmChapterImageQueryReq();

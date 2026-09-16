@@ -102,6 +102,11 @@ public class JmcomicController {
         return HttpResp.success(jmcomicSqliteService.searchAlbums(request));
     }
 
+    @GetMapping("/manage/tags")
+    public HttpResp<List<String>> allTag() {
+        return HttpResp.success(jmcomicSqliteService.allTag());
+    }
+
     @PostMapping("/manage/album/request/{aid}")
     public HttpResp<Album> requestAlbum(@PathVariable("aid") String aid) {
         BaseResp<Album> resp = jmcomicService.requestAlbum(aid);
