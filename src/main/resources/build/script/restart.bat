@@ -1,15 +1,16 @@
 @echo off
 
+chcp 65001
 title GetAdministratorPower
 mode con cols=100 lines=20
 color 6f
 
 CLS
 ECHO.
-ECHO ¡¾ReStartÃüÁî¡¿.×¢Òâ£ºµ±Ç°ĞÂ°æ±¾£¬±¾ÎÄ¼şÎŞĞëÅäÖÃ£¡£¡£¡
+ECHO ã€ReStartå‘½ä»¤ã€‘.æ³¨æ„ï¼šå½“å‰æ–°ç‰ˆæœ¬ï¼Œæœ¬æ–‡ä»¶æ— é¡»é…ç½®ï¼ï¼ï¼
 ECHO.
 ECHO ================================
-ECHO »ñÈ¡Åú´¦ÀíÎÄ¼ş¹ÜÀíÔ±È¨ÏŞ
+ECHO è·å–æ‰¹å¤„ç†æ–‡ä»¶ç®¡ç†å‘˜æƒé™
 ECHO ================================
 if exist "%SystemRoot%\SysWOW64" path %path%;%windir%\SysNative;%SystemRoot%\SysWOW64;%~dp0
 bcdedit >nul
@@ -19,23 +20,23 @@ if '%errorlevel%' NEQ '0' (goto UACPrompt) else (goto UACAdmin)
 exit /B
 :UACAdmin
 cd /d "%~dp0"
-ECHO È¡µÃÈ¨ÏŞ³É¹¦
+ECHO å–å¾—æƒé™æˆåŠŸ
 
 
 
 ECHO ================================
-ECHO µ±Ç°Ä¿Â¼:%cd%,ÕıÔÚ¶ÁÈ¡ÅäÖÃÎÄ¼ş...
+ECHO å½“å‰ç›®å½•:%cd%,æ­£åœ¨è¯»å–é…ç½®æ–‡ä»¶...
 for /f "tokens=*" %%i in ('findstr "<id>.*</id>" haruhibot_service.xml')do set "s=%%i"
-set "s=%s:"=¡°¡±%"
+set "s=%s:"=â€œâ€%"
 for /f "delims=<" %%j in ("%s:*<id>=%")do set "cid=%%j"
-set "cid=%cid:¡°¡±="%"
+set "cid=%cid:â€œâ€="%"
 set value= %cid%
 ECHO ================================
-echo ¶ÁÈ¡·şÎñÃû³ÆÎª:%value%
+echo è¯»å–æœåŠ¡åç§°ä¸º:%value%
 ECHO ================================
 ECHO.
 
-ECHO ÕıÔÚ²éÕÒ¶Ë¿Ú %1 µÄ½ø³Ì...
+ECHO æ­£åœ¨æŸ¥æ‰¾ç«¯å£ %1 çš„è¿›ç¨‹...
 
 
 for /f "usebackq tokens=1-5" %%a in (`netstat -ano ^| findstr %1`) do (
@@ -55,18 +56,18 @@ if not errorlevel 1 (goto start) else goto notstart
 
 :start
 echo.
-echo ÕıÔÚ¹Ø±Õ·şÎñ...
+echo æ­£åœ¨å…³é—­æœåŠ¡...
 net stop  %value%
 ping 127.1 -n 1 >nul
 echo.
-echo ÕıÔÚĞ¶ÔØ·şÎñ...
+echo æ­£åœ¨å¸è½½æœåŠ¡...
 haruhibot_service.exe uninstall
 echo.
-echo ÕıÔÚ×¢²á·şÎñ...
+echo æ­£åœ¨æ³¨å†ŒæœåŠ¡...
 cd %2
 haruhibot_service.exe install
 echo.
-echo ÕıÔÚÆô¶¯·şÎñ...
+echo æ­£åœ¨å¯åŠ¨æœåŠ¡...
 net start  %value%
 goto end
 
@@ -74,8 +75,8 @@ goto end
 goto start
 
 :end
-echo ------- 
-echo ±¾´°¿Ú½«ÔÚ15sºó×Ô¶¯¹Ø±Õ...
+echo -------
+echo æœ¬çª—å£å°†åœ¨15såè‡ªåŠ¨å…³é—­...
 ping 127.1 -n 15 >nul
 
 

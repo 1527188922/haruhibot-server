@@ -1,15 +1,16 @@
 @echo off
 
+chcp 65001
 title GetAdministratorPower
 mode con cols=100 lines=20
 color 6f
 
 CLS
 ECHO.
-ECHO ¡¾StartÃüÁî¡¿.×¢Òâ£ºµ±Ç°ĞÂ°æ±¾£¬±¾ÎÄ¼şÎŞĞëÅäÖÃ£¡£¡£¡
+ECHO ã€Startå‘½ä»¤ã€‘.æ³¨æ„ï¼šå½“å‰æ–°ç‰ˆæœ¬ï¼Œæœ¬æ–‡ä»¶æ— é¡»é…ç½®ï¼ï¼ï¼
 ECHO.
 ECHO ================================
-ECHO »ñÈ¡Åú´¦ÀíÎÄ¼ş¹ÜÀíÔ±È¨ÏŞ
+ECHO è·å–æ‰¹å¤„ç†æ–‡ä»¶ç®¡ç†å‘˜æƒé™
 ECHO ================================
 if exist "%SystemRoot%\SysWOW64" path %path%;%windir%\SysNative;%SystemRoot%\SysWOW64;%~dp0
 bcdedit >nul
@@ -19,7 +20,7 @@ if '%errorlevel%' NEQ '0' (goto UACPrompt) else (goto UACAdmin)
 exit /B
 :UACAdmin
 cd /d "%~dp0"
-ECHO È¡µÃÈ¨ÏŞ³É¹¦
+ECHO å–å¾—æƒé™æˆåŠŸ
 
 set path1="C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\"
 set fileName=%path1%checkMySQL.bat
@@ -30,36 +31,36 @@ if exist %fileName% (
 
 :continue
 ECHO ================================
-ECHO µ±Ç°Ä¿Â¼:%cd%,ÕıÔÚ¶ÁÈ¡ÅäÖÃÎÄ¼ş...
+ECHO å½“å‰ç›®å½•:%cd%,æ­£åœ¨è¯»å–é…ç½®æ–‡ä»¶...
 for /f "tokens=*" %%i in ('findstr "<id>.*</id>" haruhibot_service.xml')do set "s=%%i"
-set "s=%s:"=¡°¡±%"
+set "s=%s:"=â€œâ€%"
 for /f "delims=<" %%j in ("%s:*<id>=%")do set "cid=%%j"
-set "cid=%cid:¡°¡±="%"
+set "cid=%cid:â€œâ€="%"
 set value= %cid%
 ECHO ================================
-echo ¶ÁÈ¡·şÎñÃû³ÆÎª:%value%
+echo è¯»å–æœåŠ¡åç§°ä¸º:%value%
 ECHO ================================
 
 
 SC QUERY %value%> NUL
 if errorlevel 1060 goto notexist
 goto exist
-:exist 
+:exist
 goto checkstart
 :notexist
-echo ÕıÔÚ×¢²áwindows·şÎñ...:%value%
+echo æ­£åœ¨æ³¨å†ŒwindowsæœåŠ¡...:%value%
 haruhibot_service.exe install
 goto checkstart
 :checkstart
 sc query |find /i "%value%" >nul 2>nul
 if not errorlevel 1 (goto start) else goto notstart
 :start
-echo ·şÎñÒÑ¾­Æô¶¯.ÇëÎğÖØ¸´Æô¶¯...:%value%
+echo æœåŠ¡å·²ç»å¯åŠ¨.è¯·å‹¿é‡å¤å¯åŠ¨...:%value%
 goto end
 :notstart
 net start  %value%
 goto end
 :end
-echo ------- 
-echo ±¾´°¿Ú½«ÔÚ15sºó×Ô¶¯¹Ø±Õ...
+echo -------
+echo æœ¬çª—å£å°†åœ¨15såè‡ªåŠ¨å…³é—­...
 ping 127.1 -n 15 >nul

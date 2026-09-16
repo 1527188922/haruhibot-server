@@ -1,15 +1,16 @@
 @echo off
 
+chcp 65001
 title GetAdministratorPower
 mode con cols=100 lines=20
 color 6f
 
 CLS
 ECHO.
-ECHO ¡¾StopÃüÁî¡¿.×¢Òâ£ºµ±Ç°ĞÂ°æ±¾£¬±¾ÎÄ¼şÎŞĞëÅäÖÃ£¡£¡£¡
+ECHO ã€Stopå‘½ä»¤ã€‘.æ³¨æ„ï¼šå½“å‰æ–°ç‰ˆæœ¬ï¼Œæœ¬æ–‡ä»¶æ— é¡»é…ç½®ï¼ï¼ï¼
 ECHO.
 ECHO ================================
-ECHO »ñÈ¡Åú´¦ÀíÎÄ¼ş¹ÜÀíÔ±È¨ÏŞ
+ECHO è·å–æ‰¹å¤„ç†æ–‡ä»¶ç®¡ç†å‘˜æƒé™
 ECHO ================================
 if exist "%SystemRoot%\SysWOW64" path %path%;%windir%\SysNative;%SystemRoot%\SysWOW64;%~dp0
 bcdedit >nul
@@ -19,26 +20,26 @@ if '%errorlevel%' NEQ '0' (goto UACPrompt) else (goto UACAdmin)
 exit /B
 :UACAdmin
 cd /d "%~dp0"
-ECHO È¡µÃÈ¨ÏŞ³É¹¦
+ECHO å–å¾—æƒé™æˆåŠŸ
 
 
 
 ECHO ================================
-ECHO µ±Ç°Ä¿Â¼:%cd%,ÕıÔÚ¶ÁÈ¡ÅäÖÃÎÄ¼ş...
+ECHO å½“å‰ç›®å½•:%cd%,æ­£åœ¨è¯»å–é…ç½®æ–‡ä»¶...
 for /f "tokens=*" %%i in ('findstr "<id>.*</id>" haruhibot_service.xml')do set "s=%%i"
-set "s=%s:"=¡°¡±%"
+set "s=%s:"=â€œâ€%"
 for /f "delims=<" %%j in ("%s:*<id>=%")do set "cid=%%j"
-set "cid=%cid:¡°¡±="%"
+set "cid=%cid:â€œâ€="%"
 set value= %cid%
 
 ECHO ================================
-echo ¶ÁÈ¡·şÎñÃû³ÆÎª:%value%
+echo è¯»å–æœåŠ¡åç§°ä¸º:%value%
 ECHO ================================
 
 sc query |find /i "%value%" >nul 2>nul
 if not errorlevel 1 (goto start) else goto notstart
 :start
-echo ÕıÔÚ¹Ø±Õ·şÎñ...:%value%
+echo æ­£åœ¨å…³é—­æœåŠ¡...:%value%
 net stop %value%
 goto checkExist
 :notstart
@@ -47,19 +48,19 @@ goto checkExist
 SC QUERY %value%> NUL
 if errorlevel 1060 goto notexist goto exist
 :exist
-echo ÕıÔÚĞ¶ÔØ·şÎñ...
+echo æ­£åœ¨å¸è½½æœåŠ¡...
 haruhibot_service.exe uninstall
 echo -------
-echo Ğ¶ÔØ³É¹¦!
-echo ------- 
+echo å¸è½½æˆåŠŸ!
+echo -------
 goto end
 :notexist
-echo ·şÎñ²»´æÔÚ:%value%
+echo æœåŠ¡ä¸å­˜åœ¨:%value%
 
 goto end
 :end
-echo ------- 
-echo ±¾´°¿Ú½«ÔÚ15sºó×Ô¶¯¹Ø±Õ...
+echo -------
+echo æœ¬çª—å£å°†åœ¨15såè‡ªåŠ¨å…³é—­...
 ping 127.1 -n 15 >nul
 
 
