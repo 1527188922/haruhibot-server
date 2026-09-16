@@ -41,7 +41,8 @@ router.beforeEach((to, from, next) => {
           next()
         }).catch(() => {
           store.dispatch('FedLogOut').then(() => {
-            next({ path: '/login' })
+            //当前导航目标就是登录页时直接放行，否则 next({path:'/login'}) 会被vue-router判定为"导航被守卫重定向"
+            next(to.path === '/login' ? undefined : { path: '/login' })
           })
         })
       } else {
@@ -51,7 +52,7 @@ router.beforeEach((to, from, next) => {
     }
   } else {
     //判断是否需要认证，没有登录访问去登录页
-    if (meta.isAuth === false) {
+    if (meta.isAuth === false || to.path === '/login') {
       next()
     } else {
       next('/login')

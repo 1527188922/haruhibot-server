@@ -153,9 +153,11 @@ const user = {
   },
   mutations: {
     SET_TOKEN: (state, d) => {
-      setToken(d.token,d.username)
-      state.token = d.token;
-      setStore({ name: 'token', content: state.token })
+      const token = d && d.token ? d.token : '';
+      const username = d && d.username ? d.username : '';
+      setToken(token, username)
+      state.token = token;
+      setStore({ name: 'token', content: token })
     },
     SET_REFRESH_TOKEN: (state, token) => {
       state.refreshToken = token;

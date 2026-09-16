@@ -47,6 +47,10 @@ module.exports = {
         warnings: false,
         errors: true,
         runtimeErrors: error => {
+          //已由axios拦截器统一提示并处理过的业务错误（如401登录过期），不再弹overlay
+          if (error && error.handled === true) return false
+          //vue-router的导航重定向/取消/重复导航属于预期行为，不是程序异常
+          if (error && error._isRouter === true) return false
           const message = error && error.message
           return ![
             'ResizeObserver loop completed with undelivered notifications.',

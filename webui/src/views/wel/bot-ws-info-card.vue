@@ -71,6 +71,8 @@ export default {
       this.botWsInfoLoading = true
       botWsInfoApi().then(({data:{data,code}})=>{
         this.botWsInfo = data
+      }).catch(()=>{
+        //异常已由http拦截器统一提示（如401登录过期），此处只需吞掉rejection
       }).finally(()=>{
         this.botWsInfoLoading = false
       })

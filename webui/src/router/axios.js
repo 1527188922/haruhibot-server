@@ -43,6 +43,22 @@ axios.interceptors.request.use(config => {
 }, error => {
   return Promise.reject(error)
 });
+//登录态失效处理：并发请求同时返回401时只跳转一次
+let redirectingToLogin = false;
+function redirectToLogin () {
+  if (redirectingToLogin) return;
+  //已经在登录页则无需跳转
+  if (router.currentRoute && router.currentRoute.path === '/login') return;
+  redirectingToLogin = true;
+  Message.warning('登录过期');
+  store.dispatch('FedLogOut').then(() => {
+    if (router.currentRoute && router.currentRoute.path === '/login') return;
+    //导航被守卫重定向/取消时vue-router会reject，这里必须catch，否则会抛未处理的promise异常
+    return router.replace({ path: '/login' }).catch(() => {});
+  }).finally(() => {
+    redirectingToLogin = false;
+  });
+}
 //HTTP Response拦截
 axios.interceptors.response.use(res => {
   NProgress.done();
@@ -52,10 +68,7 @@ axios.interceptors.response.use(res => {
   if (statusWhiteList.includes(status)) return Promise.reject(res);
   //如果是401则跳转到登录页面
   if (status === 401) {
-    Message.warning('登录过期')
-    setTimeout(()=>{
-      store.dispatch('FedLogOut').then(() => router.push({ path: '/login' }));
-    },1500)
+    redirectToLogin();
     return Promise.reject(createHttpError(res, '登录过期', { handled: true }))
   }
   // 如果请求为非200否者默认统一处理
