@@ -6,6 +6,7 @@ import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.vo.HttpResp;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.service.LoginService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,18 +23,24 @@ public class UserController {
     public HttpResp login(@RequestBody JSONObject request) {
         String username = request.getString("username");
         String password = request.getString("password");
+
         BaseResp<String> resp = loginService.login(username, password);
         if (!BaseResp.SUCCESS_CODE.equals(resp.getCode())) {
-            return HttpResp.fail(resp.getMsg(),null);
+            return HttpResp.fail(resp.getMsg(), null);
         }
+
         request.remove("password");
         request.put("token", resp.getData());
         return HttpResp.success(request);
     }
 
     @GetMapping("/logout")
-    public HttpResp login() {
-        loginService.logout(null);
+    public HttpResp logout(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        String token = authorization;
+        if (StringUtils.isNotBlank(token) && token.startsWith(LoginService.TOKEN_PREFIX)) {
+            token = token.substring(LoginService.TOKEN_PREFIX.length());
+        }
+        loginService.logout(token);
         return HttpResp.success();
     }
 }

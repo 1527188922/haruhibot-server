@@ -52,35 +52,49 @@ public class ApiHeaderInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-//        startTimeThreadLocal.set(System.currentTimeMillis());
-//        log.info("访问api=[{}] IP=[{}]", request.getRequestURI(),request.getRemoteAddr());
 
         HandlerMethod handlerMethod = null;
-        if(handler instanceof HandlerMethod){
-            handlerMethod = (HandlerMethod)handler;
+        if (handler instanceof HandlerMethod) {
+            handlerMethod = (HandlerMethod) handler;
         }
-        String userName = request.getHeader(LoginService.HEADER_KEY_USER_NAME);
+
+        if (handlerMethod == null) {
+            return true;
+        }
+
+        IgnoreAuthentication ignoreAuthentication =
+                handlerMethod.getMethodAnnotation(IgnoreAuthentication.class);
+        if (ignoreAuthentication != null) {
+            return true;
+        }
+
+        String authorization = request.getHeader(LoginService.HEADER_KEY_AUTHORIZATION);
+        String token = resolveToken(authorization);
+
+        String userName = loginService.verifyAndRefreshToken(token);
+
         fillHttpMdc(request, handlerMethod, userName);
-        if(handlerMethod == null){
-            return true;
-        }
 
-        IgnoreAuthentication ignoreAuthentication = handlerMethod.getMethodAnnotation(IgnoreAuthentication.class);
-        if(ignoreAuthentication != null){
-            return true;
-        }
-        String token = request.getHeader(LoginService.HEADER_KEY_AUTHORIZATION);
+        if (StringUtils.isBlank(userName)) {
+            log.error("非法请求api=[{}] IP=[{}] Authorization：{}",
+                    request.getRequestURI(), request.getRemoteAddr(), authorization);
 
-        if (!loginService.verifyWebToken(userName,token)) {
-            log.error("非法请求api=[{}] IP=[{}] UserCode：{} Authorization：{}",
-                    request.getRequestURI(),request.getRemoteAddr(),userName,token);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
-//            response.getWriter().print(JSONObject.toJSONString(HttpResp.fail(401,"认证异常",null)));
             return false;
         }
-        loginService.refreshWebToken(userName, token);
+
         return true;
+    }
+
+    private String resolveToken(String authorization) {
+        if (StringUtils.isBlank(authorization)) {
+            return null;
+        }
+        if (authorization.startsWith(LoginService.TOKEN_PREFIX)) {
+            return authorization.substring(LoginService.TOKEN_PREFIX.length());
+        }
+        return authorization;
     }
 
     @Override

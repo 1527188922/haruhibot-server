@@ -24,7 +24,13 @@ public class PropertiesUtil {
     // webui 和 druid账户名字
     public static final String PROP_KEY_WEBUI_LOGIN_USERNAME = "login.username";
     public static final String PROP_KEY_WEBUI_LOGIN_PASSWORD = "login.password";
+    public static final String PROP_KEY_WEBUI_SESSION_MAX = "login.session.max";
     public static final String PROP_KEY_WEBUI_LOGIN_EXPIRE = "login.expire";
+    public static final String PROP_KEY_WEBUI_JWT_EXPIRE = "login.jwt.expire";
+    public static final String PROP_KEY_WEBUI_JWT_SECRET = "login.jwt.secret";
+    public static final String PROP_KEY_WEBUI_JWT_GRACE = "login.jwt.grace";
+
+
 
     public static final String PROP_KEY_WEBUI_DRUID_ENABLED = "druid.enabled";
 
