@@ -55,6 +55,7 @@ public class WordStripSqliteServiceImpl extends ServiceImpl<WordStripSqliteMappe
                 .eq(Objects.nonNull(request.getSelfId()),WordStripSqlite::getSelfId,request.getSelfId())
                 .like(StringUtils.isNotBlank(request.getKeyWord()),WordStripSqlite::getKeyWord,request.getKeyWord())
                 .like(StringUtils.isNotBlank(request.getAnswer()),WordStripSqlite::getAnswer,request.getAnswer())
+                .orderByAsc(WordStripSqlite::getSelfId, WordStripSqlite::getGroupId, WordStripSqlite::getUserId)
                 .orderByDesc(WordStripSqlite::getId);
 
         IPage<WordStripSqlite> pageInfo = null;

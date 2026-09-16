@@ -14,7 +14,8 @@
                           placeholder="创建人QQ号"></number-input>
           </el-form-item>
           <el-form-item label="群号" prop="groupId">
-            <number-input v-model.trim="queryFormObj.groupId" class="form-input" clearable></number-input>
+<!--            <number-input v-model.trim="queryFormObj.groupId" class="form-input" clearable></number-input>-->
+            <group-select v-model="queryFormObj.groupId" width="180px" placeholder="输入群号或群名" :limit="-1"/>
           </el-form-item>
           <el-form-item label="机器人" prop="selfId">
             <number-input v-model.trim="queryFormObj.selfId" class="form-input" clearable
@@ -90,10 +91,12 @@ import numberInput from "@/components/input/numberInput.vue";
 import ChatView from "@/components/dialog/chat-view";
 import {search as searchApi,refresh,deleteBatch} from "@/api/word-strip";
 import MultiCell from "@/components/multi-cell.vue";
+import GroupSelect from "@/components/select/group-select.vue";
 
 export default {
   name:'WordStrip',
   components: {
+    GroupSelect,
     MultiCell,
     numberInput,
     ChatView
