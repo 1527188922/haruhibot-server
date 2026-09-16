@@ -153,9 +153,9 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 .eq(Objects.nonNull(request.getId()), JmAlbumSqlite::getId, request.getId())
                 .like(StringUtils.isNotBlank(request.getName()), JmAlbumSqlite::getName, request.getName())
                 .like(StringUtils.isNotBlank(request.getAuthor()), JmAlbumSqlite::getAuthor, request.getAuthor())
-                .like(StringUtils.isNotBlank(request.getTags()), JmAlbumSqlite::getTags, request.getTags())
                 .orderByDesc(JmAlbumSqlite::getModifyTime)
                 .orderByDesc(JmAlbumSqlite::getId);
+        applyTagFilter(queryWrapper, request);
         IPage<JmAlbumSqlite> sourcePage = jmAlbumSqliteMapper.selectPage(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
         Page<JmAlbumManageResp> targetPage = new Page<>(sourcePage.getCurrent(), sourcePage.getSize(), sourcePage.getTotal());
         List<JmAlbumManageResp> records = sourcePage.getRecords().stream()
@@ -163,6 +163,30 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 .collect(Collectors.toList());
         targetPage.setRecords(records);
         return targetPage;
+    }
+
+    private static void applyTagFilter(LambdaQueryWrapper<JmAlbumSqlite> query, JmAlbumQueryReq reqVO) {
+        List<String> tags = reqVO.getTags();
+        if (tags == null || tags.isEmpty()) {
+            return;
+        }
+        List<String> validTags = tags.stream()
+                .filter(StringUtils::isNotBlank)
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (validTags.isEmpty()) {
+            return;
+        }
+        query.and(wrapper -> {
+            for (int i = 0; i < validTags.size(); i++) {
+                if (i > 0) {
+                    wrapper.or();
+                }
+                wrapper.apply("CONCAT(',', tags, ',') LIKE {0}",
+                        "%," + validTags.get(i) + ",%");
+            }
+        });
     }
 
     @Override
