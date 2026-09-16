@@ -200,7 +200,14 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         return jmAlbumSqlites.stream()
                 .map(JmAlbumSqlite::getTags)
                 .filter(StringUtils::isNotBlank)
-                .flatMap(e -> Stream.of(e.split(",")))
+                .flatMap(e -> {
+                    try {
+                        List<String> tags = JSONObject.parseObject(e, new TypeReference<List<String>>() {});
+                        return tags.stream();
+                    }catch (Exception e1) {
+                        return Stream.empty();
+                    }
+                })
                 .filter(StringUtils::isNotBlank)
                 .distinct()
                 .toList();
