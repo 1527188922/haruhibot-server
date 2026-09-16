@@ -183,8 +183,8 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 if (i > 0) {
                     wrapper.or();
                 }
-                wrapper.apply("CONCAT(',', tags, ',') LIKE {0}",
-                        "%," + validTags.get(i) + ",%");
+                wrapper.apply("INSTR(tags, {0}) > 0",
+                        "\"" + validTags.get(i) + "\"");
             }
         });
     }
@@ -210,6 +210,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 })
                 .filter(StringUtils::isNotBlank)
                 .distinct()
+                .sorted()
                 .toList();
     }
 
