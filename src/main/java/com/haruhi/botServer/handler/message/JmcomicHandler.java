@@ -5,6 +5,7 @@ import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -15,11 +16,7 @@ import com.haruhi.botServer.dto.jmcomic.SearchResp;
 import com.haruhi.botServer.dto.qqclient.*;
 import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.JmcomicService;
-import com.haruhi.botServer.utils.CommonUtil;
-import com.haruhi.botServer.utils.DateTimeUtil;
-import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.HtmlToImageUtils;
-import com.haruhi.botServer.utils.ThreadPoolUtil;
+import com.haruhi.botServer.utils.*;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Entities;
@@ -232,7 +229,7 @@ public class JmcomicHandler implements IAllMessageHandler {
                 sendSearchResultImage(bot, message, searchResp);
                 return;
             } catch (Exception e) {
-                log.error("JM搜索结果转图片发送异常，回退为合并消息", e);
+                DbLog.error(BusinessModuleEnum.JMCOMIC,"JM搜索结果转图片发送异常，回退为合并消息", e);
             }
         }
         sendSearchResultForward(bot, message, searchResp);
