@@ -14,13 +14,28 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class HtmlToImageUtils {
+
+    // 候选的浏览器可执行文件路径，按顺序尝试（仅当使用系统浏览器时生效）
+    private static final List<String> CHROMIUM_PATHS = Arrays.asList(
+            "/usr/bin/chromium-browser",
+            "/usr/bin/chromium",
+            "/usr/bin/google-chrome",
+            "/snap/bin/chromium"
+    );
+
+    private static final List<String> FIREFOX_PATHS = Arrays.asList(
+            "/usr/bin/firefox-esr",
+            "/usr/bin/firefox"
+    );
+
+
     private static final Engine ENGINE = JFinalViewResolver.engine;
     static {
         Engine.setFastMode(true);
@@ -55,31 +70,35 @@ public class HtmlToImageUtils {
         htmlToImage(html, saveFilePath, null, true, Duration.ofMinutes(3).toMillis());
     }
 
-    public static void htmlToImage(String html, String saveFilePath, int[] size, boolean fullPage, long networkTimeout) {
-        try (Playwright playwright = Playwright.create();
-             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true))) {
-            Page page = browser.newPage();
-            if (ArrayUtil.isNotEmpty(size)) {
-                page.setViewportSize(size[0], size[1]);
-            }
+    public static void htmlToImage(String html, String saveFilePath, int[] size,
+                                   boolean fullPage, long networkTimeout) {
+        try (Playwright playwright = Playwright.create()) {
 
-            try {
-                // 加载 HTML，等待 DOM 就绪
-                page.setContent(html, new Page.SetContentOptions()
-                        .setWaitUntil(WaitUntilState.NETWORKIDLE)//等待所有资源
-                        .setTimeout(networkTimeout));
-            } catch (com.microsoft.playwright.TimeoutError e) {
-                DbLog.error(BusinessModuleEnum.HTML_TO_IMAGE, "截图等待资源超时：{}",html,e);
-            } catch (Exception e) {
-                DbLog.error(BusinessModuleEnum.HTML_TO_IMAGE, "html转图片异常：{}",html,e);
-            }
+            try (Browser browser = launchAnyBrowser(playwright);
+                 BrowserContext context = browser.newContext(
+                    size != null && size.length == 2
+                            ? new Browser.NewContextOptions().setViewportSize(size[0], size[1])
+                            : new Browser.NewContextOptions())) {
+                Page page = context.newPage();
 
-            String suffix = FileUtil.getSuffix(saveFilePath);
-            boolean isPng = suffix.equalsIgnoreCase("png");
-            page.screenshot(new Page.ScreenshotOptions()
-                    .setFullPage(fullPage)
-                    .setType(isPng ? ScreenshotType.PNG : ScreenshotType.JPEG)
-                    .setPath(Paths.get(saveFilePath)));
+                try {
+                    page.setContent(html, new Page.SetContentOptions()
+                            .setWaitUntil(WaitUntilState.NETWORKIDLE)
+                            .setTimeout(networkTimeout));
+                } catch (TimeoutError e) {
+                    DbLog.error(BusinessModuleEnum.HTML_TO_IMAGE, "截图等待资源超时：{}", html, e);
+                } catch (Exception e) {
+                    DbLog.error(BusinessModuleEnum.HTML_TO_IMAGE, "html转图片异常：{}", html, e);
+                }
+
+                String suffix = FileUtil.getSuffix(saveFilePath);
+                boolean isPng = "png".equalsIgnoreCase(suffix);
+
+                page.screenshot(new Page.ScreenshotOptions()
+                        .setFullPage(fullPage)
+                        .setType(isPng ? ScreenshotType.PNG : ScreenshotType.JPEG)
+                        .setPath(Paths.get(saveFilePath)));
+            }
         }
     }
 
@@ -138,24 +157,118 @@ public class HtmlToImageUtils {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        urlToImage("https://intro.limestart.cn/",
-                "D:\\temp\\ttt.png",
-                true,
-                false,
-                new int[]{1920, 1080},
-                Duration.ofMinutes(3).toMillis());
 
-//        String s = FileUtil.readString(new File(
-//                com.haruhi.botServer.utils.FileUtil.getTemplateDir() + File.separator + "test3.html"
-//        ), StandardCharsets.UTF_8);
-//        HashMap<String, Object> param = new HashMap<>();
-//        param.put("imgurl", " ");
-//        param.put("name", "凉宫春日haruhi1");
-//        param.put("title", "标题test1");
-//        String html = renderTemplate(s, param);
-//
-//        htmlToImage(html, "D:\\\\temp\\\\ttt.png", 1000);
-//        System.out.println(html);
+    /**
+     * 依次尝试启动浏览器：
+     * 1. Playwright 自带 Chromium
+     * 2. 系统 Chromium（ARM64 环境常用）
+     * 3. Playwright Firefox
+     * 4. 系统 Firefox
+     * 只要能启动成功就返回。
+     */
+    private static Browser launchAnyBrowser(Playwright playwright) {
+        List<LaunchAttempt> attempts = new ArrayList<>();
+
+        // 1. Playwright 自带 Chromium
+        attempts.add(new LaunchAttempt("Playwright Chromium",
+                () -> playwright.chromium().launch(defaultChromiumOptions(null))));
+
+        // 2. 系统 Chromium（存在的路径才尝试）
+        for (String path : CHROMIUM_PATHS) {
+            if (Files.exists(Paths.get(path))) {
+                final String p = path;
+                attempts.add(new LaunchAttempt("System Chromium (" + p + ")",
+                        () -> playwright.chromium().launch(defaultChromiumOptions(p))));
+            }
+        }
+
+        // 3. Playwright 自带 Firefox
+        attempts.add(new LaunchAttempt("Playwright Firefox",
+                () -> playwright.firefox().launch(defaultFirefoxOptions(null))));
+
+        // 4. 系统 Firefox
+        for (String path : FIREFOX_PATHS) {
+            if (Files.exists(Paths.get(path))) {
+                final String p = path;
+                attempts.add(new LaunchAttempt("System Firefox (" + p + ")",
+                        () -> playwright.firefox().launch(defaultFirefoxOptions(p))));
+            }
+        }
+
+        RuntimeException lastError = null;
+        for (LaunchAttempt attempt : attempts) {
+            try {
+                Browser browser = attempt.supplier.get();
+                DbLog.debug(BusinessModuleEnum.HTML_TO_IMAGE, "使用浏览器：{}", attempt.name);
+                return browser;
+            } catch (Throwable t) {
+                DbLog.error(BusinessModuleEnum.HTML_TO_IMAGE,
+                        "启动 {} 失败：{}", attempt.name, t.getMessage());
+                lastError = new RuntimeException("启动 " + attempt.name + " 失败", t);
+            }
+        }
+        throw new RuntimeException("所有浏览器启动方式均失败", lastError);
+    }
+
+    private static BrowserType.LaunchOptions defaultChromiumOptions(String executablePath) {
+        BrowserType.LaunchOptions opt = new BrowserType.LaunchOptions()
+                .setHeadless(true)
+                .setArgs(Arrays.asList(
+                        "--no-sandbox",
+                        "--disable-gpu",
+                        "--disable-dev-shm-usage",   // proot 下 /dev/shm 常常很小
+                        "--disable-setuid-sandbox",
+                        "--single-process"           // 若不稳定可去掉
+                ));
+        if (executablePath != null) {
+            opt.setExecutablePath(Paths.get(executablePath));
+        }
+        return opt;
+    }
+
+    private static BrowserType.LaunchOptions defaultFirefoxOptions(String executablePath) {
+        BrowserType.LaunchOptions opt = new BrowserType.LaunchOptions()
+                .setHeadless(true)
+                .setArgs(Arrays.asList("--no-sandbox"));
+        if (executablePath != null) {
+            opt.setExecutablePath(Paths.get(executablePath));
+        }
+        return opt;
+    }
+
+    // 小工具类
+    private static class LaunchAttempt {
+        final String name;
+        final ThrowingSupplier<Browser> supplier;
+        LaunchAttempt(String name, ThrowingSupplier<Browser> supplier) {
+            this.name = name;
+            this.supplier = supplier;
+        }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingSupplier<T> {
+        T get() throws Exception;
+    }
+
+    public static void main(String[] args) throws Exception {
+//        urlToImage("https://intro.limestart.cn/",
+//                "D:\\temp\\ttt.png",
+//                true,
+//                false,
+//                new int[]{1920, 1080},
+//                Duration.ofMinutes(3).toMillis());
+
+        String s = FileUtil.readString(new File(
+                com.haruhi.botServer.utils.FileUtil.getTemplateDir() + File.separator + "test3.html"
+        ), StandardCharsets.UTF_8);
+        HashMap<String, Object> param = new HashMap<>();
+        param.put("imgurl", " ");
+        param.put("name", "凉宫春日haruhi1");
+        param.put("title", "标题test1");
+        String html = renderTemplate(s, param);
+
+        htmlToImage(html, "D:\\temp\\ttt.png", 1000);
+        System.out.println(html);
     }
 }
