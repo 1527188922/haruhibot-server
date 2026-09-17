@@ -42,6 +42,9 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
@@ -636,10 +639,12 @@ public class JmcomicService {
             return CompletableFuture.runAsync(() -> {
                 list.forEach(param -> {
                     String imgUrl = param.getImgUrl();
-                    File tmpImgFile = new File(param.getImgFile().getAbsolutePath() + ".tmp");
+                    String tmpFilePath = param.getImgFile().getAbsolutePath() + ".tmp";
+                    File tmpImgFile = new File(tmpFilePath);
 
                     this.downloadImage(imgUrl,tmpImgFile);
-                    if (!tmpImgFile.exists()) {
+                    if (!tmpImgFile.exists() || tmpImgFile.length() == 0) {
+                        log.error("下载的临时文件不存在或size=0 imgUrl={} tmpFilePath={}", imgUrl, tmpFilePath);
                         return;
                     }
                     try {
@@ -1013,27 +1018,103 @@ public class JmcomicService {
 
 
     public static void main(String[] args) {
+//        test1();
+//        test2();
+        test4();
+
+    }
+
+
+    public static void test1(){
+        // 手动注册所有可用的 ImageIO 插件
+        ImageIO.scanForPlugins();
+        // 打印已注册的 WebP 读取器，用于确认
+        Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("webp");
+        while (readers.hasNext()) {
+            ImageReader r = readers.next();
+            Class<?> c = r.getClass();
+            System.out.println("Reader: " + c.getName());
+            System.out.println("加载自: " + c.getProtectionDomain()
+                    .getCodeSource().getLocation());
+        }
+    }
+
+    public static void test2(){
         try {
-            JmcomicService jmcomicService = new JmcomicService();
-//            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum("1023584");
-//            jmcomicService.albumToPdf(new File("D:\\temp\\pdf\\JM1116808"), new File("D:\\temp\\pdf\\JM1116808.pdf"));
+            Class<?> type = Class.forName(
+                    "com.luciad.imageio.webp.WebPImageReaderSpi");
 
-//            SearchResp search = jmcomicService.search("二乃", "mv");
-//            System.out.println(search);
-//            Album album = jmcomicService.requestAlbum("303053");
-//            System.out.println(album);
+            System.out.println("加载来源："
+                    + type.getProtectionDomain().getCodeSource());
 
+            javax.imageio.spi.ImageReaderSpi spi =
+                    (javax.imageio.spi.ImageReaderSpi)
+                            type.getDeclaredConstructor().newInstance();
 
-//            Chapter chapter = jmcomicService.requestChapter("303053");
-//            System.out.println(chapter);
-//            long scrambleId = jmcomicService.getScrambleId(303053);
-
-//            jmcomicService.login("","");
-            SearchResp search = jmcomicService.search("碧蓝档案", "mv");
-            System.out.println(search);
-
-        } catch (Exception e) {
+            javax.imageio.ImageReader reader = spi.createReaderInstance(null);
+            try {
+                System.out.println("Reader 创建成功：" + reader.getClass().getName());
+            } finally {
+                reader.dispose();
+            }
+        } catch (Throwable e) {
+            // 仅用于诊断，也打印链接错误和初始化错误
             e.printStackTrace();
         }
     }
+
+
+    public static void test4() {
+        // 修改为下载的原始 WebP 文件路径
+        File imageFile = new File(FileUtil.getAppTempDir() + File.separator + "00001.webp.tmp");
+        ImageReader reader = null;
+
+        try {
+            log.info("环境：{} / {}", System.getProperty("os.name"), System.getProperty("os.arch"));
+
+            if (!imageFile.isFile()) {
+                throw new IOException("文件不存在：" + imageFile.getAbsolutePath());
+            }
+            log.info("文件大小：{}", imageFile.length());
+
+            // 通过反射创建 SPI，绕过 IDEA 对该类的解析问题
+            Class<?> type = Class.forName(
+                    "com.luciad.imageio.webp.WebPImageReaderSpi");
+
+            log.info("加载来源：{}", type.getProtectionDomain().getCodeSource());
+
+            ImageReaderSpi spi = (ImageReaderSpi)
+                    type.getDeclaredConstructor().newInstance();
+
+            reader = spi.createReaderInstance(null);
+
+            try (InputStream raw = Files.newInputStream(imageFile.toPath());
+                 ImageInputStream input = ImageIO.createImageInputStream(raw)) {
+
+                if (input == null) {
+                    throw new IOException("无法创建图片输入流");
+                }
+
+                log.info("canDecodeInput={}", spi.canDecodeInput(input));
+                input.seek(0);
+
+                reader.setInput(input);
+                BufferedImage image = reader.read(0);
+
+                if (image == null) {
+                    throw new IOException("Reader 解码返回了 null");
+                }
+
+                log.info("解码成功：{} × {}", image.getWidth(), image.getHeight());
+            }
+        } catch (Throwable e) {
+            // 仅用于诊断，保留原生库加载等错误的完整堆栈
+            log.error(e.getMessage(), e);
+        } finally {
+            if (reader != null) {
+                reader.dispose();
+            }
+        }
+    }
+
 }

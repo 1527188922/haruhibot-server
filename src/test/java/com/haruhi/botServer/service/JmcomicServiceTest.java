@@ -1,8 +1,19 @@
 package com.haruhi.botServer.service;
 
+import com.haruhi.botServer.HaruhiBotServer;
 import com.haruhi.botServer.dto.BaseResp;
+import com.haruhi.botServer.dto.jmcomic.Album;
+import com.haruhi.botServer.utils.FileUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.File;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -11,7 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Slf4j
+@ActiveProfiles("dev")
+@ExtendWith(SpringExtension.class)
+@SpringBootTest(classes = HaruhiBotServer.class)
 class JmcomicServiceTest {
+    @Autowired
+    private JmcomicService jmcomicService;
 
     @Test
     void executeWithJmLockBlocksDifferentAlbumsWhenParallelDisabled() throws Exception {
@@ -76,6 +93,19 @@ class JmcomicServiceTest {
         assertFalse(second.isSuccess());
         assertEquals("【JM100】正在执行下载漫画任务，请稍后再试", second.getMsg());
         assertTrue(first.get(3, TimeUnit.SECONDS).isSuccess());
+    }
+    @Test
+    void testDownload(){
+
+        try {
+//            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum("452699");
+//            BaseResp<String> stringBaseResp = jmcomicService.downloadAlbum(albumBaseResp.getData());
+            jmcomicService.downloadImage("https://cdn-msp2.jmapiproxy2.cc/media/photos/749671/00001.webp",
+                    new File(FileUtil.getAppTempDir() + File.separator + "00001.webp.tmp"));
+            Thread.sleep(Duration.ofMinutes(10).toMillis());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static class TestJmcomicService extends JmcomicService {

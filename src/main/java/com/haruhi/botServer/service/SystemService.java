@@ -47,6 +47,10 @@ import java.util.stream.Collectors;
 @Service
 public class SystemService {
 
+    static {
+        log.info("当前系统环境：{} / {}", System.getProperty("os.name"), System.getProperty("os.arch"));
+    }
+
     @Autowired
     private PokeReplySqliteService pokeReplyService;
     @Autowired
