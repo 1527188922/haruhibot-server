@@ -146,16 +146,16 @@
 <!--            <artifactId>qianfan</artifactId>-->
 <!--            <version>0.0.9</version>-->
 <!--        </dependency>-->
-        <dependency>
-            <groupId>org.sejda.imageio</groupId>
-            <artifactId>webp-imageio</artifactId>
-            <version>0.1.6</version>
-        </dependency>
 <!--        <dependency>-->
-<!--            <groupId>com.github.usefulness</groupId>-->
+<!--            <groupId>org.sejda.imageio</groupId>-->
 <!--            <artifactId>webp-imageio</artifactId>-->
-<!--            <version>0.11.0</version>-->
+<!--            <version>0.1.6</version>-->
 <!--        </dependency>-->
+        <dependency>
+            <groupId>com.github.usefulness</groupId>
+            <artifactId>webp-imageio</artifactId>
+            <version>0.11.0</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
