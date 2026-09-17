@@ -27,7 +27,7 @@ public class FirstTask implements CommandLineRunner {
             dictionarySqliteService.initData(false);
             systemService.loadCache(1);
             // 创建stop脚本
-            systemService.writeStopScript();
+//            systemService.writeStopScript();
         }catch (Exception e){
             DbLog.error(BusinessModuleEnum.SYSTEM,"初始任务执行异常",e);
         }
