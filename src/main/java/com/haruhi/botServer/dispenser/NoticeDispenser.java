@@ -1,6 +1,9 @@
 package com.haruhi.botServer.dispenser;
 
-import com.haruhi.botServer.constant.DictionaryEnum;
+import com.haruhi.botServer.config.config.Configs;
+
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import com.haruhi.botServer.constant.event.NoticeTypeEnum;
 import com.haruhi.botServer.constant.event.SubTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
@@ -8,7 +11,6 @@ import com.haruhi.botServer.handler.notice.IGroupDecreaseHandler;
 import com.haruhi.botServer.handler.notice.IGroupIncreaseHandler;
 import com.haruhi.botServer.handler.notice.INoticeHandler;
 import com.haruhi.botServer.handler.notice.IPokeHandler;
-import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,11 +32,9 @@ public class NoticeDispenser {
     private final Map<String, INoticeHandler> noticeHandlerMap;
 
     private static List<INoticeHandler> container = new ArrayList<>();
-    private final DictionarySqliteService dictionarySqliteService;
 
-    public NoticeDispenser(Map<String, INoticeHandler> noticeHandlerMap, DictionarySqliteService dictionarySqliteService) {
+    public NoticeDispenser(Map<String, INoticeHandler> noticeHandlerMap) {
         this.noticeHandlerMap = noticeHandlerMap;
-        this.dictionarySqliteService = dictionarySqliteService;
     }
 
     @PostConstruct
@@ -57,7 +57,7 @@ public class NoticeDispenser {
         if(!CollectionUtils.isEmpty(container)){
             String subType = message.getSubType();
             String noticeType = message.getNoticeType();
-            boolean disableGroup = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
+            boolean disableGroup = Configs.getBool(ConfigKey.BOT_SWITCH_DISABLE_GROUP);
             if(disableGroup && message.isGroupMsg()){
                 return;
             }

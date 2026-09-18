@@ -1,5 +1,9 @@
 package com.haruhi.botServer.service;
 
+import com.haruhi.botServer.config.config.Configs;
+
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import cn.hutool.core.text.StrFormatter;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
@@ -10,7 +14,6 @@ import com.github.pagehelper.PageInfo;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.DataBaseConst;
-import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
@@ -77,8 +80,6 @@ public class ChatRecordService{
     private ChatRecordExtendSqliteMapper chatRecordExtendSqliteMapper;
     @Autowired
     private GroupInfoSqliteService groupInfoSqliteService;
-    @Autowired
-    private DictionarySqliteService dictionarySqliteService;
 
     public List<ChatRecordVo> groupMsgContext(long groupId, long id, long offset1, long offset2) {
         long start = id + offset1;
@@ -262,7 +263,7 @@ public class ChatRecordService{
         if (record.isGroupMsg()) {
             recordExtendV2.setGroupId(record.getGroupId());
         }
-        boolean aBoolean = dictionarySqliteService.getBoolean(DictionaryEnum.DATABASE_DB_CHAT_EXTEND_RAW_COMPRESS.getKey(), true);
+        boolean aBoolean = Configs.getBool(ConfigKey.DATABASE_DB_CHAT_EXTEND_RAW_COMPRESS, true);
         if (aBoolean) {
             try {
                 recordExtendV2.setRawWsMessageBinary(TextCompressionUtils.compress(record.getRawWsMsg()));
@@ -799,6 +800,7 @@ public class ChatRecordService{
             currentPage++;
         }
     }
+
 
 
 }

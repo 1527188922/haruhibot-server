@@ -1,11 +1,13 @@
 package com.haruhi.botServer.service;
 
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
+
 import cn.hutool.http.*;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
-import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.bilibili.*;
 import com.haruhi.botServer.utils.BilibiliIdConverter;
@@ -17,7 +19,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -68,9 +69,6 @@ public class BilibiliService {
         put("bili2233", Pattern.compile("https?://bili2233\\.cn/[A-Za-z\\d\\._?%&+\\-=/#]+()()"));
         put("bilibili", Pattern.compile("https?://(?:space|www|live|m|t)?\\.?bilibili\\.com/[A-Za-z\\d\\._?%&+\\-=/#]+()()"));
     }};
-
-    @Autowired
-    private DictionarySqliteService dictionarySqliteService;
 
     private volatile String wbiMixinKey;
     private volatile long wbiMixinKeyExpireAt;
@@ -228,7 +226,7 @@ public class BilibiliService {
      */
     private Map<String, String> getLiveHeaders(){
         Map<String, String> headers = new HashMap<>(HEADERS);
-//        String cookie = dictionarySqliteService.getInCache(DictionaryEnum.BILIBILI_LIVE_COOKIE.getKey(), DictionaryEnum.BILIBILI_LIVE_COOKIE.getDefaultValue());
+//        String cookie = Configs.getStr(ConfigKey.BILIBILI_LIVE_COOKIE, ConfigKey.BILIBILI_LIVE_COOKIE.getDefaultValue());
 //        if (StringUtils.isNotBlank(cookie)) {
 //            headers.put("Cookie", cookie);
 //        }
@@ -236,8 +234,8 @@ public class BilibiliService {
     }
 
     public String getCookie(){
-        String sessdata = dictionarySqliteService.getInCache(DictionaryEnum.BILIBILI_COOKIES_SESSDATA.getKey(), null);
-        String jct = dictionarySqliteService.getInCache(DictionaryEnum.BILIBILI_COOKIES_BILI_JCT.getKey(), null);
+        String sessdata = Configs.getStr(ConfigKey.BILIBILI_COOKIES_SESSDATA, null);
+        String jct = Configs.getStr(ConfigKey.BILIBILI_COOKIES_BILI_JCT, null);
         if(StringUtils.isBlank(sessdata) || StringUtils.isBlank(jct)){
             return null;
         }
@@ -382,14 +380,14 @@ public class BilibiliService {
             if (ticketBaseResp == null || !ticketBaseResp.isSuccess()) {
                 return null;
             }
-            dictionarySqliteService.put(DictionaryEnum.BILIBILI_COOKIES_TICKET.getKey(), ticketBaseResp.getRaw());
+            Configs.save(ConfigKey.BILIBILI_COOKIES_TICKET, ticketBaseResp.getRaw());
             return ticketBaseResp.getData();
         } catch (Exception e) {
             return null;
         }
     }
     public BilibiliTickResp getTickInDb(){
-        String s = dictionarySqliteService.get(DictionaryEnum.BILIBILI_COOKIES_TICKET.getKey());
+        String s = Configs.getStr(ConfigKey.BILIBILI_COOKIES_TICKET, null);
         try {
             if (StringUtils.isNotBlank(s)) {
                 BilibiliBaseResp<BilibiliTickResp> tickResp = JSONObject.parseObject(s, new TypeReference<BilibiliBaseResp<BilibiliTickResp>>() {

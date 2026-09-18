@@ -2,6 +2,8 @@ package com.haruhi.botServer.picimagesearch.engine;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.picimagesearch.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -61,6 +63,8 @@ public class SauceNao extends AbstractSearchEngine {
 
         @Override
         public SearchResponse search(SearchInput input) {
+            // 识别接口地址支持配置热更新，每次请求前取最新值
+            this.baseUrl(Configs.getStr(ConfigKey.SEARCH_IMG_SAUCENAO_BASEURL));
             Map<String, Object> params = new LinkedHashMap<>();
             params.put("testmode", testmode);
             params.put("numres", numres);

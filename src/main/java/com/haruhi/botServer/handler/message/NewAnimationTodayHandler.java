@@ -46,7 +46,7 @@
 //        if(!(message.isTextMsg() && message.getText(-1).matches(RegexEnum.NEW_ANIMATION_TODAY.getValue()))){
 //            return false;
 //        }
-//        String urlAgefans = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.URL_CONF_AGEFANS.getKey(), null);
+//        String urlAgefans = Configs.getStr(ConfigKey.SEARCH_IMG_AGEFANS_URL, null);
 //        ThreadPoolUtil.getHandleCommandPool().execute(()->{
 //            try {
 //

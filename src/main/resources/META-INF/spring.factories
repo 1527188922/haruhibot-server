@@ -1,0 +1,4 @@
+# 把 ./config/ 下的配置文件注入 Spring Environment
+# 使 @ConditionalOnProperty / @Value / 第三方starter的属性绑定 与 Configs 读到同一份配置
+org.springframework.context.ApplicationContextInitializer=\
+com.haruhi.botServer.config.config.ConfigsEnvironmentInitializer

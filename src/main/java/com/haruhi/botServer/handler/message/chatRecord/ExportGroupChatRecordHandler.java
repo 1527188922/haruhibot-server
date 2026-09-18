@@ -1,8 +1,10 @@
 package com.haruhi.botServer.handler.message.chatRecord;
 
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -93,7 +95,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageHandler {
                 bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
 
                 String filePath = "";
-                if (BotConfig.SAME_MACHINE_QQCLIENT) {
+                if (Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT)) {
                     filePath = excelFile.getAbsolutePath();
                 }else{
                     long l6 = System.currentTimeMillis();

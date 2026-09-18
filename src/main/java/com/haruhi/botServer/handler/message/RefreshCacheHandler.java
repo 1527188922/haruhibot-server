@@ -1,5 +1,7 @@
 package com.haruhi.botServer.handler.message;
 
+import com.haruhi.botServer.config.config.Configs;
+
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;

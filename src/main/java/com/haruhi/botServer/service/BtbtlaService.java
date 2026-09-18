@@ -1,9 +1,12 @@
 package com.haruhi.botServer.service;
 
+import com.haruhi.botServer.config.config.Configs;
+
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
-import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.dto.btbtla.SearchResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -12,7 +15,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -24,9 +26,6 @@ import java.util.List;
 public class BtbtlaService {
 
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0";
-
-    @Autowired
-    private DictionarySqliteService dictionarySqliteService;
 
     public SearchResult search(String keyword) {
         SearchResult searchResult = new SearchResult();
@@ -120,7 +119,7 @@ public class BtbtlaService {
 
 
     public String getDomain(){
-        return dictionarySqliteService.get(DictionaryEnum.URL_CONF_BTBTLA_SEARCH.getKey());
+        return Configs.getStr(ConfigKey.URL_CONF_BTBTLA_SEARCH, null);
 //        return "https://www.btbtla.com";
     }
 
@@ -131,4 +130,5 @@ public class BtbtlaService {
         System.out.println(result);
 
     }
+
 }

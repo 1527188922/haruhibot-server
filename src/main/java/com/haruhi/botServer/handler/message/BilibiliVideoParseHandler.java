@@ -1,9 +1,10 @@
 package com.haruhi.botServer.handler.message;
 
-import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.config.config.Configs;
+
+import com.haruhi.botServer.config.config.ConfigKey;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
-import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
 import com.haruhi.botServer.dto.bilibili.PlayUrlInfo;
@@ -13,7 +14,6 @@ import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.dto.qqclient.SendMsgResp;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
 import com.haruhi.botServer.service.BilibiliService;
-import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.*;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +35,6 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
 
     @Autowired
     private AbstractWebResourceConfig abstractPathConfig;
-    @Autowired
-    private DictionarySqliteService dictionarySqliteService;
 
     @Override
     public int weight() {
@@ -86,7 +84,7 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
                 File bilibiliVideoFile = new File(FileUtil.getBilibiliVideoFileName(videoDetailDataView.getBvid(), cid,"mp4"));
                 if (!bilibiliVideoFile.exists()) {
                     // 判断视频时长是否超过下载限制
-                    long downloadDurationLimit = getDurationLimit(DictionaryEnum.BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT);
+                    long downloadDurationLimit = getDurationLimit(ConfigKey.BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT);
                     if (videoDetailDataView.getDuration() > downloadDurationLimit) {
                         log.error("视频时长超过下载限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),downloadDurationLimit);
                         return;
@@ -98,7 +96,7 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
                     log.info("下载b站视频完成 cost:{}",(System.currentTimeMillis()-l));
                 }
 
-                long uploadDurationLimit = getDurationLimit(DictionaryEnum.BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT);
+                long uploadDurationLimit = getDurationLimit(ConfigKey.BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT);
                 if (videoDetailDataView.getDuration() > uploadDurationLimit) {
                     log.error("视频时长超过上传限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),uploadDurationLimit);
                     return;
@@ -111,15 +109,8 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
         return true;
     }
 
-    public long getDurationLimit(DictionaryEnum dictionaryEnum) {
-        Long durationLimit = null;
-        try {
-            durationLimit = Long.parseLong(dictionarySqliteService.getInCache(dictionaryEnum.getKey(),
-                    dictionaryEnum.getDefaultValue()));
-        }catch (NumberFormatException e){
-            durationLimit = Long.parseLong(dictionaryEnum.getDefaultValue());
-        }
-        return durationLimit.longValue();
+    public long getDurationLimit(ConfigKey key) {
+        return Configs.getInt(key, Integer.parseInt(key.getDefaultValue()));
     }
 
     private void sendInfoMessage(VideoDetail.View videoDetailDataView, Message message, Bot bot){
@@ -167,10 +158,11 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
         log.info("qq客户端开始上传视频 {}", absolutePath);
         long l = System.currentTimeMillis();
 
-        MessageHolder messageHolder = MessageHolder.instanceVideo(BotConfig.SAME_MACHINE_QQCLIENT ? "file://" + absolutePath : abstractPathConfig.webVideoBiliPath() + "/" + fileName);
+        MessageHolder messageHolder = MessageHolder.instanceVideo(Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ? "file://" + absolutePath : abstractPathConfig.webVideoBiliPath() + "/" + fileName);
         SyncResponse<SendMsgResp> response = bot.sendSyncMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), Arrays.asList(messageHolder), 5 * 60 * 1000);
 
         log.info("qq客户端上传视频完成 cost:{} resp:{}", System.currentTimeMillis()-l,response.getRaw());
     }
+
 
 }

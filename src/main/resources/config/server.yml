@@ -1,0 +1,11 @@
+# 服务端配置（yml 格式）
+#
+# 之所以单独用 yml：这里的配置需要由 Spring Boot 直接消费（例如 server.port），
+# Configs 会把 yml 的叶子节点拍平成 server.port=8090 一并放进配置快照，
+# 因此业务代码用 Configs.getInt(ConfigKey.SERVER_PORT) 读到的与 Spring 是同一个值。
+#
+# 注意：yml 的缩进/锚点/多行块难以安全改写，所以配置管理页对它只读展示，修改后需重启。
+
+server:
+  # http服务端口
+  port: 8090

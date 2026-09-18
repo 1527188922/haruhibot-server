@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handler.message;
 
-import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.config.ConfigKey;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
@@ -96,7 +97,7 @@ public class BilibiliChatWordCloudHandler implements IAllMessageHandler {
                 FileUtil.deleteFile(file);
                 WordCloudUtil.generateWordCloudImage(map,outPutPath);
 
-                String url = BotConfig.SAME_MACHINE_QQCLIENT ?
+                String url = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ?
                         "file://"+file.getAbsolutePath()
                         : abstractPathConfig.webBulletWordCloudPath() + "/" + fileName + "?t=" + System.currentTimeMillis();
                 log.info("弹幕词云地址：{}",url);

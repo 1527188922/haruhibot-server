@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handler.message.face;
 
-import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.config.ConfigKey;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
@@ -49,7 +50,7 @@ public class NieHandler implements IGroupMessageHandler {
         }else{
             file = data[CommonUtil.randomInt(0, data.length - 1)];
         }
-        String imageUrl = BotConfig.SAME_MACHINE_QQCLIENT ? "file://"+file.getAbsolutePath()
+        String imageUrl = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ? "file://"+file.getAbsolutePath()
                 : webResourceConfig.webFacePath() + "/" + file.getName() + "?t=" + System.currentTimeMillis();
 
         MessageHolder messageHolder = MessageHolder.instanceImage(imageUrl);

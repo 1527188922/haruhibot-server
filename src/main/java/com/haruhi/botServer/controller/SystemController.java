@@ -1,5 +1,10 @@
 package com.haruhi.botServer.controller;
 
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.service.ConfigHub;
+import com.haruhi.botServer.config.service.SqlCacheStore;
+
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.io.LineHandler;
 import cn.hutool.core.io.file.Tailer;
@@ -8,18 +13,15 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.annotation.IgnoreAuthentication;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.RootTypeEnum;
 import com.haruhi.botServer.constant.SqlTypeEnum;
 import com.haruhi.botServer.dto.SqlExecuteResult;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botServer.entity.SystemLogSqlite;
-import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.EnumService;
 import com.haruhi.botServer.service.SqliteDatabaseService;
 import com.haruhi.botServer.service.SystemLogSqliteService;
 import com.haruhi.botServer.utils.DateTimeUtil;
-import com.haruhi.botServer.utils.PropertiesUtil;
 import com.haruhi.botServer.vo.*;
 import com.haruhi.botServer.dto.qqclient.RequestBox;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
@@ -64,7 +66,9 @@ public class SystemController {
     @Autowired
     private SqliteDatabaseService sqliteDatabaseService;
     @Autowired
-    private DictionarySqliteService dictionarySqliteService;
+    private ConfigHub configHub;
+    @Autowired
+    private SqlCacheStore sqlCacheStore;
     @Autowired
     private SystemLogSqliteService systemLogSqliteService;
     @Autowired
@@ -162,7 +166,7 @@ public class SystemController {
     public HttpResp<String> deleteFile(@RequestBody FileNode request,
                                        @RequestParam String rootType,
                                        @RequestParam String password) {
-        String loginUserPassword = PropertiesUtil.getProperty(FileUtil.FILE_NAME_WEBUI_CONFIG, PropertiesUtil.PROP_KEY_WEBUI_LOGIN_PASSWORD);
+        String loginUserPassword = Configs.getStrStrict(ConfigKey.WEBUI_LOGIN_PASSWORD, null);
         if (!Objects.equals(loginUserPassword, password)) {
             return HttpResp.fail("密码错误",null);
         }
@@ -298,14 +302,12 @@ public class SystemController {
 
     @GetMapping("/db/sql")
     public HttpResp<String> getSqlCache() {
-        String s = dictionarySqliteService.get(DictionaryEnum.DATABASE_DB_SQL_CACHE.getKey());
-        return HttpResp.success(s);
+        return HttpResp.success(sqlCacheStore.get());
     }
 
     @PostMapping("/db/sql")
     public HttpResp<String> saveSqlCache(@RequestBody Map<String,String> request) {
-        String sql = request.get("sql");
-        dictionarySqliteService.put(DictionaryEnum.DATABASE_DB_SQL_CACHE.getKey(),sql);
+        sqlCacheStore.put(request.get("sql"));
         return HttpResp.success();
     }
 

@@ -5,6 +5,8 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.entity.PixivSqlite;
 import com.haruhi.botServer.job.schedule.AbstractJob;
@@ -17,8 +19,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -29,15 +29,11 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "job.downloadPixiv.enable",havingValue = "1")
 public class DownloadPixivJob extends AbstractJob {
-
-    @Value("${job.downloadPixiv.cron}")
-    private String cron;
 
     @Override
     public String cronExpression() {
-        return cron;
+        return Configs.getStr(ConfigKey.JOB_DOWNLOAD_PIXIV_CRON);
     }
 
     @Autowired

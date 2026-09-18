@@ -54,7 +54,7 @@
 //    @Override
 //    public boolean onMessage(Bot bot, final Message message) {
 //
-//        boolean searchBtAllowGroup = dictionarySqliteService.getBoolean(DictionarySqliteService.DictionaryEnum.SWITCH_SEARCH_BT_ALLOW_GROUP.getKey(), false);
+//        boolean searchBtAllowGroup = Configs.getBool(ConfigKey.BOT_SWITCH_SEARCH_BT_ALLOW_GROUP, false);
 //        if (message.isGroupMsg() && !searchBtAllowGroup){
 //            return false;
 //        }
@@ -106,7 +106,7 @@
 //        }
 //
 //        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),buildMessage(keyword, page, sort),true);
-//        String urlBt = dictionarySqliteService.getInCache(DictionarySqliteService.DictionaryEnum.URL_CONF_BT_SEARCH.getKey(), null);
+//        String urlBt = Configs.getStr(ConfigKey.URL_CONF_BT_SEARCH, null);
 //        String finalKeyword = keyword;
 //        String finalSort = sort;
 //        Integer finalPage = page;

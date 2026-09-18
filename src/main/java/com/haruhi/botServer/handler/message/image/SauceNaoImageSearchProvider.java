@@ -2,8 +2,9 @@ package com.haruhi.botServer.handler.message.image;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
-import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.dto.qqclient.ForwardMsgItem;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
@@ -11,7 +12,6 @@ import com.haruhi.botServer.picimagesearch.PicImageSearchFactory;
 import com.haruhi.botServer.picimagesearch.SearchInput;
 import com.haruhi.botServer.picimagesearch.SearchItem;
 import com.haruhi.botServer.picimagesearch.SearchResponse;
-import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.DbLog;
 import com.haruhi.botServer.ws.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +28,9 @@ import java.util.List;
 @Component
 public class SauceNaoImageSearchProvider implements ImageSearchProvider {
 
-    private final DictionarySqliteService dictionarySqliteService;
     private final PicImageSearchFactory picImageSearchFactory;
 
-    public SauceNaoImageSearchProvider(DictionarySqliteService dictionarySqliteService,
-                                       PicImageSearchFactory picImageSearchFactory) {
-        this.dictionarySqliteService = dictionarySqliteService;
+    public SauceNaoImageSearchProvider(PicImageSearchFactory picImageSearchFactory) {
         this.picImageSearchFactory = picImageSearchFactory;
     }
 
@@ -44,7 +41,7 @@ public class SauceNaoImageSearchProvider implements ImageSearchProvider {
 
     @Override
     public void search(Bot bot, Message message, Message replyMessage, String imageUrl) {
-        String apiKey = dictionarySqliteService.getInCache(DictionaryEnum.SAUCENAO_SEARCH_IMAGE__KEY.getKey(), null);
+        String apiKey = Configs.getStr(ConfigKey.SEARCH_IMG_SAUCENAO_APIKEY, null);
         log.info("开始请求搜图接口 图片:{}", imageUrl);
         try {
             SearchResponse searchResponse = picImageSearchFactory.sauceNao()

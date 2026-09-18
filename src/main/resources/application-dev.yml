@@ -1,17 +1,5 @@
-server:
-  port: 8090
-
-bot:
-  internet-host: 127.0.0.1
-  same-machine-qqclient: true
-
-job:
-  downloadPixiv:
-    cron: 0/15 * 0-7 * * ? *
-    enable: 0
-  bilibiliLive:
-    cron: 0/30 * * * * ?
-    enable: 0
+# 本文件只保留无法放进 ./config/*.properties 的配置
+# 机器人、定时任务、端口等配置见 ./config/ 目录
 
 logging:
   level:

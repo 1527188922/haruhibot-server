@@ -1,12 +1,15 @@
 package com.haruhi.botServer.handler.message;
 
+import com.haruhi.botServer.config.config.Configs;
+
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
-import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -14,7 +17,6 @@ import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.Album;
 import com.haruhi.botServer.dto.jmcomic.SearchResp;
 import com.haruhi.botServer.dto.qqclient.*;
-import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.service.JmcomicService;
 import com.haruhi.botServer.utils.*;
 import com.haruhi.botServer.ws.Bot;
@@ -53,8 +55,6 @@ public class JmcomicHandler implements IAllMessageHandler {
     private JmcomicService jmcomicService;
     @Autowired
     private AbstractWebResourceConfig webResourceConfig;
-    @Autowired
-    private DictionarySqliteService dictionarySqliteService;
 
     private static final String SEARCH_RESULT_TEMPLATE = "jmcomic-search-result.html";
     private static final String SEARCH_RESULT_IMAGE_DIR = "search-result";
@@ -153,7 +153,7 @@ public class JmcomicHandler implements IAllMessageHandler {
 
     private void uploadFile(Bot bot,Message message,File file, String fileUrl, boolean isPdf){
         String absolutePath = null;
-        if (BotConfig.SAME_MACHINE_QQCLIENT) {
+        if (Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT)) {
             absolutePath = file.getAbsolutePath();
         }else{
             log.info("qq客户端开始下载文件：{}",fileUrl);
@@ -223,7 +223,7 @@ public class JmcomicHandler implements IAllMessageHandler {
     }
 
     private void sendSearchResult(Bot bot,Message message, SearchResp searchResp){
-        boolean imageMode = dictionarySqliteService.getBoolean(DictionaryEnum.JM_SEARCH_RESULT_IMAGE_MODE.getKey(), false);
+        boolean imageMode = Configs.getBool(ConfigKey.JM_SEARCH_RESULT_IMAGE_MODE, false);
         if (imageMode) {
             try {
                 sendSearchResultImage(bot, message, searchResp);
@@ -236,9 +236,8 @@ public class JmcomicHandler implements IAllMessageHandler {
     }
 
     private List<SearchResp.ContentItem> limitSearchResultItems(List<SearchResp.ContentItem> content) {
-        DictionaryEnum limitConfig = DictionaryEnum.JM_SEARCH_RESULT_LIMIT;
-        int defaultLimit = Integer.parseInt(limitConfig.getDefaultValue());
-        int limit = dictionarySqliteService.getInt(limitConfig.getKey(), defaultLimit);
+        int defaultLimit = Integer.parseInt(ConfigKey.JM_SEARCH_RESULT_LIMIT.getDefaultValue());
+        int limit = Configs.getInt(ConfigKey.JM_SEARCH_RESULT_LIMIT, defaultLimit);
         return CollUtil.sub(content, 0, limit > 0 ? limit : defaultLimit);
     }
 
@@ -299,7 +298,7 @@ public class JmcomicHandler implements IAllMessageHandler {
         String outputPath = outputDir + File.separator + fileName;
         HtmlToImageUtils.htmlToImage(html, outputPath, 1000);
 
-        String imageUrl = BotConfig.SAME_MACHINE_QQCLIENT
+        String imageUrl = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT)
                 ? "file://" + outputPath
                 : webResourceConfig.webResourcesJmcomicPathInClasses() + "/" + SEARCH_RESULT_IMAGE_DIR + "/" + fileName + "?t=" + System.currentTimeMillis();
         bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),

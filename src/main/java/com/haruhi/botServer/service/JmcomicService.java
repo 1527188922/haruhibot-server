@@ -1,5 +1,9 @@
 package com.haruhi.botServer.service;
 
+import com.haruhi.botServer.config.config.Configs;
+
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpException;
@@ -8,7 +12,6 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
-import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.dto.BaseResp;
 import com.haruhi.botServer.dto.jmcomic.*;
 import com.haruhi.botServer.utils.CommonUtil;
@@ -82,14 +85,12 @@ public class JmcomicService {
         return thread;
     });
 
-    @Autowired
-    private DictionarySqliteService dictionarySqliteService;
 
     @Autowired
     private JmcomicSqliteService jmcomicSqliteService;
 
     public String getJmApiDomain(){
-        return dictionarySqliteService.getInCache(DictionaryEnum.JM_API_DOMAIN.getKey(), DEFAULT_API_DOMAIN);
+        return Configs.getStr(ConfigKey.JM_API_DOMAIN, DEFAULT_API_DOMAIN);
     }
 
 
@@ -114,16 +115,16 @@ public class JmcomicService {
     }
 
     public String getZipPassword(){
-        String inCache = dictionarySqliteService.getInCache(DictionaryEnum.JM_PASSWORD_ZIP.getKey(), null);
+        String inCache = Configs.getStr(ConfigKey.JM_PASSWORD_ZIP, null);
         return StringUtils.isNotBlank(inCache) ? inCache : JM_DEFAULT_PASSWORD;
     }
     public String getPdfPassword(){
-        String inCache = dictionarySqliteService.getInCache(DictionaryEnum.JM_PASSWORD_PDF.getKey(), null);
+        String inCache = Configs.getStr(ConfigKey.JM_PASSWORD_PDF, null);
         return StringUtils.isNotBlank(inCache) ? inCache : JM_DEFAULT_PASSWORD;
     }
 
     public int getThreads(){
-        int thread = dictionarySqliteService.getInt(DictionaryEnum.JM_DOWNLOAD_THREADS.getKey(), Runtime.getRuntime().availableProcessors());
+        int thread = Configs.getInt(ConfigKey.JM_DOWNLOAD_THREADS, Runtime.getRuntime().availableProcessors());
         if(thread <= 0){
             return Runtime.getRuntime().availableProcessors();
         }
@@ -131,7 +132,7 @@ public class JmcomicService {
     }
 
     protected boolean isJmOperationParallel(){
-        return dictionarySqliteService.getBoolean(DictionaryEnum.JM_OPERATION_PARALLEL_ENABLED.getKey(), false);
+        return Configs.getBool(ConfigKey.JM_OPERATION_PARALLEL_ENABLED, false);
     }
 
     <T> BaseResp<T> executeWithJmLock(String aid, String actionName, JmOperation<T> operation) {
@@ -864,7 +865,7 @@ public class JmcomicService {
                 Album album = JSONObject.parseObject(data, Album.class);
 
                 String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
-                int filenameLength = dictionarySqliteService.getInt(DictionaryEnum.JM_ALBUM_NAME_MAX_LENGTH.getKey(), 215);
+                int filenameLength = Configs.getInt(ConfigKey.JM_ALBUM_NAME_MAX_LENGTH, 215);
                 if (albumFolderName.getBytes().length >= filenameLength) {
                     albumFolderName = albumFolderName.substring(0,50);
                 }

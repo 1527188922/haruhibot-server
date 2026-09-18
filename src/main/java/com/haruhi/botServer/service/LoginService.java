@@ -5,9 +5,9 @@ import cn.hutool.jwt.JWTValidator;
 import cn.hutool.jwt.RegisteredPayload;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.dto.BaseResp;
-import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.PropertiesUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+
 @Service
 public class LoginService {
 
@@ -29,28 +30,13 @@ public class LoginService {
     private final String jwtSecret;
 
     public LoginService() {
-        int loginExpireMin = Integer.parseInt(
-                PropertiesUtil.getProperty(FileUtil.FILE_NAME_WEBUI_CONFIG,
-                        PropertiesUtil.PROP_KEY_WEBUI_LOGIN_EXPIRE, "30"));
-
-        int maxSession = Integer.parseInt(
-                PropertiesUtil.getProperty(FileUtil.FILE_NAME_WEBUI_CONFIG,
-                        PropertiesUtil.PROP_KEY_WEBUI_SESSION_MAX, "6"));
-
-        this.jwtExpireHours = Long.parseLong(
-                PropertiesUtil.getProperty(FileUtil.FILE_NAME_WEBUI_CONFIG,
-                        PropertiesUtil.PROP_KEY_WEBUI_JWT_EXPIRE, "12"));
-
-//        this.graceMinutes = Long.parseLong(
-//                PropertiesUtil.getProperty(FileUtil.FILE_NAME_WEBUI_CONFIG,
-//                        PropertiesUtil.PROP_KEY_WEBUI_JWT_GRACE, String.valueOf(loginExpireMin)));
-
-        this.jwtSecret = PropertiesUtil.getProperty(
-                FileUtil.FILE_NAME_WEBUI_CONFIG,
-                PropertiesUtil.PROP_KEY_WEBUI_JWT_SECRET);
+        int loginExpireMin = Configs.getInt(ConfigKey.WEBUI_LOGIN_EXPIRE, 30);
+        int maxSession = Configs.getInt(ConfigKey.WEBUI_SESSION_MAX, 6);
+        this.jwtExpireHours = Configs.getInt(ConfigKey.WEBUI_JWT_EXPIRE, 12);
+        this.jwtSecret = Configs.getStr(ConfigKey.WEBUI_JWT_SECRET, null);
 
         if (StringUtils.isBlank(jwtSecret)) {
-            throw new IllegalStateException("未配置 login.jwt.secret");
+            throw new IllegalStateException("未配置 " + ConfigKey.WEBUI_JWT_SECRET.getKey());
         }
 
         this.tokenCache = Caffeine.newBuilder()
@@ -60,13 +46,10 @@ public class LoginService {
     }
 
     public BaseResp<String> login(String username, String password) {
-        String loginUserName = PropertiesUtil.getProperty(
-                FileUtil.FILE_NAME_WEBUI_CONFIG,
-                PropertiesUtil.PROP_KEY_WEBUI_LOGIN_USERNAME);
-
-        String loginUserPassword = PropertiesUtil.getProperty(
-                FileUtil.FILE_NAME_WEBUI_CONFIG,
-                PropertiesUtil.PROP_KEY_WEBUI_LOGIN_PASSWORD);
+        // 登录账号密码每次从配置快照读取，改完配置立刻生效
+        // 使用严格取值：显式留空时不回落默认账号密码
+        String loginUserName = Configs.getStrStrict(ConfigKey.WEBUI_LOGIN_USERNAME, null);
+        String loginUserPassword = Configs.getStrStrict(ConfigKey.WEBUI_LOGIN_PASSWORD, null);
 
         if (StringUtils.isBlank(loginUserName) || StringUtils.isBlank(loginUserPassword)) {
             return BaseResp.fail("未配置webui账户密码");

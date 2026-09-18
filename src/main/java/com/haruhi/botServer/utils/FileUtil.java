@@ -51,8 +51,6 @@ public class FileUtil {
 
     public static final String FILE_NAME_LOG = "haruhibot.log";
 
-    public static final String FILE_NAME_WEBUI_CONFIG = "webuiConfig.properties";
-
 
     public static String getRestartScript() {
         if (SystemUtils.IS_OS_WINDOWS) {

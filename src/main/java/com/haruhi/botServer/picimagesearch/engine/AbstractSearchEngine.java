@@ -19,7 +19,13 @@ public abstract class AbstractSearchEngine implements SearchEngine {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36";
 
-    protected final String baseUrl;
+    /**
+     * 引擎接口地址
+     * <p>
+     * 不是 final：部分引擎（如saucenao）的地址来自配置文件，且支持热更新，
+     * 需要在每次请求前重新读取最新值
+     */
+    protected String baseUrl;
     protected int timeoutMillis = 30_000;
     protected Map<String, String> headers = new LinkedHashMap<>();
     protected String cookies;
@@ -27,6 +33,20 @@ public abstract class AbstractSearchEngine implements SearchEngine {
     protected AbstractSearchEngine(String baseUrl) {
         this.baseUrl = PicImageSearchUtil.stripTrailingSlash(baseUrl);
         this.headers.put("User-Agent", USER_AGENT);
+    }
+
+    /**
+     * 设置引擎接口地址，空值忽略
+     */
+    public AbstractSearchEngine baseUrl(String baseUrl) {
+        if (StringUtils.isNotBlank(baseUrl)) {
+            this.baseUrl = PicImageSearchUtil.stripTrailingSlash(baseUrl);
+        }
+        return this;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
     }
 
     public AbstractSearchEngine timeoutMillis(int timeoutMillis) {

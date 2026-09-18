@@ -1,11 +1,11 @@
 package com.haruhi.botServer.interceptors;
 
-import com.haruhi.botServer.service.DictionarySqliteService;
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.ws.BotContainer;
 import com.haruhi.botServer.ws.BotServer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
@@ -26,9 +26,6 @@ import java.util.Map;
 @Slf4j
 @Component
 public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
-
-    @Autowired
-    private DictionarySqliteService dictionarySqliteService;
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
@@ -56,7 +53,7 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
      * @return
      */
     private boolean checkConnections(){
-        int botMaxConnections = dictionarySqliteService.getBotMaxConnections();
+        int botMaxConnections = Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS, 0);
         if(botMaxConnections < 0){
             return true;
         }
@@ -92,7 +89,7 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
      * @return
      */
     private boolean checkAuthorization(ServerHttpRequest request){
-        String botAccessToken = dictionarySqliteService.getBotAccessToken();
+        String botAccessToken = Configs.getStr(ConfigKey.WS_ACCESS_TOKEN, null);
         if (Strings.isBlank(botAccessToken)) {
             // 未配置 则无需认证 直接通过
             return true;

@@ -7,8 +7,8 @@ import com.alibaba.druid.support.spring.stat.DruidStatInterceptor;
 import com.haruhi.botServer.condition.DruidEnabledCondition;
 import com.haruhi.botServer.condition.DruidMonitorSpringCondition;
 import com.haruhi.botServer.condition.DruidMonitorUrlCondition;
-import com.haruhi.botServer.utils.FileUtil;
-import com.haruhi.botServer.utils.PropertiesUtil;
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.aop.Advisor;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
@@ -29,8 +29,8 @@ public class DruidConfig {
     public ServletRegistrationBean<StatViewServlet> druidServlet() {
         ServletRegistrationBean<StatViewServlet> bean = new ServletRegistrationBean<>(new StatViewServlet(), StrFormatter.format("{}/*",BotConfig.DRUID_PATH));
 
-        String username = PropertiesUtil.getProperty(FileUtil.FILE_NAME_WEBUI_CONFIG, PropertiesUtil.PROP_KEY_WEBUI_LOGIN_USERNAME);
-        String password = PropertiesUtil.getProperty(FileUtil.FILE_NAME_WEBUI_CONFIG, PropertiesUtil.PROP_KEY_WEBUI_LOGIN_PASSWORD);
+        String username = Configs.getStr(ConfigKey.WEBUI_LOGIN_USERNAME, null);
+        String password = Configs.getStr(ConfigKey.WEBUI_LOGIN_PASSWORD, null);
         // 登录验证
         if (StringUtils.isNotBlank(username) && StringUtils.isNotBlank(password)) {
             bean.addInitParameter("loginUsername", username);
@@ -55,7 +55,7 @@ public class DruidConfig {
         bean.addUrlPatterns("/*");
 
         bean.addInitParameter("exclusions", "*.js,*.css,*.jpg,*.png,/druid/*,*.ico,/index.html");
-        bean.addInitParameter("sessionStatEnable", PropertiesUtil.getProperty(FileUtil.FILE_NAME_WEBUI_CONFIG, PropertiesUtil.PROP_KEY_WEBUI_DRUID_MONITOR_URL_SESSION_ENABLED));
+        bean.addInitParameter("sessionStatEnable", Configs.getStr(ConfigKey.WEBUI_DRUID_MONITOR_URL_SESSION_ENABLED));
         bean.addInitParameter("sessionStatMaxCount", "1000");
 
         bean.setAsyncSupported(true);

@@ -2,6 +2,8 @@ package com.haruhi.botServer.job;
 
 import cn.hutool.core.text.StrFormatter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.BilibiliSubscribeTypeEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -53,16 +55,12 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "job.bilibiliLive.enable", havingValue = "1")
 public class BilibiliLiveJob extends AbstractJob {
 
     /**
      * 判断是否可以@全体成员时，请求群成员信息/剩余次数的超时时间
      */
     private static final long AT_ALL_CHECK_TIMEOUT_MILLIS = 5 * 1000;
-
-    @Value("${job.bilibiliLive.cron}")
-    private String cron;
 
     @Autowired
     private BilibiliSubscribeSqliteService bilibiliSubscribeSqliteService;
@@ -88,7 +86,7 @@ public class BilibiliLiveJob extends AbstractJob {
 
     @Override
     public String cronExpression() {
-        return cron;
+        return Configs.getStr(ConfigKey.JOB_BILIBILI_LIVE_CRON);
     }
 
     /**

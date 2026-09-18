@@ -1,9 +1,10 @@
 package com.haruhi.botServer.ws;
 
 import com.alibaba.fastjson.TypeReference;
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.constant.QqClientActionEnum;
 import com.haruhi.botServer.dto.qqclient.SyncResponse;
-import com.haruhi.botServer.service.DictionarySqliteService;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.WebSocketExtension;
@@ -32,8 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BotTest {
 
-    private static final String UPLOAD_FILE_PARALLEL_KEY = "bot.upload_file.parallel";
-
     @Test
     void wrapsSessionWithConcurrentDecorator() throws Exception {
         Bot bot = new Bot(1L, new TestWebSocketSession());
@@ -43,7 +42,7 @@ public class BotTest {
 
     @Test
     void queuedUploadCallbacksRunOneAtATimeInSubmissionOrder() throws Exception {
-        List<String> original = setUploadFileParallel("false");
+        String original = setUploadFileParallel("false");
         TrackingUploadBot bot = new TrackingUploadBot();
         try {
             CountDownLatch callbacks = new CountDownLatch(2);
@@ -67,7 +66,7 @@ public class BotTest {
 
     @Test
     void parallelUploadCallbacksUseVirtualThreadsAndCanOverlap() throws Exception {
-        List<String> original = setUploadFileParallel("true");
+        String original = setUploadFileParallel("true");
         TrackingUploadBot bot = new TrackingUploadBot();
         try {
             CountDownLatch callbacks = new CountDownLatch(2);
@@ -89,18 +88,15 @@ public class BotTest {
         }
     }
 
-    private static List<String> setUploadFileParallel(String value) {
-        List<String> original = DictionarySqliteService.CACHE.get(UPLOAD_FILE_PARALLEL_KEY);
-        DictionarySqliteService.CACHE.put(UPLOAD_FILE_PARALLEL_KEY, new ArrayList<>(List.of(value)));
-        return original == null ? null : new ArrayList<>(original);
+    private static String setUploadFileParallel(String value) {
+        String original = Configs.getRaw(ConfigKey.BOT_UPLOAD_FILE_PARALLEL);
+        Configs.override(ConfigKey.BOT_UPLOAD_FILE_PARALLEL, value);
+        return original;
     }
 
-    private static void restoreUploadFileParallel(List<String> original) {
-        if (original == null) {
-            DictionarySqliteService.CACHE.remove(UPLOAD_FILE_PARALLEL_KEY);
-            return;
-        }
-        DictionarySqliteService.CACHE.put(UPLOAD_FILE_PARALLEL_KEY, original);
+    private static void restoreUploadFileParallel(String original) {
+        Configs.override(ConfigKey.BOT_UPLOAD_FILE_PARALLEL,
+                original == null ? ConfigKey.BOT_UPLOAD_FILE_PARALLEL.getDefaultValue() : original);
     }
 
     private WebSocketSession getSession(Bot bot) throws Exception {

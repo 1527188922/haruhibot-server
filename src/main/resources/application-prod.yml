@@ -1,20 +1,6 @@
-server:
-  port: 8090
+# 本文件只保留无法放进 ./config/*.properties 的配置
+# 机器人、定时任务、端口等配置见 ./config/ 目录
 
-bot:
-  # 公网ip 未配置将自动获取
-  internet-host:
-  same-machine-qqclient: false
-
-job:
-  downloadPixiv:
-    cron: 0/15 * 0-7 * * ? *
-    enable: 0
-  bilibiliLive:
-    cron: 0/30 * * * * ?
-    enable: 0
-    
 logging:
   level:
     com.haruhi.botServer: info
-

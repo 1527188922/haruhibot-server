@@ -1,5 +1,9 @@
 package com.haruhi.botServer.service;
 
+import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.service.ConfigHub;
+
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -58,11 +62,11 @@ public class SystemService {
     @Autowired
     private WordStripSqliteService wordStripService;
     @Autowired
-    private DictionarySqliteService dictionaryService;
-    @Autowired
     private SqliteDatabaseInitMapper sqliteDatabaseInitMapper;
     @Autowired
     private SqliteSchemaMapper sqliteSchemaMapper;
+    @Autowired
+    private ConfigHub configHub;
 
     private BotServer botServer;
 
@@ -94,18 +98,21 @@ public class SystemService {
     }
 
     /**
+     * 加载缓存
+     * <p>
+     * 配置部分由 {@link ConfigHub} 负责（会顺带通知各 ConfigApplier，例如按新配置重建OpenAiService），
+     * 这里只处理需要"从数据库重建内存缓存"的数据
      *
      * @param mode 1系统启动刷新 2接口刷新 3bot命令刷新
      */
     public synchronized void loadCache(int mode){
        try {
-           dictionaryService.refreshCache();
+           configHub.refreshAll();
            pokeReplyService.loadPokeReply();
            customReplySqliteService.loadToCache();
            wordStripService.loadWordStrip();
            ScoldMeHandler.refreshFile();
-           OpenAiServiceHolder.refresh(mode);
-           log.info("加载缓存完成");
+           log.info("加载缓存完成 mode:{}", mode);
        }catch (Exception e){
            log.error("加载缓存异常",e);
        }
@@ -335,9 +342,9 @@ public class SystemService {
         BotWebSocketInfo botWebSocketInfo = new BotWebSocketInfo();
         botWebSocketInfo.setRunning(getBotServer().isRunning());
         botWebSocketInfo.setConnections(BotContainer.getConnections());
-        botWebSocketInfo.setMaxConnections(dictionaryService.getBotMaxConnections());
+        botWebSocketInfo.setMaxConnections(Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS, 0));
         botWebSocketInfo.setPath(BotConfig.WEB_SOCKET_PATH);
-        botWebSocketInfo.setAccessToken(dictionaryService.getBotAccessToken());
+        botWebSocketInfo.setAccessToken(Configs.getStr(ConfigKey.WS_ACCESS_TOKEN, null));
         return botWebSocketInfo;
     }
 
@@ -358,7 +365,7 @@ public class SystemService {
                 }
 
                 if (SystemUtils.IS_OS_WINDOWS) {
-                    String s = CMDUtil.executeBatFile(restartScript, String.valueOf(BotConfig.PORT), FileUtil.getAppDir() + File.separator);
+                    String s = CMDUtil.executeBatFile(restartScript, String.valueOf(Configs.getInt(ConfigKey.SERVER_PORT)), FileUtil.getAppDir() + File.separator);
                     log.info("执行bat结果：{}", s);
                 } else {
                     String s = CMDUtil.executeShFile(restartScript, SystemUtils.getJavaHome().getAbsolutePath());

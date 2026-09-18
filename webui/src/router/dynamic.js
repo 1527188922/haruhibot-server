@@ -263,17 +263,6 @@ const release = [{
     },
     children: []
 },{
-    label: "字典数据",
-    path: '/dict',
-    component: 'views/dict-list/index',
-    icon: 'icon-caidan',
-    iconBgColor: randomColor(),
-    meta: {
-        // i18n: 'dict',
-        keepAlive: true
-    },
-    children: []
-},{
     label: "JM漫画",
     path: '/jmcomic',
     component: 'views/jmcomic/index',
@@ -299,6 +288,15 @@ const release = [{
     path: '/system',
     iconBgColor: randomColor(),
     children: [{
+        label: '配置管理',
+        path: '/config',
+        iconBgColor: randomColor(),
+        component: 'views/config/index',
+        meta: {
+            keepAlive: true
+        },
+        children: []
+    }, {
         label: '服务器文件',
         path: '/file',
         iconBgColor: randomColor(),

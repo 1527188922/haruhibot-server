@@ -1,0 +1,6 @@
+# 测试专用配置：把 job.properties 导入 Spring Environment，
+# 用于验证 @ConditionalOnProperty / @Value 这类"必须由 Spring Environment 提供"的用法
+# 与 Configs 读取到的是同一份配置
+spring:
+  config:
+    import: "optional:file:${config.import.dir:.}/job.properties"

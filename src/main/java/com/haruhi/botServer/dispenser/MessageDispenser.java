@@ -1,13 +1,15 @@
 package com.haruhi.botServer.dispenser;
 
-import com.haruhi.botServer.constant.DictionaryEnum;
+import com.haruhi.botServer.config.config.Configs;
+
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.handler.message.IGroupMessageHandler;
 import com.haruhi.botServer.handler.message.IAllMessageHandler;
 import com.haruhi.botServer.handler.message.IMessageHandler;
 import com.haruhi.botServer.handler.message.IPrivateMessageHandler;
 import com.haruhi.botServer.handler.message.chatRecord.ChatRecordHandler;
-import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.ApplicationContextProvider;
 import com.haruhi.botServer.ws.Bot;
 import lombok.Getter;
@@ -29,10 +31,8 @@ import java.util.stream.Collectors;
 public class MessageDispenser {
 
 
-    private final DictionarySqliteService dictionarySqliteService;
 
-    public MessageDispenser(Map<String, IMessageHandler> map, DictionarySqliteService dictionarySqliteService) {
-        this.dictionarySqliteService = dictionarySqliteService;
+    public MessageDispenser(Map<String, IMessageHandler> map) {
         loadHandlers(map);
     }
 
@@ -200,14 +200,14 @@ public class MessageDispenser {
         }
 
         if (message.isGroupMsg()) {
-            List<Long> accessGroups = dictionarySqliteService.getList(DictionaryEnum.BOT_ACCESS_GROUP.getKey(), "[,，]", Long.class, Collections.emptyList());
+            List<Long> accessGroups = Configs.getList(ConfigKey.BOT_ACCESS_GROUP, Long.class, Collections.emptyList());
             if(CollectionUtils.isNotEmpty(accessGroups)
                     && !accessGroups.contains(message.getGroupId())
                     && !(handler instanceof ChatRecordHandler)){
                 return true;
             }
 
-            boolean disableGroup = dictionarySqliteService.getBoolean(DictionaryEnum.SWITCH_DISABLE_GROUP.getKey(), false);
+            boolean disableGroup = Configs.getBool(ConfigKey.BOT_SWITCH_DISABLE_GROUP, false);
             if(disableGroup
                     && !(handler instanceof ChatRecordHandler)){
                 // 本次为群消息 且开了禁用群功能 则只让聊天记录保存handler类生效

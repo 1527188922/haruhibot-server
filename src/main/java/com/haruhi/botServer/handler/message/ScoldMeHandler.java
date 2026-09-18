@@ -1,6 +1,7 @@
 package com.haruhi.botServer.handler.message;
 
-import com.haruhi.botServer.config.BotConfig;
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.config.ConfigKey;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -53,7 +54,7 @@ public class ScoldMeHandler implements IAllMessageHandler {
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             int i = CommonUtil.randomInt(0, fileList.length - 1);
             File file = fileList[i];
-            String s = BotConfig.SAME_MACHINE_QQCLIENT ?
+            String s = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ?
                     "file://"+file.getAbsolutePath() :
                     abstractPathConfig.webDgAudioPath() + "/" + file.getName();
             log.info("骂我音频地址：{}",s);

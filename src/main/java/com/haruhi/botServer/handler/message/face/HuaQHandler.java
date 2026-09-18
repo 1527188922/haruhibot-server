@@ -1,8 +1,10 @@
 package com.haruhi.botServer.handler.message.face;
 
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import cn.hutool.core.img.gif.AnimatedGifEncoder;
 import cn.hutool.core.img.gif.GifDecoder;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -103,7 +105,7 @@ public class HuaQHandler implements IGroupMessageHandler {
     }
     
     private void sendFaceMsg(Bot bot,Long groupId, File file){
-        String imageUrl = BotConfig.SAME_MACHINE_QQCLIENT ? "file://"+file.getAbsolutePath()
+        String imageUrl = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ? "file://"+file.getAbsolutePath()
                 : abstractPathConfig.webFacePath() + "/" + file.getName() + "?t=" + System.currentTimeMillis();
         log.info("huaq图片url ：{}",imageUrl);
 

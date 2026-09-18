@@ -1,7 +1,9 @@
 package com.haruhi.botServer.config.webResource;
 
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import com.haruhi.botServer.condition.DevEnvironmentCondition;
-import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -29,8 +31,8 @@ public class DevWebResourceConfig extends AbstractWebResourceConfig {
 
     public static void setWebHomePath(){
         String host = "";
-        if(StringUtils.isNotBlank(BotConfig.INTERNET_HOST)){
-            host = BotConfig.INTERNET_HOST;
+        if(StringUtils.isNotBlank(Configs.getStr(ConfigKey.BOT_INTERNET_HOST, null))){
+            host = Configs.getStr(ConfigKey.BOT_INTERNET_HOST, null);
         }else{
             try {
                 InetAddress localHost = Inet4Address.getLocalHost();
@@ -40,7 +42,7 @@ public class DevWebResourceConfig extends AbstractWebResourceConfig {
                 host = "127.0.0.1";
             }
         }
-        WEB_HOME_PATH = "http://" + host + ":" + BotConfig.PORT;
+        WEB_HOME_PATH = "http://" + host + ":" + Configs.getInt(ConfigKey.SERVER_PORT);
         log.info("web home path:{}",WEB_HOME_PATH);
     }
 

@@ -1,14 +1,16 @@
 package com.haruhi.botServer.ws;
 
+import com.haruhi.botServer.config.config.Configs;
+
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
-import com.haruhi.botServer.constant.DictionaryEnum;
 import com.haruhi.botServer.constant.QqClientActionEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.*;
-import com.haruhi.botServer.service.DictionarySqliteService;
 import com.haruhi.botServer.utils.CommonUtil;
 import com.haruhi.botServer.utils.DbLog;
 import lombok.AllArgsConstructor;
@@ -450,11 +452,7 @@ public class Bot implements Closeable {
     }
 
     private boolean isUploadFileParallel() {
-        List<String> values = DictionarySqliteService.CACHE.get(DictionaryEnum.BOT_UPLOAD_FILE_PARALLEL.getKey());
-        if (values == null || values.isEmpty() || StringUtils.isBlank(values.getFirst())) {
-            return Boolean.parseBoolean(DictionaryEnum.BOT_UPLOAD_FILE_PARALLEL.getDefaultValue());
-        }
-        return Boolean.parseBoolean(values.getFirst().trim());
+        return Configs.getBool(ConfigKey.BOT_UPLOAD_FILE_PARALLEL);
     }
 
     /**
