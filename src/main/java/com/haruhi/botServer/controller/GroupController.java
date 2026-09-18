@@ -20,6 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -122,5 +123,5 @@ public class GroupController {
     /**
      * 获取群成员超时时间
      */
-    private static final long MEMBER_REFRESH_TIMEOUT = 30 * 1000L;
+    private static final long MEMBER_REFRESH_TIMEOUT = Duration.ofSeconds(30).toMillis();
 }

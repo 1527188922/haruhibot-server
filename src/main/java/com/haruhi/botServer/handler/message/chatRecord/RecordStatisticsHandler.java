@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -68,7 +69,7 @@ public class RecordStatisticsHandler implements IGroupMessageHandler {
                     return;
                 }
 
-                SyncResponse<List<GroupMember>> syncResponse = bot.getGroupMemberList(groupId, 10 * 1000);
+                SyncResponse<List<GroupMember>> syncResponse = bot.getGroupMemberList(groupId, Duration.ofSeconds(12).toMillis());
 
                 List<GroupMember> groupMemberList = syncResponse.getData();
 //                if(!CollectionUtils.isEmpty(groupMemberList)){

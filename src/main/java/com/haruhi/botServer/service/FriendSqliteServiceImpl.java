@@ -18,6 +18,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +37,7 @@ public class FriendSqliteServiceImpl extends ServiceImpl<FriendSqliteMapper, Fri
             log.info("加载好友失败selfId为空");
             return Collections.emptyList();
         }
-        SyncResponse<List<FriendInfo>> response = bot.getFriendList(false, 5 * 1000);
+        SyncResponse<List<FriendInfo>> response = bot.getFriendList(false, Duration.ofSeconds(30).toMillis());
         if (!response.isSuccess()) {
             log.info("加载好友失败 {}",response);
             return Collections.emptyList();
