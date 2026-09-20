@@ -1,10 +1,15 @@
 package com.haruhi.botServer.config.config;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 /**
  * 配置项值类型
  * <p>
  * 决定前端渲染的控件类型、后端保存时的校验规则，以及读取时的反序列化方式
  */
+@Getter
+@AllArgsConstructor
 public enum ConfigType {
 
     /** 单行文本 */
@@ -22,14 +27,6 @@ public enum ConfigType {
     ;
 
     private final int code;
-
-    ConfigType(int code) {
-        this.code = code;
-    }
-
-    public int getCode() {
-        return code;
-    }
 
     public boolean isNumeric() {
         return this == INT;

@@ -1,12 +1,14 @@
 package com.haruhi.botServer.handler.message;
 
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import cn.hutool.core.io.unit.DataSizeUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
-import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.whatslink.AnalysisMagnetLinkResp;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
@@ -82,7 +84,7 @@ public class LinkPreviewHandler implements IPrivateMessageHandler {
     private AnalysisMagnetLinkResp request(String link){
         HashMap<String, Object> urlParam = new HashMap<>();
         urlParam.put("url",link);
-        String s = HttpUtil.urlWithForm(ThirdPartyURL.WHATS_LINK, urlParam, StandardCharsets.UTF_8, false);
+        String s = HttpUtil.urlWithForm(Configs.getStr(ConfigKey.URL_CONF_WHATS_LINK), urlParam, StandardCharsets.UTF_8, false);
         HttpRequest httpRequest = HttpUtil.createGet(s).timeout(6000);
         try (HttpResponse response = httpRequest.execute()){
             return JSONObject.parseObject(response.body(), AnalysisMagnetLinkResp.class);

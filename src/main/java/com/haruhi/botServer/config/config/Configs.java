@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -48,6 +49,9 @@ public class Configs {
     /** 配置文件所在目录，默认取程序目录下的 config；单元测试可临时覆盖 */
     private static volatile String configDir;
 
+    /** application*.yml 所在目录，默认取程序目录；单元测试可临时覆盖 */
+    private static volatile String baseDir;
+
     /** 不可变快照：配置key -> 值 */
     private static volatile Map<String, String> snapshot = Collections.emptyMap();
 
@@ -56,14 +60,14 @@ public class Configs {
 
     /** 值来源 */
     public enum ConfigSource {
-        /** 来自 ./config/*.properties */
+        /** 来自配置文件 */
         FILE,
         /** 未配置，使用声明中的默认值 */
         DEFAULT
     }
 
     /**
-     * 配置目录，默认 {@code 程序目录/config}
+     * 配置目录（properties 所在目录），默认 {@code 程序目录/config}
      */
     public static String configDir() {
         String dir = configDir;
@@ -74,17 +78,33 @@ public class Configs {
     }
 
     /**
-     * 仅在单元测试中使用：把配置目录指向临时目录并重新加载
+     * 程序目录（application*.yml 所在目录），默认 {@code 程序目录}
+     */
+    public static String baseDir() {
+        String dir = baseDir;
+        if (dir == null) {
+            dir = FileUtil.getAppDir();
+        }
+        return dir;
+    }
+
+    /**
+     * 仅在单元测试中使用：把配置目录与程序目录指向临时目录并重新加载
+     * <p>
+     * yml 类配置在程序目录下，properties 在 {@code {dir}/config} 下
      */
     public static synchronized void useConfigDirForTest(String dir) {
-        configDir = dir;
+        baseDir = dir;
+        configDir = new File(dir, "config").getAbsolutePath();
+        new File(configDir).mkdirs();
         reloadAll();
     }
 
     /**
-     * 仅在单元测试中使用：恢复默认配置目录并重新加载
+     * 仅在单元测试中使用：恢复默认目录并重新加载
      */
     public static synchronized void resetConfigDirForTest() {
+        baseDir = null;
         configDir = null;
         reloadAll();
     }
@@ -117,8 +137,8 @@ public class Configs {
         }
         // 2. 打包在jar内的默认配置文件（首次运行、外置文件缺失时兜底）
         apply(next, nextSource, loadClasspathConfigs(), ConfigSource.DEFAULT);
-        // 3. 外置配置文件（唯一真源，优先级最高）
-        for (ConfigFile file : ConfigFile.values()) {
+        // 3. 外置配置文件（唯一真源，优先级最高）；按 order 升序，后者覆盖前者
+        for (ConfigFile file : ConfigFile.inLoadOrder()) {
             Map<String, String> loaded = loadExternal(file);
             apply(next, nextSource, loaded, ConfigSource.FILE);
             append(next, loaded);
@@ -158,13 +178,15 @@ public class Configs {
      */
     static Map<String, String> loadExternal(ConfigFile file) {
         if (file.isYaml()) {
-            return YamlFileUtil.load(new File(configDir(), file.getFileName()));
+            return YamlFileUtil.load(fileOf(file));
         }
         return PropertiesFileUtil.load(file.getFileName());
     }
 
     /**
      * 读取jar内默认配置文件
+     * <p>
+     * application*.yml 打包后在 classpath 根目录，其余在 classpath:config/ 下
      */
     private static Map<String, String> loadClasspathFile(ConfigFile file) {
         if (file.isYaml()) {
@@ -189,7 +211,7 @@ public class Configs {
     }
 
     /**
-     * 把 ./config 下的全部配置（properties + yml）注入 Spring Environment
+     * 把外置配置（properties + application*.yml）注入 Spring Environment
      * <p>
      * 由 {@link ConfigsEnvironmentInitializer} 在容器 refresh 之前调用，
      * 这样 {@code @ConditionalOnProperty}、{@code @Value} 与 {@link Configs} 读到的是同一份配置，
@@ -197,13 +219,11 @@ public class Configs {
      */
     public static Map<String, Object> loadIntoEnvironment() {
         Map<String, Object> result = new LinkedHashMap<>();
-        for (ConfigFile file : ConfigFile.values()) {
-            result.putAll(loadClasspathFile(file));
-        }
-        for (ConfigFile file : ConfigFile.values()) {
+        // 按 order 升序 putAll，后者覆盖前者，与 Configs 的优先级一致
+        for (ConfigFile file : ConfigFile.inLoadOrder()) {
             result.putAll(loadExternal(file));
         }
-        // 保证关键项即便文件缺失也有值（例如端口）
+        // 保证关键项即便没有任何配置文件也有值（例如端口）
         result.putIfAbsent(ConfigKey.SERVER_PORT.getKey(), ConfigKey.SERVER_PORT.getDefaultValue());
         return result;
     }
@@ -366,25 +386,46 @@ public class Configs {
     /**
      * 由程序自动写入某个配置项（写文件 + 刷新快照）
      * <p>
-     * 适用于"运行期自动获取到、需要持久化"的值，例如 b站接口返回的 ticket；
-     * yml 类配置不支持写入。
+     * 适用于"运行期自动获取到、需要持久化"的值，例如 b站接口返回的 ticket
      *
      * @return 是否写入成功
      */
     public static boolean save(ConfigKey key, String value) {
-        if (key.getFile().isYaml()) {
-            log.warn("配置项[{}]所属文件为yml，不支持程序写入", key.getKey());
-            return false;
-        }
         String v = value == null ? "" : value;
         try {
-            PropertiesFileUtil.save(key.getFile().getFileName(), key.getKey(), v);
+            writeToFile(key, v);
         } catch (Exception e) {
             log.error("程序写入配置失败 key:{}", key.getKey(), e);
             return false;
         }
         reloadFile(key.getFile());
         return true;
+    }
+
+    /**
+     * 把配置项写回它所属的文件（properties 按行改，yml 原地改值）
+     */
+    public static void writeToFile(ConfigKey key, String value) throws IOException {
+        if (key.getFile().isYaml()) {
+            YamlFileUtil.saveEncoded(fileOf(key), key.getKey(), encodeYamlScalar(key, value));
+        } else {
+            PropertiesFileUtil.save(key.getFile().getFileName(), key.getKey(), value);
+        }
+    }
+
+    /**
+     * 按配置项类型决定 yml 标量是否需要加引号
+     * <p>
+     * 数字/布尔类型要写成裸值（{@code port: 8090} 而不是 {@code port: "8090"}），
+     * 字符串类型则需要加引号以保留字符串语义
+     */
+    private static String encodeYamlScalar(ConfigKey key, String value) {
+        ConfigType type = key.getType();
+        // 数字与布尔写成裸标量，避免 yml 里出现 port: "8090" 这种引号形式
+        if (type == ConfigType.INT || type == ConfigType.BOOL) {
+            return value;
+        }
+        return YamlFileUtil.encodeScalar(value);
     }
 
     private static void update(ConfigKey key, String value, ConfigSource source) {
@@ -544,7 +585,22 @@ public class Configs {
         return fileOf(key.getFile());
     }
 
+    /**
+     * 配置文件的磁盘位置
+     * <p>
+     * application*.yml 在程序目录，其余 properties 在程序目录下的 config 目录
+     */
     public static File fileOf(ConfigFile file) {
+        if (file.isSpringApplicationFile()) {
+            return new File(baseDir(), file.getFileName());
+        }
         return new File(configDir(), file.getFileName());
+    }
+
+    /**
+     * 配置文件的显示路径（用于前端展示与日志）
+     */
+    public static String pathOf(ConfigFile file) {
+        return fileOf(file).getAbsolutePath();
     }
 }

@@ -8,7 +8,7 @@ import com.haruhi.botServer.config.service.ConfigApplier;
 import com.haruhi.botServer.config.service.ConfigChange;
 import com.haruhi.botServer.config.service.ConfigHub;
 import com.haruhi.botServer.config.util.PropertiesFileUtil;
-import com.haruhi.botServer.exception.BusinessException;
+import com.haruhi.botServer.config.util.YamlFileUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -39,14 +38,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ConfigsTest {
 
+    /** 程序目录（临时），application*.yml 放这里 */
     @TempDir
-    Path tempDir;
+    Path baseDir;
+
+    /** properties 目录，即 {baseDir}/config */
+    private Path configDir;
 
     private ConfigHub configHub;
 
     @BeforeEach
     void setUp() {
-        Configs.useConfigDirForTest(tempDir.toString());
+        configDir = baseDir.resolve("config");
+        Configs.useConfigDirForTest(baseDir.toString());
         configHub = new ConfigHub();
         // ConfigHub 只依赖 ApplicationContext 查找 ConfigApplier，这里用没有订阅者的上下文
         ReflectionTestUtils.setField(configHub, "applicationContext", emptyApplicationContext());
@@ -75,6 +79,14 @@ class ConfigsTest {
                 });
     }
 
+    private Path propertyFile(ConfigFile file) {
+        return configDir.resolve(file.getFileName());
+    }
+
+    private Path applicationFile(ConfigFile file) {
+        return baseDir.resolve(file.getFileName());
+    }
+
     // ==================================================================
     // 声明默认值
     // ==================================================================
@@ -88,6 +100,51 @@ class ConfigsTest {
         assertTrue(Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT));
         // 未配置且没有默认值的项返回调用方给的默认值，而不是抛异常
         assertNull(Configs.getStr(ConfigKey.WS_ACCESS_TOKEN, null));
+    }
+
+    @Test
+    void 数据源配置从databaseProperties读取() throws IOException {
+        Files.writeString(propertyFile(ConfigFile.DATABASE), """
+                spring.datasource.dynamic.datasource.master.url=jdbc:sqlite:D:\\my\\bot\\db\\x.db
+                spring.datasource.dynamic.datasource.master.driver-class-name=org.sqlite.JDBC
+                spring.datasource.dynamic.datasource.master.druid.validation-query=SELECT 1
+                spring.datasource.dynamic.datasource.master.druid.filters=stat
+                spring.datasource.dynamic.datasource.master.druid.test-on-borrow=false
+                spring.datasource.dynamic.datasource.master.druid.test-on-return=false
+                spring.datasource.dynamic.datasource.master.druid.pool-prepared-statements=false
+                spring.datasource.dynamic.datasource.master.druid.max-active=5
+                """, StandardCharsets.UTF_8);
+
+        Configs.reloadFile(ConfigFile.DATABASE);
+
+        assertEquals("jdbc:sqlite:D:\\my\\bot\\db\\x.db", Configs.getStr(ConfigKey.DATABASE_URL));
+        assertEquals("org.sqlite.JDBC", Configs.getStr(ConfigKey.DATABASE_DRIVER_CLASS_NAME));
+        assertEquals("SELECT 1", Configs.getStr(ConfigKey.DATABASE_DRUID_VALIDATION_QUERY));
+        assertEquals("stat", Configs.getStr(ConfigKey.DATABASE_DRUID_FILTERS));
+        assertFalse(Configs.getBool(ConfigKey.DATABASE_DRUID_TEST_ON_BORROW));
+        assertFalse(Configs.getBool(ConfigKey.DATABASE_DRUID_TEST_ON_RETURN));
+        assertFalse(Configs.getBool(ConfigKey.DATABASE_DRUID_POOL_PREPARED_STATEMENTS));
+        assertEquals(5, Configs.getInt(ConfigKey.DATABASE_DRUID_MAX_ACTIVE));
+    }
+
+    @Test
+    void 聊天记录压缩配置独立成文件() {
+        assertEquals(ConfigFile.CHAT_RECORD, ConfigKey.CHAT_RECORD_RAW_COMPRESS.getFile());
+        assertEquals("db.chat_extend.raw_compress", ConfigKey.CHAT_RECORD_RAW_COMPRESS.getKey());
+        assertTrue(Configs.getBool(ConfigKey.CHAT_RECORD_RAW_COMPRESS));
+        // 数据库文件里只放数据源相关配置
+        assertFalse(ConfigKey.of(ConfigFile.DATABASE).isEmpty());
+        assertTrue(ConfigKey.of(ConfigFile.DATABASE).stream()
+                .allMatch(e -> e.getKey().startsWith("spring.datasource.")));
+    }
+
+    @Test
+    void agefans地址归属站点地址文件() {
+        assertEquals(ConfigFile.URL, ConfigKey.URL_CONF_AGEFANS.getFile());
+        assertEquals("url_conf.agefans", ConfigKey.URL_CONF_AGEFANS.getKey());
+        // 识图文件里只有识图引擎相关配置
+        assertTrue(ConfigKey.of(ConfigFile.SEARCH_IMG).stream()
+                .allMatch(e -> e.getKey().startsWith("searchimg.saucenao.")));
     }
 
     @Test
@@ -106,7 +163,9 @@ class ConfigsTest {
             assertFalse(ConfigKey.of(file).isEmpty(), file.getFileName() + " 没有声明任何配置项");
         }
         for (ConfigKey key : ConfigKey.values()) {
-            assertEquals(key, ConfigKey.of(key.getKey()), "key无法反查: " + key.getKey());
+            // 同一属性名可以在多个 profile 文件里各声明一次，此时按"文件+key"定位
+            assertTrue(ConfigKey.of(key.getKey()) != null, "key无法反查: " + key.getKey());
+            assertEquals(key, ConfigKey.of(key.getFile(), key.getKey()), "key无法按文件反查: " + key.getKey());
         }
     }
 
@@ -115,7 +174,7 @@ class ConfigsTest {
         assertEquals(ConfigKey.WS_ACCESS_TOKEN, ConfigKey.ofLegacy("bot.access_token"));
         assertEquals(ConfigKey.WS_MAX_CONNECTIONS, ConfigKey.ofLegacy("bot.max_connections"));
         assertEquals(ConfigKey.SEARCH_IMG_SAUCENAO_APIKEY, ConfigKey.ofLegacy("saucenao.search_image_key"));
-        assertEquals(ConfigKey.SEARCH_IMG_AGEFANS_URL, ConfigKey.ofLegacy("url_conf.agefans"));
+        assertEquals(ConfigKey.URL_CONF_AGEFANS, ConfigKey.ofLegacy("url_conf.agefans"));
         assertNull(ConfigKey.ofLegacy("db.sql_cache"));
         assertNull(ConfigKey.ofLegacy("not.exists"));
     }
@@ -140,9 +199,8 @@ class ConfigsTest {
     }
 
     @Test
-    void 写文件保留注释与已有顺序() throws IOException {
-        Path file = tempDir.resolve(ConfigFile.WEBSOCKET.getFileName());
-        Files.writeString(file, """
+    void 写properties保留注释与已有顺序() throws IOException {
+        Files.writeString(propertyFile(ConfigFile.WEBSOCKET), """
                 ### Websocket配置
 
                 # 认证token
@@ -153,7 +211,7 @@ class ConfigsTest {
 
         configHub.save(ConfigKey.WS_MAX_CONNECTIONS, "9");
 
-        String after = Files.readString(file, StandardCharsets.UTF_8);
+        String after = Files.readString(propertyFile(ConfigFile.WEBSOCKET), StandardCharsets.UTF_8);
         assertTrue(after.contains("### Websocket配置"), "文件头注释应保留");
         assertTrue(after.contains("# 最大连接数"), "key上方的注释应保留");
         assertTrue(after.contains("bot.ws.max_connections=9"), "值应被替换");
@@ -162,13 +220,12 @@ class ConfigsTest {
     }
 
     @Test
-    void 新增key追加到文件末尾() throws IOException {
-        Path file = tempDir.resolve(ConfigFile.BOT.getFileName());
-        Files.writeString(file, "bot.switch.disable_group=false\n", StandardCharsets.UTF_8);
+    void 新增key追加到properties末尾() throws IOException {
+        Files.writeString(propertyFile(ConfigFile.BOT), "bot.switch.disable_group=false\n", StandardCharsets.UTF_8);
 
         configHub.save(ConfigKey.BOT_SWITCH_GROUP_INCREASE, "false");
 
-        String after = Files.readString(file, StandardCharsets.UTF_8);
+        String after = Files.readString(propertyFile(ConfigFile.BOT), StandardCharsets.UTF_8);
         assertTrue(after.contains("bot.switch.disable_group=false"));
         assertTrue(after.contains("bot.switch.group_increase=false"));
     }
@@ -176,17 +233,15 @@ class ConfigsTest {
     @Test
     void 多行值与特殊字符可正确往返() throws IOException {
         configHub.save(ConfigKey.URL_CONF_BT_SEARCH, "http://a.com\nhttp://b.com");
-        String text = Files.readString(tempDir.resolve(ConfigFile.URL.getFileName()), StandardCharsets.UTF_8);
+        String text = Files.readString(propertyFile(ConfigFile.URL), StandardCharsets.UTF_8);
         assertTrue(text.contains("url_conf.bt_search=http://a.com\\nhttp://b.com"), "换行应转义: " + text);
 
         Configs.reloadFile(ConfigFile.URL);
         assertEquals("http://a.com\nhttp://b.com", Configs.getStr(ConfigKey.URL_CONF_BT_SEARCH));
     }
-
     @Test
     void 注释掉的key与未声明的key都不会进入快照() throws IOException {
-        Path file = tempDir.resolve(ConfigFile.AI.getFileName());
-        Files.writeString(file, """
+        Files.writeString(propertyFile(ConfigFile.AI), """
                 # ds.api.key=sk-should-be-ignored
                 ds.api.base_url=https://example.com
                 unknown.key=whatever
@@ -210,39 +265,180 @@ class ConfigsTest {
     }
 
     // ==================================================================
-    // yml 支持
+    // yml 读写（application*.yml）
     // ==================================================================
 
     @Test
-    void yml配置会被拍平后进入快照() throws IOException {
-        Files.writeString(tempDir.resolve(ConfigFile.SERVER.getFileName()), """
-                # 服务端
+    void applicationYml会被拍平后进入快照() throws IOException {
+        Files.writeString(applicationFile(ConfigFile.APPLICATION), """
+                # 应用主配置
                 server:
+                  # http端口
                   port: 18080
+
+                spring:
+                  profiles:
+                    active: dev
                 """, StandardCharsets.UTF_8);
 
-        Configs.reloadFile(ConfigFile.SERVER);
+        Configs.reloadFile(ConfigFile.APPLICATION);
 
         assertEquals(18080, Configs.getInt(ConfigKey.SERVER_PORT));
         assertTrue(Configs.isConfigured(ConfigKey.SERVER_PORT));
-        assertEquals(ConfigFile.SERVER, ConfigKey.SERVER_PORT.getFile());
+        assertEquals(ConfigFile.APPLICATION, ConfigKey.SERVER_PORT.getFile());
     }
 
     @Test
-    void yml配置不支持页面写入() {
-        BusinessException e = assertThrows(BusinessException.class,
-                () -> configHub.save(ConfigKey.SERVER_PORT, "18081"));
-        assertTrue(e.getErrorMsg().contains("server.yml"), e.getErrorMsg());
-        assertThrows(BusinessException.class, () -> configHub.reset(ConfigKey.SERVER_PORT));
-        // 拒绝写入后快照不应被改动
+    void 写applicationYml原地改值且保留注释() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, """
+                # 应用主配置
+                server:
+                  # http端口
+                  port: 8090
+
+                spring:
+                  profiles:
+                    active: dev
+                """, StandardCharsets.UTF_8);
+
+        configHub.save(ConfigKey.SERVER_PORT, "18081");
+
+        // 快照立即生效；Spring 侧需要重启才会重新绑定端口
+        assertEquals(18081, Configs.getInt(ConfigKey.SERVER_PORT));
+
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertTrue(after.contains("# 应用主配置"), "文件头注释应保留");
+        assertTrue(after.contains("# http端口"), "key上方的注释应保留");
+        assertTrue(after.contains("port: 18081"), "值应被替换: " + after);
+        assertTrue(after.contains("active: dev"), "其它配置应保留");
+        assertTrue(after.contains("  port: 18081"), "缩进应保持不变");
+    }
+
+    @Test
+    void 写applicationYml支持追加不存在的key() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        // 已有 server 块，但没有 server.port：应插入到 server 块内，而不是文件末尾
+        Files.writeString(file, """
+                server:
+                  servlet:
+                    context-path: /api
+
+                spring:
+                  profiles:
+                    active: dev
+                """, StandardCharsets.UTF_8);
+
+        configHub.save(ConfigKey.SERVER_PORT, "8095");
+
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertTrue(after.contains("  port: 8095"), "应插入到 server 块内且缩进正确: " + after.replace("\n", "|"));
+        // 关键：不能把后面的 spring 块吞进 server 下
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertEquals(8095, Configs.getInt(ConfigKey.SERVER_PORT), "重读后应为8095，文件: " + after.replace("\n", "|"));
+        assertEquals("dev", Configs.getStr(ConfigKey.SPRING_PROFILES_ACTIVE));
+    }
+
+    @Test
+    void 同一个属性名可以在不同profile文件里各改各的() throws IOException {
+        Path dev = applicationFile(ConfigFile.APPLICATION_DEV);
+        Path prod = applicationFile(ConfigFile.APPLICATION_PROD);
+        Files.writeString(dev, "logging:\n  level:\n    com.haruhi.botServer: debug\n", StandardCharsets.UTF_8);
+        Files.writeString(prod, "logging:\n  level:\n    com.haruhi.botServer: info\n", StandardCharsets.UTF_8);
+
+        // 两个文件的同一行由两个不同的 ConfigKey 表示
+        assertTrue(ConfigKey.isAmbiguous("logging.level.com.haruhi.botServer"));
+        assertEquals(ConfigKey.LOGGING_LEVEL_DEV, ConfigKey.of(ConfigFile.APPLICATION_DEV, "logging.level.com.haruhi.botServer"));
+        assertEquals(ConfigKey.LOGGING_LEVEL_PROD, ConfigKey.of(ConfigFile.APPLICATION_PROD, "logging.level.com.haruhi.botServer"));
+
+        configHub.save(ConfigKey.LOGGING_LEVEL_DEV, "trace");
+        configHub.save(ConfigKey.LOGGING_LEVEL_PROD, "warn");
+
+        assertTrue(Files.readString(dev, StandardCharsets.UTF_8).contains("com.haruhi.botServer: trace"));
+        assertTrue(Files.readString(prod, StandardCharsets.UTF_8).contains("com.haruhi.botServer: warn"));
+    }
+
+    @Test
+    void yml标量会按需加引号() {
+        assertEquals("0/15 * 0-7 * * ? *", YamlFileUtil.encodeScalar("0/15 * 0-7 * * ? *"));
+        assertEquals("\"true\"", YamlFileUtil.encodeScalar("true"));
+        assertEquals("\"8090\"", YamlFileUtil.encodeScalar("8090"));
+        assertEquals("\"\"", YamlFileUtil.encodeScalar(""));
+        assertEquals("http://a.com", YamlFileUtil.encodeScalar("http://a.com"));
+    }
+
+    @Test
+    void yml里的字符串值会被加引号而数字不会() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, "server:\n  port: 8090\n", StandardCharsets.UTF_8);
+
+        // INT 类型写成裸值
+        configHub.save(ConfigKey.SERVER_PORT, "8091");
+        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("port: 8091"));
+        assertEquals(8091, Configs.getInt(ConfigKey.SERVER_PORT));
+
+        // STRING 类型写成带引号的值（保留字符串语义）
+        configHub.save(ConfigKey.SPRING_PROFILES_ACTIVE, "prod");
+        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("active: prod"));
+        assertEquals("prod", Configs.getStr(ConfigKey.SPRING_PROFILES_ACTIVE));
+    }
+
+    @Test
+    void yml里的数字样式字符串可正确往返() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, "server:\n  port: 8090\n", StandardCharsets.UTF_8);
+
+        YamlFileUtil.save(file.toFile(), "server.port", "8090");
+        Configs.reloadFile(ConfigFile.APPLICATION);
         assertEquals(8090, Configs.getInt(ConfigKey.SERVER_PORT));
+        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("port: \"8090\""));
     }
 
     @Test
-    void 配置文件类型判断() {
-        assertTrue(ConfigFile.SERVER.isYaml());
+    void 重置yml配置会删除该行() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, """
+                server:
+                  port: 18080
+                spring:
+                  profiles:
+                    active: dev
+                """, StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertEquals(18080, Configs.getInt(ConfigKey.SERVER_PORT));
+
+        configHub.reset(ConfigKey.SERVER_PORT);
+
+        assertEquals(8090, Configs.getInt(ConfigKey.SERVER_PORT));
+        assertFalse(Configs.isConfigured(ConfigKey.SERVER_PORT));
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertFalse(after.contains("18080"), "原来的行应被删除: " + after);
+        assertTrue(after.contains("active: dev"), "其它配置应保留");
+    }
+
+    @Test
+    void 配置文件类型判断与加载顺序() {
+        assertTrue(ConfigFile.APPLICATION.isYaml());
+        assertTrue(ConfigFile.APPLICATION.isSpringApplicationFile());
+        assertTrue(ConfigFile.APPLICATION_DEV.isSpringApplicationFile());
         assertFalse(ConfigFile.BOT.isYaml());
-        assertFalse(ConfigFile.WEBSOCKET.isYaml());
+        assertFalse(ConfigFile.BOT.isSpringApplicationFile());
+
+        // application.yml 先加载，application-dev 覆盖它，properties 优先级最高
+        assertTrue(ConfigFile.APPLICATION.getOrder() < ConfigFile.APPLICATION_DEV.getOrder());
+        assertTrue(ConfigFile.APPLICATION_DEV.getOrder() < ConfigFile.BOT.getOrder());
+        ConfigFile[] order = ConfigFile.inLoadOrder();
+        assertTrue(indexOf(order, ConfigFile.APPLICATION) < indexOf(order, ConfigFile.APPLICATION_DEV));
+        assertTrue(indexOf(order, ConfigFile.APPLICATION_DEV) < indexOf(order, ConfigFile.BOT));
+    }
+
+    private static int indexOf(ConfigFile[] files, ConfigFile target) {
+        for (int i = 0; i < files.length; i++) {
+            if (files[i] == target) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     // ==================================================================
@@ -251,13 +447,12 @@ class ConfigsTest {
 
     @Test
     void 文件级刷新能发现外部改动() throws IOException {
-        Path file = tempDir.resolve(ConfigFile.BOT.getFileName());
-        Files.writeString(file, "bot.switch.disable_group=true\n", StandardCharsets.UTF_8);
+        Files.writeString(propertyFile(ConfigFile.BOT), "bot.switch.disable_group=true\n", StandardCharsets.UTF_8);
         Configs.reloadFile(ConfigFile.BOT);
         assertTrue(Configs.getBool(ConfigKey.BOT_SWITCH_DISABLE_GROUP));
 
         // 模拟用户在服务器上直接改了文件（true -> false）
-        Files.writeString(file, "bot.switch.disable_group=false\n", StandardCharsets.UTF_8);
+        Files.writeString(propertyFile(ConfigFile.BOT), "bot.switch.disable_group=false\n", StandardCharsets.UTF_8);
         List<ConfigChange> changes = configHub.refreshFile(ConfigFile.BOT);
 
         assertFalse(Configs.getBool(ConfigKey.BOT_SWITCH_DISABLE_GROUP));
@@ -269,14 +464,14 @@ class ConfigsTest {
 
     @Test
     void 单key刷新重新读取该key所在文件() throws IOException {
-        Files.writeString(tempDir.resolve(ConfigFile.BOT.getFileName()),
+        Files.writeString(propertyFile(ConfigFile.BOT),
                 "# 加群提示\nbot.switch.group_increase=true\n", StandardCharsets.UTF_8);
-        Files.writeString(tempDir.resolve(ConfigFile.URL.getFileName()),
+        Files.writeString(propertyFile(ConfigFile.URL),
                 "url_conf.btbtla_search=https://a.example\n", StandardCharsets.UTF_8);
         Configs.reloadAll();
         assertTrue(Configs.getBool(ConfigKey.BOT_SWITCH_GROUP_INCREASE));
 
-        Files.writeString(tempDir.resolve(ConfigFile.BOT.getFileName()),
+        Files.writeString(propertyFile(ConfigFile.BOT),
                 "# 加群提示\nbot.switch.group_increase=false\n", StandardCharsets.UTF_8);
 
         List<ConfigChange> changes = configHub.refresh(ConfigKey.BOT_SWITCH_GROUP_INCREASE);
@@ -287,7 +482,7 @@ class ConfigsTest {
     }
 
     @Test
-    void 重置回到声明默认值并从文件中删除该key() throws IOException {
+    void 重置properties配置会删除该行() throws IOException {
         configHub.save(ConfigKey.WS_MAX_CONNECTIONS, "99");
         assertEquals(99, Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS));
         assertTrue(Configs.isConfigured(ConfigKey.WS_MAX_CONNECTIONS));
@@ -306,7 +501,16 @@ class ConfigsTest {
         assertEquals("{\"ticket\":\"abc\"}", Configs.getStr(ConfigKey.BILIBILI_COOKIES_TICKET));
         Map<String, String> bilibili = PropertiesFileUtil.load(ConfigFile.BILIBILI.getFileName());
         assertEquals("{\"ticket\":\"abc\"}", bilibili.get("bilibili.cookies.ticket"));
-        // yml 不支持程序写入
-        assertFalse(Configs.save(ConfigKey.SERVER_PORT, "1"));
+    }
+
+    @Test
+    void 程序自动写入yml配置也会落盘() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, "server:\n  port: 8090\n", StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION);
+
+        assertTrue(Configs.save(ConfigKey.SERVER_PORT, "18090"));
+        assertEquals(18090, Configs.getInt(ConfigKey.SERVER_PORT));
+        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("port: 18090"));
     }
 }

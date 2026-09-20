@@ -263,7 +263,7 @@ public class ChatRecordService{
         if (record.isGroupMsg()) {
             recordExtendV2.setGroupId(record.getGroupId());
         }
-        boolean aBoolean = Configs.getBool(ConfigKey.DATABASE_DB_CHAT_EXTEND_RAW_COMPRESS, true);
+        boolean aBoolean = Configs.getBool(ConfigKey.CHAT_RECORD_RAW_COMPRESS, true);
         if (aBoolean) {
             try {
                 recordExtendV2.setRawWsMessageBinary(TextCompressionUtils.compress(record.getRawWsMsg()));

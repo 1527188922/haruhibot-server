@@ -62,17 +62,8 @@
 
           <el-table-column label="值" min-width="300">
             <template slot-scope="{row}">
-              <!-- yml 类配置只读：缩进/锚点难以安全改写 -->
-              <span v-if="!row.writable" class="value-readonly">
-                {{ row.type === 'SECRET' ? (row.hasValue ? row.maskedValue : '未设置')
-                    : (row.value === '' || row.value === null ? '（空）' : row.value) }}
-                <el-tooltip content="该配置属于 yml 文件，请在服务器上直接编辑该文件后重启" placement="top">
-                  <i class="el-icon-lock"></i>
-                </el-tooltip>
-              </span>
-
               <!-- 布尔 -->
-              <el-switch v-else-if="row.type === 'BOOL'"
+              <el-switch v-if="row.type === 'BOOL'"
                          v-model="row.editValue"
                          active-value="true"
                          inactive-value="false"
@@ -153,11 +144,9 @@
 
           <el-table-column label="操作" width="180" align="center" fixed="right">
             <template slot-scope="{row}">
-              <el-button type="text" size="mini" :disabled="!row.dirty || !row.writable"
-                         @click="saveOne(row)">保存</el-button>
+              <el-button type="text" size="mini" :disabled="!row.dirty" @click="saveOne(row)">保存</el-button>
               <el-button v-if="row.hot" type="text" size="mini" @click="refreshOne(row)">刷新</el-button>
-              <el-button type="text" size="mini" class="danger-text" :disabled="!row.writable"
-                         @click="resetOne(row)">重置</el-button>
+              <el-button type="text" size="mini" class="danger-text" @click="resetOne(row)">重置</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -266,7 +255,7 @@ export default {
       })
     },
     markDirty(row) {
-      row.dirty = row.writable && row.editValue !== row.originValue
+      row.dirty = row.editValue !== row.originValue
     },
     rowClass({row}) {
       return row.dirty ? 'config-row--dirty' : ''
@@ -290,7 +279,8 @@ export default {
     saveAllRows(rows) {
       this.saveLoading = true
       return batchSaveApi({
-        items: rows.map(e => ({key: e.key, value: e.editValue}))
+        // 带上 fileName：同一个属性名可能出现在多个文件里（如 dev/prod 的日志级别）
+        items: rows.map(e => ({key: e.key, value: e.editValue, fileName: this.current.fileName}))
       }).then(({data: {code, message}}) => {
         if (code !== 200) {
           this.$message.error(message)
@@ -309,7 +299,7 @@ export default {
 
     // ==================== 刷新 ====================
     refreshOne(row) {
-      refreshApi({key: row.key}).then(({data: {code, message}}) => {
+      refreshApi({key: row.key, fileName: this.current.fileName}).then(({data: {code, message}}) => {
         if (code !== 200) {
           return this.$message.error(message)
         }
@@ -349,7 +339,7 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        resetApi({key: row.key}).then(({data: {code, message}}) => {
+        resetApi({key: row.key, fileName: this.current.fileName}).then(({data: {code, message}}) => {
           if (code !== 200) {
             return this.$message.error(message)
           }
@@ -528,19 +518,6 @@ export default {
 
 .value-input {
   max-width: 460px;
-}
-
-.value-readonly {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #606266;
-  word-break: break-all;
-
-  i {
-    color: #c0c4cc;
-  }
 }
 
 .value-input--number {

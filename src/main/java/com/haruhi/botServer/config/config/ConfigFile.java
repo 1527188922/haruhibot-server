@@ -3,48 +3,74 @@ package com.haruhi.botServer.config.config;
 import lombok.Getter;
 
 /**
- * 配置所属文件（位于 {@code ./config/} 目录下）
+ * 配置所属文件
  * <p>
- * 支持 {@code .properties} 与 {@code .yml/.yaml} 两种格式：
+ * 两类位置：
  * <ul>
- *     <li>业务配置一律用 properties（人可直接编辑，程序能按行保留注释）</li>
- *     <li>需要交给 Spring Boot 直接消费的配置（如 server.port）用 yml：
- *         Configs 会把 yml 里的叶子节点拍平成 {@code a.b.c=value} 一并放进快照，
- *         同时由 {@code spring.config.import} 交给 Spring Environment</li>
+ *     <li><b>程序目录下</b> {@code ./config/*.properties}：业务配置，按文件分组，可编辑</li>
+ *     <li><b>程序目录下</b> {@code application*.yml}：需要由 Spring Boot 直接消费的配置
+ *         （http端口、日志级别等），同样可编辑</li>
  * </ul>
- * 前端「配置管理」页按文件分大类展示
+ * 两种格式都被 {@link Configs} 读进同一份快照（yml 的叶子节点会被拍平成 {@code a.b.c=value}），
+ * 也都支持写回（yml 按行原地改值，保留注释与缩进）。
+ * <p>
+ * {@link #order} 决定加载优先级（<b>大的覆盖小的</b>），与 Spring Boot 的约定保持一致：
+ * {@code application.yml} &lt; {@code application-{profile}.yml} &lt; {@code ./config/*.properties}
  */
 @Getter
 public enum ConfigFile {
 
-    WEBUI("webui.properties", "WebUI", "WebUI登录、Token、监控台等，修改后需重启"),
-    SERVER("server.yml", "服务端(yml)", "http端口等需要由Spring直接读取的配置，修改后需重启"),
-    JOB("job.properties", "定时任务", "各定时任务的开关与cron表达式"),
-    BOT("bot.properties", "机器人", "机器人自身行为：超级管理员、功能开关、访问控制"),
-    WEBSOCKET("websocket.properties", "WebSocket", "机器人Websocket服务的认证token与连接数限制"),
-    SEARCH_IMG("searchimg.properties", "识图", "识图引擎地址与key、图源站点"),
-    BILIBILI("bilibili.properties", "B站", "b站cookie、上传下载限制"),
-    AI("ai.properties", "AI", "AI模型（千问、DeepSeek）相关配置"),
-    JM("jm.properties", "JM漫画", "JM漫画下载、搜索相关配置"),
-    URL("url.properties", "站点地址", "第三方站点地址"),
-    DB("db.properties", "数据库", "数据存储相关配置"),
+    APPLICATION("application.yml", "应用主配置", "http端口、激活的profile等，修改后需重启", 10),
+    APPLICATION_DEV("application-dev.yml", "应用配置(dev)", "dev环境专属配置（日志级别等），修改后需重启", 20),
+    APPLICATION_PROD("application-prod.yml", "应用配置(prod)", "prod环境专属配置（日志级别等），修改后需重启", 20),
+
+    WEBUI("webui.properties", "WebUI", "WebUI登录、Token、监控台等，修改后需重启", 30),
+    JOB("job.properties", "定时任务", "各定时任务的开关与cron表达式", 30),
+    BOT("bot.properties", "机器人", "机器人自身行为：超级管理员、功能开关、访问控制", 30),
+    WEBSOCKET("websocket.properties", "WebSocket", "机器人Websocket服务的认证token与连接数限制", 30),
+    SEARCH_IMG("searchimg.properties", "识图", "识图引擎地址与key", 30),
+    BILIBILI("bilibili.properties", "B站", "b站cookie、上传下载限制", 30),
+    AI("ai.properties", "AI", "AI模型（千问、DeepSeek）相关配置", 30),
+    JM("jm.properties", "JM漫画", "JM漫画下载、搜索相关配置", 30),
+    URL("url.properties", "站点地址", "第三方站点与接口地址", 30),
+    DATABASE("database.properties", "数据库", "数据源配置（jdbc url、驱动、druid参数），修改后需重启", 30),
+    CHAT_RECORD("chat_record.properties", "聊天记录", "聊天记录存储相关配置", 30),
     ;
 
-    /** 文件名，位于 ./config/ 目录下 */
+    /** 文件名，位于程序目录（yml）或程序目录下的 config 目录（properties） */
     private final String fileName;
     /** 前端展示名 */
     private final String displayName;
     /** 文件说明 */
     private final String remark;
+    /** 加载优先级，大的覆盖小的 */
+    private final int order;
 
-    ConfigFile(String fileName, String displayName, String remark) {
+    ConfigFile(String fileName, String displayName, String remark, int order) {
         this.fileName = fileName;
         this.displayName = displayName;
         this.remark = remark;
+        this.order = order;
     }
 
     public boolean isYaml() {
         String name = fileName.toLowerCase();
         return name.endsWith(".yml") || name.endsWith(".yaml");
+    }
+
+    /**
+     * 是否是 {@code application*.yml}（位于程序目录，而不是 ./config/ 下）
+     */
+    public boolean isSpringApplicationFile() {
+        return isYaml() && fileName.startsWith("application");
+    }
+
+    /**
+     * 按加载优先级升序返回（后者覆盖前者）
+     */
+    public static ConfigFile[] inLoadOrder() {
+        ConfigFile[] files = values().clone();
+        java.util.Arrays.sort(files, java.util.Comparator.comparingInt(ConfigFile::getOrder));
+        return files;
     }
 }

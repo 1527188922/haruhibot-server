@@ -3,11 +3,11 @@ package com.haruhi.botServer.controller;
 import com.haruhi.botServer.config.BotConfig;
 import com.haruhi.botServer.config.config.ConfigFile;
 import com.haruhi.botServer.config.config.ConfigKey;
+import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.config.service.ConfigChange;
 import com.haruhi.botServer.config.service.ConfigHub;
 import com.haruhi.botServer.config.vo.ConfigFileNode;
 import com.haruhi.botServer.exception.BusinessException;
-import com.haruhi.botServer.utils.FileUtil;
 import com.haruhi.botServer.vo.HttpResp;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +60,7 @@ public class ConfigController {
     @PostMapping("/file/content")
     public HttpResp<String> fileContent(@RequestBody ConfigReq request) {
         ConfigFile file = request.configFile();
-        File disk = new File(FileUtil.getConfigDir(), file.getFileName());
+        File disk = Configs.fileOf(file);
         if (!disk.isFile()) {
             return HttpResp.success("");
         }
@@ -76,8 +76,12 @@ public class ConfigController {
      */
     @PostMapping("/save")
     public HttpResp<SaveResult> save(@RequestBody SaveReq request) {
-        ConfigKey key = request.configKey();
-        return doSave(Map.of(key, StringUtils.defaultString(request.getValue())));
+        try {
+            ConfigKey key = request.configKey();
+            return doSave(Map.of(key, StringUtils.defaultString(request.getValue())));
+        } catch (BusinessException e) {
+            return HttpResp.fail(e.getErrorMsg(), null);
+        }
     }
 
     /**
@@ -88,11 +92,15 @@ public class ConfigController {
         if (request == null || CollectionUtils.isEmpty(request.getItems())) {
             return HttpResp.fail("缺少参数", null);
         }
-        Map<ConfigKey, String> values = new LinkedHashMap<>();
-        for (SaveReq item : request.getItems()) {
-            values.put(item.configKey(), StringUtils.defaultString(item.getValue()));
+        try {
+            Map<ConfigKey, String> values = new LinkedHashMap<>();
+            for (SaveReq item : request.getItems()) {
+                values.put(item.configKey(), StringUtils.defaultString(item.getValue()));
+            }
+            return doSave(values);
+        } catch (BusinessException e) {
+            return HttpResp.fail(e.getErrorMsg(), null);
         }
-        return doSave(values);
     }
 
     /**
@@ -100,8 +108,12 @@ public class ConfigController {
      */
     @PostMapping("/reset")
     public HttpResp<SaveResult> reset(@RequestBody ConfigReq request) {
-        ConfigKey key = request.configKey();
-        return doSave(Map.of(key, key.getDefaultValue()));
+        try {
+            ConfigKey key = request.configKey();
+            return doSave(Map.of(key, key.getDefaultValue()));
+        } catch (BusinessException e) {
+            return HttpResp.fail(e.getErrorMsg(), null);
+        }
     }
 
     /**
@@ -109,7 +121,12 @@ public class ConfigController {
      */
     @PostMapping("/refresh")
     public HttpResp<String> refresh(@RequestBody ConfigReq request) {
-        ConfigKey key = request.configKey();
+        ConfigKey key;
+        try {
+            key = request.configKey();
+        } catch (BusinessException e) {
+            return HttpResp.fail(e.getErrorMsg(), null);
+        }
         List<ConfigChange> changes = configHub.refresh(key);
         return HttpResp.success(describe(changes, key.getKey()));
     }
@@ -198,7 +215,29 @@ public class ConfigController {
             if (configKey == null) {
                 throw new BusinessException("不支持的配置项：" + key);
             }
+            // 同一属性名出现在多个文件（如 dev/prod 的日志级别）时，必须带上文件名
+            if (ConfigKey.isAmbiguous(key)) {
+                if (StringUtils.isBlank(fileName)) {
+                    throw new BusinessException("配置项 " + key + " 在多个文件中存在（"
+                            + ambiguousFiles(key) + "），请同时指定 fileName");
+                }
+                ConfigKey scoped = ConfigKey.of(configFile(), key);
+                if (scoped == null) {
+                    throw new BusinessException("文件 " + fileName + " 中不存在配置项：" + key);
+                }
+                return scoped;
+            }
             return configKey;
+        }
+
+        /**
+         * 列出声明了该 key 的文件名，用于错误提示
+         */
+        private String ambiguousFiles(String key) {
+            return java.util.Arrays.stream(ConfigFile.values())
+                    .filter(file -> ConfigKey.of(file, key) != null)
+                    .map(ConfigFile::getFileName)
+                    .collect(java.util.stream.Collectors.joining("、"));
         }
 
         public ConfigFile configFile() {

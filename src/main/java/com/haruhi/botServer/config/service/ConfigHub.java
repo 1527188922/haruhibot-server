@@ -4,6 +4,7 @@ import com.haruhi.botServer.config.config.ConfigFile;
 import com.haruhi.botServer.config.config.ConfigKey;
 import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.config.util.PropertiesFileUtil;
+import com.haruhi.botServer.config.util.YamlFileUtil;
 import com.haruhi.botServer.config.vo.ConfigFileNode;
 import com.haruhi.botServer.config.vo.ConfigItem;
 import com.haruhi.botServer.exception.BusinessException;
@@ -68,8 +69,9 @@ public class ConfigHub {
      */
     public List<ConfigFileNode> list() {
         reloadItemsIfEmpty();
-        List<ConfigFileNode> nodes = new ArrayList<>(ConfigFile.values().length);
-        for (ConfigFile file : ConfigFile.values()) {
+        ConfigFile[] files = ConfigFile.inLoadOrder();
+        List<ConfigFileNode> nodes = new ArrayList<>(files.length);
+        for (ConfigFile file : files) {
             nodes.add(buildNode(file));
         }
         return nodes;
@@ -125,11 +127,6 @@ public class ConfigHub {
         Map<ConfigKey, String> normalized = new LinkedHashMap<>();
         for (Map.Entry<ConfigKey, String> entry : values.entrySet()) {
             ConfigKey key = entry.getKey();
-            if (key.getFile().isYaml()) {
-                // yml 的缩进/锚点/多行块很难在保留格式的前提下安全改写，因此不提供页面写入
-                throw new BusinessException(key.getKey() + " 属于 " + key.getFile().getFileName()
-                        + "，请直接编辑该文件后重启（配置管理页不提供写入）");
-            }
             String value = entry.getValue() == null ? "" : entry.getValue();
             String error = key.getType().validate(value);
             if (error != null) {
@@ -139,12 +136,12 @@ public class ConfigHub {
             normalized.put(key, value);
         }
 
-        // 1. 落盘（按文件分组，减少文件读写次数）
+        // 1. 落盘（properties 与 yml 都按行原地改值，保留注释与顺序）
         Set<ConfigFile> touched = new LinkedHashSet<>();
         for (Map.Entry<ConfigKey, String> entry : normalized.entrySet()) {
             ConfigKey key = entry.getKey();
             try {
-                PropertiesFileUtil.save(key.getFile().getFileName(), key.getKey(), entry.getValue());
+                Configs.writeToFile(key, entry.getValue());
                 touched.add(key.getFile());
                 fileError.remove(key.getFile().getFileName());
             } catch (IOException e) {
@@ -185,13 +182,14 @@ public class ConfigHub {
      * 同时刷新快照并按需通知订阅者
      */
     public boolean reset(ConfigKey key) {
-        if (key.getFile().isYaml()) {
-            throw new BusinessException(key.getKey() + " 属于 " + key.getFile().getFileName()
-                    + "，请直接编辑该文件后重启（配置管理页不提供写入）");
-        }
         boolean applied = save(key, key.getDefaultValue());
         try {
-            PropertiesFileUtil.remove(key.getFile().getFileName(), key.getKey());
+            if (key.getFile().isYaml()) {
+                // yml 里如果该key是显式写的，删掉这一行；删不掉（键不在文件里）也无所谓
+                YamlFileUtil.remove(Configs.fileOf(key), key.getKey());
+            } else {
+                PropertiesFileUtil.remove(key.getFile().getFileName(), key.getKey());
+            }
         } catch (IOException e) {
             log.error("重置配置失败 key:{}", key.getKey(), e);
             throw new BusinessException("重置配置失败：" + e.getMessage());
@@ -402,7 +400,7 @@ public class ConfigHub {
      */
     private synchronized void rebuildItems() {
         Map<String, List<ConfigItem>> map = new LinkedHashMap<>();
-        for (ConfigFile file : ConfigFile.values()) {
+        for (ConfigFile file : ConfigFile.inLoadOrder()) {
             List<ConfigKey> keys = new ArrayList<>(ConfigKey.of(file));
             keys.sort((a, b) -> Integer.compare(a.getSort(), b.getSort()));
             List<ConfigItem> items = new ArrayList<>(keys.size());
@@ -428,7 +426,6 @@ public class ConfigHub {
         item.setMaskedValue(secret ? mask(raw) : null);
         item.setDefaultValue(secret ? mask(key.getDefaultValue()) : key.getDefaultValue());
         item.setHot(key.isHot());
-        item.setWritable(!key.getFile().isYaml());
         item.setConfigured(Configs.isConfigured(key));
         item.setSource(Configs.source(key).name());
         item.setRemark(key.getRemark());

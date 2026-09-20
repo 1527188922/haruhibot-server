@@ -1,11 +1,13 @@
 package com.haruhi.botServer.service.music.extend;
 
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.music163.Song;
 import com.haruhi.botServer.dto.music163.SearchResp;
 import com.haruhi.botServer.factory.MusicServiceFactory;
@@ -122,7 +124,7 @@ public class Music163Service extends AbstractMusicService {
         map.put("csrf_token", "");
         log.info("开始搜索歌曲(163)：{}",keyWord);
         long l = System.currentTimeMillis();
-        String s = HttpUtil.urlWithForm(ThirdPartyURL.NETEASE_SEARCH_MUSIC, prepare(map), StandardCharsets.UTF_8, true);
+        String s = HttpUtil.urlWithForm(Configs.getStr(ConfigKey.URL_CONF_NETEASE_SEARCH_MUSIC), prepare(map), StandardCharsets.UTF_8, true);
         HttpRequest httpRequest = HttpUtil.createPost(encode(s)).timeout(10000);
         try (HttpResponse response = httpRequest.execute()){
             log.info("搜索完成(163)，耗时：{}",System.currentTimeMillis() - l);

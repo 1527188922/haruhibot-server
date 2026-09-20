@@ -81,7 +81,7 @@ public class AiChatHandler implements IAllMessageHandler {
             urlParam.put("appid",0);
             urlParam.put("msg",matchResult.getData());
 
-            String s = HttpUtil.urlWithForm(ThirdPartyURL.QINGYUNKE_AI_CHAT, urlParam, StandardCharsets.UTF_8, false);
+            String s = HttpUtil.urlWithForm(Configs.getStr(ConfigKey.URL_CONF_QINGYUNKE_AI_CHAT), urlParam, StandardCharsets.UTF_8, false);
             HttpRequest httpRequest = HttpUtil.createGet(s).timeout(8000);
             try (HttpResponse response = httpRequest.execute()){
                 String body = response.body();

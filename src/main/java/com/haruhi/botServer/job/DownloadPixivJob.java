@@ -7,7 +7,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botServer.config.config.ConfigKey;
 import com.haruhi.botServer.config.config.Configs;
-import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.entity.PixivSqlite;
 import com.haruhi.botServer.job.schedule.AbstractJob;
 import com.haruhi.botServer.service.PixivSqliteService;
@@ -120,7 +119,7 @@ public class DownloadPixivJob extends AbstractJob {
 
         @Override
         public LoliconPixResp call() throws Exception {
-            String s = HttpUtil.urlWithForm(ThirdPartyURL.LOLICON, param, StandardCharsets.UTF_8, false);
+            String s = HttpUtil.urlWithForm(Configs.getStr(ConfigKey.URL_CONF_LOLICON), param, StandardCharsets.UTF_8, false);
             HttpRequest httpRequest = HttpUtil.createGet(s).timeout(12 * 1000);
             try (HttpResponse response = httpRequest.execute()){
                 if (!response.isOk()) {

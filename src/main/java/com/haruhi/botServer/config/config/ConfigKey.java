@@ -49,10 +49,19 @@ public enum ConfigKey {
     WEBUI_DRUID_MONITOR_SPRING_ENABLED(ConfigFile.WEBUI, "druid.monitor.spring.enabled", ConfigType.BOOL, "false", false,
             "是否开启druid的Spring监控，需重启", 110),
 
-    // ============================ 服务端 ============================
-    // 只有 server.port 保留在 yml 中（需要由 Spring 直接消费）
-    SERVER_PORT(ConfigFile.SERVER, "server.port", ConfigType.INT, "8090", false,
-            "http服务端口，修改后需重启", 10),
+    // ============================ 应用主配置（application.yml） ============================
+    SERVER_PORT(ConfigFile.APPLICATION, "server.port", ConfigType.INT, "8090", false,
+            "http服务端口，可在配置管理页修改，修改后需重启", 10),
+    SPRING_PROFILES_ACTIVE(ConfigFile.APPLICATION, "spring.profiles.active", ConfigType.STRING, "dev", false,
+            "激活的Spring profile，决定加载 application-{profile}.yml，修改后需重启", 20),
+
+    // ============================ 环境配置（application-{profile}.yml） ============================
+    // 同一个属性名可以在不同 profile 文件里各声明一次（key + file 才是唯一标识）
+    LOGGING_LEVEL_DEV(ConfigFile.APPLICATION_DEV, "logging.level.com.haruhi.botServer", ConfigType.STRING, "debug", false,
+            "dev环境下本项目的日志级别（TRACE/DEBUG/INFO/WARN/ERROR），修改后需重启", 10),
+
+    LOGGING_LEVEL_PROD(ConfigFile.APPLICATION_PROD, "logging.level.com.haruhi.botServer", ConfigType.STRING, "info", false,
+            "prod环境下本项目的日志级别（TRACE/DEBUG/INFO/WARN/ERROR），修改后需重启", 10),
 
     // ============================ 定时任务 ============================
     JOB_DOWNLOAD_PIXIV_ENABLE(ConfigFile.JOB, "job.downloadPixiv.enable", ConfigType.BOOL, "false", true,
@@ -100,9 +109,6 @@ public enum ConfigKey {
             "saucenao识图接口地址", 10),
     SEARCH_IMG_SAUCENAO_APIKEY(ConfigFile.SEARCH_IMG, "searchimg.saucenao.apikey", ConfigType.SECRET, "", true,
             "saucenao识图接口认证key，从 https://saucenao.com 获取", 20, "saucenao.search_image_key"),
-    SEARCH_IMG_AGEFANS_URL(ConfigFile.SEARCH_IMG, "searchimg.agefans.url", ConfigType.STRING, "https://www.agemys.vip", true,
-            "agefans网站地址，用于今日新番功能，末尾不需斜杠。备用：https://www.age.tv https://www.agemys.net", 30,
-            "url_conf.agefans"),
 
     // ============================ B站 ============================
     BILIBILI_COOKIES_SESSDATA(ConfigFile.BILIBILI, "bilibili.cookies.sessdata", ConfigType.SECRET, "", true,
@@ -146,14 +152,63 @@ public enum ConfigKey {
             "JM搜索结果返回条数上限，图片和合并消息共用；无效或小于等于0时使用12条", 80),
 
     // ============================ 站点地址 ============================
+    // ThirdPartyURL 中的地址常量已迁移到这里，除 identimg（识图，见 searchimg.properties）外
+    URL_CONF_AGEFANS(ConfigFile.URL, "url_conf.agefans", ConfigType.STRING, "https://www.agemys.vip", true,
+            "agefans网站地址，用于今日新番功能，末尾不需斜杠。备用：https://www.age.tv https://www.agemys.net", 10,
+            "url_conf.agefans", "searchimg.agefans.url"),
     URL_CONF_BT_SEARCH(ConfigFile.URL, "url_conf.bt_search", ConfigType.STRING, "http://www.eclzz.bio", true,
             "磁力搜索网站地址，用于bt搜索功能，末尾不需斜杠", 20),
     URL_CONF_BTBTLA_SEARCH(ConfigFile.URL, "url_conf.btbtla_search", ConfigType.STRING, "https://www.btbtla.com", true,
             "bt影视搜索站点地址", 30),
+    URL_CONF_QINGYUNKE_AI_CHAT(ConfigFile.URL, "url_conf.qingyunke_ai_chat", ConfigType.STRING,
+            "http://api.qingyunke.com/api.php", true, "青云客ai聊天接口", 40),
+    URL_CONF_BILIBILI_BULLET_CHAR(ConfigFile.URL, "url_conf.bilibili_bullet_char", ConfigType.STRING,
+            "https://api.bilibili.com/x/v1/dm/list.so", true, "b站获取弹幕接口", 50),
+    URL_CONF_BILIBILI_PLAYER_CID(ConfigFile.URL, "url_conf.bilibili_player_cid", ConfigType.STRING,
+            "https://api.bilibili.com/x/player/pagelist", true, "b站获取cid接口", 60),
+    URL_CONF_BILIBILI_LIVE_STATUS(ConfigFile.URL, "url_conf.bilibili_live_status", ConfigType.STRING,
+            "https://api.live.bilibili.com/room/v1/Room/get_status_info_by_uids", true,
+            "b站根据uid批量获取直播间状态接口", 70),
+    URL_CONF_LOLICON(ConfigFile.URL, "url_conf.lolicon", ConfigType.STRING, "https://api.lolicon.app/setu/v2", true,
+            "lolicon图片接口，用于pixiv下载任务", 80),
+    URL_CONF_WHATS_LINK(ConfigFile.URL, "url_conf.whats_link", ConfigType.STRING,
+            "https://whatslink.info/api/v1/link", true, "磁力链接预览接口", 90),
+    URL_CONF_NEWS_163(ConfigFile.URL, "url_conf.news_163", ConfigType.STRING,
+            "http://c.m.163.com/nc/article/headline/T1348647853363/0-40.html", true, "网易新闻头条接口", 100),
+    URL_CONF_NETEASE_SEARCH_MUSIC(ConfigFile.URL, "url_conf.netease_search_music", ConfigType.STRING,
+            "http://music.163.com/weapi/cloudsearch/get/web", true, "网易云搜索歌曲接口", 110),
 
     // ============================ 数据库 ============================
-    DATABASE_DB_CHAT_EXTEND_RAW_COMPRESS(ConfigFile.DB, "db.chat_extend.raw_compress", ConfigType.BOOL, "true", true,
-            "是否对聊天记录扩展表raw消息压缩存储", 20),
+    // 数据源配置的真源。application*.yml 里的 spring.datasource 会被
+    // SqliteDataSourceInitAspect 用这里的值覆盖（见该类注释）
+    DATABASE_URL(ConfigFile.DATABASE, "spring.datasource.dynamic.datasource.master.url", ConfigType.STRING,
+            "jdbc:sqlite::resource:data/haruhibot_server.db?journal_mode=WAL&synchronous=NORMAL", false,
+            "sqlite数据库jdbc url，支持绝对路径，修改后需重启", 10),
+    DATABASE_DRIVER_CLASS_NAME(ConfigFile.DATABASE,
+            "spring.datasource.dynamic.datasource.master.driver-class-name",
+            ConfigType.STRING, "org.sqlite.JDBC", false, "数据库驱动类名，修改后需重启", 20),
+    DATABASE_DRUID_VALIDATION_QUERY(ConfigFile.DATABASE,
+            "spring.datasource.dynamic.datasource.master.druid.validation-query", ConfigType.STRING, "SELECT 1", false,
+            "druid连接校验语句，修改后需重启", 30),
+    DATABASE_DRUID_FILTERS(ConfigFile.DATABASE,
+            "spring.datasource.dynamic.datasource.master.druid.filters", ConfigType.STRING, "stat", false,
+            "druid过滤器，修改后需重启", 40),
+    DATABASE_DRUID_TEST_ON_BORROW(ConfigFile.DATABASE,
+            "spring.datasource.dynamic.datasource.master.druid.test-on-borrow", ConfigType.BOOL, "false", false,
+            "druid取连接时是否校验，修改后需重启", 50),
+    DATABASE_DRUID_TEST_ON_RETURN(ConfigFile.DATABASE,
+            "spring.datasource.dynamic.datasource.master.druid.test-on-return", ConfigType.BOOL, "false", false,
+            "druid归还连接时是否校验，修改后需重启", 60),
+    DATABASE_DRUID_POOL_PREPARED_STATEMENTS(ConfigFile.DATABASE,
+            "spring.datasource.dynamic.datasource.master.druid.pool-prepared-statements", ConfigType.BOOL, "false",
+            false, "druid是否缓存PreparedStatement，修改后需重启", 70),
+    DATABASE_DRUID_MAX_ACTIVE(ConfigFile.DATABASE,
+            "spring.datasource.dynamic.datasource.master.druid.max-active", ConfigType.INT, "5", false,
+            "druid最大连接数，修改后需重启", 80),
+
+    // ============================ 聊天记录 ============================
+    CHAT_RECORD_RAW_COMPRESS(ConfigFile.CHAT_RECORD, "db.chat_extend.raw_compress", ConfigType.BOOL, "true", true,
+            "是否对聊天记录扩展表raw消息压缩存储", 10),
     ;
     /** 所属文件 */
     private final ConfigFile file;
@@ -186,17 +241,26 @@ public enum ConfigKey {
         this.legacyKeys = legacyKeys == null ? List.of() : List.of(legacyKeys);
     }
 
+    /** key -> 配置项；同一属性名可以出现在不同文件（如 dev/prod 的日志级别），此时取第一个 */
     private static final Map<String, ConfigKey> KEY_MAP;
+
+    /** (文件, key) -> 配置项 */
+    private static final Map<String, ConfigKey> FILE_KEY_MAP;
 
     static {
         Map<String, ConfigKey> map = new LinkedHashMap<>();
+        Map<String, ConfigKey> fileKeyMap = new LinkedHashMap<>();
         for (ConfigKey value : values()) {
-            ConfigKey exist = map.put(value.key, value);
+            map.putIfAbsent(value.key, value);
+            String fileKey = value.file.getFileName() + "#" + value.key;
+            ConfigKey exist = fileKeyMap.put(fileKey, value);
             if (exist != null) {
-                throw new IllegalStateException("配置key重复：" + value.key + " -> " + exist.name() + " / " + value.name());
+                throw new IllegalStateException("同一文件内配置key重复：" + fileKey
+                        + " -> " + exist.name() + " / " + value.name());
             }
         }
         KEY_MAP = Collections.unmodifiableMap(map);
+        FILE_KEY_MAP = Collections.unmodifiableMap(fileKeyMap);
     }
 
     /**
@@ -204,6 +268,28 @@ public enum ConfigKey {
      */
     public static ConfigKey of(String key) {
         return key == null ? null : KEY_MAP.get(key.trim());
+    }
+
+    /**
+     * 按"文件 + key"查找配置项，用于同名属性出现在多个文件里的场景
+     */
+    public static ConfigKey of(ConfigFile file, String key) {
+        if (file == null || key == null) {
+            return null;
+        }
+        return FILE_KEY_MAP.get(file.getFileName() + "#" + key.trim());
+    }
+
+    /**
+     * 该key是否被多个文件声明
+     */
+    public static boolean isAmbiguous(String key) {
+        if (key == null) {
+            return false;
+        }
+        String k = key.trim();
+        long count = Arrays.stream(values()).filter(e -> e.key.equals(k)).count();
+        return count > 1;
     }
 
     public static List<ConfigKey> of(ConfigFile file) {

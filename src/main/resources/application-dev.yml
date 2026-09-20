@@ -1,21 +1,15 @@
-# 本文件只保留无法放进 ./config/*.properties 的配置
-# 机器人、定时任务、端口等配置见 ./config/ 目录
+# dev profile config (active profile: dev)
+#
+# These files are read by both Configs and the Spring Environment.
+#
+# NOTE: the datasource is NOT configured here anymore.
+# It is configured in ./config/database.properties and applied by
+# com.haruhi.botServer.aop.SqliteDataSourceInitAspect, which overwrites
+# whatever spring.datasource entry exists in yml.
+server:
+  # http port (editable from the WebUI config page, restart required)
+  port: 8090
 
 logging:
   level:
     com.haruhi.botServer: debug
-
-#spring:
-#  datasource:
-#    dynamic:
-#      datasource:
-#        master:
-#          url: jdbc:sqlite:D:\my\bot\db\haruhibot_server.db
-#          driver-class-name: org.sqlite.JDBC
-#          druid:
-#            validation-query: SELECT 1
-#            filters: stat
-#            test-on-borrow: false
-#            test-on-return: false
-#            pool-prepared-statements: false
-#            max-active: 1

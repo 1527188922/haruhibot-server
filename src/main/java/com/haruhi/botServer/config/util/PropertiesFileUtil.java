@@ -180,14 +180,8 @@ public final class PropertiesFileUtil {
     }
 
     private static void writeLines(File file, List<String> lines) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < lines.size(); i++) {
-            sb.append(lines.get(i));
-            if (i < lines.size() - 1) {
-                sb.append(System.lineSeparator());
-            }
-        }
-        FileUtil.writeText(file, sb.toString());
+        // 统一用 \n 写回：不能按平台用 \r\n，否则 readAllLines 会把 \r 留在行内容里
+        FileUtil.writeText(file, String.join("\n", lines));
     }
 
     /**
@@ -237,13 +231,15 @@ public final class PropertiesFileUtil {
                             sb.append((char) Integer.parseInt(value.substring(i + 1, i + 5), 16));
                             i += 4;
                         } catch (NumberFormatException e) {
-                            sb.append(next);
+                            // 不是合法的 unicode 转义，按普通反斜杠处理
+                            sb.append('\\').append(next);
                         }
                     } else {
-                        sb.append(next);
+                        sb.append('\\').append(next);
                     }
                 }
-                default -> sb.append(next);
+                // 未识别的转义序列保留反斜杠，例如 windows 路径 D:\my\bot\db
+                default -> sb.append('\\').append(next);
             }
         }
         return sb.toString();

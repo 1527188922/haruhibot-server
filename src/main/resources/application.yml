@@ -1,3 +1,10 @@
+# Application main config.
+#
+# Bot business config lives in ./config/*.properties (editable from the WebUI config page).
+# This file keeps the properties that Spring Boot itself consumes, e.g. the http port.
+
+
+
 spring:
   profiles:
     active: dev

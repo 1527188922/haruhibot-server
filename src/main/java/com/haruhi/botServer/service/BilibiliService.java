@@ -8,7 +8,6 @@ import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
-import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.bilibili.*;
 import com.haruhi.botServer.utils.BilibiliIdConverter;
 import com.haruhi.botServer.utils.BilibililSidUtil;
@@ -124,7 +123,7 @@ public class BilibiliService {
         param.put("bvid",bv);
         param.put("jsonp","jsonp");
 
-        String s = HttpUtil.urlWithForm(ThirdPartyURL.PLAYER_CID, param, StandardCharsets.UTF_8, false);
+        String s = HttpUtil.urlWithForm(Configs.getStr(ConfigKey.URL_CONF_BILIBILI_PLAYER_CID), param, StandardCharsets.UTF_8, false);
         HttpRequest httpRequest = HttpUtil.createGet(s)
                 .timeout(10 * 1000);
         try (HttpResponse response = httpRequest.execute()){
@@ -146,7 +145,7 @@ public class BilibiliService {
         Map<String, Object> param = new HashMap<>();
         param.put("oid",cid);
 
-        String s = HttpUtil.urlWithForm(ThirdPartyURL.BULLET_CHAR, param, StandardCharsets.UTF_8, false);
+        String s = HttpUtil.urlWithForm(Configs.getStr(ConfigKey.URL_CONF_BILIBILI_BULLET_CHAR), param, StandardCharsets.UTF_8, false);
         HttpRequest httpRequest = HttpUtil.createGet(s).timeout(10 * 1000);
         try (HttpResponse response = httpRequest.execute()){
             return XMLUtil.convertXmlToObject(BulletChatResp.class, response.body());
@@ -188,7 +187,7 @@ public class BilibiliService {
         JSONObject body = new JSONObject();
         body.put("uids", uids);
 
-        String url = ThirdPartyURL.BILIBILI_LIVE_STATUS;
+        String url = Configs.getStr(ConfigKey.URL_CONF_BILIBILI_LIVE_STATUS);
         HttpRequest httpRequest = HttpRequest.post(url)
                 .addHeaders(getLiveHeaders())
                 .contentType(ContentType.JSON.getValue())

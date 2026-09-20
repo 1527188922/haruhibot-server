@@ -1,12 +1,13 @@
 package com.haruhi.botServer.service.news;
 
+import com.haruhi.botServer.config.config.Configs;
+import com.haruhi.botServer.config.config.ConfigKey;
+
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-
-import com.haruhi.botServer.constant.ThirdPartyURL;
 import com.haruhi.botServer.dto.news163.NewsResp;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
 import com.haruhi.botServer.utils.DateTimeUtil;
@@ -30,7 +31,7 @@ public class NewsServiceImpl implements NewsService {
         log.info("开始获取网易新闻...");
         long l = System.currentTimeMillis();
         String sourceId = "T1348647853363";
-        HttpRequest httpRequest = HttpUtil.createGet(ThirdPartyURL.NEWS_163).timeout(2 * 1000);
+        HttpRequest httpRequest = HttpUtil.createGet(Configs.getStr(ConfigKey.URL_CONF_NEWS_163)).timeout(2 * 1000);
         try (HttpResponse response = httpRequest.execute()){
             String responseStr = response.body();
             if (Strings.isBlank(responseStr)) {

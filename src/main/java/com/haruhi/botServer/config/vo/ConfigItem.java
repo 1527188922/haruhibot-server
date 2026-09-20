@@ -27,12 +27,6 @@ public class ConfigItem {
     private String defaultValue;
     /** 是否可热更新 */
     private boolean hot;
-    /**
-     * 是否允许在页面上编辑
-     * <p>
-     * yml 类配置只读展示（缩进/锚点难以安全改写，需直接编辑文件后重启）
-     */
-    private boolean writable = true;
     /** 是否已配置（false表示正在使用默认值） */
     private boolean configured;
     /** 值来源：FILE / DEFAULT */
