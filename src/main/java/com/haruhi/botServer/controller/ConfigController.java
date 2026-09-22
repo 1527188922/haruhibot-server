@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,12 +106,15 @@ public class ConfigController {
 
     /**
      * 重置为默认值
+     * <p>
+     * 把声明里的默认值写回该key（<b>保留该key</b>），走的是和保存同一套写文件逻辑，
+     * 因此不会重复追加、也不会在 yml 里写成 properties 风格的点分行
      */
     @PostMapping("/reset")
     public HttpResp<SaveResult> reset(@RequestBody ConfigReq request) {
         try {
             ConfigKey key = request.configKey();
-            return doSave(Map.of(key, key.getDefaultValue()));
+            return buildResult("重置", configHub.resetAll(List.of(key)), List.of(key));
         } catch (BusinessException e) {
             return HttpResp.fail(e.getErrorMsg(), null);
         }
@@ -138,7 +142,7 @@ public class ConfigController {
     public HttpResp<String> refreshFile(@RequestBody ConfigReq request) {
         ConfigFile file = request.configFile();
         List<ConfigChange> changes = configHub.refreshFile(file);
-        return HttpResp.success(describe(changes, file.getFileName()));
+        return HttpResp.success(describe(changes, file.getFileName()), null);
     }
 
     /**
@@ -153,38 +157,43 @@ public class ConfigController {
     private HttpResp<SaveResult> doSave(Map<ConfigKey, String> values) {
         try {
             Map<ConfigKey, Boolean> applied = configHub.saveAll(values);
-            SaveResult result = new SaveResult();
-            boolean hotApplied = applied.values().stream().anyMatch(Boolean::booleanValue);
-            result.setHot(hotApplied);
-            result.setRestartRequired(applied.entrySet().stream()
-                    .anyMatch(e -> !e.getValue())
-                    && values.keySet().stream().anyMatch(k -> !k.isHot()));
-            result.setHotKeys(applied.entrySet().stream()
-                    .filter(Map.Entry::getValue)
-                    .map(e -> e.getKey().getKey())
-                    .toList());
-            List<String> needRestart = new ArrayList<>();
-            for (ConfigKey key : values.keySet()) {
-                if (!key.isHot()) {
-                    needRestart.add(key.getKey());
-                }
-            }
-            result.setRestartKeys(needRestart);
-
-            String message = "保存成功";
-            if (!result.getHotKeys().isEmpty()) {
-                message += "，已即时生效：" + String.join("、", result.getHotKeys());
-            }
-            if (!needRestart.isEmpty()) {
-                message += "，需重启生效：" + String.join("、", needRestart);
-            }
-            return HttpResp.success(message, result);
+            return buildResult("保存", applied, values.keySet());
         } catch (BusinessException e) {
             return HttpResp.fail(e.getErrorMsg(), null);
         } catch (Exception e) {
             log.error("保存配置异常", e);
             return HttpResp.fail("保存异常：" + e.getMessage(), null);
         }
+    }
+
+    /**
+     * 把"key -> 是否触发了热更新"整理成前端要的提示与标志位
+     */
+    private HttpResp<SaveResult> buildResult(String action, Map<ConfigKey, Boolean> applied, Collection<ConfigKey> keys) {
+        SaveResult result = new SaveResult();
+        result.setHot(applied.values().stream().anyMatch(Boolean::booleanValue));
+        result.setHotKeys(applied.entrySet().stream()
+                .filter(Map.Entry::getValue)
+                .map(e -> e.getKey().getKey())
+                .toList());
+        List<String> needRestart = new ArrayList<>();
+        for (ConfigKey key : keys) {
+            if (!key.isHot()) {
+                needRestart.add(key.getKey());
+            }
+        }
+        result.setRestartKeys(needRestart);
+        // 非hot项走完流程也一定不会即时生效，所以"有非hot项"就等于"需要重启"
+        result.setRestartRequired(!needRestart.isEmpty());
+
+        String message = action + "成功";
+        if (!result.getHotKeys().isEmpty()) {
+            message += "，已即时生效：" + String.join("、", result.getHotKeys());
+        }
+        if (!needRestart.isEmpty()) {
+            message += "，需重启生效：" + String.join("、", needRestart);
+        }
+        return HttpResp.success(message, result);
     }
 
     private String describe(List<ConfigChange> changes, String target) {

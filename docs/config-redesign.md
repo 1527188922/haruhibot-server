@@ -138,7 +138,13 @@ save(key, value)
 - **key 级刷新**：`refresh(key)` —— 重读该 key 所在文件，不写文件。
 - **文件级刷新**：`refreshFile(file)` —— 重读整个文件。
 - **全量刷新**：`refreshAll()` —— 兜底按钮。
+- **重置**：`resetAll(keys)` —— 把每个 key 的值改回声明中的默认值（**保留该 key**），走的还是同一套写文件逻辑，
+  因此既不会重复追加，也不会在 yml 里写成 properties 风格的点分行。
 - **外部改动自动感知**：`@Scheduled(fixedDelay=2000)` 轮询文件最后修改时间，检测到变更自动重载并通知订阅者。
+
+**热更新的触发条件是"值真的变了"**：`ConfigApplier.onlyOnChanged()` 默认 true，同一个值再保存一次不会产生通知
+（例如 `job.*.enable` 已经是 true 时再保存 true，不会重复注册任务，因为任务本来就在跑）。
+如果运行期状态和文件出现了偏差、"保存了却没反应"，用配置页的 **`重新加载全部配置`**（`refreshAll` → `fireAll`）强制给每个订阅者发一次通知即可对齐。
 
 **没有"不可编辑"的配置项**：yml 也只是"改完需要重启"，页面一样可以保存与重置。
 
@@ -159,7 +165,7 @@ save(key, value)
 
 - 更新已存在的 key：只替换那一行，保留文件头注释、key 上方注释、其他项顺序与空行。
 - 新增 key：追加到文件末尾。
-- 删除 key（重置）：删掉整行。
+- 重置：把默认值写回该 key（保留该行，不删除）。
 - 值转义：`\n`、`\r`、`\t`、`\\`、`\uXXXX` 双向转换。
 - 统一用 `\n` 写回（不能按平台用 `\r\n`，否则 `readAllLines` 会把 `\r` 留在行内容里）。
 
@@ -167,14 +173,25 @@ save(key, value)
 
 **读**：把嵌套结构拍平成 `a.b.c=value`（与 properties 同样的寻址方式），只保留叶子节点；列表用逗号连接，与 `ConfigType.LIST` 对齐。
 
-**写**：按行定位后**原地替换**，保留注释、缩进与键顺序。定位规则是"每段必须是父节点的**直接子节点**"（缩进大于父节点且不超过该层级的首个子节点），因此不会误匹配到更深层的同名键。
+**写**：按行定位后**原地替换**，保留注释、缩进与键顺序。定位方式不是"把 key 按 `.` 切开再逐段找行"，而是先把文件按缩进解析成
+"行 → 该行拍平后的完整路径"，再按路径精确匹配（`logging.level.com.haruhi.botServer` 这种**最后一段本身带点**的 key 也能命中）。
 
-- 键已存在 → 只替换该行的值（保留行尾注释）
-- 父节点存在、键不存在 → 插入到父级块末尾，缩进与同级一致
-- 父节点也不存在 → 文件末尾以点分键追加（YAML 允许 `a.b.c: value`，语义等价于嵌套）
+- 键已存在（嵌套写法或 `a.b.c: value` 点分写法都算）→ 只替换该行的值（保留行尾注释），并顺手清掉历史上被重复追加的行：**一个 key 只保留一行**
+- 只有点分写法（properties 风格）→ 删掉旧行，按 yml 嵌套结构重写
+- 父节点存在、键不存在 → 插入到父级块末尾，缩进与同级一致，剩余路径作为点分叶子（如 `logging: level:` 下写 `com.haruhi.botServer: debug`）
+- 父节点也不存在 → 文件末尾补出嵌套结构（`server:` / `"  port: 8090"`），**不再**写成 `server.port: 8090` 这种平铺行
+- 重置（`reset`）走的是同一套写值逻辑，只是把值换成默认值：**保留该 key**，不会删行
 - 标量按需加引号：`ConfigType.INT / BOOL` 写裸值（`port: 8090`），字符串类型需要时加双引号（避免被解析成布尔/数字）
 
 之所以不用 `Yaml.dump()` 整体重写：那样会丢掉所有注释、打乱顺序，对 `application.yml` 这类人也要看的文件不可接受。
+
+> **历史遗留数据的自愈**：旧版本的定位方式（按点切分）对上面那类 key 永远定位失败，于是每次保存都往文件末尾追加一条 `a.b.c: value`。
+> 重复的 key 会让 Spring 的 yml 加载器直接抛异常（`found duplicate key xxx`），应用起不来，而配置文件又只能用配置管理页修改——
+> 起不来就改不了。因此 `YamlDuplicateKeyRepairPostProcessor`（`META-INF/spring.factories` 注册的 `EnvironmentPostProcessor`，
+> order = `HIGHEST_PRECEDENCE`，早于 `ConfigDataEnvironmentPostProcessor` 解析 `application*.yml`）会在启动最早期把
+> `application*.yml` 里重复的 key 去重：同一路径只保留**最后一行**（旧的保存逻辑总是往末尾追加，最后一行才是最新的值），
+> 保留下来的若是点分写法会一并改写成嵌套结构。
+
 
 ### 2.8 为什么 `db.sql_cache` 不在配置文件里
 
@@ -208,7 +225,7 @@ save(key, value)
 | `POST /file/content` | 读取某个配置文件的原始文本（properties 与 yml 都支持） |
 | `POST /save` | 保存单个配置项 |
 | `POST /batchSave` | 批量保存（跨文件也可），返回 `hotKeys` / `restartKeys` |
-| `POST /reset` | 重置为声明默认值（properties 删行；yml 删掉该行） |
+| `POST /reset` | 重置为声明默认值（把默认值写回该 key，保留该行；yml 会顺手把历史的点分重复行清理成一个嵌套行） |
 | `POST /refresh` | **key 级刷新** |
 | `POST /refreshFile` | **文件级刷新** |
 | `POST /refreshAll` | 全量重新加载 |
@@ -265,8 +282,8 @@ Spring Boot 自身仍会按标准顺序加载 `application*.yml`（classpath 兜
 
 | 测试类 | 覆盖内容 |
 |---|---|
-| `ConfigsTest`（27 项） | 声明默认值回落、未声明key无法反查、properties 保存并落盘、写文件保留注释与顺序、新增 key 追加、多行值转义往返、注释/未声明 key 被忽略、类型校验、**yml 拍平进快照**、**yml 原地改值保留注释与缩进**、**yml 插入/删除键**、**同一属性名在不同 profile 文件各改各的**、文件级刷新、key 级刷新、重置、程序写入、标量引号规则、加载顺序、数据源配置读取、文件归属校验 |
-| `ConfigSpringIntegrationTest`（11 项） | **完整应用上下文启动成功**、properties 与 yml 同时被 `Configs` 与 Spring Environment 读到、**数据源以 database.properties 为准（真实取一条连接）**、`ConfigApplier` 订阅者已注册并被通知、接口分组数据完整、保存 properties / yml 后落盘并保留注释、**同名属性带/不带 fileName 的行为**、所有配置文件都有可编辑项、读取文件原文 |
+| `ConfigsTest`（35 项） | 声明默认值回落、未声明key无法反查、properties 保存并落盘、写文件保留注释与顺序、新增 key 追加、多行值转义往返、注释/未声明 key 被忽略、类型校验、**yml 拍平进快照**、**yml 原地改值保留注释与缩进**、**yml 插入/删除键**、**带点key反复保存不新增行**、**历史点分重复行的清理与改写**、**坏文件自动去重**、**重置写回默认值且不新增行**、**同一属性名在不同 profile 文件各改各的**、文件级刷新、key 级刷新、重置、程序写入、标量引号规则、加载顺序、数据源配置读取、文件归属校验 |
+| `ConfigSpringIntegrationTest`（17 项） | **完整应用上下文启动成功**、properties 与 yml 同时被 `Configs` 与 Spring Environment 读到、**数据源以 database.properties 为准（真实取一条连接）**、`ConfigApplier` 订阅者已注册并被通知、**job.properties 的 enable/cron 热更新（真实断言 Quartz 触发器注册/取消/重新排期）**、**文件里缺少该 key 时保存后同样能热更新**、**直接用编辑器改文件也会被自动感知并热更新**、接口分组数据完整、保存 properties / yml 后落盘并保留注释、**缺少的 yml key 写成嵌套结构而不是点分行**、**重置接口写回默认值而不是删行**、**同名属性带/不带 fileName 的行为**、所有配置文件都有可编辑项、读取文件原文 |
 | `BotTest`（3 项） | 上传文件并发/排队行为（配置读取已改为 `Configs`） |
 
 > 注：`ConfigSpringIntegrationTest` 使用 `@NoMockitoSpringTest` 替换默认测试监听器，原因见该注解的 javadoc。

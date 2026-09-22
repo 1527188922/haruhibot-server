@@ -15,9 +15,13 @@ import com.haruhi.botServer.vo.HttpResp;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.quartz.CronTrigger;
+import org.quartz.Scheduler;
+import org.quartz.TriggerKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -68,6 +72,8 @@ class ConfigSpringIntegrationTest {
     private JobManage jobManage;
     @Autowired
     private OpenAiServiceHolder openAiServiceHolder;
+    @Autowired
+    private SchedulerFactoryBean schedulerFactoryBean;
     @Autowired
     private org.springframework.context.ApplicationContext applicationContext;
 
@@ -242,6 +248,85 @@ class ConfigSpringIntegrationTest {
     }
 
     @Test
+    void jobProperties的开关能热更新() throws Exception {
+        Scheduler scheduler = schedulerFactoryBean.getScheduler();
+        TriggerKey triggerKey = new TriggerKey("BilibiliLiveJob_trigger", "BilibiliLiveJob_group");
+
+        // 基线里 bilibiliLive.enable=false（每次测试前重读，但不会通知订阅者），
+        // 所以这里用"先开再关"来保证两次都是真实的值变化
+        HttpResp<ConfigController.SaveResult> on = configController.save(saveReq("job.bilibiliLive.enable", "true"));
+        assertEquals(200, on.getCode());
+        assertTrue(on.getData().isHot(), "job.*.enable 应是热更新项：" + on.getMessage());
+        assertTrue(on.getData().getHotKeys().contains("job.bilibiliLive.enable"), on.getMessage());
+        assertTrue(Configs.getBool(ConfigKey.JOB_BILIBILI_LIVE_ENABLE));
+        assertTrue(scheduler.checkExists(triggerKey), "开启后应即时注册任务");
+
+        HttpResp<ConfigController.SaveResult> off = configController.save(saveReq("job.bilibiliLive.enable", "false"));
+        assertEquals(200, off.getCode());
+        assertFalse(Configs.getBool(ConfigKey.JOB_BILIBILI_LIVE_ENABLE));
+        assertFalse(scheduler.checkExists(triggerKey), "关闭后应即时取消任务");
+    }
+
+    @Test
+    void jobProperties的cron能热更新() throws Exception {
+        Scheduler scheduler = schedulerFactoryBean.getScheduler();
+        TriggerKey triggerKey = new TriggerKey("BilibiliLiveJob_trigger", "BilibiliLiveJob_group");
+
+        configController.save(saveReq("job.bilibiliLive.enable", "true"));
+        assertTrue(scheduler.checkExists(triggerKey));
+        assertEquals("0 0/5 * * * ?", ((CronTrigger) scheduler.getTrigger(triggerKey)).getCronExpression());
+
+        configController.save(saveReq("job.bilibiliLive.cron", "0 0/9 * * * ?"));
+        assertEquals("0 0/9 * * * ?", ((CronTrigger) scheduler.getTrigger(triggerKey)).getCronExpression(),
+                "cron 应即时重新排期");
+    }
+
+    @Test
+    void 文件里缺少的job开关保存后同样能热更新() throws Exception {
+        Scheduler scheduler = schedulerFactoryBean.getScheduler();
+        TriggerKey triggerKey = new TriggerKey("BilibiliLiveJob_trigger", "BilibiliLiveJob_group");
+        Path file = configDir.resolve(ConfigFile.JOB.getFileName());
+
+        configController.save(saveReq("job.bilibiliLive.enable", "true"));
+        assertTrue(scheduler.checkExists(triggerKey));
+
+        // 模拟"这一行不在文件里"（被手工删掉等）：重读该文件后应回落到声明默认值false
+        Files.writeString(file, "job.bilibiliLive.cron=0 0/5 * * * ?\n", StandardCharsets.UTF_8);
+        configHub.refreshFile(ConfigFile.JOB);
+        assertFalse(Configs.isConfigured(ConfigKey.JOB_BILIBILI_LIVE_ENABLE));
+        assertFalse(scheduler.checkExists(triggerKey), "文件里没有该key时应回落到默认值false并取消任务");
+
+        // 再把开关打开：应即时注册，并把这一行写回文件
+        HttpResp<ConfigController.SaveResult> resp = configController.save(saveReq("job.bilibiliLive.enable", "true"));
+        assertEquals(200, resp.getCode());
+        assertTrue(resp.getData().isHot(), resp.getMessage());
+        assertTrue(Configs.isConfigured(ConfigKey.JOB_BILIBILI_LIVE_ENABLE), "应把该key写回文件");
+        assertTrue(scheduler.checkExists(triggerKey), "文件里原本没有的key，保存后也应即时注册任务");
+        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("job.bilibiliLive.enable=true"),
+                "应写回文件: " + Files.readString(file, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void 直接用编辑器改jobProperties也会被自动感知并热更新() throws Exception {
+        Scheduler scheduler = schedulerFactoryBean.getScheduler();
+        TriggerKey triggerKey = new TriggerKey("BilibiliLiveJob_trigger", "BilibiliLiveJob_group");
+        Path file = configDir.resolve(ConfigFile.JOB.getFileName());
+
+        configController.save(saveReq("job.bilibiliLive.enable", "true"));
+        assertTrue(scheduler.checkExists(triggerKey));
+
+        // 模拟用户在服务器上直接用编辑器把开关改成 false（不经过接口）
+        Files.writeString(file, "job.bilibiliLive.enable=false\njob.bilibiliLive.cron=0 0/5 * * * ?\n",
+                StandardCharsets.UTF_8);
+        // 文件监听按"最后修改时间"判断是否变化，而 Windows 时间戳精度约15ms，这里显式推后避免同刻误判
+        assertTrue(file.toFile().setLastModified(System.currentTimeMillis() + 2000));
+        configHub.watchFiles();
+
+        assertFalse(Configs.getBool(ConfigKey.JOB_BILIBILI_LIVE_ENABLE), "外部改动应被自动重载");
+        assertFalse(scheduler.checkExists(triggerKey), "外部关掉开关后应即时取消任务");
+    }
+
+    @Test
     void 数据源以databaseProperties为准() throws Exception {
         // application*.yml 里没有 spring.datasource，数据源由 database.properties + Aspect 提供
         assertEquals("jdbc:sqlite::resource:data/haruhibot_server.db?journal_mode=WAL&synchronous=NORMAL",
@@ -321,6 +406,54 @@ class ConfigSpringIntegrationTest {
         assertTrue(after.contains("# http端口"), "注释应保留: " + after);
         assertTrue(after.contains("port: 8099"), "值应写入: " + after);
         assertTrue(after.contains("active: test"), "其它配置应保留: " + after);
+    }
+
+    @Test
+    void 重置applicationYml会把默认值写回该行且不新增行() throws IOException {
+        Path file = baseDir.resolve(ConfigFile.APPLICATION.getFileName());
+
+        HttpResp<ConfigController.SaveResult> saved = configController.save(saveReq("server.port", "8099"));
+        assertEquals(200, saved.getCode());
+        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("port: 8099"));
+
+        ConfigController.ConfigReq req = new ConfigController.ConfigReq();
+        req.setKey("server.port");
+        HttpResp<ConfigController.SaveResult> resp = configController.reset(req);
+        assertEquals(200, resp.getCode());
+        assertTrue(resp.getData().getRestartKeys().contains("server.port"), resp.getMessage());
+
+        // 保留该key，只把值改成声明中的默认值（不是把行删掉）
+        assertEquals(8090, Configs.getInt(ConfigKey.SERVER_PORT));
+        assertTrue(Configs.isConfigured(ConfigKey.SERVER_PORT), "key应保留在文件里");
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertTrue(after.contains("port: 8090"), "应写回默认值: " + after);
+        assertFalse(after.contains("8099"), after);
+        assertEquals(1, after.split("port:", -1).length - 1, "不应新增行: " + after);
+        assertTrue(after.contains("# http端口"), "该key上方的注释应保留: " + after);
+        assertTrue(after.contains("active: test"), after);
+
+        // 再点几次重置也不会新增行
+        configController.reset(req);
+        configController.reset(req);
+        assertEquals(after, Files.readString(file, StandardCharsets.UTF_8), "重复重置不应改动文件");
+    }
+
+    @Test
+    void 保存applicationYml的缺失key会写入嵌套结构而不是点分行() throws IOException {
+        Path file = baseDir.resolve(ConfigFile.APPLICATION.getFileName());
+        // 基线文件里没有 server 块，先删掉它，模拟"配置文件不全"的情况
+        Files.writeString(file, "spring:\n  profiles:\n    active: test\n", StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION);
+
+        configController.save(saveReq("server.port", "8098"));
+        configController.save(saveReq("server.port", "8099"));
+
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertFalse(after.contains("server.port"), "不应是properties风格的点分行: " + after);
+        String expected = "spring:\n  profiles:\n    active: test\n\nserver:\n  port: 8099";
+        assertEquals(expected, after.strip(), after);
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertEquals(8099, Configs.getInt(ConfigKey.SERVER_PORT));
     }
 
     @Test

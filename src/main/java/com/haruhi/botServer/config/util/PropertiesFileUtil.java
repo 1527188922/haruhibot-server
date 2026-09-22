@@ -148,9 +148,10 @@ public final class PropertiesFileUtil {
     }
 
     /**
-     * 从文件中删除某个key所在的行（用于"重置为默认值"）
+     * 从文件中删除某个key所在的行
      * <p>
-     * 注意：与该key同属一个多行值的续行也会一并删除
+     * 注意：与该key同属一个多行值的续行也会一并删除。
+     * 配置管理页的"重置"<b>不用</b>它——重置是把默认值写回该key，保留这一行
      */
     public static synchronized void remove(String fileName, String key) throws IOException {
         File file = new File(Configs.configDir(), fileName);

@@ -3,8 +3,6 @@ package com.haruhi.botServer.config.service;
 import com.haruhi.botServer.config.config.ConfigFile;
 import com.haruhi.botServer.config.config.ConfigKey;
 import com.haruhi.botServer.config.config.Configs;
-import com.haruhi.botServer.config.util.PropertiesFileUtil;
-import com.haruhi.botServer.config.util.YamlFileUtil;
 import com.haruhi.botServer.config.vo.ConfigFileNode;
 import com.haruhi.botServer.config.vo.ConfigItem;
 import com.haruhi.botServer.exception.BusinessException;
@@ -178,26 +176,33 @@ public class ConfigHub {
     /**
      * 重置为声明中的默认值
      * <p>
-     * 等价于把该key从配置文件里删掉（配置文件是唯一真源，删掉即回落到声明默认值），
+     * 把声明里的默认值<b>写回配置文件</b>（保留该key，不是把它删掉），
      * 同时刷新快照并按需通知订阅者
+     *
+     * @return 是否触发了热更新通知
      */
     public boolean reset(ConfigKey key) {
-        boolean applied = save(key, key.getDefaultValue());
-        try {
-            if (key.getFile().isYaml()) {
-                // yml 里如果该key是显式写的，删掉这一行；删不掉（键不在文件里）也无所谓
-                YamlFileUtil.remove(Configs.fileOf(key), key.getKey());
-            } else {
-                PropertiesFileUtil.remove(key.getFile().getFileName(), key.getKey());
-            }
-        } catch (IOException e) {
-            log.error("重置配置失败 key:{}", key.getKey(), e);
-            throw new BusinessException("重置配置失败：" + e.getMessage());
+        return resetAll(List.of(key)).getOrDefault(key, false);
+    }
+
+    /**
+     * 批量重置：把每个key的值改回声明中的默认值，最后统一刷新快照与通知
+     * <p>
+     * 与"保存"的唯一区别是值来自 {@link ConfigKey#getDefaultValue()}，
+     * 走的还是同一套写文件逻辑（yml 原地改值、不会重复追加、不会写成 properties 风格的点分行）
+     *
+     * @return key -> 是否触发了热更新通知
+     */
+    public Map<ConfigKey, Boolean> resetAll(Collection<ConfigKey> keys) {
+        Map<ConfigKey, Boolean> result = new LinkedHashMap<>();
+        if (keys == null || keys.isEmpty()) {
+            return result;
         }
-        Configs.reloadFile(key.getFile());
-        markModified(key.getFile());
-        rebuildItems();
-        return applied;
+        Map<ConfigKey, String> defaults = new LinkedHashMap<>();
+        for (ConfigKey key : keys) {
+            defaults.put(key, key.getDefaultValue());
+        }
+        return saveAll(defaults);
     }
 
     // ==================================================================

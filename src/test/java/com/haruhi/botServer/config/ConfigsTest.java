@@ -393,7 +393,7 @@ class ConfigsTest {
     }
 
     @Test
-    void 重置yml配置会删除该行() throws IOException {
+    void 重置yml配置是把默认值写回该行而不是删掉key() throws IOException {
         Path file = applicationFile(ConfigFile.APPLICATION);
         Files.writeString(file, """
                 server:
@@ -408,10 +408,196 @@ class ConfigsTest {
         configHub.reset(ConfigKey.SERVER_PORT);
 
         assertEquals(8090, Configs.getInt(ConfigKey.SERVER_PORT));
-        assertFalse(Configs.isConfigured(ConfigKey.SERVER_PORT));
+        assertTrue(Configs.isConfigured(ConfigKey.SERVER_PORT), "key应保留在文件里");
         String after = Files.readString(file, StandardCharsets.UTF_8);
-        assertFalse(after.contains("18080"), "原来的行应被删除: " + after);
-        assertTrue(after.contains("active: dev"), "其它配置应保留");
+        assertTrue(after.contains("port: 8090"), "应写回默认值: " + after);
+        assertFalse(after.contains("18080"), after);
+        assertEquals(1, count(after, "port:"), "不应新增行: " + after);
+        assertTrue(after.contains("active: dev"), "其它配置应保留: " + after);
+    }
+
+    @Test
+    void 保存yml的新key写嵌套结构且重复保存不会新增行() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, "spring:\n  profiles:\n    active: dev\n", StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION);
+
+        configHub.save(ConfigKey.SERVER_PORT, "18080");
+        configHub.save(ConfigKey.SERVER_PORT, "18081");
+
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertFalse(after.contains("server.port"), "不应写成 server.port 这种properties风格的行: " + after);
+        assertEquals(1, count(after, "port: 18081"), "重复保存不应新增行: " + after);
+        assertTrue(after.contains("server:\n  port: 18081"), "应是 yml 嵌套结构: " + after);
+        assertTrue(after.contains("active: dev"), "其它配置应保留: " + after);
+
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertEquals(18081, Configs.getInt(ConfigKey.SERVER_PORT));
+    }
+
+    @Test
+    void 保存yml里带点的叶子key不会重复追加() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION_DEV);
+        Files.writeString(file, "logging:\n  level:\n    com.haruhi.botServer: debug\n", StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION_DEV);
+
+        configHub.save(ConfigKey.LOGGING_LEVEL_DEV, "trace");
+        configHub.save(ConfigKey.LOGGING_LEVEL_DEV, "warn");
+
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(1, count(after, "com.haruhi.botServer"), "带点的key只应有一行: " + after);
+        assertTrue(after.contains("    com.haruhi.botServer: warn"), "缩进与值应正确: " + after);
+
+        Configs.reloadFile(ConfigFile.APPLICATION_DEV);
+        assertEquals("warn", Configs.getStr(ConfigKey.LOGGING_LEVEL_DEV));
+    }
+
+    @Test
+    void 保存yml会清理历史遗留的点分重复行并改写为嵌套结构() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        // 模拟旧版本bug的产物：文件末尾不断追加的点分行
+        Files.writeString(file, """
+                spring:
+                  profiles:
+                    active: dev
+
+                server.port: 8091
+
+                server.port: 8090
+                """, StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION);
+
+        configHub.save(ConfigKey.SERVER_PORT, "18080");
+
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertFalse(after.contains("server.port"), "点分行应被改写为嵌套结构: " + after);
+        assertEquals(1, count(after, "port: 18080"), "重复行应被清理: " + after);
+        assertTrue(after.contains("server:\n  port: 18080"), after);
+        assertTrue(after.contains("active: dev"), after);
+
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertEquals(18080, Configs.getInt(ConfigKey.SERVER_PORT));
+    }
+
+    @Test
+    void 重置yml里不存在的key会补上默认值() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, "spring:\n  profiles:\n    active: dev\n", StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertFalse(Configs.isConfigured(ConfigKey.SERVER_PORT));
+
+        configHub.reset(ConfigKey.SERVER_PORT);
+
+        assertEquals(8090, Configs.getInt(ConfigKey.SERVER_PORT));
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(1, count(after, "port: 8090"), "不应新增多行: " + after);
+        assertTrue(after.contains("server:\n  port: 8090"), "应写成 yml 嵌套结构: " + after);
+        assertTrue(after.contains("active: dev"), after);
+    }
+
+    @Test
+    void 重置yml会清掉点分重复行并写回一个嵌套行() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, """
+                spring:
+                  profiles:
+                    active: dev
+
+                server.port: 18080
+
+                server.port: 18081
+                """, StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION);
+
+        configHub.reset(ConfigKey.SERVER_PORT);
+
+        assertEquals(8090, Configs.getInt(ConfigKey.SERVER_PORT));
+        assertTrue(Configs.isConfigured(ConfigKey.SERVER_PORT), "key应保留在文件里");
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertFalse(after.contains("18080") || after.contains("18081"), after);
+        assertEquals(1, count(after, "port:"), "点分重复行应被清理成一行: " + after);
+        assertTrue(after.contains("server:\n  port: 8090"), after);
+        assertTrue(after.contains("active: dev"), after);
+    }
+
+    @Test
+    void 批量保存同一个yml文件的多个key不会互相覆盖() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, "", StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION);
+
+        configHub.saveAll(Map.of(
+                ConfigKey.SERVER_PORT, "18080",
+                ConfigKey.SPRING_PROFILES_ACTIVE, "prod"));
+
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertTrue(after.contains("port: 18080"), after);
+        assertTrue(after.contains("active: prod"), after);
+
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertEquals(18080, Configs.getInt(ConfigKey.SERVER_PORT));
+        assertEquals("prod", Configs.getStr(ConfigKey.SPRING_PROFILES_ACTIVE));
+    }
+
+    private static int count(String text, String part) {
+        int total = 0;
+        int index = text.indexOf(part);
+        while (index >= 0) {
+            total++;
+            index = text.indexOf(part, index + part.length());
+        }
+        return total;
+    }
+
+    @Test
+    void 自动修复被写坏的点分重复行() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, """
+                spring:
+                  profiles:
+                    active: dev
+
+                server.port: 8091
+
+                server.port: 8090
+
+                server.port: 8091
+                """, StandardCharsets.UTF_8);
+
+        assertTrue(YamlFileUtil.repairDuplicateKeys(file.toFile()), "应识别出重复项并修复");
+
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(1, count(after, "port:"), "重复行应只剩一行: " + after);
+        assertEquals(1, count(after, "server"), after);
+        assertTrue(after.contains("server:\n  port: 8091"), "保留下来的点分行应改写成嵌套结构: " + after);
+        assertTrue(after.contains("active: dev"), after);
+
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertEquals(8091, Configs.getInt(ConfigKey.SERVER_PORT), "应保留最后一行的值");
+        assertFalse(YamlFileUtil.repairDuplicateKeys(file.toFile()), "没有重复项时不应改动文件");
+    }
+
+    @Test
+    void 自动修复嵌套与点分混用的重复行() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION_DEV);
+        Files.writeString(file, """
+                logging:
+                  level:
+                    com.haruhi.botServer: debug
+
+                logging.level.com.haruhi.botServer: trace
+
+                logging.level.com.haruhi.botServer: warn
+                """, StandardCharsets.UTF_8);
+
+        assertTrue(YamlFileUtil.repairDuplicateKeys(file.toFile()));
+
+        String after = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(1, count(after, "com.haruhi.botServer"), "重复行应只剩一行: " + after);
+        assertTrue(after.contains("    com.haruhi.botServer: warn"), "应保留最后一行并写回嵌套结构: " + after);
+
+        Configs.reloadFile(ConfigFile.APPLICATION_DEV);
+        assertEquals("warn", Configs.getStr(ConfigKey.LOGGING_LEVEL_DEV));
     }
 
     @Test
@@ -480,7 +666,7 @@ class ConfigsTest {
     }
 
     @Test
-    void 重置properties配置会删除该行() throws IOException {
+    void 重置properties配置是把默认值写回该行() throws IOException {
         configHub.save(ConfigKey.WS_MAX_CONNECTIONS, "99");
         assertEquals(99, Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS));
         assertTrue(Configs.isConfigured(ConfigKey.WS_MAX_CONNECTIONS));
@@ -488,9 +674,9 @@ class ConfigsTest {
         configHub.reset(ConfigKey.WS_MAX_CONNECTIONS);
 
         assertEquals(5, Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS));
-        assertFalse(Configs.isConfigured(ConfigKey.WS_MAX_CONNECTIONS));
+        assertTrue(Configs.isConfigured(ConfigKey.WS_MAX_CONNECTIONS), "key应保留在文件里");
         Map<String, String> ws = PropertiesFileUtil.load(ConfigFile.WEBSOCKET.getFileName());
-        assertNull(ws.get("bot.ws.max_connections"));
+        assertEquals("5", ws.get("bot.ws.max_connections"));
     }
 
     @Test
