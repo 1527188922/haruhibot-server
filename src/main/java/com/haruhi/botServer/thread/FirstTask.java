@@ -1,6 +1,5 @@
 package com.haruhi.botServer.thread;
 
-import com.haruhi.botServer.config.service.ConfigMigrator;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.service.SystemService;
 import com.haruhi.botServer.utils.DbLog;
@@ -19,13 +18,9 @@ public class FirstTask implements CommandLineRunner {
 
     @Autowired
     private SystemService systemService;
-    @Autowired
-    private ConfigMigrator configMigrator;
 
     public synchronized void execute(){
         try {
-            // 旧版本配置存在数据库里，启动时搬到 ./config/*.properties（幂等，已存在则跳过）
-            configMigrator.migrate();
             systemService.loadCache(1);
             // 创建stop脚本
 //            systemService.writeStopScript();

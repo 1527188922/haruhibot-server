@@ -60,7 +60,6 @@
 | `hot` | **是否可热更新**。false 表示该项在启动阶段就已确定，改完需要重启 |
 | `remark` | 说明，前端展示 |
 | `sort` | 前端排序 |
-| `legacyKeys` | 老版本用过的key，迁移时用于把旧值带过来（见 §5） |
 
 查找方式：
 
@@ -68,7 +67,6 @@
 - `ConfigKey.of(file, key)` —— 按"文件 + 属性名"反查（同一属性名可出现在多个 profile 文件里）
 - `ConfigKey.isAmbiguous(key)` —— 该属性名是否被多个文件声明
 - `ConfigKey.of(file)` —— 某个文件下的全部配置项
-- `ConfigKey.ofLegacy(oldKey)` —— 按老key反查
 
 ### 2.2 文件分组：`ConfigFile`
 
@@ -182,7 +180,6 @@ save(key, value)
 
 `db.sql_cache` 存的是"用户在 WebUI SQL 编辑器里随手写过的SQL"，属于**操作数据而不是配置**，
 因此它不进配置文件，由 `SqlCacheStore` 存放在数据库 `t_dictionary` 表中（与重构前行为一致）。
-`ConfigMigrator` 也会跳过它——既不搬迁，也不删除。
 
 ---
 
@@ -237,17 +234,14 @@ Spring Boot 自身仍会按标准顺序加载 `application*.yml`（classpath 兜
 
 ---
 
-## 5. 老配置迁移
+## 5. 从旧版本升级
 
-`ConfigMigrator` 在启动时（`FirstTask`）把旧版数据库 `t_dictionary` 表里的配置搬到对应的配置文件：
+**没有自动迁移**。旧版本存在数据库 `t_dictionary` 表里的配置不会被读取，也不会被改写，
+升级后请按本文档第 8 节的对照表，在配置管理页（或直接编辑 `./config/` 下的文件）手动把需要的值填一遍：
 
-- **支持旧key映射**：`bot.access_token → bot.ws.access_token`、`bot.max_connections → bot.ws.max_connections`、
-  `saucenao.search_image_key → searchimg.saucenao.apikey`、`url_conf.agefans → searchimg.agefans.url`、`switch.* → bot.switch.*`，
-  配置项改名不会丢配置。
-- 只处理**配置文件里还没有**的 key → **幂等，可重复执行**。
-- **不属于配置的 key 原样保留**（如 `db.sql_cache`），既不搬迁也不删除。
-- 迁移成功的配置会从字典表移除（文件是唯一真源）；失败的保留，下次启动重试。
-- 表不存在（全新部署）时直接跳过。
+- 数据库里那份旧配置会原样留着，可以随时对照；确认不需要后自行清理。
+- 新配置文件首次启动时会写入声明里的默认值，不改就是走默认值。
+- `db.sql_cache` 属于操作数据，仍然只存在数据库里（见 §2.8），不受影响。
 
 ---
 
@@ -271,8 +265,8 @@ Spring Boot 自身仍会按标准顺序加载 `application*.yml`（classpath 兜
 
 | 测试类 | 覆盖内容 |
 |---|---|
-| `ConfigsTest`（24 项） | 声明默认值回落、老key反查、properties 保存并落盘、写文件保留注释与顺序、新增 key 追加、多行值转义往返、注释/未声明 key 被忽略、类型校验、**yml 拍平进快照**、**yml 原地改值保留注释与缩进**、**yml 插入/删除键**、**同一属性名在不同 profile 文件各改各的**、文件级刷新、key 级刷新、重置、程序写入、标量引号规则、加载顺序 |
-| `ConfigSpringIntegrationTest`（8 项） | **完整应用上下文启动成功**、properties 与 yml 同时被 `Configs` 与 Spring Environment 读到、`ConfigApplier` 订阅者已注册并被通知、接口分组数据完整、保存 properties / yml 后落盘并保留注释、所有配置文件都有可编辑项、读取文件原文 |
+| `ConfigsTest`（27 项） | 声明默认值回落、未声明key无法反查、properties 保存并落盘、写文件保留注释与顺序、新增 key 追加、多行值转义往返、注释/未声明 key 被忽略、类型校验、**yml 拍平进快照**、**yml 原地改值保留注释与缩进**、**yml 插入/删除键**、**同一属性名在不同 profile 文件各改各的**、文件级刷新、key 级刷新、重置、程序写入、标量引号规则、加载顺序、数据源配置读取、文件归属校验 |
+| `ConfigSpringIntegrationTest`（11 项） | **完整应用上下文启动成功**、properties 与 yml 同时被 `Configs` 与 Spring Environment 读到、**数据源以 database.properties 为准（真实取一条连接）**、`ConfigApplier` 订阅者已注册并被通知、接口分组数据完整、保存 properties / yml 后落盘并保留注释、**同名属性带/不带 fileName 的行为**、所有配置文件都有可编辑项、读取文件原文 |
 | `BotTest`（3 项） | 上传文件并发/排队行为（配置读取已改为 `Configs`） |
 
 > 注：`ConfigSpringIntegrationTest` 使用 `@NoMockitoSpringTest` 替换默认测试监听器，原因见该注解的 javadoc。
@@ -283,36 +277,33 @@ Spring Boot 自身仍会按标准顺序加载 `application*.yml`（classpath 兜
 
 | key | 文件 | 热更新 |
 |---|---|---|
-| `server.port` | application.yml | 否 |
-| `spring.profiles.active` | application.yml | 否 |
+| `server.port`、`spring.profiles.active` | application.yml | 否 |
 | `logging.level.com.haruhi.botServer` | application-dev.yml / application-prod.yml | 否 |
-| `spring.datasource.dynamic.datasource.master.url` | application-dev.yml / application-prod.yml | 否 |
+| `spring.datasource.dynamic.datasource.master.*` | database.properties | 否 |
 | `login.*`、`druid.*` | webui.properties | 否 |
 | `job.downloadPixiv.*`、`job.bilibiliLive.*` | job.properties | **是** |
 | `bot.same-machine-qqclient`、`bot.internet-host`、`bot.superusers`、`bot.access_groups`、`bot.upload_file.parallel` | bot.properties | **是** |
 | `bot.switch.*` | bot.properties | **是** |
 | `bot.ws.access_token`、`bot.ws.max_connections` | websocket.properties | **是** |
-| `searchimg.saucenao.baseurl`、`searchimg.saucenao.apikey`、`searchimg.agefans.url` | searchimg.properties | **是** |
+| `searchimg.saucenao.baseurl`、`searchimg.saucenao.apikey` | searchimg.properties | **是** |
 | `bilibili.*` | bilibili.properties | **是** |
 | `qianwen.api_key`、`ds.api.*` | ai.properties | **是** |
 | `jm.*` | jm.properties | **是** |
-| `url_conf.bt_search`、`url_conf.btbtla_search` | url.properties | **是** |
+| `url_conf.*`（站点与接口地址，含 agefans / bt搜索 / bt影视 / 青云客 / b站各接口 / lolicon / whatslink / 网易） | url.properties | **是** |
 | `db.chat_extend.raw_compress` | chat_record.properties | **是** |
-| `url_conf.*`（站点与接口地址） | url.properties | **是** |
-| `spring.datasource.dynamic.datasource.master.*` | database.properties | 否 |
 
-**已删除/搬移的key**
+**本次重构中改名或换文件的 key**（供手动对照，无自动迁移）
 
-| 旧key | 现在 |
+| 旧版本位置 | 现在 |
 |---|---|
-| `bot.access_token` | `bot.ws.access_token`（websocket.properties） |
-| `bot.max_connections` | `bot.ws.max_connections`（websocket.properties） |
-| `switch.*`（6项） | `bot.switch.*`（bot.properties） |
-| `saucenao.search_image_key` | `searchimg.saucenao.apikey` |
-| `searchimg.agefans.url` | `url_conf.agefans`（回到 url.properties） |
-| `db.chat_extend.raw_compress` | 文件从 db.properties 改为 chat_record.properties（key不变） |
-| `db.sql_cache` | 移除（回到数据库存储） |
-| `server.yml` | 取消，端口回到 `application.yml` |
+| `bot.access_token`（字典表） | `bot.ws.access_token`（websocket.properties） |
+| `bot.max_connections`（字典表） | `bot.ws.max_connections`（websocket.properties） |
+| `switch.*` 六项（字典表） | `bot.switch.*`（bot.properties） |
+| `saucenao.search_image_key`（字典表） | `searchimg.saucenao.apikey` |
+| `searchimg.agefans.url`（上一版中间态） | `url_conf.agefans`（url.properties） |
+| `db.chat_extend.raw_compress`（db.properties） | 同名，文件改为 chat_record.properties |
+| `db.sql_cache`（字典表） | 不迁移，仍在数据库里（操作数据） |
+| `server.yml`（上一版中间态） | 取消，端口回到 `application.yml` |
 | `ThirdPartyURL` 常量类 | 各地址变成 `url_conf.*` 配置项（识图那个已存在，未重复搬迁） |
 
 ---

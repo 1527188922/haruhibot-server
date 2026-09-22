@@ -170,13 +170,11 @@ class ConfigsTest {
     }
 
     @Test
-    void 老key可以反查到新配置项() {
-        assertEquals(ConfigKey.WS_ACCESS_TOKEN, ConfigKey.ofLegacy("bot.access_token"));
-        assertEquals(ConfigKey.WS_MAX_CONNECTIONS, ConfigKey.ofLegacy("bot.max_connections"));
-        assertEquals(ConfigKey.SEARCH_IMG_SAUCENAO_APIKEY, ConfigKey.ofLegacy("saucenao.search_image_key"));
-        assertEquals(ConfigKey.URL_CONF_AGEFANS, ConfigKey.ofLegacy("url_conf.agefans"));
-        assertNull(ConfigKey.ofLegacy("db.sql_cache"));
-        assertNull(ConfigKey.ofLegacy("not.exists"));
+    void 未声明的key无法反查() {
+        assertNull(ConfigKey.of("bot.access_token"));
+        assertNull(ConfigKey.of("db.sql_cache"));
+        assertNull(ConfigKey.of("not.exists"));
+        assertFalse(ConfigKey.isAmbiguous("not.exists"));
     }
 
     // ==================================================================

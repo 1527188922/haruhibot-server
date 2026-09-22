@@ -99,16 +99,16 @@ public enum ConfigKey {
 
     // ============================ WebSocket ============================
     WS_ACCESS_TOKEN(ConfigFile.WEBSOCKET, "bot.ws.access_token", ConfigType.SECRET, "", true,
-            "机器人Websocket服务建立连接时的认证token，留空表示无需认证", 10, "bot.access_token"),
+            "机器人Websocket服务建立连接时的认证token，留空表示无需认证", 10),
     WS_MAX_CONNECTIONS(ConfigFile.WEBSOCKET, "bot.ws.max_connections", ConfigType.INT, "5", true,
-            "机器人Websocket服务最大连接数，小于0无限制，0表示禁止连接（改成0不会断开已有连接）", 20, "bot.max_connections"),
+            "机器人Websocket服务最大连接数，小于0无限制，0表示禁止连接（改成0不会断开已有连接）", 20),
 
     // ============================ 识图 ============================
     SEARCH_IMG_SAUCENAO_BASEURL(ConfigFile.SEARCH_IMG, "searchimg.saucenao.baseurl", ConfigType.STRING,
             "https://saucenao.com/search.php", true,
             "saucenao识图接口地址", 10),
     SEARCH_IMG_SAUCENAO_APIKEY(ConfigFile.SEARCH_IMG, "searchimg.saucenao.apikey", ConfigType.SECRET, "", true,
-            "saucenao识图接口认证key，从 https://saucenao.com 获取", 20, "saucenao.search_image_key"),
+            "saucenao识图接口认证key，从 https://saucenao.com 获取", 20),
 
     // ============================ B站 ============================
     BILIBILI_COOKIES_SESSDATA(ConfigFile.BILIBILI, "bilibili.cookies.sessdata", ConfigType.SECRET, "", true,
@@ -154,8 +154,7 @@ public enum ConfigKey {
     // ============================ 站点地址 ============================
     // ThirdPartyURL 中的地址常量已迁移到这里，除 identimg（识图，见 searchimg.properties）外
     URL_CONF_AGEFANS(ConfigFile.URL, "url_conf.agefans", ConfigType.STRING, "https://www.agemys.vip", true,
-            "agefans网站地址，用于今日新番功能，末尾不需斜杠。备用：https://www.age.tv https://www.agemys.net", 10,
-            "url_conf.agefans", "searchimg.agefans.url"),
+            "agefans网站地址，用于今日新番功能，末尾不需斜杠。备用：https://www.age.tv https://www.agemys.net", 10),
     URL_CONF_BT_SEARCH(ConfigFile.URL, "url_conf.bt_search", ConfigType.STRING, "http://www.eclzz.bio", true,
             "磁力搜索网站地址，用于bt搜索功能，末尾不需斜杠", 20),
     URL_CONF_BTBTLA_SEARCH(ConfigFile.URL, "url_conf.btbtla_search", ConfigType.STRING, "https://www.btbtla.com", true,
@@ -224,13 +223,8 @@ public enum ConfigKey {
     private final String remark;
     /** 前端展示排序 */
     private final int sort;
-    /**
-     * 老版本使用过的key（数据库字典表里的key），迁移时用于把旧值带过来
-     */
-    private final List<String> legacyKeys;
 
-    ConfigKey(ConfigFile file, String key, ConfigType type, String defaultValue, boolean hot, String remark, int sort,
-              String... legacyKeys) {
+    ConfigKey(ConfigFile file, String key, ConfigType type, String defaultValue, boolean hot, String remark, int sort) {
         this.file = file;
         this.key = key;
         this.type = type;
@@ -238,7 +232,6 @@ public enum ConfigKey {
         this.hot = hot;
         this.remark = remark;
         this.sort = sort;
-        this.legacyKeys = legacyKeys == null ? List.of() : List.of(legacyKeys);
     }
 
     /** key -> 配置项；同一属性名可以出现在不同文件（如 dev/prod 的日志级别），此时取第一个 */
@@ -294,23 +287,5 @@ public enum ConfigKey {
 
     public static List<ConfigKey> of(ConfigFile file) {
         return Arrays.stream(values()).filter(e -> e.file == file).toList();
-    }
-
-    /**
-     * 根据老key（数据库字典表里的key）反查配置项，找不到返回null
-     * <p>
-     * 用于把老版本存量的配置值迁移到新的key上
-     */
-    public static ConfigKey ofLegacy(String legacyKey) {
-        if (legacyKey == null || legacyKey.isBlank()) {
-            return null;
-        }
-        String k = legacyKey.trim();
-        for (ConfigKey value : values()) {
-            if (value.legacyKeys.contains(k)) {
-                return value;
-            }
-        }
-        return null;
     }
 }
