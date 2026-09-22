@@ -5,7 +5,7 @@ import com.haruhi.botServer.config.config.ConfigKey;
 
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.annotation.SuperuserAuthentication;
-import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.config.webResource.WebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
 import com.haruhi.botServer.dto.BaseResp;
@@ -45,7 +45,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageHandler {
     @Autowired
     private ChatRecordService chatRecordService;
     @Autowired
-    private AbstractWebResourceConfig webResourceConfig;
+    private WebResourceConfig webResourceConfig;
     
     private final static ConcurrentMap<String, AtomicBoolean> LOCK_MAP = new ConcurrentHashMap<>();
 

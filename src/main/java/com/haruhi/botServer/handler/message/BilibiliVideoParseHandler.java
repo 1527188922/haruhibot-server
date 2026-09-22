@@ -3,7 +3,7 @@ package com.haruhi.botServer.handler.message;
 import com.haruhi.botServer.config.config.Configs;
 
 import com.haruhi.botServer.config.config.ConfigKey;
-import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.config.webResource.WebResourceConfig;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.bilibili.BilibiliBaseResp;
@@ -34,7 +34,7 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
     private BilibiliService bilibiliService;
 
     @Autowired
-    private AbstractWebResourceConfig abstractPathConfig;
+    private WebResourceConfig abstractPathConfig;
 
     @Override
     public int weight() {

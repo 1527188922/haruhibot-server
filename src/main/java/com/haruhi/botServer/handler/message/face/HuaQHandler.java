@@ -5,7 +5,7 @@ import com.haruhi.botServer.config.config.ConfigKey;
 
 import cn.hutool.core.img.gif.AnimatedGifEncoder;
 import cn.hutool.core.img.gif.GifDecoder;
-import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.config.webResource.WebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
@@ -51,7 +51,7 @@ public class HuaQHandler implements IGroupMessageHandler {
     private static final String prefix = "huaq_";
 
     @Autowired
-    private AbstractWebResourceConfig abstractPathConfig;
+    private WebResourceConfig abstractPathConfig;
     
     public static void clearHuaQFace(){
         File file = new File(FileUtil.getFaceDir());

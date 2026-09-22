@@ -8,6 +8,7 @@ import com.haruhi.botServer.config.service.ConfigHub;
 import com.haruhi.botServer.config.util.PropertiesFileUtil;
 import com.haruhi.botServer.config.util.YamlFileUtil;
 import com.haruhi.botServer.config.vo.ConfigFileNode;
+import com.haruhi.botServer.config.webResource.WebResourceConfig;
 import com.haruhi.botServer.controller.ConfigController;
 import com.haruhi.botServer.job.schedule.JobManage;
 import com.haruhi.botServer.utils.OpenAiServiceHolder;
@@ -131,41 +132,16 @@ class ConfigSpringIntegrationTest {
     }
 
     private static void writeBaseline() throws IOException {
+        // 只有一份 application.yml：端口、日志级别、资源模式都在里面
         Files.writeString(baseDir.resolve(ConfigFile.APPLICATION.getFileName()), """
                 # 应用主配置
                 server:
                   # http端口
                   port: 8090
 
-                spring:
-                  profiles:
-                    active: test
-                """, StandardCharsets.UTF_8);
-        Files.writeString(baseDir.resolve(ConfigFile.APPLICATION_DEV.getFileName()), """
-                # dev 环境
                 logging:
                   level:
                     com.haruhi.botServer: debug
-
-                spring:
-                  datasource:
-                    dynamic:
-                      datasource:
-                        master:
-                          url: jdbc:sqlite:./data/haruhibot_server.db
-                """, StandardCharsets.UTF_8);
-        Files.writeString(baseDir.resolve(ConfigFile.APPLICATION_PROD.getFileName()), """
-                # prod 环境
-                logging:
-                  level:
-                    com.haruhi.botServer: info
-
-                spring:
-                  datasource:
-                    dynamic:
-                      datasource:
-                        master:
-                          url: jdbc:sqlite:./data/haruhibot_server.db
                 """, StandardCharsets.UTF_8);
         Files.writeString(configDir.resolve(ConfigFile.JOB.getFileName()), """
                 # 定时任务
@@ -405,7 +381,7 @@ class ConfigSpringIntegrationTest {
         String after = Files.readString(file, StandardCharsets.UTF_8);
         assertTrue(after.contains("# http端口"), "注释应保留: " + after);
         assertTrue(after.contains("port: 8099"), "值应写入: " + after);
-        assertTrue(after.contains("active: test"), "其它配置应保留: " + after);
+        assertTrue(after.contains("com.haruhi.botServer: debug"), "其它配置应保留: " + after);
     }
 
     @Test
@@ -430,7 +406,7 @@ class ConfigSpringIntegrationTest {
         assertFalse(after.contains("8099"), after);
         assertEquals(1, after.split("port:", -1).length - 1, "不应新增行: " + after);
         assertTrue(after.contains("# http端口"), "该key上方的注释应保留: " + after);
-        assertTrue(after.contains("active: test"), after);
+        assertTrue(after.contains("com.haruhi.botServer: debug"), after);
 
         // 再点几次重置也不会新增行
         configController.reset(req);
@@ -442,7 +418,7 @@ class ConfigSpringIntegrationTest {
     void 保存applicationYml的缺失key会写入嵌套结构而不是点分行() throws IOException {
         Path file = baseDir.resolve(ConfigFile.APPLICATION.getFileName());
         // 基线文件里没有 server 块，先删掉它，模拟"配置文件不全"的情况
-        Files.writeString(file, "spring:\n  profiles:\n    active: test\n", StandardCharsets.UTF_8);
+        Files.writeString(file, "logging:\n  level:\n    com.haruhi.botServer: debug\n", StandardCharsets.UTF_8);
         Configs.reloadFile(ConfigFile.APPLICATION);
 
         configController.save(saveReq("server.port", "8098"));
@@ -450,7 +426,7 @@ class ConfigSpringIntegrationTest {
 
         String after = Files.readString(file, StandardCharsets.UTF_8);
         assertFalse(after.contains("server.port"), "不应是properties风格的点分行: " + after);
-        String expected = "spring:\n  profiles:\n    active: test\n\nserver:\n  port: 8099";
+        String expected = "logging:\n  level:\n    com.haruhi.botServer: debug\n\nserver:\n  port: 8099";
         assertEquals(expected, after.strip(), after);
         Configs.reloadFile(ConfigFile.APPLICATION);
         assertEquals(8099, Configs.getInt(ConfigKey.SERVER_PORT));
@@ -472,31 +448,39 @@ class ConfigSpringIntegrationTest {
     }
 
     @Test
-    void 同名属性带fileName可以正常保存到指定文件() throws IOException {
+    void 日志级别保存在applicationYml且不再有歧义() throws IOException {
         String key = "logging.level.com.haruhi.botServer";
-        assertTrue(ConfigKey.isAmbiguous(key), "该key应在多个文件中声明");
+        // 只有一份 application.yml：同一个key不再出现在多个文件里
+        assertFalse(ConfigKey.isAmbiguous(key), "dev/prod 文件已删除，不应再有歧义");
+        assertEquals(ConfigKey.LOGGING_LEVEL, ConfigKey.of(ConfigFile.APPLICATION, key));
 
-        // 带上 fileName：应精确改到 application-dev.yml
-        ConfigController.SaveReq req = saveReq(key, "trace");
-        req.setFileName(ConfigFile.APPLICATION_DEV.getFileName());
-        HttpResp<ConfigController.SaveResult> resp = configController.batchSave(batchReq(req));
+        HttpResp<ConfigController.SaveResult> resp = configController.batchSave(batchReq(saveReq(key, "trace")));
         assertEquals(200, resp.getCode());
-        assertEquals("trace", Configs.getStr(ConfigKey.LOGGING_LEVEL_DEV));
-        String dev = Files.readString(baseDir.resolve(ConfigFile.APPLICATION_DEV.getFileName()), StandardCharsets.UTF_8);
-        assertTrue(dev.contains("com.haruhi.botServer: trace"), dev);
-        // 另一个文件不能被改动
-        String prod = Files.readString(baseDir.resolve(ConfigFile.APPLICATION_PROD.getFileName()), StandardCharsets.UTF_8);
-        assertFalse(prod.contains("trace"), prod);
+        assertEquals("trace", Configs.getStr(ConfigKey.LOGGING_LEVEL));
+
+        String app = Files.readString(baseDir.resolve(ConfigFile.APPLICATION.getFileName()), StandardCharsets.UTF_8);
+        assertTrue(app.contains("com.haruhi.botServer: trace"), app);
+
+        // 前端会带上 fileName，带上也一样能保存
+        ConfigController.SaveReq scoped = saveReq(key, "warn");
+        scoped.setFileName(ConfigFile.APPLICATION.getFileName());
+        assertEquals(200, configController.batchSave(batchReq(scoped)).getCode());
+        assertEquals("warn", Configs.getStr(ConfigKey.LOGGING_LEVEL));
     }
 
     @Test
-    void 同名属性不带fileName会给出明确提示() {
-        HttpResp<ConfigController.SaveResult> resp = configController.save(
-                saveReq("logging.level.com.haruhi.botServer", "trace"));
-        assertEquals(500, resp.getCode());
-        // 提示里应包含候选文件名，方便排错
-        assertTrue(resp.getMessage().contains(ConfigFile.APPLICATION_DEV.getFileName()), resp.getMessage());
-        assertTrue(resp.getMessage().contains(ConfigFile.APPLICATION_PROD.getFileName()), resp.getMessage());
+    void 静态资源地址只注册一个实现() {
+        // 不再有 dev/prod 两套实现，也不靠环境/模式条件
+        assertEquals(1, applicationContext.getBeansOfType(WebResourceConfig.class).size());
+        WebResourceConfig config = applicationContext.getBean(WebResourceConfig.class);
+        String home = config.webHomePath();
+        assertTrue(home.startsWith("http://"), home);
+        assertTrue(home.endsWith(":8090"), home);
+        // 资源路径直接挂在 webHomePath 下（与部署目录结构一致）
+        assertEquals(home + "/image", config.webResourcesImagePath());
+        assertEquals(home + "/jmcomic", config.webResourcesJmcomicPath());
+        assertEquals(home + "/jmcomic", config.webResourcesJmcomicPathInClasses());
+        assertEquals(home + "/audio/dg", config.webDgAudioPath());
     }
 
     @Test

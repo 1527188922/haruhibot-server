@@ -222,26 +222,6 @@
             <version>0.30</version>
         </dependency>
     </dependencies>
-    <profiles>
-        <profile>
-            <id>dev</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <env>dev</env>
-            </properties>
-        </profile>
-        <profile>
-            <id>prod</id>
-            <properties>
-                <env>prod</env>
-            </properties>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-        </profile>
-    </profiles>
 
     <build>
         <finalName>haruhibotServer</finalName>
@@ -270,6 +250,11 @@
                         <exclude>build/**</exclude>
                         <exclude>config/**</exclude>
                         <exclude>templates/**</exclude>
+                        <!-- 以下静态资源由部署包放在程序目录下，不进jar -->
+                        <exclude>audio/**</exclude>
+                        <exclude>image/**</exclude>
+                        <exclude>customReply/**</exclude>
+                        <exclude>script/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>

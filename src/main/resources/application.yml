@@ -1,10 +1,19 @@
 # Application main config.
 #
 # Bot business config lives in ./config/*.properties (editable from the WebUI config page).
-# This file keeps the properties that Spring Boot itself consumes, e.g. the http port.
+# This file keeps the properties that Spring Boot itself consumes: the http port,
+# the log level and the static-resource mode. It is editable from the WebUI as well.
+#
+# NOTE: keep comments here ASCII. Non-ASCII comments in *.yml get mangled when
+# maven-resources-plugin copies resources (platform default encoding) and break the file.
+# Chinese descriptions live in ConfigKey.remark and are shown on the config page.
 
+server:
+  # http port (restart required)
+  port: 8090
 
-
-spring:
-  profiles:
-    active: dev
+logging:
+  level:
+    # log level of this project: TRACE / DEBUG / INFO / WARN / ERROR (restart required)
+    # for local development use: -Dlogging.level.com.haruhi.botServer=debug
+    com.haruhi.botServer: info

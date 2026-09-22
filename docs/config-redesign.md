@@ -10,7 +10,7 @@
 | 原始痛点 | 本方案的解决方式 |
 |---|---|
 | 改完不需要重启就能生效 | 每个配置项声明 `hot` 属性；`hot=true` 时改完**立即生效**（写文件 → 换内存快照 → 按 key 通知订阅者） |
-| `application.yml` 里的配置 | `bot.*` / `job.*` 搬进 `./config/*.properties`；`application*.yml` 也纳入配置管理（同一个页面里编辑），`server.port` 等仍由 Spring 直接消费 |
+| `application.yml` 里的配置 | `bot.*` / `job.*` 搬进 `./config/*.properties`；`application.yml`（**只有这一份 yml**）也纳入配置管理（同一个页面里编辑），`server.port` / 日志级别等仍由 Spring 直接消费 |
 | `config` 目录下的 properties | 从"第二套体系"升级为**唯一真源**，并按业务拆成多个文件分组 |
 | 静态方法中也要能用 | `Configs` 在**类加载时**就加载好不可变快照，不依赖 Spring，静态块 / 静态方法 / 构造器中调用都安全，且**永不返回 null** |
 | 需要 WebUI 方便编辑 | 「系统管理 / 配置管理」页：按文件分组、类型化控件、key 级刷新、文件级整体刷新；**不存在不可编辑的项** |
@@ -22,9 +22,8 @@
 ```
                     ┌──────────────────────────────────────────────┐
                     │  程序目录/                                    │
-   程序启动         │    application.yml                           │
-   （不依赖Spring） │    application-dev.yml                       │
-        │           │    application-prod.yml                      │
+   程序启动         │    application.yml   ← 唯一一份 yml           │
+   （不依赖Spring） │      （端口 / 日志级别）                       │
         │           │    config/                                   │
         │           │      webui.properties                        │
         │           │      job.properties      bot.properties      │
@@ -32,7 +31,7 @@
         │           │      searchimg.properties                    │
         │           │      bilibili.properties ai.properties       │
         │           │      jm.properties       url.properties      │
-        │           │      db.properties                           │
+        │           │      database.properties chat_record.properties│
         │           └───────────────┬──────────────────────────────┘
         │                           │ 启动时 / 变更时读取（properties + yml）
         ▼                           ▼
@@ -42,10 +41,11 @@
         ▼                                                      │
   业务代码（handler / service / job / condition …）      ConfigApplier 订阅者
                                                           （OpenAiServiceHolder、JobManage …）
-        ▲
-        │ ConfigsEnvironmentInitializer 把同一份文件注入 Spring Environment
-        └── @ConditionalOnProperty / @Value 读到的是同一个值
 ```
+
+**环境维度不再靠 profile / 多份 yml**：以前 `application-dev.yml` / `application-prod.yml` 配合 Spring profile 区分环境
+（`ProdEnvironmentCondition` 的判定条件是"没有激活的 profile"），现在只有一个 `application.yml`，
+环境差异只体现在日志级别这类配置项上，部署包也只带这一份 yml。
 
 ### 2.1 配置声明：`ConfigKey`
 
@@ -64,8 +64,8 @@
 查找方式：
 
 - `ConfigKey.of(key)` —— 按属性名反查
-- `ConfigKey.of(file, key)` —— 按"文件 + 属性名"反查（同一属性名可出现在多个 profile 文件里）
-- `ConfigKey.isAmbiguous(key)` —— 该属性名是否被多个文件声明
+- `ConfigKey.of(file, key)` —— 按"文件 + 属性名"反查（机制保留：万一以后同一属性名出现在多个文件里，可精确定位）
+- `ConfigKey.isAmbiguous(key)` —— 该属性名是否被多个文件声明（当前没有任何 key 是这种，dev/prod 文件已删）
 - `ConfigKey.of(file)` —— 某个文件下的全部配置项
 
 ### 2.2 文件分组：`ConfigFile`
@@ -74,9 +74,7 @@
 
 | 文件 | 中文名 | 内容 |
 |---|---|---|
-| `application.yml` | 应用主配置 | `server.port`、`spring.profiles.active`（**需重启**） |
-| `application-dev.yml` | 应用配置(dev) | dev 的日志级别、数据源（**需重启**） |
-| `application-prod.yml` | 应用配置(prod) | prod 的日志级别、数据源（**需重启**） |
+| `application.yml` | 应用主配置 | `server.port`、`logging.level.com.haruhi.botServer`（**需重启**） |
 | `webui.properties` | WebUI | 登录账号密码、JWT、会话、druid监控台开关（**需重启**） |
 | `job.properties` | 定时任务 | 各任务 `enable` / `cron`（**开关与cron均可即时生效**） |
 | `bot.properties` | 机器人 | 同机部署、对外地址、超级管理员、可访问群、上传并发、`bot.switch.*` 功能开关 |
@@ -89,13 +87,25 @@
 | `database.properties` | 数据库 | **数据源唯一真源**：jdbc url、驱动、druid 参数（**需重启**，会覆盖 yml 里的 `spring.datasource`） |
 | `chat_record.properties` | 聊天记录 | `db.chat_extend.raw_compress` |
 
-`ConfigFile.order` 决定加载优先级（**大的覆盖小的**），与 Spring Boot 的约定一致：
+`ConfigFile.order` 决定加载优先级（**大的覆盖小的**）：
 
 ```
-application.yml (10)  <  application-{profile}.yml (20)  <  ./config/*.properties (30)
+application.yml (10)  <  ./config/*.properties (30)
 ```
 
 `ConfigFile.isSpringApplicationFile()` 用于区分 yml 的存放位置（程序目录 vs `config/`）。
+
+**dev/prod 怎么区分**：不区分了。
+
+- 日志级别只有一份：`logging.level.com.haruhi.botServer`（原来分 dev=debug / prod=info 两份文件，现在一份，默认 `info`）。
+- 静态资源地址只有一套实现：`WebResourceConfig`（`config/webResource` 包）。原来 `AbstractWebResourceConfig` +
+  `DevWebResourceConfig` / `ProWebResourceConfig` 两个实现，靠 Spring profile（`ProdEnvironmentCondition` 判定
+  "没有激活的 profile"注册 prod 版）和 `webui.dev-mode` 配置来选，现在全部删掉，只留一个类、无条件装配。
+  `setWebHomePath()` 用原 prod 的取值顺序：配置的 `bot.internet-host` → 自动探测公网IP → 内网IP。
+- 之所以能合并：**资源目录结构与部署目录一致**了。`image/`、`audio/`、`customReply/`、`script/` 已从
+  `src/main/resources/build/**` 搬到 `src/main/resources/**`（与 `config/`、`templates/` 同级，`build/` 里只剩 `package.xml`），
+  打包后仍是部署目录根下的 `image/`、`audio/` …，而 IDE 里跑时它们在 `target/classes/image` 等位置，
+  由 `WebServletConfig` 的 `/**` 映射统一对外提供——因此不再需要 `/build/**` 这种 dev 专用前缀。
 
 ### 2.3 读值入口：`Configs`
 
@@ -179,7 +189,9 @@ save(key, value)
 - 键已存在（嵌套写法或 `a.b.c: value` 点分写法都算）→ 只替换该行的值（保留行尾注释），并顺手清掉历史上被重复追加的行：**一个 key 只保留一行**
 - 只有点分写法（properties 风格）→ 删掉旧行，按 yml 嵌套结构重写
 - 父节点存在、键不存在 → 插入到父级块末尾，缩进与同级一致，剩余路径作为点分叶子（如 `logging: level:` 下写 `com.haruhi.botServer: debug`）
-- 父节点也不存在 → 文件末尾补出嵌套结构（`server:` / `"  port: 8090"`），**不再**写成 `server.port: 8090` 这种平铺行
+- 父节点也不存在 → 文件末尾补出第一层块 + 点分叶子（`server:` / `"  port: 8090"`、
+  `logging:` / `"  level.com.haruhi.botServer: debug"`），**不再**写成 `server.port: 8090` 这种平铺行，
+  也不会把 `com.haruhi.botServer` 这种 logger 名拆成假层级
 - 重置（`reset`）走的是同一套写值逻辑，只是把值换成默认值：**保留该 key**，不会删行
 - 标量按需加引号：`ConfigType.INT / BOOL` 写裸值（`port: 8090`），字符串类型需要时加双引号（避免被解析成布尔/数字）
 
@@ -187,10 +199,11 @@ save(key, value)
 
 > **历史遗留数据的自愈**：旧版本的定位方式（按点切分）对上面那类 key 永远定位失败，于是每次保存都往文件末尾追加一条 `a.b.c: value`。
 > 重复的 key 会让 Spring 的 yml 加载器直接抛异常（`found duplicate key xxx`），应用起不来，而配置文件又只能用配置管理页修改——
-> 起不来就改不了。因此 `YamlDuplicateKeyRepairPostProcessor`（`META-INF/spring.factories` 注册的 `EnvironmentPostProcessor`，
-> order = `HIGHEST_PRECEDENCE`，早于 `ConfigDataEnvironmentPostProcessor` 解析 `application*.yml`）会在启动最早期把
-> `application*.yml` 里重复的 key 去重：同一路径只保留**最后一行**（旧的保存逻辑总是往末尾追加，最后一行才是最新的值），
-> 保留下来的若是点分写法会一并改写成嵌套结构。
+> 起不来就改不了。为此写了 `YamlDuplicateKeyRepairPostProcessor`（`EnvironmentPostProcessor`，order = `HIGHEST_PRECEDENCE`，
+> 早于 `ConfigDataEnvironmentPostProcessor` 解析 `application.yml`）：启动最早期把重复的 key 去重，同一路径只保留**最后一行**
+> （旧的保存逻辑总是往末尾追加，最后一行才是最新的值），保留下来的若是点分写法会一并改写成嵌套结构。
+> **注意：该钩子与它在 `spring.factories` 里的注册目前是注释状态**（写值逻辑已修好，正常情况不会再产生重复行；
+> 若哪天 yml 又被写坏、应用起不来，把它恢复即可自愈）。
 
 
 ### 2.8 为什么 `db.sql_cache` 不在配置文件里
@@ -236,14 +249,14 @@ save(key, value)
 
 ## 4. Spring 侧的配合
 
-`ConfigsEnvironmentInitializer`（注册于 `src/main/resources/META-INF/spring.factories`）在容器 refresh 之前
-把 `application*.yml` 与 `./config/*.properties` 注入 Spring Environment，优先级最高（`addFirst`）。因此：
+只有一份 `application.yml`：Spring Boot 自己就会加载它（classpath / 程序目录），端口与日志级别都由此生效，
+`Configs` 也从同一份文件读快照，两边不会出现"两份配置谁生效"。
 
-- `@ConditionalOnProperty`（如 `job.*.enable`）、`@Value`、第三方 starter 的属性绑定，与 `Configs` 读到的是**同一份配置**；
-- 不依赖 `spring.config.import` 的工作目录解析；
-- yml 里的 `server.port` 既能被 Spring 消费，也能被 `Configs.getInt(ConfigKey.SERVER_PORT)` 读到。
-
-Spring Boot 自身仍会按标准顺序加载 `application*.yml`（classpath 兜底 + 程序目录覆盖），initializer 只是把外置文件的优先级提到最高。
+`./config/*.properties` 只通过 `Configs` 快照被业务代码读取（`@Value` / `@ConditionalOnProperty` / 第三方 starter
+不再从 Environment 里拿它们——`ConfigsEnvironmentInitializer` 目前**注释掉未启用**，因为业务代码已全部改为直接读 `Configs`，
+`JobManage`、`DruidConfig`、各 Condition 用的都是静态快照）。如果以后要让某个 starter 用 properties 里的值，
+把 `ConfigsEnvironmentInitializer` 与它在 `spring.factories` 里的注册恢复即可（它的作用是把
+`application.yml` + `./config/*.properties` 以最高优先级 `addFirst` 注入 Environment）。
 
 已全部改为直接读 `Configs`：`BotConfig` 只保留编译期常量（`CONTEXT_PATH`、`DRUID_PATH`、`WEB_SOCKET_PATH`、`DEFAULT_NAME`），
 `BilibiliLiveJob`、`DownloadPixivJob`、`LoginService`、`DruidConfig`、三个 druid `Condition`、
@@ -271,10 +284,11 @@ Spring Boot 自身仍会按标准顺序加载 `application*.yml`（classpath 兜
    - 只在方法内部读 → `hot=true`；
    - 被 bean 构造/条件装配/`static final` 使用 → `hot=false`（WebUI 上如实展示"需重启"）；
    - 持有连接/线程池/触发器 → `hot=true` + 实现 `ConfigApplier`，按 key 重建。
-4. **同一个属性名出现在多个文件**：两个文件各声明一个 `ConfigKey`（如 dev/prod 的日志级别），
-   接口调用时需要带上 `fileName`（`ConfigKey.isAmbiguous` 会提示）。
-5. **写 `application*.yml` 的注释请用 ASCII**：`maven-resources-plugin` 复制资源时会按平台默认编码处理，
-   非 ASCII 注释在该环节会被打乱（这是构建链路的问题，不是配置模块的问题）。
+4. **同一个属性名要不要放多个文件**：现在没有这种 key（dev/prod 已合并）。机制仍保留：真需要时两个文件各声明一个
+   `ConfigKey`，接口调用时带上 `fileName`（`ConfigKey.isAmbiguous` 会提示）。
+5. **写 `application.yml` 的注释请用 ASCII**：`maven-resources-plugin` 复制资源时会按平台默认编码处理，
+   非 ASCII 注释在该环节会被打乱（这是构建链路的问题，不是配置模块的问题）。中文说明写在 `ConfigKey.remark` 里，
+   配置页会展示。
 
 ---
 
@@ -282,8 +296,8 @@ Spring Boot 自身仍会按标准顺序加载 `application*.yml`（classpath 兜
 
 | 测试类 | 覆盖内容 |
 |---|---|
-| `ConfigsTest`（35 项） | 声明默认值回落、未声明key无法反查、properties 保存并落盘、写文件保留注释与顺序、新增 key 追加、多行值转义往返、注释/未声明 key 被忽略、类型校验、**yml 拍平进快照**、**yml 原地改值保留注释与缩进**、**yml 插入/删除键**、**带点key反复保存不新增行**、**历史点分重复行的清理与改写**、**坏文件自动去重**、**重置写回默认值且不新增行**、**同一属性名在不同 profile 文件各改各的**、文件级刷新、key 级刷新、重置、程序写入、标量引号规则、加载顺序、数据源配置读取、文件归属校验 |
-| `ConfigSpringIntegrationTest`（17 项） | **完整应用上下文启动成功**、properties 与 yml 同时被 `Configs` 与 Spring Environment 读到、**数据源以 database.properties 为准（真实取一条连接）**、`ConfigApplier` 订阅者已注册并被通知、**job.properties 的 enable/cron 热更新（真实断言 Quartz 触发器注册/取消/重新排期）**、**文件里缺少该 key 时保存后同样能热更新**、**直接用编辑器改文件也会被自动感知并热更新**、接口分组数据完整、保存 properties / yml 后落盘并保留注释、**缺少的 yml key 写成嵌套结构而不是点分行**、**重置接口写回默认值而不是删行**、**同名属性带/不带 fileName 的行为**、所有配置文件都有可编辑项、读取文件原文 |
+| `ConfigsTest`（35 项） | 声明默认值回落、未声明key无法反查、properties 保存并落盘、写文件保留注释与顺序、新增 key 追加、多行值转义往返、注释/未声明 key 被忽略、类型校验、**yml 拍平进快照**、**yml 原地改值保留注释与缩进**、**yml 插入/删除键**、**带点key反复保存不新增行**、**历史点分重复行的清理与改写**、**坏文件自动去重**、**重置写回默认值且不新增行**、**日志级别在同一份 yml 且无歧义**、文件级刷新、key 级刷新、重置、程序写入、标量引号规则、加载顺序、数据源配置读取、文件归属校验 |
+| `ConfigSpringIntegrationTest`（17 项） | **完整应用上下文启动成功**、properties 与 yml 同时被 `Configs` 与 Spring Environment 读到、**数据源以 database.properties 为准（真实取一条连接）**、`ConfigApplier` 订阅者已注册并被通知、**job.properties 的 enable/cron 热更新（真实断言 Quartz 触发器注册/取消/重新排期）**、**文件里缺少该 key 时保存后同样能热更新**、**直接用编辑器改文件也会被自动感知并热更新**、接口分组数据完整、保存 properties / yml 后落盘并保留注释、**缺少的 yml key 写成嵌套结构而不是点分行**、**重置接口写回默认值而不是删行**、**日志级别没有歧义且能保存**、**静态资源地址只注册一个实现**、所有配置文件都有可编辑项、读取文件原文 |
 | `BotTest`（3 项） | 上传文件并发/排队行为（配置读取已改为 `Configs`） |
 
 > 注：`ConfigSpringIntegrationTest` 使用 `@NoMockitoSpringTest` 替换默认测试监听器，原因见该注解的 javadoc。
@@ -294,8 +308,7 @@ Spring Boot 自身仍会按标准顺序加载 `application*.yml`（classpath 兜
 
 | key | 文件 | 热更新 |
 |---|---|---|
-| `server.port`、`spring.profiles.active` | application.yml | 否 |
-| `logging.level.com.haruhi.botServer` | application-dev.yml / application-prod.yml | 否 |
+| `server.port`、`logging.level.com.haruhi.botServer` | application.yml | 否 |
 | `spring.datasource.dynamic.datasource.master.*` | database.properties | 否 |
 | `login.*`、`druid.*` | webui.properties | 否 |
 | `job.downloadPixiv.*`、`job.bilibiliLive.*` | job.properties | **是** |
@@ -321,13 +334,14 @@ Spring Boot 自身仍会按标准顺序加载 `application*.yml`（classpath 兜
 | `db.chat_extend.raw_compress`（db.properties） | 同名，文件改为 chat_record.properties |
 | `db.sql_cache`（字典表） | 不迁移，仍在数据库里（操作数据） |
 | `server.yml`（上一版中间态） | 取消，端口回到 `application.yml` |
+| `application-dev.yml` / `application-prod.yml` + Spring profile（dev/prod 靠"有没有激活profile"判定） | 取消，合并成一份 `application.yml`（日志级别用 `logging.level.com.haruhi.botServer`）；`AbstractWebResourceConfig` + `DevWebResourceConfig`/`ProWebResourceConfig` 也取消，只留一个 `WebResourceConfig`（资源目录 `build/**` 已搬到 resources 根下，与部署目录结构一致）；构建侧 `package.xml` 不再按 maven profile 选文件 |
 | `ThirdPartyURL` 常量类 | 各地址变成 `url_conf.*` 配置项（识图那个已存在，未重复搬迁） |
 
 ---
 
 ## 9. 数据源为什么由 `SqliteDataSourceInitAspect` 接管
 
-`application*.yml` 里**不再配置** `spring.datasource`，数据源以 `./config/database.properties` 为唯一真源：
+`application.yml` 里**不再配置** `spring.datasource`，数据源以 `./config/database.properties` 为唯一真源：
 
 `SqliteDataSourceInitAspect.loadDataSourcesBefore` 在 `YmlDynamicDataSourceProvider.loadDataSources()` 之前执行，
 用 `Configs` 快照里的值**覆盖 master 数据源**（url、driver、druid 各项），因此：

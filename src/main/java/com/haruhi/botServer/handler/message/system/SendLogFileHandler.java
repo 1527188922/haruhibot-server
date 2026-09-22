@@ -2,7 +2,7 @@
 //
 //import com.haruhi.botServer.annotation.SuperuserAuthentication;
 //import com.haruhi.botServer.cache.CacheMap;
-//import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+//import com.haruhi.botServer.config.webResource.WebResourceConfig;
 //import com.haruhi.botServer.constant.HandlerWeightEnum;
 //import com.haruhi.botServer.constant.RegexEnum;
 //import com.haruhi.botServer.dto.qqclient.DownloadFileResp;
@@ -45,7 +45,7 @@
 //    private static final int EXPIRE_TIME = 20;
 //
 //    @Autowired
-//    private AbstractWebResourceConfig pathConfig;
+//    private WebResourceConfig pathConfig;
 //    @Autowired
 //    private DictionarySqliteService dictionarySqliteService;
 //

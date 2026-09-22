@@ -138,8 +138,9 @@ public final class YamlFileUtil {
      *         并把历史上被重复追加的行一并删掉，保证一个 key 只剩一行</li>
      *     <li>该 key 只有点分写法（properties 风格）→ 删掉旧行，改写成 yml 嵌套结构</li>
      *     <li>key 缺失、但它的某个父块存在 → 插入到父块末尾，缩进与同级一致</li>
-     *     <li>父块也不存在 → 在文件末尾补出嵌套结构（{@code server:} / {@code "  port: 8090"}），
-     *         而不是写成 {@code server.port: 8090} 这种平铺行</li>
+     *     <li>父块也不存在 → 在文件末尾补出第一层块 + 点分叶子（{@code server:} / {@code "  port: 8090"}、
+     *         {@code logging:} / {@code "  level.com.haruhi.botServer: debug"}），而不是写成
+     *         {@code server.port: 8090} 这种平铺行，也不发明多余层级</li>
      * </ol>
      * 文件不存在会自动创建（含目录）。
      */
@@ -206,8 +207,14 @@ public final class YamlFileUtil {
         if (!lines.isEmpty() && !lines.getLast().isBlank()) {
             lines.add("");
         }
-        for (int i = 0; i < segments.length; i++) {
-            lines.add(" ".repeat(i * 2) + segments[i] + (i == segments.length - 1 ? ": " + encoded : ":"));
+        // 没有任何父块可复用：补出第一层块，其余路径作为点分叶子。
+        // 只发明一层结构，避免把 logging.level.com.haruhi.botServer 拆成 com: haruhi: botServer:
+        // 这种看着像层级、实际只是 logger 名字的假结构（两者拍平后的路径完全一致）
+        if (segments.length == 1) {
+            lines.add(segments[0] + ": " + encoded);
+        } else {
+            lines.add(segments[0] + ":");
+            lines.add("  " + join(segments, 1, segments.length) + ": " + encoded);
         }
     }
 

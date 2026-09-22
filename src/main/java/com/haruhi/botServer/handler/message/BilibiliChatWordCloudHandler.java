@@ -2,7 +2,7 @@ package com.haruhi.botServer.handler.message;
 
 import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.config.config.ConfigKey;
-import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.config.webResource.WebResourceConfig;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -45,7 +45,7 @@ public class BilibiliChatWordCloudHandler implements IAllMessageHandler {
     }
 
     @Autowired
-    private AbstractWebResourceConfig abstractPathConfig;
+    private WebResourceConfig abstractPathConfig;
     @Autowired
     private BilibiliService bilibiliService;
 

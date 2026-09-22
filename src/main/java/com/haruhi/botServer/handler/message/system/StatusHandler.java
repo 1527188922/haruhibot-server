@@ -3,7 +3,7 @@
 //import cn.hutool.core.util.RuntimeUtil;
 //import com.haruhi.botServer.annotation.SuperuserAuthentication;
 //import com.haruhi.botServer.config.BotConfig;
-//import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+//import com.haruhi.botServer.config.webResource.WebResourceConfig;
 //import com.haruhi.botServer.constant.HandlerWeightEnum;
 //import com.haruhi.botServer.constant.RegexEnum;
 //import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -54,7 +54,7 @@
 //    }
 //
 //    @Autowired
-//    private AbstractWebResourceConfig pathConfig;
+//    private WebResourceConfig pathConfig;
 //    @Autowired
 //    private DictionarySqliteService dictionarySqliteService;
 //

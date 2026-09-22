@@ -2,7 +2,7 @@ package com.haruhi.botServer.handler.message.face;
 
 import com.haruhi.botServer.config.config.Configs;
 import com.haruhi.botServer.config.config.ConfigKey;
-import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.config.webResource.WebResourceConfig;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.dto.qqclient.Message;
 import com.haruhi.botServer.dto.qqclient.MessageHolder;
@@ -24,7 +24,7 @@ import java.util.Collections;
 public class NieHandler implements IGroupMessageHandler {
 
     @Autowired
-    private AbstractWebResourceConfig webResourceConfig;
+    private WebResourceConfig webResourceConfig;
 
     @Override
     public int weight() {

@@ -52,16 +52,8 @@ public enum ConfigKey {
     // ============================ 应用主配置（application.yml） ============================
     SERVER_PORT(ConfigFile.APPLICATION, "server.port", ConfigType.INT, "8090", false,
             "http服务端口，可在配置管理页修改，修改后需重启", 10),
-    SPRING_PROFILES_ACTIVE(ConfigFile.APPLICATION, "spring.profiles.active", ConfigType.STRING, "dev", false,
-            "激活的Spring profile，决定加载 application-{profile}.yml，修改后需重启", 20),
-
-    // ============================ 环境配置（application-{profile}.yml） ============================
-    // 同一个属性名可以在不同 profile 文件里各声明一次（key + file 才是唯一标识）
-    LOGGING_LEVEL_DEV(ConfigFile.APPLICATION_DEV, "logging.level.com.haruhi.botServer", ConfigType.STRING, "debug", false,
-            "dev环境下本项目的日志级别（TRACE/DEBUG/INFO/WARN/ERROR），修改后需重启", 10),
-
-    LOGGING_LEVEL_PROD(ConfigFile.APPLICATION_PROD, "logging.level.com.haruhi.botServer", ConfigType.STRING, "info", false,
-            "prod环境下本项目的日志级别（TRACE/DEBUG/INFO/WARN/ERROR），修改后需重启", 10),
+    LOGGING_LEVEL(ConfigFile.APPLICATION, "logging.level.com.haruhi.botServer", ConfigType.STRING, "info", false,
+            "本项目自身的日志级别（TRACE/DEBUG/INFO/WARN/ERROR），修改后需重启", 20),
 
     // ============================ 定时任务 ============================
     JOB_DOWNLOAD_PIXIV_ENABLE(ConfigFile.JOB, "job.downloadPixiv.enable", ConfigType.BOOL, "false", true,

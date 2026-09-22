@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.config.webResource.WebResourceConfig;
 import com.haruhi.botServer.dto.jmcomic.Album;
 import com.haruhi.botServer.dto.jmcomic.Chapter;
 import com.haruhi.botServer.dto.jmcomic.Series;
@@ -62,7 +62,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     private JmChapterImageSqliteMapper jmChapterImageSqliteMapper;
 
     @Autowired
-    private AbstractWebResourceConfig webResourceConfig;
+    private WebResourceConfig webResourceConfig;
 
     @Override
     @Transactional(rollbackFor = Exception.class)

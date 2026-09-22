@@ -11,7 +11,7 @@ import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.config.webResource.WebResourceConfig;
 import com.haruhi.botServer.constant.CqCodeTypeEnum;
 import com.haruhi.botServer.constant.DataBaseConst;
 import com.haruhi.botServer.constant.event.MessageTypeEnum;
@@ -71,7 +71,7 @@ public class ChatRecordService{
     @Autowired
     private ChatRecordExtendV2Mapper chatRecordExtendV2Mapper;
     @Autowired
-    private AbstractWebResourceConfig abstractPathConfig;
+    private WebResourceConfig abstractPathConfig;
 
 
     @Autowired

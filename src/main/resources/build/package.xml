@@ -30,7 +30,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>${project.basedir}/src/main/resources/build/script</directory>
+            <directory>${project.basedir}/src/main/resources/script</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>*.bat</include>
@@ -52,15 +52,15 @@
             <outputDirectory>${file.separator}/templates</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>${project.basedir}/src/main/resources/build/image</directory>
+            <directory>${project.basedir}/src/main/resources/image</directory>
             <outputDirectory>/image</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>${project.basedir}/src/main/resources/build/customReply</directory>
+            <directory>${project.basedir}/src/main/resources/customReply</directory>
             <outputDirectory>/customReply</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>${project.basedir}/src/main/resources/build/audio</directory>
+            <directory>${project.basedir}/src/main/resources/audio</directory>
             <outputDirectory>/audio</outputDirectory>
         </fileSet>
         <fileSet>
@@ -75,8 +75,11 @@
         </fileSet>
     </fileSets>
     <files>
+        <!-- 只有一份 application.yml：端口/日志级别/资源模式都在里面，由配置管理页或直接编辑修改。
+             以前这里是 src/main/resources/application-${env}.yml 改名成 application.yml（靠 maven profile 选 dev/prod），
+             现在不再需要 maven profile，dev/prod 的差异由 webui.dev-mode 等配置项表达 -->
         <file>
-            <source>${project.basedir}/src/main/resources/application-${env}.yml</source>
+            <source>${project.basedir}/src/main/resources/application.yml</source>
             <outputDirectory>/</outputDirectory>
             <destName>application.yml</destName>
         </file>

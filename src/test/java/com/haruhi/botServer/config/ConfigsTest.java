@@ -274,9 +274,9 @@ class ConfigsTest {
                   # http端口
                   port: 18080
 
-                spring:
-                  profiles:
-                    active: dev
+                logging:
+                  level:
+                    com.haruhi.botServer: debug
                 """, StandardCharsets.UTF_8);
 
         Configs.reloadFile(ConfigFile.APPLICATION);
@@ -284,6 +284,7 @@ class ConfigsTest {
         assertEquals(18080, Configs.getInt(ConfigKey.SERVER_PORT));
         assertTrue(Configs.isConfigured(ConfigKey.SERVER_PORT));
         assertEquals(ConfigFile.APPLICATION, ConfigKey.SERVER_PORT.getFile());
+        assertEquals("debug", Configs.getStr(ConfigKey.LOGGING_LEVEL));
     }
 
     @Test
@@ -295,9 +296,9 @@ class ConfigsTest {
                   # http端口
                   port: 8090
 
-                spring:
-                  profiles:
-                    active: dev
+                logging:
+                  level:
+                    com.haruhi.botServer: debug
                 """, StandardCharsets.UTF_8);
 
         configHub.save(ConfigKey.SERVER_PORT, "18081");
@@ -309,7 +310,7 @@ class ConfigsTest {
         assertTrue(after.contains("# 应用主配置"), "文件头注释应保留");
         assertTrue(after.contains("# http端口"), "key上方的注释应保留");
         assertTrue(after.contains("port: 18081"), "值应被替换: " + after);
-        assertTrue(after.contains("active: dev"), "其它配置应保留");
+        assertTrue(after.contains("com.haruhi.botServer: debug"), "其它配置应保留");
         assertTrue(after.contains("  port: 18081"), "缩进应保持不变");
     }
 
@@ -322,38 +323,38 @@ class ConfigsTest {
                   servlet:
                     context-path: /api
 
-                spring:
-                  profiles:
-                    active: dev
+                logging:
+                  level:
+                    com.haruhi.botServer: debug
                 """, StandardCharsets.UTF_8);
 
         configHub.save(ConfigKey.SERVER_PORT, "8095");
 
         String after = Files.readString(file, StandardCharsets.UTF_8);
         assertTrue(after.contains("  port: 8095"), "应插入到 server 块内且缩进正确: " + after.replace("\n", "|"));
-        // 关键：不能把后面的 spring 块吞进 server 下
+        // 关键：不能把后面的 logging 块吞进 server 下
         Configs.reloadFile(ConfigFile.APPLICATION);
         assertEquals(8095, Configs.getInt(ConfigKey.SERVER_PORT), "重读后应为8095，文件: " + after.replace("\n", "|"));
-        assertEquals("dev", Configs.getStr(ConfigKey.SPRING_PROFILES_ACTIVE));
+        assertEquals("debug", Configs.getStr(ConfigKey.LOGGING_LEVEL));
     }
 
     @Test
-    void 同一个属性名可以在不同profile文件里各改各的() throws IOException {
-        Path dev = applicationFile(ConfigFile.APPLICATION_DEV);
-        Path prod = applicationFile(ConfigFile.APPLICATION_PROD);
-        Files.writeString(dev, "logging:\n  level:\n    com.haruhi.botServer: debug\n", StandardCharsets.UTF_8);
-        Files.writeString(prod, "logging:\n  level:\n    com.haruhi.botServer: info\n", StandardCharsets.UTF_8);
+    void 日志级别声明在唯一的applicationYml里() throws IOException {
+        Path file = applicationFile(ConfigFile.APPLICATION);
+        Files.writeString(file, """
+                logging:
+                  level:
+                    com.haruhi.botServer: debug
+                """, StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.APPLICATION);
 
-        // 两个文件的同一行由两个不同的 ConfigKey 表示
-        assertTrue(ConfigKey.isAmbiguous("logging.level.com.haruhi.botServer"));
-        assertEquals(ConfigKey.LOGGING_LEVEL_DEV, ConfigKey.of(ConfigFile.APPLICATION_DEV, "logging.level.com.haruhi.botServer"));
-        assertEquals(ConfigKey.LOGGING_LEVEL_PROD, ConfigKey.of(ConfigFile.APPLICATION_PROD, "logging.level.com.haruhi.botServer"));
+        // 不再有 dev/prod 两个文件：同一个 key 只有一处声明，也就没有"歧义"
+        assertEquals(ConfigFile.APPLICATION, ConfigKey.LOGGING_LEVEL.getFile());
+        assertFalse(ConfigKey.isAmbiguous("logging.level.com.haruhi.botServer"));
+        assertEquals("debug", Configs.getStr(ConfigKey.LOGGING_LEVEL));
 
-        configHub.save(ConfigKey.LOGGING_LEVEL_DEV, "trace");
-        configHub.save(ConfigKey.LOGGING_LEVEL_PROD, "warn");
-
-        assertTrue(Files.readString(dev, StandardCharsets.UTF_8).contains("com.haruhi.botServer: trace"));
-        assertTrue(Files.readString(prod, StandardCharsets.UTF_8).contains("com.haruhi.botServer: warn"));
+        configHub.save(ConfigKey.LOGGING_LEVEL, "warn");
+        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("com.haruhi.botServer: warn"));
     }
 
     @Test
@@ -375,10 +376,10 @@ class ConfigsTest {
         assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("port: 8091"));
         assertEquals(8091, Configs.getInt(ConfigKey.SERVER_PORT));
 
-        // STRING 类型写成带引号的值（保留字符串语义）
-        configHub.save(ConfigKey.SPRING_PROFILES_ACTIVE, "prod");
-        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("active: prod"));
-        assertEquals("prod", Configs.getStr(ConfigKey.SPRING_PROFILES_ACTIVE));
+        // STRING 类型原样写入（值本身像布尔/数字时才加引号）
+        configHub.save(ConfigKey.LOGGING_LEVEL, "trace");
+        assertTrue(Files.readString(file, StandardCharsets.UTF_8).contains("com.haruhi.botServer: trace"));
+        assertEquals("trace", Configs.getStr(ConfigKey.LOGGING_LEVEL));
     }
 
     @Test
@@ -398,9 +399,9 @@ class ConfigsTest {
         Files.writeString(file, """
                 server:
                   port: 18080
-                spring:
-                  profiles:
-                    active: dev
+                logging:
+                  level:
+                    com.haruhi.botServer: debug
                 """, StandardCharsets.UTF_8);
         Configs.reloadFile(ConfigFile.APPLICATION);
         assertEquals(18080, Configs.getInt(ConfigKey.SERVER_PORT));
@@ -413,13 +414,13 @@ class ConfigsTest {
         assertTrue(after.contains("port: 8090"), "应写回默认值: " + after);
         assertFalse(after.contains("18080"), after);
         assertEquals(1, count(after, "port:"), "不应新增行: " + after);
-        assertTrue(after.contains("active: dev"), "其它配置应保留: " + after);
+        assertTrue(after.contains("com.haruhi.botServer: debug"), "其它配置应保留: " + after);
     }
 
     @Test
     void 保存yml的新key写嵌套结构且重复保存不会新增行() throws IOException {
         Path file = applicationFile(ConfigFile.APPLICATION);
-        Files.writeString(file, "spring:\n  profiles:\n    active: dev\n", StandardCharsets.UTF_8);
+        Files.writeString(file, "logging:\n  level:\n    com.haruhi.botServer: debug\n", StandardCharsets.UTF_8);
         Configs.reloadFile(ConfigFile.APPLICATION);
 
         configHub.save(ConfigKey.SERVER_PORT, "18080");
@@ -429,7 +430,7 @@ class ConfigsTest {
         assertFalse(after.contains("server.port"), "不应写成 server.port 这种properties风格的行: " + after);
         assertEquals(1, count(after, "port: 18081"), "重复保存不应新增行: " + after);
         assertTrue(after.contains("server:\n  port: 18081"), "应是 yml 嵌套结构: " + after);
-        assertTrue(after.contains("active: dev"), "其它配置应保留: " + after);
+        assertTrue(after.contains("com.haruhi.botServer: debug"), "其它配置应保留: " + after);
 
         Configs.reloadFile(ConfigFile.APPLICATION);
         assertEquals(18081, Configs.getInt(ConfigKey.SERVER_PORT));
@@ -437,19 +438,19 @@ class ConfigsTest {
 
     @Test
     void 保存yml里带点的叶子key不会重复追加() throws IOException {
-        Path file = applicationFile(ConfigFile.APPLICATION_DEV);
+        Path file = applicationFile(ConfigFile.APPLICATION);
         Files.writeString(file, "logging:\n  level:\n    com.haruhi.botServer: debug\n", StandardCharsets.UTF_8);
-        Configs.reloadFile(ConfigFile.APPLICATION_DEV);
+        Configs.reloadFile(ConfigFile.APPLICATION);
 
-        configHub.save(ConfigKey.LOGGING_LEVEL_DEV, "trace");
-        configHub.save(ConfigKey.LOGGING_LEVEL_DEV, "warn");
+        configHub.save(ConfigKey.LOGGING_LEVEL, "trace");
+        configHub.save(ConfigKey.LOGGING_LEVEL, "warn");
 
         String after = Files.readString(file, StandardCharsets.UTF_8);
         assertEquals(1, count(after, "com.haruhi.botServer"), "带点的key只应有一行: " + after);
         assertTrue(after.contains("    com.haruhi.botServer: warn"), "缩进与值应正确: " + after);
 
-        Configs.reloadFile(ConfigFile.APPLICATION_DEV);
-        assertEquals("warn", Configs.getStr(ConfigKey.LOGGING_LEVEL_DEV));
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertEquals("warn", Configs.getStr(ConfigKey.LOGGING_LEVEL));
     }
 
     @Test
@@ -457,9 +458,9 @@ class ConfigsTest {
         Path file = applicationFile(ConfigFile.APPLICATION);
         // 模拟旧版本bug的产物：文件末尾不断追加的点分行
         Files.writeString(file, """
-                spring:
-                  profiles:
-                    active: dev
+                logging:
+                  level:
+                    com.haruhi.botServer: debug
 
                 server.port: 8091
 
@@ -473,7 +474,7 @@ class ConfigsTest {
         assertFalse(after.contains("server.port"), "点分行应被改写为嵌套结构: " + after);
         assertEquals(1, count(after, "port: 18080"), "重复行应被清理: " + after);
         assertTrue(after.contains("server:\n  port: 18080"), after);
-        assertTrue(after.contains("active: dev"), after);
+        assertTrue(after.contains("com.haruhi.botServer: debug"), after);
 
         Configs.reloadFile(ConfigFile.APPLICATION);
         assertEquals(18080, Configs.getInt(ConfigKey.SERVER_PORT));
@@ -482,7 +483,7 @@ class ConfigsTest {
     @Test
     void 重置yml里不存在的key会补上默认值() throws IOException {
         Path file = applicationFile(ConfigFile.APPLICATION);
-        Files.writeString(file, "spring:\n  profiles:\n    active: dev\n", StandardCharsets.UTF_8);
+        Files.writeString(file, "logging:\n  level:\n    com.haruhi.botServer: debug\n", StandardCharsets.UTF_8);
         Configs.reloadFile(ConfigFile.APPLICATION);
         assertFalse(Configs.isConfigured(ConfigKey.SERVER_PORT));
 
@@ -492,16 +493,16 @@ class ConfigsTest {
         String after = Files.readString(file, StandardCharsets.UTF_8);
         assertEquals(1, count(after, "port: 8090"), "不应新增多行: " + after);
         assertTrue(after.contains("server:\n  port: 8090"), "应写成 yml 嵌套结构: " + after);
-        assertTrue(after.contains("active: dev"), after);
+        assertTrue(after.contains("com.haruhi.botServer: debug"), after);
     }
 
     @Test
     void 重置yml会清掉点分重复行并写回一个嵌套行() throws IOException {
         Path file = applicationFile(ConfigFile.APPLICATION);
         Files.writeString(file, """
-                spring:
-                  profiles:
-                    active: dev
+                logging:
+                  level:
+                    com.haruhi.botServer: debug
 
                 server.port: 18080
 
@@ -517,7 +518,7 @@ class ConfigsTest {
         assertFalse(after.contains("18080") || after.contains("18081"), after);
         assertEquals(1, count(after, "port:"), "点分重复行应被清理成一行: " + after);
         assertTrue(after.contains("server:\n  port: 8090"), after);
-        assertTrue(after.contains("active: dev"), after);
+        assertTrue(after.contains("com.haruhi.botServer: debug"), after);
     }
 
     @Test
@@ -528,15 +529,15 @@ class ConfigsTest {
 
         configHub.saveAll(Map.of(
                 ConfigKey.SERVER_PORT, "18080",
-                ConfigKey.SPRING_PROFILES_ACTIVE, "prod"));
+                ConfigKey.LOGGING_LEVEL, "warn"));
 
         String after = Files.readString(file, StandardCharsets.UTF_8);
         assertTrue(after.contains("port: 18080"), after);
-        assertTrue(after.contains("active: prod"), after);
+        assertTrue(after.contains("com.haruhi.botServer: warn"), after);
 
         Configs.reloadFile(ConfigFile.APPLICATION);
         assertEquals(18080, Configs.getInt(ConfigKey.SERVER_PORT));
-        assertEquals("prod", Configs.getStr(ConfigKey.SPRING_PROFILES_ACTIVE));
+        assertEquals("warn", Configs.getStr(ConfigKey.LOGGING_LEVEL));
     }
 
     private static int count(String text, String part) {
@@ -553,9 +554,9 @@ class ConfigsTest {
     void 自动修复被写坏的点分重复行() throws IOException {
         Path file = applicationFile(ConfigFile.APPLICATION);
         Files.writeString(file, """
-                spring:
-                  profiles:
-                    active: dev
+                logging:
+                  level:
+                    com.haruhi.botServer: debug
 
                 server.port: 8091
 
@@ -570,7 +571,7 @@ class ConfigsTest {
         assertEquals(1, count(after, "port:"), "重复行应只剩一行: " + after);
         assertEquals(1, count(after, "server"), after);
         assertTrue(after.contains("server:\n  port: 8091"), "保留下来的点分行应改写成嵌套结构: " + after);
-        assertTrue(after.contains("active: dev"), after);
+        assertTrue(after.contains("com.haruhi.botServer: debug"), after);
 
         Configs.reloadFile(ConfigFile.APPLICATION);
         assertEquals(8091, Configs.getInt(ConfigKey.SERVER_PORT), "应保留最后一行的值");
@@ -579,7 +580,7 @@ class ConfigsTest {
 
     @Test
     void 自动修复嵌套与点分混用的重复行() throws IOException {
-        Path file = applicationFile(ConfigFile.APPLICATION_DEV);
+        Path file = applicationFile(ConfigFile.APPLICATION);
         Files.writeString(file, """
                 logging:
                   level:
@@ -596,24 +597,24 @@ class ConfigsTest {
         assertEquals(1, count(after, "com.haruhi.botServer"), "重复行应只剩一行: " + after);
         assertTrue(after.contains("    com.haruhi.botServer: warn"), "应保留最后一行并写回嵌套结构: " + after);
 
-        Configs.reloadFile(ConfigFile.APPLICATION_DEV);
-        assertEquals("warn", Configs.getStr(ConfigKey.LOGGING_LEVEL_DEV));
+        Configs.reloadFile(ConfigFile.APPLICATION);
+        assertEquals("warn", Configs.getStr(ConfigKey.LOGGING_LEVEL));
     }
 
     @Test
     void 配置文件类型判断与加载顺序() {
         assertTrue(ConfigFile.APPLICATION.isYaml());
         assertTrue(ConfigFile.APPLICATION.isSpringApplicationFile());
-        assertTrue(ConfigFile.APPLICATION_DEV.isSpringApplicationFile());
         assertFalse(ConfigFile.BOT.isYaml());
         assertFalse(ConfigFile.BOT.isSpringApplicationFile());
+        // 只有一份 application.yml：不再有 application-dev / application-prod
+        assertEquals(1, java.util.Arrays.stream(ConfigFile.values())
+                .filter(ConfigFile::isSpringApplicationFile).count());
 
-        // application.yml 先加载，application-dev 覆盖它，properties 优先级最高
-        assertTrue(ConfigFile.APPLICATION.getOrder() < ConfigFile.APPLICATION_DEV.getOrder());
-        assertTrue(ConfigFile.APPLICATION_DEV.getOrder() < ConfigFile.BOT.getOrder());
+        // application.yml 先加载，./config/*.properties 覆盖它
+        assertTrue(ConfigFile.APPLICATION.getOrder() < ConfigFile.BOT.getOrder());
         ConfigFile[] order = ConfigFile.inLoadOrder();
-        assertTrue(indexOf(order, ConfigFile.APPLICATION) < indexOf(order, ConfigFile.APPLICATION_DEV));
-        assertTrue(indexOf(order, ConfigFile.APPLICATION_DEV) < indexOf(order, ConfigFile.BOT));
+        assertTrue(indexOf(order, ConfigFile.APPLICATION) < indexOf(order, ConfigFile.BOT));
     }
 
     private static int indexOf(ConfigFile[] files, ConfigFile target) {

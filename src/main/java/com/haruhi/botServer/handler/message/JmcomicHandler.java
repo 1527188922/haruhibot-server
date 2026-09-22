@@ -8,7 +8,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botServer.config.BotConfig;
-import com.haruhi.botServer.config.webResource.AbstractWebResourceConfig;
+import com.haruhi.botServer.config.webResource.WebResourceConfig;
 import com.haruhi.botServer.constant.BusinessModuleEnum;
 import com.haruhi.botServer.constant.HandlerWeightEnum;
 import com.haruhi.botServer.constant.RegexEnum;
@@ -54,7 +54,7 @@ public class JmcomicHandler implements IAllMessageHandler {
     @Autowired
     private JmcomicService jmcomicService;
     @Autowired
-    private AbstractWebResourceConfig webResourceConfig;
+    private WebResourceConfig webResourceConfig;
 
     private static final String SEARCH_RESULT_TEMPLATE = "jmcomic-search-result.html";
     private static final String SEARCH_RESULT_IMAGE_DIR = "search-result";
