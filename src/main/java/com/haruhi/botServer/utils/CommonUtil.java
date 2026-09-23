@@ -41,11 +41,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CommonUtil {
 
-    private static final String[] IP_API_LIST = {
+    private static final List<String> IP_API_LIST = List.of(
             "https://icanhazip.com",
             "http://myip.ipip.net",
-            "https://api.ipify.org",
-    };
+            "https://api.ipify.org");
 
     private static Random random;
 
@@ -231,25 +230,29 @@ public class CommonUtil {
      * @return
      */
     public static String getPublicIp()  {
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
+        try(HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()) {
+            for (int i = 0; i < IP_API_LIST.size(); i++) {
+                String api = IP_API_LIST.get(i);
+                String nextApi = i + 1 < IP_API_LIST.size() ? IP_API_LIST.get(i + 1) : null;
+                try {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(api))
+                            .timeout(Duration.ofSeconds(5))
+                            .GET()
+                            .build();
 
-        for (String api : IP_API_LIST) {
-            try {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(api))
-                        .timeout(Duration.ofSeconds(5))
-                        .GET()
-                        .build();
-
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                String body;
-                if (response.statusCode() == 200 && StringUtils.isNotBlank((body = response.body()))) {
-                    return match(body.trim());
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    String body;
+                    if (response.statusCode() == 200 && StringUtils.isNotBlank((body = response.body()))) {
+                        return match(body.trim());
+                    }
+                } catch (Exception e) {
+                    if (nextApi == null) {
+                        log.error("通过【{}】获取公网ip失败，所有地址失败", api,e);
+                    }else {
+                        log.error("通过【{}】获取公网ip失败，接下来尝试【{}】", api,nextApi,e);
+                    }
                 }
-            } catch (Exception e) {
-                log.error("请求获取公网ip异常 {}",api,e);
             }
         }
         return null;

@@ -54,6 +54,8 @@ public enum ConfigKey {
             "http服务端口，可在配置管理页修改，修改后需重启", 10),
     LOGGING_LEVEL(ConfigFile.APPLICATION, "logging.level.com.haruhi.botServer", ConfigType.STRING, "info", false,
             "本项目自身的日志级别（TRACE/DEBUG/INFO/WARN/ERROR），修改后需重启", 20),
+    INTERNET_HOST(ConfigFile.APPLICATION, "internet-host", ConfigType.STRING, "", true,
+            "本服务对外访问的ip或域名，留空自动探测；用于拼接图片url", 30),
 
     // ============================ 定时任务 ============================
     JOB_DOWNLOAD_PIXIV_ENABLE(ConfigFile.JOB, "job.downloadPixiv.enable", ConfigType.BOOL, "false", true,
@@ -68,8 +70,6 @@ public enum ConfigKey {
     // ============================ 机器人 ============================
     BOT_SAME_MACHINE_QQCLIENT(ConfigFile.BOT, "bot.same-machine-qqclient", ConfigType.BOOL, "true", true,
             "qq客户端是否与本服务在同一台机器，true时图片/语音使用file://本地路径发送", 10),
-    BOT_INTERNET_HOST(ConfigFile.BOT, "bot.internet-host", ConfigType.STRING, "", true,
-            "本服务对外访问的ip或域名，留空自动探测；用于拼接图片url", 20),
     BOT_SUPERUSERS(ConfigFile.BOT, "bot.superusers", ConfigType.LIST, "1527188922", true,
             "机器人超级管理员qq号，多个用逗号分割", 30),
     BOT_ACCESS_GROUP(ConfigFile.BOT, "bot.access_groups", ConfigType.LIST, "", true,

@@ -36,7 +36,7 @@ public class WebResourceConfig {
     }
 
     private static void setWebHomePath() {
-        String host = Configs.getStr(ConfigKey.BOT_INTERNET_HOST, null);
+        String host = Configs.getStr(ConfigKey.INTERNET_HOST, null);
         if (StringUtils.isBlank(host)) {
             host = CommonUtil.getPublicIp();
             if (StringUtils.isBlank(host)) {

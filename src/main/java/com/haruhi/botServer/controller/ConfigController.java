@@ -132,7 +132,7 @@ public class ConfigController {
             return HttpResp.fail(e.getErrorMsg(), null);
         }
         List<ConfigChange> changes = configHub.refresh(key);
-        return HttpResp.success(describe(changes, key.getKey()));
+        return HttpResp.success(describe(changes, key.getKey()),null);
     }
 
     /**
