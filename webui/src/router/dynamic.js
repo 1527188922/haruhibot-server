@@ -263,6 +263,17 @@ const release = [{
     },
     children: []
 },{
+    label: "字典数据",
+    path: '/dict',
+    component: 'views/dict-list/index',
+    icon: 'icon-caidan',
+    iconBgColor: randomColor(),
+    meta: {
+        // i18n: 'dict',
+        keepAlive: true
+    },
+    children: []
+},{
     label: "JM漫画",
     path: '/jmcomic',
     component: 'views/jmcomic/index',

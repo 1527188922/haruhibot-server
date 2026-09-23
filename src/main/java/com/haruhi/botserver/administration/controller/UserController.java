@@ -2,7 +2,7 @@ package com.haruhi.botserver.administration.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botserver.shared.annotation.IgnoreAuthentication;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.shared.model.HttpResp;
 import com.haruhi.botserver.shared.model.BaseResp;
 import com.haruhi.botserver.administration.service.LoginService;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping(BotConfig.CONTEXT_PATH+"/user")
+@RequestMapping(SysConstants.CONTEXT_PATH+"/user")
 public class UserController {
 
     @Autowired

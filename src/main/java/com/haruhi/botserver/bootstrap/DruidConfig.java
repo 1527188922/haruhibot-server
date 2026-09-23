@@ -24,7 +24,7 @@ public class DruidConfig {
 
     @Bean
     public ServletRegistrationBean<StatViewServlet> druidServlet() {
-        ServletRegistrationBean<StatViewServlet> bean = new ServletRegistrationBean<>(new StatViewServlet(), StrFormatter.format("{}/*",BotConfig.DRUID_PATH));
+        ServletRegistrationBean<StatViewServlet> bean = new ServletRegistrationBean<>(new StatViewServlet(), StrFormatter.format("{}/*", SysConstants.DRUID_PATH));
 
         String username = Configs.getStr(ConfigKey.WEBUI_LOGIN_USERNAME, null);
         String password = Configs.getStr(ConfigKey.WEBUI_LOGIN_PASSWORD, null);

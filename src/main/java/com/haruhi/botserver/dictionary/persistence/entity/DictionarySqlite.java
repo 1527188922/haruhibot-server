@@ -1,4 +1,4 @@
-package com.haruhi.botserver.infrastructure.persistence.persistence.entity;
+package com.haruhi.botserver.dictionary.persistence.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

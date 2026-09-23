@@ -1,7 +1,7 @@
 package com.haruhi.botserver.features.contacts.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.features.contacts.persistence.entity.FriendSqlite;
 import com.haruhi.botserver.features.contacts.service.FriendSqliteService;
 import com.haruhi.botserver.features.contacts.model.FriendInfoQueryReq;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(BotConfig.CONTEXT_PATH+"/friend")
+@RequestMapping(SysConstants.CONTEXT_PATH+"/friend")
 public class FriendController {
 
     @Autowired

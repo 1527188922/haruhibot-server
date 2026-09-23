@@ -12,7 +12,7 @@ import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botserver.shared.annotation.IgnoreAuthentication;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.shared.constant.RootTypeEnum;
 import com.haruhi.botserver.infrastructure.persistence.SqlTypeEnum;
 import com.haruhi.botserver.administration.model.SqlExecuteResult;
@@ -63,7 +63,7 @@ import java.util.concurrent.TimeoutException;
 
 @RestController
 @Slf4j
-@RequestMapping(BotConfig.CONTEXT_PATH+"/sys")
+@RequestMapping(SysConstants.CONTEXT_PATH+"/sys")
 public class SystemController {
 
     @Autowired

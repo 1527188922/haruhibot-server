@@ -6,7 +6,7 @@ import com.haruhi.botserver.configuration.metadata.ConfigKey;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import com.haruhi.botserver.integration.onebot.model.QqClientActionEnum;
 import com.haruhi.botserver.integration.onebot.model.MessageTypeEnum;
@@ -98,9 +98,9 @@ public class Bot implements Closeable {
 
     public String getBotName(){
         if (selfInfo != null) {
-            return StringUtils.isNotBlank(selfInfo.getNickname()) ? selfInfo.getNickname() : BotConfig.DEFAULT_NAME;
+            return StringUtils.isNotBlank(selfInfo.getNickname()) ? selfInfo.getNickname() : SysConstants.DEFAULT_NAME;
         }
-        return BotConfig.DEFAULT_NAME;
+        return SysConstants.DEFAULT_NAME;
     }
 
     public void refreshSelfInfo(){

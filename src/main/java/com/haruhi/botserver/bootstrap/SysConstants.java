@@ -1,7 +1,6 @@
 package com.haruhi.botserver.bootstrap;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 /**
  * 程序级固定常量
@@ -10,8 +9,7 @@ import org.springframework.stereotype.Component;
  * 运行期可变的配置请一律使用 {@link com.haruhi.botserver.configuration.service.Configs}。
  */
 @Slf4j
-@Component
-public class BotConfig {
+public class SysConstants {
 
     public static final String DEFAULT_NAME = "春日酱";
 

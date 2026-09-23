@@ -1,6 +1,6 @@
 package com.haruhi.botserver.configuration.controller;
 
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.configuration.metadata.ConfigFile;
 import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
@@ -41,7 +41,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping(BotConfig.CONTEXT_PATH + "/config")
+@RequestMapping(SysConstants.CONTEXT_PATH + "/config")
 public class ConfigController {
 
     @Autowired

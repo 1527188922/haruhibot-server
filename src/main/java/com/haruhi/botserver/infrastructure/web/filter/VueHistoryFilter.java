@@ -1,6 +1,6 @@
 package com.haruhi.botserver.infrastructure.web.filter;
 
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,10 +28,10 @@ public class VueHistoryFilter implements Filter {
 
         // true:需要转发
         boolean need = HttpMethod.GET.name().equals(requestMethod)
-                        && !requestURI.startsWith(BotConfig.CONTEXT_PATH)
+                        && !requestURI.startsWith(SysConstants.CONTEXT_PATH)
                         && !requestURI.contains(".")
                         && !"/index.html".equals(requestURI)
-                        && !requestURI.startsWith(BotConfig.DRUID_PATH);
+                        && !requestURI.startsWith(SysConstants.DRUID_PATH);
 
         if (need) {
             // 符合转发规则 → 服务器内部转发到 index.html

@@ -6,7 +6,6 @@ import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.shared.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import java.net.Inet4Address;
@@ -25,7 +24,6 @@ import java.net.UnknownHostException;
  */
 @Slf4j
 @Component
-@DependsOn("botConfig")
 public class WebResourceConfig {
 
     /** 对外访问地址，形如 http://ip:port；在类加载时确定，改端口/对外地址需重启 */

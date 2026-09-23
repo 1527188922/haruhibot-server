@@ -1,7 +1,7 @@
 package com.haruhi.botserver.administration.controller;
 
 import com.haruhi.botserver.shared.annotation.IgnoreAuthentication;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.integration.onebot.model.MessageTypeEnum;
 import com.haruhi.botserver.features.chatrecord.service.ChatRecordService;
 import com.haruhi.botserver.shared.model.HttpResp;
@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping(BotConfig.CONTEXT_PATH+"/test")
+@RequestMapping(SysConstants.CONTEXT_PATH+"/test")
 public class TestController {
 
     @Autowired

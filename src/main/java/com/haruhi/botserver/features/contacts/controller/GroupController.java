@@ -2,7 +2,7 @@ package com.haruhi.botserver.features.contacts.controller;
 
 import cn.hutool.core.lang.mutable.MutablePair;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.shared.model.CodeNameReq;
 import com.haruhi.botserver.features.contacts.model.GroupCodeNameResp;
 import com.haruhi.botserver.shared.model.HttpResp;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 
 @RestController
-@RequestMapping(BotConfig.CONTEXT_PATH+"/group")
+@RequestMapping(SysConstants.CONTEXT_PATH+"/group")
 public class GroupController {
 
     @Autowired

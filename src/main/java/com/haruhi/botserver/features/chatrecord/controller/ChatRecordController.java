@@ -2,7 +2,7 @@ package com.haruhi.botserver.features.chatrecord.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageInfo;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.integration.onebot.model.MessageTypeEnum;
 import com.haruhi.botserver.features.chatrecord.persistence.entity.ChatRecordExtendV2;
 import com.haruhi.botserver.features.chatrecord.model.ChatRecordVo;
@@ -24,7 +24,7 @@ import java.util.Objects;
 
 @Slf4j
 @RestController
-@RequestMapping(BotConfig.CONTEXT_PATH+"/chatRecord")
+@RequestMapping(SysConstants.CONTEXT_PATH+"/chatRecord")
 public class ChatRecordController{
     @Autowired
     private ChatRecordService chatRecordService;

@@ -11,7 +11,7 @@ import com.haruhi.botserver.configuration.service.ConfigHub;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.infrastructure.persistence.DataBaseConst;
 import com.haruhi.botserver.shared.constant.RootTypeEnum;
 import com.haruhi.botserver.infrastructure.persistence.persistence.entity.IndexInfoSqlite;
@@ -346,7 +346,7 @@ public class SystemService {
         botWebSocketInfo.setRunning(getBotServer().isRunning());
         botWebSocketInfo.setConnections(BotContainer.getConnections());
         botWebSocketInfo.setMaxConnections(Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS, 0));
-        botWebSocketInfo.setPath(BotConfig.WEB_SOCKET_PATH);
+        botWebSocketInfo.setPath(SysConstants.WEB_SOCKET_PATH);
         botWebSocketInfo.setAccessToken(Configs.getStr(ConfigKey.WS_ACCESS_TOKEN, null));
         return botWebSocketInfo;
     }

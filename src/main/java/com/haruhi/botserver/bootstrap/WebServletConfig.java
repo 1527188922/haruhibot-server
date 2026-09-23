@@ -28,7 +28,7 @@ public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(botServer, BotConfig.WEB_SOCKET_PATH)
+        registry.addHandler(botServer, SysConstants.WEB_SOCKET_PATH)
                 .addInterceptors(webSocketHandshakeInterceptor)
                 .setAllowedOrigins("*");
     }
@@ -36,7 +36,7 @@ public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(apiHeaderInterceptor)
-                .addPathPatterns(BotConfig.CONTEXT_PATH+"/**")
+                .addPathPatterns(SysConstants.CONTEXT_PATH+"/**")
         ;
     }
 

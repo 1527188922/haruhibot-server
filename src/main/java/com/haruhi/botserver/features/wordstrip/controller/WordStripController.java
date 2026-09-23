@@ -2,7 +2,7 @@ package com.haruhi.botserver.features.wordstrip.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.shared.model.HttpResp;
 import com.haruhi.botserver.features.wordstrip.persistence.entity.WordStripSqlite;
 import com.haruhi.botserver.features.wordstrip.service.WordStripSqliteService;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
-@RequestMapping(BotConfig.CONTEXT_PATH+"/wordStrip")
+@RequestMapping(SysConstants.CONTEXT_PATH+"/wordStrip")
 public class WordStripController {
 
 

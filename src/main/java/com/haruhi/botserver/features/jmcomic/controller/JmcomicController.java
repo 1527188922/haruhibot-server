@@ -2,7 +2,7 @@ package com.haruhi.botserver.features.jmcomic.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.shared.model.BaseResp;
 import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Album;
 import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Chapter;
@@ -35,7 +35,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping(BotConfig.CONTEXT_PATH+"/jmcomic")
+@RequestMapping(SysConstants.CONTEXT_PATH+"/jmcomic")
 public class JmcomicController {
 
 

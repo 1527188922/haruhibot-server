@@ -1,8 +1,8 @@
 package com.haruhi.botserver.infrastructure.cache;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.haruhi.botserver.infrastructure.persistence.persistence.entity.DictionarySqlite;
-import com.haruhi.botserver.infrastructure.persistence.persistence.mapper.DictionarySqliteMapper;
+import com.haruhi.botserver.dictionary.persistence.entity.DictionarySqlite;
+import com.haruhi.botserver.dictionary.persistence.mapper.DictionarySqliteMapper;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

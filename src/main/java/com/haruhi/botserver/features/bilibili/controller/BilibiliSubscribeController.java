@@ -1,7 +1,7 @@
 package com.haruhi.botserver.features.bilibili.controller;
 
 import com.alibaba.fastjson.JSONObject;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.features.bilibili.model.BilibiliSubscribeTypeEnum;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @RestController
-@RequestMapping(BotConfig.CONTEXT_PATH + "/bilibili/subscribe")
+@RequestMapping(SysConstants.CONTEXT_PATH + "/bilibili/subscribe")
 public class BilibiliSubscribeController {
 
     @Autowired

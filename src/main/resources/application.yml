@@ -16,7 +16,7 @@ logging:
   level:
     # log level of this project: TRACE / DEBUG / INFO / WARN / ERROR (restart required)
     # for local development use: -Dlogging.level.com.haruhi.botserver=debug
-    com.haruhi.botserver: info
+    com.haruhi.botserver: debug
 
 
 internet-host:

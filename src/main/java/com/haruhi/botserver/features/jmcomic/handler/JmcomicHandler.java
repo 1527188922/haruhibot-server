@@ -9,7 +9,7 @@ import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrFormatter;
 import com.alibaba.fastjson.JSONObject;
-import com.haruhi.botserver.bootstrap.BotConfig;
+import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.bootstrap.WebResourceConfig;
 import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
@@ -149,8 +149,8 @@ public class JmcomicHandler implements IAllMessageHandler {
         );
         forwardMsgs.add(instance1);
 
-        String fileUrl = isPdf ? webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/pdf/"+aid
-                : webResourceConfig.webHomePath()+BotConfig.CONTEXT_PATH+"/jmcomic/download/"+aid;
+        String fileUrl = isPdf ? webResourceConfig.webHomePath()+ SysConstants.CONTEXT_PATH+"/jmcomic/download/pdf/"+aid
+                : webResourceConfig.webHomePath()+ SysConstants.CONTEXT_PATH+"/jmcomic/download/"+aid;
 
         ForwardMsgItem instance3 = ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(),
                 MessageHolder.instanceText(
