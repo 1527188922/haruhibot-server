@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haruhi.botserver.infrastructure.persistence.persistence.mapper.SqliteDatabaseInitMapper">
+    <insert id="addColumn">
+        ALTER TABLE ${tableName} ADD COLUMN ${column} ${type}<if test="notNull"> NOT NULL </if><if test="default != null"> DEFAULT ${default} </if>
+    </insert>
+    <update id="createChatRecord">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+             card TEXT,
+             nickname TEXT,
+             message_id TEXT NOT NULL,
+             group_id INTEGER,
+             user_id INTEGER NOT NULL,
+             self_id INTEGER NOT NULL,
+             content TEXT,
+             deleted INTEGER NOT NULL DEFAULT 0,
+             message_type TEXT NOT NULL,
+             `time` DATETIME NOT NULL
+        );
+    </update>
+
+
+    <update id="createChatRecordGroup">
+        CREATE TABLE IF NOT EXISTS `${tableName}`  (
+          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          card TEXT,
+          nickname TEXT,
+          message_id TEXT,
+          user_id INTEGER,
+          self_id INTEGER,
+          content TEXT,
+          deleted INTEGER NOT NULL DEFAULT 0,
+          `time` DATETIME NOT NULL
+        );
+    </update>
+
+    <update id="createChatRecordPrivate">
+        CREATE TABLE IF NOT EXISTS `${tableName}`  (
+           id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+           nickname TEXT,
+           message_id TEXT,
+           user_id INTEGER,
+           content TEXT,
+           deleted INTEGER NOT NULL DEFAULT 0,
+           `time` DATETIME NOT NULL,
+           target_id INTEGER
+        );
+    </update>
+
+
+    <update id="createChatRecordExtend">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          chat_record_id INTEGER NOT NULL,
+          message_id TEXT NOT NULL,
+          raw_ws_message TEXT,
+          `time` DATETIME NOT NULL
+        );
+    </update>
+
+    <update id="createChatRecordExtendV2">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          chat_record_id INTEGER NOT NULL,
+          user_id INTEGER,
+          group_id INTEGER,
+          raw_ws_message TEXT,
+          raw_ws_message_binary BLOB
+        );
+    </update>
+
+    <update id="createIndex">
+        CREATE INDEX IF NOT EXISTS ${tableName}_${column}_IDX ON ${tableName} (${column});
+    </update>
+
+    <update id="createIndexEnhance">
+        CREATE
+        <if test="unique != null and unique">UNIQUE</if>
+        INDEX IF NOT EXISTS ${indexName} ON ${tableName} (${columns});
+    </update>
+
+    <update id="createPokeReply">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `reply` TEXT NOT NULL
+        );
+    </update>
+    <update id="createCustomReply">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `regex` TEXT NOT NULL,
+            `reply` TEXT,
+            `deleted` INTEGER NOT NULL DEFAULT 0,
+            `is_text` INTEGER NOT NULL DEFAULT 1,
+            `relative_path` TEXT,
+            `cq_type` TEXT,
+            `url` TEXT,
+            `group_ids` TEXT,
+            `message_type` TEXT
+        );
+    </update>
+    <update id="createWordStrip">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `user_id` INTEGER NOT NULL,
+            `group_id` INTEGER NOT NULL,
+            `self_id` INTEGER NOT NULL,
+            `key_word` TEXT NOT NULL,
+            `answer` TEXT NOT NULL,
+            `create_time` DATETIME,
+            `modify_time` DATETIME
+        );
+    </update>
+    <update id="createPixiv">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `pid` TEXT NOT NULL,
+            `title` TEXT NOT NULL,
+            `width` INTEGER ,
+            `height` INTEGER,
+            `view` INTEGER,
+            `bookmarks` INTEGER ,
+            `img_url` TEXT NOT NULL,
+            `img_p` TEXT ,
+            `uid` TEXT ,
+            `author` TEXT ,
+            `is_r18` INTEGER NOT NULL,
+            `tags` text NOT NULL
+        );
+    </update>
+    <update id="createJmAlbum">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY,
+            `name` TEXT,
+            `album_folder_name` TEXT,
+            `images` TEXT,
+            `add_time` TEXT,
+            `description` TEXT,
+            `total_views` TEXT,
+            `likes` TEXT,
+            `series` TEXT,
+            `series_id` TEXT,
+            `comment_total` TEXT,
+            `author` TEXT,
+            `tags` TEXT,
+            `works` TEXT,
+            `actors` TEXT,
+            `related_list` TEXT,
+            `liked` INTEGER,
+            `is_favorite` INTEGER,
+            `is_aids` INTEGER,
+            `price` TEXT,
+            `purchased` TEXT,
+            `raw` TEXT,
+            `create_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+            `modify_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
+    <update id="createJmChapterImage">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `album_id` INTEGER NOT NULL,
+            `chapter_id` INTEGER NOT NULL,
+            `chapter_sort` TEXT,
+            `chapter_title` TEXT,
+            `chapter_name` TEXT,
+            `chapter_add_time` TEXT,
+            `series_id` TEXT,
+            `liked` INTEGER,
+            `is_favorite` INTEGER,
+            `image_file` TEXT NOT NULL,
+            `image_sort` INTEGER
+        );
+    </update>
+    <update id="createSendLikeRecord">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `user_id` INTEGER NOT NULL,
+            `self_id` INTEGER NOT NULL,
+            `send_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+            `times` INTEGER NOT NULL,
+            `message_type` TEXT
+        );
+    </update>
+    <update id="createDictionary">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `key` TEXT NOT NULL,
+            `content` TEXT NOT NULL,
+            `remark` TEXT,
+            `create_time` DATETIME,
+            `modify_time` DATETIME
+        );
+    </update>
+    <update id="createGroupInfo">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          `self_id` INTEGER NOT NULL,
+          `group_id` INTEGER NOT NULL,
+          `group_name` TEXT,
+          `member_count` INTEGER,
+          `max_member_count` INTEGER,
+          `group_all_shut` INTEGER,
+          `group_remark` TEXT,
+          `group_memo` TEXT,
+          `group_create_time` DATETIME,
+          `group_level` INTEGER
+        );
+    </update>
+    <update id="createGroupMember">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          `self_id` INTEGER NOT NULL,
+          `group_id` INTEGER NOT NULL,
+          `user_id` INTEGER NOT NULL,
+          `nickname` TEXT,
+          `card` TEXT,
+          `sex` TEXT,
+          `age` INTEGER,
+          `area` TEXT,
+          `level` TEXT,
+          `role` TEXT,
+          `title` TEXT,
+          `join_time` INTEGER,
+          `last_sent_time` INTEGER,
+          `shut_up_timestamp` INTEGER,
+          `title_expire_time` INTEGER,
+          `unfriendly` INTEGER,
+          `card_changeable` INTEGER,
+          `left_flag` INTEGER NOT NULL DEFAULT 0,
+          `create_time` DATETIME,
+          `modify_time` DATETIME
+        );
+    </update>
+    <update id="createFriend">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          `self_id` INTEGER NOT NULL,
+          `user_id` INTEGER NOT NULL,
+          `birthday_day` INTEGER,
+          `birthday_year` INTEGER,
+          `birthday_month` INTEGER,
+          `category_id` INTEGER,
+          `level` INTEGER,
+          `sex` TEXT,
+          `nickname` TEXT,
+          `phone_num` TEXT,
+          `remark` TEXT,
+          `age` INTEGER,
+          `email` TEXT
+        );
+    </update>
+    <update id="createSystemLog">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+          `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          `trace_id` TEXT,
+          `business_module` TEXT,
+          `level` TEXT NOT NULL,
+          `logger_name` TEXT,
+          `class_name` TEXT,
+          `method_name` TEXT,
+          `thread_name` TEXT,
+          `message` TEXT,
+          `throwable` TEXT,
+          `request_method` TEXT,
+          `request_uri` TEXT,
+          `query_string` TEXT,
+          `client_ip` TEXT,
+          `user_name` TEXT,
+          `handler_class` TEXT,
+          `handler_method` TEXT,
+          `create_time` DATETIME NOT NULL
+        );
+    </update>
+    <update id="createBilibiliSubscribe">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `uid` INTEGER NOT NULL,
+            `room_id` INTEGER,
+            `sub_type` TEXT NOT NULL,
+            `uname` TEXT,
+            `face` TEXT,
+            `self_id` INTEGER NOT NULL,
+            `group_ids` TEXT,
+            `at_all_group_ids` TEXT,
+            `friend_ids` TEXT,
+            `enable_status` INTEGER NOT NULL DEFAULT 1,
+            `off_notify` INTEGER NOT NULL DEFAULT 0,
+            `create_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+            `update_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
+    <select id="pragmaTableInfo" resultType="com.haruhi.botserver.infrastructure.persistence.persistence.entity.TableInfoSqlite">
+        PRAGMA table_info(${tableName})
+    </select>
+
+    <select id="pragmaIndexList" resultType="com.haruhi.botserver.infrastructure.persistence.persistence.entity.IndexInfoSqlite">
+        PRAGMA index_list(${tableName})
+    </select>
+</mapper>

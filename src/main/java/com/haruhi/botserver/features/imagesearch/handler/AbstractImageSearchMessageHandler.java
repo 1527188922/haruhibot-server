@@ -1,0 +1,84 @@
+package com.haruhi.botserver.features.imagesearch.handler;
+
+import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.bot.handler.IAllMessageHandler;
+import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
+import com.haruhi.botserver.bot.session.Bot;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.List;
+
+@Slf4j
+public abstract class AbstractImageSearchMessageHandler implements IAllMessageHandler {
+
+    private final ImageSearchProviderFactory imageSearchProviderFactory;
+    private final ImageSearchTriggerResolver triggerResolver = new ImageSearchTriggerResolver();
+
+    protected AbstractImageSearchMessageHandler(ImageSearchProviderFactory imageSearchProviderFactory) {
+        this.imageSearchProviderFactory = imageSearchProviderFactory;
+    }
+
+    @Override
+    public boolean onMessage(Bot bot, Message message) {
+        if (!allow(bot, message)) {
+            return false;
+        }
+
+        ImageSearchMatch match = triggerResolver.resolve(bot, message, regex());
+        if (!match.isMatched()) {
+            return false;
+        }
+
+        if (match.isWaitingImage()) {
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), waitingImageMessage(), true);
+            return true;
+        }
+
+        startSearch(bot, message, match);
+        return true;
+    }
+
+    protected boolean allow(Bot bot, Message message) {
+        return true;
+    }
+
+    protected abstract String regex();
+
+    protected ImageSearchProviderType providerType() {
+        throw new UnsupportedOperationException("providerType must be supplied by single-provider handlers");
+    }
+
+    protected abstract String startSearchMessage();
+
+    protected List<ImageSearchProvider> providers() {
+        return List.of(imageSearchProviderFactory.getProvider(providerType()));
+    }
+
+    protected String waitingImageMessage() {
+        return "图呢！";
+    }
+
+    protected String errorPrefix() {
+        return "识图异常：";
+    }
+
+    private void startSearch(Bot bot, Message message, ImageSearchMatch match) {
+        String s = this.startSearchMessage();
+        if (StringUtils.isNotBlank(s)) {
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), s, true);
+        }
+        ThreadPoolUtil.getHandleCommandPool().execute(() -> {
+            for (ImageSearchProvider provider : providers()) {
+                try {
+                    provider.search(bot, message, match.getReplyMessage(), match.getImageUrl());
+                } catch (Exception e) {
+                    log.error("{}{} provider:{}", errorPrefix(), match.getImageUrl(), provider.type(), e);
+                    bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
+                            provider.type() + " " + errorPrefix() + e.getMessage(), true);
+                }
+            }
+        });
+        triggerResolver.clear(match.getCacheKey());
+    }
+}

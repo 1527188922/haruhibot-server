@@ -11,7 +11,7 @@ export default [{
       i18n: 'dashboard'
     },
     component: () =>
-      import( /* webpackChunkName: "views" */ '@/views/wel/index.vue')
+      import( /* webpackChunkName: "views" */ '@/views/dashboard/index.vue')
   }, {
     path: 'more',
     name: '控制台',
@@ -20,7 +20,7 @@ export default [{
       menu: false,
     },
     component: () =>
-      import( /* webpackChunkName: "views" */ '@/views/wel/dashboard.vue')
+      import( /* webpackChunkName: "views" */ '@/views/dashboard/dashboard.vue')
   }]
 }, {
   path: '/form-detail',

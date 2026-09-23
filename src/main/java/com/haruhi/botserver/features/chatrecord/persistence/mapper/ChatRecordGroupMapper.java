@@ -1,0 +1,44 @@
+package com.haruhi.botserver.features.chatrecord.persistence.mapper;
+
+import com.haruhi.botserver.features.chatrecord.persistence.entity.ChatRecordGroup;
+import com.haruhi.botserver.features.chatrecord.persistence.entity.ChatRecordPrivate;
+import com.haruhi.botserver.features.chatrecord.model.ChatRecordVo;
+import com.haruhi.botserver.features.chatrecord.model.ChatRecordQueryReq;
+import com.haruhi.botserver.features.chatrecord.model.GroupChatUserResp;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+@Mapper
+public interface ChatRecordGroupMapper {
+
+    int insert(@Param("tableName") String tableName, @Param("param") ChatRecordGroup entity);
+
+    List<ChatRecordGroup> selectList(@Param("tableName") String tableName, @Param("param") ChatRecordQueryReq req);
+
+    List<ChatRecordGroup> selectByIds(@Param("tableName") String tableName, @Param("ids") List<Long> ids);
+
+    ChatRecordGroup selectById(@Param("tableName") String tableName, @Param("id") Long id);
+
+    List<ChatRecordVo> chatStats(@Param("tableName") String tableName, @Param("selfId") Long selfId);
+
+    List<ChatRecordGroup> selectWordCloudCorpus(@Param("tableName") String tableName,
+                                                @Param("selfId") Long selfId,
+                                                @Param("userIds") List<Long> userIds,
+                                                @Param("startTime") String startTime,
+                                                @Param("excludeContent") List<String> excludeList);
+
+    List<GroupChatUserResp> selectUserInGroup(@Param("tableName") String tableName,
+                                              @Param("prop") String prop,
+                                              @Param("order") String order);
+
+    List<ChatRecordPrivate> selectUserInPrivate(@Param("tableName") String tableName,
+                                                @Param("keyword") String keyword,
+                                                @Param("limit") Integer limit);
+
+    List<ChatRecordGroup> selectListByIdBetween(@Param("tableName") String tableName, @Param("start") long start, @Param("end") long end);
+
+
+    List<ChatRecordGroup> selectListByTime(String tableName, boolean before, String time, long offset);
+}

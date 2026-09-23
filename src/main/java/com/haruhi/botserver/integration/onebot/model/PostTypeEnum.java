@@ -1,0 +1,15 @@
+package com.haruhi.botserver.integration.onebot.model;
+
+/**
+ * 上报类型枚举
+ */
+public enum PostTypeEnum {
+    // 普通消息
+    message,
+    // 系统/程序事件
+    meta_event,
+    // bot通知
+    notice,
+    // 机器人自身发送的消息
+    message_sent
+}

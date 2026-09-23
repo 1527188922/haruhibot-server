@@ -22,9 +22,9 @@ module.exports = {
     entry
       .add('classlist-polyfill')
       .end()
-    entry
-      .add('@/mock')
-      .end()
+    if (process.env.NODE_ENV !== 'production') {
+      entry.add('@/mock').end()
+    }
   },
   css: {
     extract: { ignoreOrder: true },

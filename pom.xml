@@ -233,7 +233,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.haruhi.botServer.HaruhiBotServer</mainClass>
+                            <mainClass>com.haruhi.botserver.HaruhiBotServer</mainClass>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
@@ -264,7 +264,7 @@
                     <!-- not append assembly id in release file name -->
                     <appendAssemblyId>false</appendAssemblyId>
                     <descriptors>
-                        <descriptor>src/main/resources/build/package.xml</descriptor>
+                        <descriptor>src/assembly/package.xml</descriptor>
                     </descriptors>
 
                 </configuration>

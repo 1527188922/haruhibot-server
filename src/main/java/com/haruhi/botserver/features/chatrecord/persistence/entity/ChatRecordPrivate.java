@@ -1,0 +1,16 @@
+package com.haruhi.botserver.features.chatrecord.persistence.entity;
+
+import lombok.Data;
+
+@Data
+public class ChatRecordPrivate {
+
+    private Long id;
+    private String nickname;
+    private String messageId;
+    private Long userId;
+    private Long targetId;
+    private String content;
+    private Integer deleted;
+    private String time;
+}

@@ -1,9 +1,12 @@
 # 启动早期修复被旧版保存接口写坏的 application*.yml（重复的key会导致yml解析失败、应用起不来）
 # 必须在读取 application*.yml 之前执行，因此实现为 order=HIGHEST_PRECEDENCE 的 EnvironmentPostProcessor
 #org.springframework.boot.env.EnvironmentPostProcessor=\
-#com.haruhi.botServer.config.config.YamlDuplicateKeyRepairPostProcessor
+#com.haruhi.botserver.configuration.service.YamlDuplicateKeyRepairPostProcessor
 
 # 把 ./config/ 下的配置文件注入 Spring Environment
 # 使 @ConditionalOnProperty / @Value / 第三方starter的属性绑定 与 Configs 读到同一份配置
 #org.springframework.context.ApplicationContextInitializer=\
-#com.haruhi.botServer.config.config.ConfigsEnvironmentInitializer
+#com.haruhi.botserver.configuration.service.ConfigsEnvironmentInitializer
+
+org.springframework.boot.env.EnvironmentPostProcessor=\
+com.haruhi.botserver.bootstrap.LegacyLoggingEnvironmentPostProcessor

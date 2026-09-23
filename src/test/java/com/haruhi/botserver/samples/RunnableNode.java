@@ -1,0 +1,154 @@
+package com.haruhi.botserver.samples;
+
+import com.haruhi.botserver.integration.onebot.model.Message;
+//import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
+import com.haruhi.botserver.bot.session.Bot;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.CollectionUtils;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+@Slf4j
+public abstract class RunnableNode<T>{
+
+    // 当前节点自定义的数据
+    private T data;
+    // 当前节点的父节点 为null表示当前节点是根节点
+    private RunnableNode<T> parentNode;
+    // 当前节点的子节点 为空表示当前节点是终节点
+    private volatile List<RunnableNode<T>> childNodes = new LinkedList<>();
+    // 当前节点的高度/深度 为0表示为根节点
+    private AtomicInteger height;
+
+
+    /**
+     * 创建根节点
+     * @param data
+     */
+    public RunnableNode(final T data){
+
+        this.data = data;
+        this.height = new AtomicInteger(0);
+    }
+
+
+    /**
+     * 创建子节点
+     * @param parentNode
+     * @param data
+     */
+    public RunnableNode(final RunnableNode<T> parentNode, final T data){
+        setParentNode(parentNode);
+        this.data = data;
+    }
+
+    public void setParentNode(final RunnableNode<T> parentNode){
+        if (parentNode == null) {
+            throw new NullPointerException("parentNode is null");
+        }
+        if(parentNode != this.parentNode){
+            if(!checkParentNode(parentNode,this.childNodes)){
+                throw new IllegalArgumentException("The parent node exists in the child node of the current node");
+            }
+            if (this.parentNode != null) {
+                // 当前节点的父节点不为空 则先删除旧父节点的引用
+                List<RunnableNode<T>> childNodes = this.parentNode.getChildNodes();
+                if (!CollectionUtils.isEmpty(childNodes)) {
+                    childNodes.remove(this);
+                }
+            }
+
+            List<RunnableNode<T>> childNodes = parentNode.getChildNodes();
+            childNodes.add(this);
+
+            this.parentNode = parentNode;
+            this.height = new AtomicInteger(parentNode.getHeight().get() + 1);
+        }
+
+    }
+
+    /**
+     * 检查将要设置的父节点是否在当前节点的子节点中
+     * 不存在则表示验证通过
+     * @param parentNode
+     * @param nodes
+     * @return
+     */
+    private boolean checkParentNode(final RunnableNode<T> parentNode, final List<RunnableNode<T>> nodes){
+        if(CollectionUtils.isEmpty(nodes)){
+            return true;
+        }
+
+        for (RunnableNode<T> node : nodes) {
+            if (node == parentNode) {
+                return false;
+            }else {
+                return checkParentNode(parentNode,node.getChildNodes());
+            }
+        }
+        return true;
+    }
+
+
+    public List<RunnableNode<T>> getChildNodes(){
+        return this.childNodes;
+    }
+    public void setChildNodes(List<RunnableNode<T>> childNodes){
+        this.childNodes = childNodes;
+    }
+
+    public AtomicInteger getHeight(){
+        return height;
+    }
+
+    public RunnableNode<T> getParentNode(){
+        return parentNode;
+    }
+
+    public void setData(T data){
+        this.data = data;
+    }
+    public T getData(){
+        return data;
+    }
+
+
+      // 该方法和run() 合一
+//    protected abstract boolean matches(final WebSocketSession session,final Message message) throws Exception;
+
+    /**
+     * run()中自定义匹配规则和节点要做的事情
+     * matches()和run() 用同一个方法更好,这样有更大的自定义空间 而且 有些参数从匹配过程中就能拿到 没必要把matches()和run()分开
+     * 至于匹配成功之后的执行 是由当前线程执行还是提交线程池 自行发挥 不再强行提交线程池
+     * @param bot 客户端session
+     * @param message gocq消息对象
+     * @return true:表示该节点匹配成功 被执行
+     * @throws Exception
+     */
+    protected abstract boolean run(final Bot bot, final Message message) throws Exception;
+
+//    public boolean execute(final WebSocketSession session,final Message message){
+//        boolean matches = false;
+//        try {
+//            // 调用自定义的匹配方法
+//            matches = matches(session, message);
+//        } catch (Exception e) {
+//            log.error("节点匹配异常",e);
+//        }
+//        if (matches) {
+//            // 若匹配成功 将run()提交到线程池执行
+//            ThreadPoolUtil.getHandleCommandPool().execute(()->{
+//                try {
+//                    run(session,message);
+//                }catch (Exception e){
+//                    log.error("节点任务执行异常");
+//                }
+//            });
+//        }
+//        return matches;
+//    }
+
+
+}

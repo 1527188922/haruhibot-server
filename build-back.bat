@@ -1,5 +1,3 @@
 @echo off
-chcp 65001
-
-call mvn clean package -U -DskipTests
-pause
+call "%~dp0scripts\build-back.bat"
+exit /b %errorlevel%

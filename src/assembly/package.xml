@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly>
+    <id>bin</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <dependencySets>
+        <dependencySet>
+            <useProjectArtifact>false</useProjectArtifact>
+            <outputDirectory>lib</outputDirectory>
+            <unpack>false</unpack>
+        </dependencySet>
+    </dependencySets>
+
+    <fileSets>
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>README.md</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${project.basedir}/src/main/resources</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>logback-spring.xml</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${project.basedir}/scripts/runtime</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.bat</include>
+                <include>*.sh</include>
+                <include>*.xml</include>
+                <include>*.exe</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/webui/dist</directory>
+            <outputDirectory>${file.separator}webui</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}/classes/config</directory>
+            <outputDirectory>${file.separator}/config</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}/classes/templates</directory>
+            <outputDirectory>${file.separator}/templates</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/main/resources/image</directory>
+            <outputDirectory>/image</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/main/resources/customReply</directory>
+            <outputDirectory>/customReply</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/main/resources/audio</directory>
+            <outputDirectory>/audio</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+            <excludes>
+                <exclude>*-sources.jar</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+    <files>
+        <!-- 只有一份 application.yml：端口/日志级别/资源模式都在里面，由配置管理页或直接编辑修改。
+             以前这里是 src/main/resources/application-${env}.yml 改名成 application.yml（靠 maven profile 选 dev/prod），
+             现在不再需要 maven profile，dev/prod 的差异由 webui.dev-mode 等配置项表达 -->
+        <file>
+            <source>${project.basedir}/src/main/resources/application.yml</source>
+            <outputDirectory>/</outputDirectory>
+            <destName>application.yml</destName>
+        </file>
+    </files>
+</assembly>

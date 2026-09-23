@@ -1,44 +1,34 @@
 # haruhibot-server
 
-#### 介绍
-1：一个java开发的QQ Bot  
-2：使用[NapCat](https://napneko.github.io)于QQ交互
+基于 Java 21 / Spring Boot 的 QQ Bot，通过 NapCat 的反向 WebSocket 接收消息，提供可选 WebUI 管理界面。
 
+## 开发与构建
 
-#### 软件架构
-Spring boot  
-WebSocket  
-Mybatis-Plus  
-Dynamic-datasource  
-Maven  
-Sqlite  
+后端需要 JDK 21 和 Maven 3.8+。请确认 JAVA_HOME 指向 JDK 21。
 
+前端使用 Vue 2 / Vue CLI 5，先在 webui 目录执行 npm ci 安装锁定依赖，再执行 npm run build。
 
-#### 安装/启动 教程
+- Windows 完整构建：运行 build.bat。
+- Linux/macOS 完整构建：运行 sh build.sh。
+- 仅后端构建：build-back.bat 或 sh build-back.sh。
+- 后端测试：mvn clean test。
 
-* Bot安装/启动  
-  1. 安装:`java21`、`maven3.8`
-  2. 下载bot源码后,双击打包脚本`build.bat`(linux执行`build.sh`)  
-  3. 执行打包脚本完后会出现文件：`target/haruhibotServer.zip`，解压后双击启动脚本：`startup.bat`(linux执行`startup.sh`)
-* Bot Webui安装/启动（可选步骤）
-  1. 安装:`nodejs`，版本：`v14.18.0 - v16.0.2`之间都可以（其他版本可能也可以只是没试过）
-  2. 进入目录：`webui`，执行安装依赖命令：`npm install`，再执行打包命令：`npm run build`
-  3. 打包后会出现目录：`./webui/dist`
-  4. 将`dist`中的文件全选，复制进Bot压缩包解压后的目录：`./haruhibotServer/webui`中去
-  5. 访问webui地址：`http://{ip}:{port}`，webui账户密码配置文件：`./haruhibotServer/config/webuiConfig.properties`
-* NapCat启动
-  1. 看NapCat官方教程进行安装：https://napneko.github.io
-  2. 配置反向WebSocket地址：`http://{ip}:{port}/api/ws`（反向：Bot作为服务端，NapCat作为客户端）
+构建逻辑在 scripts/，根目录脚本是兼容入口。构建脚本跳过测试，提交前请单独运行测试。仅后端构建会使用已有 webui/dist；首次构建或修改前端后请执行完整构建。
 
+发布文件为 target/haruhibotServer.zip。解压后运行 start.bat 或 sh start.sh；运行脚本源文件在 scripts/runtime/。
 
-#### 使用说明
+WebUI 访问地址为 http://{ip}:{port}，账号与密码配置在 config/webui.properties。默认端口为 8090。
 
+## NapCat 接入
 
+安装并配置 [NapCat](https://napneko.github.io)，将反向 WebSocket 地址设置为 ws://{ip}:{port}/api/ws。Bot 作为服务端，NapCat 作为客户端。
 
-#### 参与贡献
+## 项目结构
 
+后端采用单 Maven 模块，以功能聚合代码，根包为 com.haruhi.botserver。B 站、聊天记录、图片搜索等功能的消息入口、业务服务和持久化代码均位于 features 下对应模块。
 
+- [架构、包职责与兼容说明](docs/architecture.md)
+- [配置管理说明](docs/config-redesign.md)
+- [开发文档索引](docs/README.md)
 
-#### 特技
-
-
+结构迁移后首次构建请执行 mvn clean，避免旧包的 class 文件和配置残留。旧日志 key logging.level.com.haruhi.botServer 保持读取兼容，新配置使用 logging.level.com.haruhi.botserver。

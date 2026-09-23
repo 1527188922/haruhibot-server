@@ -1,0 +1,19 @@
+package com.haruhi.botserver.administration.model;
+
+import lombok.Data;
+
+@Data
+public class FileNode {
+
+    private String fileName;
+    private Boolean leaf;
+    private String absolutePath;
+    private Boolean isDirectory;
+    private Long size;
+    private Boolean showPreview;
+    private Boolean showDel;
+    private Integer childCount;
+
+    private Long lastModified;
+    private Long createTime;
+}

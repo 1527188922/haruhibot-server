@@ -1,0 +1,65 @@
+package com.haruhi.botserver.features.bilibili.service;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.haruhi.botserver.features.bilibili.model.BilibiliSubscribeTypeEnum;
+import com.haruhi.botserver.features.bilibili.persistence.entity.BilibiliSubscribeSqlite;
+import com.haruhi.botserver.features.bilibili.model.BilibiliSubscribeQueryReq;
+import com.haruhi.botserver.features.bilibili.model.BilibiliSubscribeResp;
+import com.haruhi.botserver.features.notification.model.PushTargetInfo;
+import com.haruhi.botserver.features.notification.model.PushTargetQueryReq;
+
+import java.util.List;
+
+public interface BilibiliSubscribeSqliteService extends IService<BilibiliSubscribeSqlite> {
+
+    /**
+     * 查询已启用的订阅
+     * @param subType 订阅类型 {@link BilibiliSubscribeTypeEnum}
+     * @return
+     */
+    List<BilibiliSubscribeSqlite> listEnabled(String subType);
+
+    /**
+     * web管理界面查询
+     * 不分页，正在开播的排在最前面，其余按更新时间倒序
+     */
+    List<BilibiliSubscribeResp> search(BilibiliSubscribeQueryReq request);
+
+    /**
+     * 新增订阅
+     */
+    boolean saveSubscribe(BilibiliSubscribeSqlite entity);
+
+    /**
+     * 修改订阅(不包含推送目标)
+     */
+    boolean updateSubscribe(BilibiliSubscribeSqlite entity);
+
+    /**
+     * 修改推送的群与好友，不修改开播@全体成员的开关
+     * (群被移除时，该群的@全体成员开关也会一并移除)
+     */
+    boolean updateTargets(Long id, List<Long> groupIds, List<Long> friendIds);
+
+    /**
+     * 修改推送的群与好友，同时设置开播消息需要@全体成员的群
+     * @param atAllGroupIds @全体成员的群，会自动与groupIds取交集
+     */
+    boolean updateTargets(Long id, List<Long> groupIds, List<Long> atAllGroupIds, List<Long> friendIds);
+
+    /**
+     * 更新主播昵称、头像、直播间id，定时任务请求到直播状态数据时调用
+     */
+    boolean refreshLiveInfo(Long uid, String uname, String face, Long roomId);
+
+    /**
+     * 查询可选的推送目标(群/好友)，用于web管理界面选择
+     */
+    List<PushTargetInfo> listTargetCandidates(PushTargetQueryReq request);
+
+    /**
+     * 是否已存在相同的订阅
+     * @param excludeId 需要排除的订阅id(修改时排除自身)，可为null
+     */
+    boolean existsSubscribe(Long uid, Long selfId, String subType, Long excludeId);
+}

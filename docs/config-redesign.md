@@ -49,7 +49,7 @@
 
 ### 2.1 配置声明：`ConfigKey`
 
-`src/main/java/com/haruhi/botServer/config/config/ConfigKey.java` 是**唯一声明处**：
+`src/main/java/com/haruhi/botserver/configuration/metadata/ConfigKey.java` 是**唯一声明处**：
 
 | 字段 | 说明 |
 |---|---|
@@ -74,7 +74,7 @@
 
 | 文件 | 中文名 | 内容 |
 |---|---|---|
-| `application.yml` | 应用主配置 | `server.port`、`logging.level.com.haruhi.botServer`（**需重启**） |
+| `application.yml` | 应用主配置 | `server.port`、`logging.level.com.haruhi.botserver`（**需重启**） |
 | `webui.properties` | WebUI | 登录账号密码、JWT、会话、druid监控台开关（**需重启**） |
 | `job.properties` | 定时任务 | 各任务 `enable` / `cron`（**开关与cron均可即时生效**） |
 | `bot.properties` | 机器人 | 同机部署、对外地址、超级管理员、可访问群、上传并发、`bot.switch.*` 功能开关 |
@@ -97,7 +97,7 @@ application.yml (10)  <  ./config/*.properties (30)
 
 **dev/prod 怎么区分**：不区分了。
 
-- 日志级别只有一份：`logging.level.com.haruhi.botServer`（原来分 dev=debug / prod=info 两份文件，现在一份，默认 `info`）。
+- 日志级别只有一份：`logging.level.com.haruhi.botserver`（原来分 dev=debug / prod=info 两份文件，现在一份，默认 `info`）。
 - 静态资源地址只有一套实现：`WebResourceConfig`（`config/webResource` 包）。原来 `AbstractWebResourceConfig` +
   `DevWebResourceConfig` / `ProWebResourceConfig` 两个实现，靠 Spring profile（`ProdEnvironmentCondition` 判定
   "没有激活的 profile"注册 prod 版）和 `webui.dev-mode` 配置来选，现在全部删掉，只留一个类、无条件装配。
@@ -134,7 +134,7 @@ List<Long> admins = Configs.getList(ConfigKey.BOT_SUPERUSERS, Long.class, List.o
 
 ### 2.4 写值与热更新：`ConfigHub`
 
-`src/main/java/com/haruhi/botServer/config/service/ConfigHub.java`
+`src/main/java/com/haruhi/botserver/configuration/service/ConfigHub.java`
 
 ```
 save(key, value)
@@ -184,14 +184,14 @@ save(key, value)
 **读**：把嵌套结构拍平成 `a.b.c=value`（与 properties 同样的寻址方式），只保留叶子节点；列表用逗号连接，与 `ConfigType.LIST` 对齐。
 
 **写**：按行定位后**原地替换**，保留注释、缩进与键顺序。定位方式不是"把 key 按 `.` 切开再逐段找行"，而是先把文件按缩进解析成
-"行 → 该行拍平后的完整路径"，再按路径精确匹配（`logging.level.com.haruhi.botServer` 这种**最后一段本身带点**的 key 也能命中）。
+"行 → 该行拍平后的完整路径"，再按路径精确匹配（`logging.level.com.haruhi.botserver` 这种**最后一段本身带点**的 key 也能命中）。
 
 - 键已存在（嵌套写法或 `a.b.c: value` 点分写法都算）→ 只替换该行的值（保留行尾注释），并顺手清掉历史上被重复追加的行：**一个 key 只保留一行**
 - 只有点分写法（properties 风格）→ 删掉旧行，按 yml 嵌套结构重写
-- 父节点存在、键不存在 → 插入到父级块末尾，缩进与同级一致，剩余路径作为点分叶子（如 `logging: level:` 下写 `com.haruhi.botServer: debug`）
+- 父节点存在、键不存在 → 插入到父级块末尾，缩进与同级一致，剩余路径作为点分叶子（如 `logging: level:` 下写 `com.haruhi.botserver: debug`）
 - 父节点也不存在 → 文件末尾补出第一层块 + 点分叶子（`server:` / `"  port: 8090"`、
-  `logging:` / `"  level.com.haruhi.botServer: debug"`），**不再**写成 `server.port: 8090` 这种平铺行，
-  也不会把 `com.haruhi.botServer` 这种 logger 名拆成假层级
+  `logging:` / `"  level.com.haruhi.botserver: debug"`），**不再**写成 `server.port: 8090` 这种平铺行，
+  也不会把 `com.haruhi.botserver` 这种 logger 名拆成假层级
 - 重置（`reset`）走的是同一套写值逻辑，只是把值换成默认值：**保留该 key**，不会删行
 - 标量按需加引号：`ConfigType.INT / BOOL` 写裸值（`port: 8090`），字符串类型需要时加双引号（避免被解析成布尔/数字）
 
@@ -308,7 +308,7 @@ save(key, value)
 
 | key | 文件 | 热更新 |
 |---|---|---|
-| `server.port`、`logging.level.com.haruhi.botServer` | application.yml | 否 |
+| `server.port`、`logging.level.com.haruhi.botserver` | application.yml | 否 |
 | `spring.datasource.dynamic.datasource.master.*` | database.properties | 否 |
 | `login.*`、`druid.*` | webui.properties | 否 |
 | `job.downloadPixiv.*`、`job.bilibiliLive.*` | job.properties | **是** |
@@ -334,7 +334,7 @@ save(key, value)
 | `db.chat_extend.raw_compress`（db.properties） | 同名，文件改为 chat_record.properties |
 | `db.sql_cache`（字典表） | 不迁移，仍在数据库里（操作数据） |
 | `server.yml`（上一版中间态） | 取消，端口回到 `application.yml` |
-| `application-dev.yml` / `application-prod.yml` + Spring profile（dev/prod 靠"有没有激活profile"判定） | 取消，合并成一份 `application.yml`（日志级别用 `logging.level.com.haruhi.botServer`）；`AbstractWebResourceConfig` + `DevWebResourceConfig`/`ProWebResourceConfig` 也取消，只留一个 `WebResourceConfig`（资源目录 `build/**` 已搬到 resources 根下，与部署目录结构一致）；构建侧 `package.xml` 不再按 maven profile 选文件 |
+| `application-dev.yml` / `application-prod.yml` + Spring profile（dev/prod 靠"有没有激活profile"判定） | 取消，合并成一份 `application.yml`（日志级别用 `logging.level.com.haruhi.botserver`）；`AbstractWebResourceConfig` + `DevWebResourceConfig`/`ProWebResourceConfig` 也取消，只留一个 `WebResourceConfig`（资源目录 `build/**` 已搬到 resources 根下，与部署目录结构一致）；构建侧 `package.xml` 不再按 maven profile 选文件 |
 | `ThirdPartyURL` 常量类 | 各地址变成 `url_conf.*` 配置项（识图那个已存在，未重复搬迁） |
 
 ---
