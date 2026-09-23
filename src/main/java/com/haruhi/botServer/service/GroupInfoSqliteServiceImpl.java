@@ -21,6 +21,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,7 @@ public class GroupInfoSqliteServiceImpl extends ServiceImpl<GroupInfoSqliteMappe
     @Transactional
     @Override
     public MutablePair<List<GroupInfoSqlite>,List<GroupInfoSqlite>> loadGroupInfo(Bot bot) {
-        SyncResponse<List<GroupInfo>> syncResponse = bot.getGroupList(true, 10 * 1000);
+        SyncResponse<List<GroupInfo>> syncResponse = bot.getGroupList(true, Duration.ofSeconds(30).toMillis());
         if (!syncResponse.isSuccess()) {
             return new MutablePair<>(Collections.emptyList(), Collections.emptyList());
         }

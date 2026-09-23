@@ -11,6 +11,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +42,7 @@ public class FakeMessageHandler implements IGroupMessageHandler {
         String finalWord = word;
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             try {
-                SyncResponse<List<GroupMember>> syncResponse = bot.getGroupMemberList(message.getGroupId(), 2L * 1000L);
+                SyncResponse<List<GroupMember>> syncResponse = bot.getGroupMemberList(message.getGroupId(), Duration.ofSeconds(10).toMillis());
 
                 List<GroupMember> groupMemberList = syncResponse.getData();
                 if(!CollectionUtils.isEmpty(groupMemberList)){

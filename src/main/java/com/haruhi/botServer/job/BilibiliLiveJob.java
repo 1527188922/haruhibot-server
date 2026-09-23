@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,7 +61,7 @@ public class BilibiliLiveJob extends AbstractJob {
     /**
      * 判断是否可以@全体成员时，请求群成员信息/剩余次数的超时时间
      */
-    private static final long AT_ALL_CHECK_TIMEOUT_MILLIS = 5 * 1000;
+    private static final long AT_ALL_CHECK_TIMEOUT_MILLIS = Duration.ofSeconds(15).toMillis();
 
     @Autowired
     private BilibiliSubscribeSqliteService bilibiliSubscribeSqliteService;
