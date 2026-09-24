@@ -11,7 +11,7 @@
               <el-input v-model="albumQuery.name" class="form-input" clearable @keyup.enter.native="searchAlbumsFirst"></el-input>
             </el-form-item>
             <el-form-item label="作者" prop="author">
-              <el-input v-model="albumQuery.author" class="form-input" clearable @keyup.enter.native="searchAlbumsFirst"></el-input>
+              <jm-author-select ref="authorSelect" v-model="albumQuery.author" class="form-input" @keyup.enter.native="searchAlbumsFirst"></jm-author-select>
             </el-form-item>
             <el-form-item label="标签" prop="tags">
               <jm-tag-select ref="tagSelect" v-model="albumQuery.tags" class="form-input" @keyup.enter.native="searchAlbumsFirst"></jm-tag-select>
@@ -299,6 +299,7 @@
 <script>
 import JmPreviewDrawer from "./jm-preview-drawer.vue";
 import JmTagSelect from "./jm-tag-select.vue";
+import JmAuthorSelect from "./jm-author-select.vue";
 import numberInput from "@/components/input/numberInput.vue";
 import {
   deleteAlbums,
@@ -315,7 +316,7 @@ import {
 
 export default {
   name: 'JmcomicManage',
-  components: { JmPreviewDrawer, JmTagSelect, numberInput },
+  components: { JmPreviewDrawer, JmTagSelect, JmAuthorSelect, numberInput },
   data() {
     return {
       activeTab: 'album',
@@ -486,6 +487,14 @@ export default {
         this.$refs.tagSelect.refresh()
       }
     },
+    /**
+     * 作者候选同样由组件在首次展开下拉时拉取，新增/删除JM记录后作者可能变化，通知组件重新拉取
+     */
+    refreshAuthorOptions() {
+      if (this.$refs.authorSelect) {
+        this.$refs.authorSelect.refresh()
+      }
+    },
     isAlbumOperation(row, action) {
       return row && this.albumOperationLoading[row.id] === action
     },
@@ -635,6 +644,7 @@ export default {
           }
           this.$message.success('拉取完成')
           this.refreshTagOptions()
+          this.refreshAuthorOptions()
           this.searchAlbumsFirst()
         }).catch(error => {
           this.handleRequestError(error)
@@ -748,6 +758,7 @@ export default {
         this.albumDeleteDialogVisible = false
         this.$message.success(message)
         this.refreshTagOptions()
+        this.refreshAuthorOptions()
         this.searchAlbumsFirst()
       }).catch(error => {
         this.handleRequestError(error)

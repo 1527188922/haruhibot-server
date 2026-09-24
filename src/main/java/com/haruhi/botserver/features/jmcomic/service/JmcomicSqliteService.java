@@ -31,6 +31,8 @@ public interface JmcomicSqliteService {
 
     List<String> allTag();
 
+    List<String> allAuthor();
+
     IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request);
 
     void deleteAlbums(JmAlbumDeleteReq request);

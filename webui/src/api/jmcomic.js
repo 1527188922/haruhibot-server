@@ -15,6 +15,14 @@ export const allTags = () => request({
   method: 'get'
 });
 
+/**
+ * 全部JM作者(已去重)，用于作者下拉候选
+ */
+export const allAuthors = () => request({
+  url: baseUrl + '/jmcomic/manage/authors',
+  method: 'get'
+});
+
 export const requestAlbum = (aid) => request({
   url: baseUrl + `/jmcomic/manage/album/request/${aid}`,
   method: 'post'
