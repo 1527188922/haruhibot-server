@@ -113,6 +113,8 @@ public class SqliteDatabaseService{
 
         sqliteDatabaseInitMapper.createJmAlbum(DataBaseConst.T_JM_ALBUM);
         this.addColumnIfNotExists(DataBaseConst.T_JM_ALBUM,"raw","TEXT",false,null);
+        // 本地收藏标记，与JM服务器返回的 is_favorite 无关
+        this.addColumnIfNotExists(DataBaseConst.T_JM_ALBUM,"collected","INTEGER",false,"0");
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_JM_ALBUM,"name");
         sqliteDatabaseInitMapper.createIndex(DataBaseConst.T_JM_ALBUM,"tags");
 

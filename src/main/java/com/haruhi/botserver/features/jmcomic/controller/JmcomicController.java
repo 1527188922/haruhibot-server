@@ -4,11 +4,12 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.shared.model.BaseResp;
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Album;
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Chapter;
+import com.haruhi.botserver.features.jmcomic.client.model.Album;
+import com.haruhi.botserver.features.jmcomic.client.model.Chapter;
 import com.haruhi.botserver.features.jmcomic.service.JmcomicService;
 import com.haruhi.botserver.features.jmcomic.service.JmcomicSqliteService;
 import com.haruhi.botserver.shared.model.HttpResp;
+import com.haruhi.botserver.features.jmcomic.model.JmAlbumCollectReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumDeleteReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumQueryReq;
@@ -18,6 +19,7 @@ import com.haruhi.botserver.features.jmcomic.model.JmChapterImageQueryReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterInfoResp;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -140,6 +142,18 @@ public class JmcomicController {
     public HttpResp deleteAlbums(@RequestBody JmAlbumDeleteReq request) {
         jmcomicSqliteService.deleteAlbums(request);
         return HttpResp.success("删除完成", null);
+    }
+
+    /**
+     * 收藏/取消收藏JM主记录
+     */
+    @PostMapping("/manage/album/collect")
+    public HttpResp collectAlbums(@RequestBody JmAlbumCollectReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getIds())) {
+            return HttpResp.fail("缺少JM ID", null);
+        }
+        jmcomicSqliteService.collectAlbums(request);
+        return HttpResp.success(Boolean.TRUE.equals(request.getCollected()) ? "收藏完成" : "取消收藏完成", null);
     }
     @PostMapping("/manage/album/deleteAllFile")
     public HttpResp deleteAllFile(@RequestBody JmAlbumDeleteReq request) {

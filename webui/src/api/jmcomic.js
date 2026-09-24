@@ -52,6 +52,16 @@ export const deleteAlbums = (data) => request({
   data
 });
 
+/**
+ * 收藏/取消收藏JM主记录
+ * @param data {ids: [], collected: true|false}
+ */
+export const collectAlbums = (data) => request({
+  url: baseUrl + '/jmcomic/manage/album/collect',
+  method: 'post',
+  data
+});
+
 export const deleteAllFile = (data) => request({
   url: baseUrl + '/jmcomic/manage/album/deleteAllFile',
   method: 'post',

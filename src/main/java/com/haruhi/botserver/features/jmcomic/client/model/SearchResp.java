@@ -1,4 +1,4 @@
-package com.haruhi.botserver.features.jmcomic.client.model.jmcomic;
+package com.haruhi.botserver.features.jmcomic.client.model;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;

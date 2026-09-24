@@ -2,7 +2,6 @@ package com.haruhi.botserver.features.jmcomic.service;
 
 import com.haruhi.botserver.HaruhiBotServer;
 import com.haruhi.botserver.shared.model.BaseResp;
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Album;
 import com.haruhi.botserver.shared.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;

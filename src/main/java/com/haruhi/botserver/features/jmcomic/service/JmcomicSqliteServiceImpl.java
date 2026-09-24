@@ -7,9 +7,9 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.haruhi.botserver.bootstrap.WebResourceConfig;
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Album;
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Chapter;
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Series;
+import com.haruhi.botserver.features.jmcomic.client.model.Album;
+import com.haruhi.botserver.features.jmcomic.client.model.Chapter;
+import com.haruhi.botserver.features.jmcomic.client.model.Series;
 import com.haruhi.botserver.features.jmcomic.persistence.entity.JmAlbumSqlite;
 import com.haruhi.botserver.features.jmcomic.persistence.entity.JmChapterImageSqlite;
 import com.haruhi.botserver.shared.error.BusinessException;
@@ -18,6 +18,7 @@ import com.haruhi.botserver.features.jmcomic.persistence.mapper.JmChapterImageSq
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumDeleteReq;
+import com.haruhi.botserver.features.jmcomic.model.JmAlbumCollectReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumQueryReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageDeleteReq;
@@ -80,6 +81,8 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
             return;
         }
         entity.setCreateTime(StringUtils.isNotBlank(exist.getCreateTime()) ? exist.getCreateTime() : now);
+        // collected是本地收藏标记，JM响应里没有这个字段，这里是从旧记录带过来的，否则delete+insert会丢掉收藏状态
+        entity.setCollected(exist.getCollected());
         jmAlbumSqliteMapper.deleteById(entity.getId());
         jmAlbumSqliteMapper.insert(entity);
     }
@@ -153,6 +156,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 .eq(Objects.nonNull(request.getId()), JmAlbumSqlite::getId, request.getId())
                 .like(StringUtils.isNotBlank(request.getName()), JmAlbumSqlite::getName, request.getName())
                 .like(StringUtils.isNotBlank(request.getAuthor()), JmAlbumSqlite::getAuthor, request.getAuthor())
+                .eq(Objects.nonNull(request.getCollected()), JmAlbumSqlite::getCollected, request.getCollected())
                 .orderByDesc(JmAlbumSqlite::getModifyTime)
                 .orderByDesc(JmAlbumSqlite::getId);
         applyTagFilter(queryWrapper, request);
@@ -290,6 +294,21 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                     .in(JmChapterImageSqlite::getAlbumId, request.getIds()));
             jmAlbumSqliteMapper.deleteByIds(request.getIds());
         }
+    }
+
+    /**
+     * 收藏/取消收藏JM主记录
+     * 只更新 collected 列，不动 modifyTime，避免打乱列表默认的修改时间排序
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void collectAlbums(JmAlbumCollectReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getIds())) {
+            return;
+        }
+        jmAlbumSqliteMapper.update(null, new LambdaUpdateWrapper<JmAlbumSqlite>()
+                .in(JmAlbumSqlite::getId, request.getIds())
+                .set(JmAlbumSqlite::getCollected, Boolean.TRUE.equals(request.getCollected())));
     }
 
     /**
@@ -436,6 +455,8 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         resp.setPdfExists(pdfFile.exists());
         resp.setServerZipUrl(zipFile.exists() ? buildServerFileUrl(album.getAlbumFolderName() + ".zip") : null);
         resp.setServerPdfUrl(pdfFile.exists() ? buildServerFileUrl(album.getAlbumFolderName() + ".pdf") : null);
+        resp.setCoverUrl(JmcomicService.buildCoverUrl(album.getId(), null));
+        resp.setServerCoverUrl(coverFileExists(album) ? buildServerCoverUrl(album) : null);
         resp.setChapterList(this.listChapters(album));
         resp.setImageCount(jmChapterImageSqliteMapper.selectCount(new LambdaQueryWrapper<JmChapterImageSqlite>()
                 .eq(JmChapterImageSqlite::getAlbumId, album.getId())));
@@ -525,6 +546,30 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
 
     private String buildServerFileUrl(String fileName) {
         return webResourceConfig.webResourcesJmcomicPathInClasses() + "/" + urlEncode(fileName);
+    }
+
+    /**
+     * 本地封面文件，与 JmcomicService#downloadCoverImage 落盘位置一致：jmcomic/{本子文件夹}/{jmId}.jpg
+     */
+    private File getCoverFile(JmAlbumSqlite album) {
+        if (album == null || album.getId() == null || StringUtils.isBlank(album.getAlbumFolderName())) {
+            return null;
+        }
+        return new File(getAlbumDir(album) + File.separator + album.getId() + ".jpg");
+    }
+
+    private boolean coverFileExists(JmAlbumSqlite album) {
+        File coverFile = getCoverFile(album);
+        return coverFile != null && coverFile.isFile() && coverFile.length() > 0;
+    }
+
+    private String buildServerCoverUrl(JmAlbumSqlite album) {
+        if (!coverFileExists(album)) {
+            return null;
+        }
+        return webResourceConfig.webResourcesJmcomicPathInClasses()
+                + "/" + urlEncode(album.getAlbumFolderName())
+                + "/" + album.getId() + ".jpg";
     }
 
     private String getChapterFolderName(JmChapterImageSqlite image) {

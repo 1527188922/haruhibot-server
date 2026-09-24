@@ -1,10 +1,11 @@
 package com.haruhi.botserver.features.jmcomic.service;
 
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Album;
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Chapter;
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Series;
+import com.haruhi.botserver.features.jmcomic.client.model.Album;
+import com.haruhi.botserver.features.jmcomic.client.model.Chapter;
+import com.haruhi.botserver.features.jmcomic.client.model.Series;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumDeleteReq;
+import com.haruhi.botserver.features.jmcomic.model.JmAlbumCollectReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumQueryReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageDeleteReq;
@@ -36,6 +37,8 @@ public interface JmcomicSqliteService {
     IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request);
 
     void deleteAlbums(JmAlbumDeleteReq request);
+
+    void collectAlbums(JmAlbumCollectReq request);
 
     void deleteAllFile(JmAlbumDeleteReq request);
 

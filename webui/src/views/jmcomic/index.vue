@@ -16,6 +16,12 @@
             <el-form-item label="标签" prop="tags">
               <jm-tag-select ref="tagSelect" v-model="albumQuery.tags" class="form-input" @keyup.enter.native="searchAlbumsFirst"></jm-tag-select>
             </el-form-item>
+            <el-form-item label="收藏" prop="collected">
+              <el-select v-model="albumQuery.collected" class="form-input" clearable placeholder="全部">
+                <el-option label="已收藏" :value="true"></el-option>
+                <el-option label="未收藏" :value="false"></el-option>
+              </el-select>
+            </el-form-item>
           </el-form>
           <el-row class="query-form-option-buts">
             <el-button type="primary" size="small" plain icon="el-icon-search" @click="searchAlbumsFirst">查询</el-button>
@@ -49,6 +55,8 @@
       <div class="data-table-option-buts">
         <el-button type="primary" size="small" plain icon="el-icon-plus" :loading="albumRequestLoading" @click="addAlbum">新增</el-button>
         <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="albumDeleteDisabled" @click="openAlbumDelete">批量删除</el-button>
+        <el-button type="warning" size="small" plain icon="el-icon-star-on" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'collect'" @click="collectSelectedAlbums(true)">批量收藏</el-button>
+        <el-button type="info" size="small" plain icon="el-icon-star-off" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'uncollect'" @click="collectSelectedAlbums(false)">取消收藏</el-button>
         <el-button type="danger" size="small" plain icon="el-icon-delete" @click="openAllFileDelete">删除全部</el-button>
         <el-dropdown trigger="click" :hide-on-click="false">
           <el-button type="primary" size="small" plain icon="el-icon-setting">列设置</el-button>
@@ -60,7 +68,7 @@
         </el-dropdown>
       </div>
       <el-table tooltip-effect="light" :data="albumData" v-loading="albumLoading" border stripe max-height="800"
-                size="small" ref="albumTable" highlight-current-row @selection-change="albumSelectionChange">
+                size="small" ref="albumTable" highlight-current-row :row-class-name="albumRowClassName" @selection-change="albumSelectionChange">
         <el-table-column v-if="isAlbumColumnVisible('selection')" type="selection" width="50" align="center"></el-table-column>
         <el-table-column v-if="isAlbumColumnVisible('action')" fixed label="操作" width="96" align="center">
           <template slot-scope="{row}">
@@ -86,6 +94,38 @@
         <el-table-column v-if="isAlbumColumnVisible('id')" fixed label="JM ID" prop="id" min-width="110" align="center">
           <template slot-scope="{row}">
             <span class="primary-text" style="cursor:pointer;" @click="jumpToChapters(row)">{{row.id}}</span>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="isAlbumColumnVisible('cover')" label="封面" width="96" align="center">
+          <template slot-scope="{row}">
+            <el-tooltip v-if="albumCoverSrc(row)" :content="albumCoverTip(row)" placement="right">
+              <el-image
+                class="jm-cover-image"
+                :src="albumCoverSrc(row)"
+                :preview-src-list="[albumCoverSrc(row)]"
+                fit="cover"
+                referrerpolicy="no-referrer">
+                <div slot="placeholder" class="jm-cover-state"><i class="el-icon-loading"></i></div>
+                <div slot="error" class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
+              </el-image>
+            </el-tooltip>
+            <el-tooltip v-else content="本地与JM均无封面" placement="right">
+              <div class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="isAlbumColumnVisible('collected')" label="收藏" width="70" align="center">
+          <template slot-scope="{row}">
+            <el-tooltip :content="isAlbumCollected(row) ? '点击取消收藏' : '点击收藏'" placement="top">
+              <el-button
+                :type="isAlbumCollected(row) ? 'warning' : 'default'"
+                size="mini"
+                plain
+                :icon="isAlbumCollected(row) ? 'el-icon-star-on' : 'el-icon-star-off'"
+                :loading="isAlbumOperation(row, 'collect')"
+                :disabled="isAlbumOtherOperation(row, 'collect')"
+                @click="toggleAlbumCollected(row)"></el-button>
+            </el-tooltip>
           </template>
         </el-table-column>
         <el-table-column v-if="isAlbumColumnVisible('name')" label="名称" prop="name" min-width="240" show-overflow-tooltip></el-table-column>
@@ -306,6 +346,7 @@ import {
   deleteAllFile,
   deleteChapterImages,
   downloadAlbum,
+  collectAlbums,
   generateAlbumPdf,
   generateAlbumZip,
   requestAlbum,
@@ -325,6 +366,7 @@ export default {
       albumRequestLoading: false,
       chapterRequestLoading: false,
       albumDeleteLoading: false,
+      albumCollectLoading: null,
       chapterDeleteLoading: false,
       allFileDeleteLoading: false,
       albumDeleteDialogVisible: false,
@@ -332,19 +374,21 @@ export default {
       deleteAllFileDialogVisible: false,
       previewDrawerVisible: false,
       previewAlbum: null,
-      albumQuery: { id: '', name: '', author: '', tags: [] },
+      albumQuery: { id: '', name: '', author: '', tags: [], collected: '' },
       chapterQuery: { albumId: '', chapterId: '', chapterTitle: '', imageFile: '' },
       albumData: [],
       chapterData: [],
       albumSelection: [],
       chapterSelection: [],
       albumOperationLoading: {},
-      albumVisibleColumns: ['selection', 'action', 'index', 'id', 'name', 'author', 'tags', 'zip', 'pdf', 'createTime','imageStats','interactionStats'],
+      albumVisibleColumns: ['selection', 'action', 'index', 'id', 'cover', 'collected', 'name', 'author', 'tags', 'zip', 'pdf', 'createTime','imageStats','interactionStats'],
       albumColumnOptions: [
         { key: 'selection', label: 'selection' },
         { key: 'action', label: '操作' },
         { key: 'index', label: '序号' },
         { key: 'id', label: 'JM ID' },
+        { key: 'cover', label: '封面' },
+        { key: 'collected', label: '收藏' },
         { key: 'name', label: '名称' },
         { key: 'author', label: '作者' },
         { key: 'tags', label: '标签' },
@@ -410,6 +454,24 @@ export default {
     },
     isAlbumColumnVisible(key) {
       return this.albumVisibleColumns.includes(key)
+    },
+    /**
+     * 封面展示地址：优先本地服务器封面(下载漫画时会落盘)，本地没有时回退JM远程封面
+     */
+    albumCoverSrc(row) {
+      return row ? (row.serverCoverUrl || row.coverUrl || '') : ''
+    },
+    albumCoverTip(row) {
+      return row && row.serverCoverUrl ? `本地封面：${row.serverCoverUrl}` : `JM封面：${row.coverUrl || ''}`
+    },
+    isAlbumCollected(row) {
+      return !!(row && row.collected)
+    },
+    /**
+     * 已收藏的行加个底色，方便在长列表里一眼区分
+     */
+    albumRowClassName({row}) {
+      return this.isAlbumCollected(row) ? 'jm-album-collected-row' : ''
     },
     handleAlbumColumnsChange() {
       this.$nextTick(() => {
@@ -671,6 +733,59 @@ export default {
     downloadAlbumData(row) {
       this.executeAlbumOperation(row, 'download', downloadAlbum)
     },
+    /**
+     * 单条收藏/取消收藏，只更新该行，避免整页刷新
+     * 当前带有收藏筛选条件时，该行可能已经不满足条件，重新查询一次
+     */
+    toggleAlbumCollected(row) {
+      if (this.isAlbumOperating(row)) {
+        return
+      }
+      const collected = !this.isAlbumCollected(row)
+      this.$set(this.albumOperationLoading, row.id, 'collect')
+      collectAlbums({ ids: [row.id], collected }).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message)
+        }
+        this.$set(row, 'collected', collected)
+        this.$message.success(message || (collected ? '收藏完成' : '取消收藏完成'))
+        this.searchAlbumsIfCollectedFiltered()
+      }).catch(error => {
+        this.handleRequestError(error)
+      }).finally(() => {
+        this.$delete(this.albumOperationLoading, row.id)
+      })
+    },
+    /**
+     * 批量收藏/取消收藏选中的记录
+     */
+    collectSelectedAlbums(collected) {
+      if (this.albumDeleteDisabled) {
+        return
+      }
+      const ids = this.albumSelection.map(e => e.id)
+      this.albumCollectLoading = collected ? 'collect' : 'uncollect'
+      collectAlbums({ ids, collected }).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message)
+        }
+        this.$message.success(message || (collected ? '收藏完成' : '取消收藏完成'))
+        this.selectAlbums()
+      }).catch(error => {
+        this.handleRequestError(error)
+      }).finally(() => {
+        this.albumCollectLoading = null
+      })
+    },
+    /**
+     * 收藏筛选生效时(已收藏/未收藏)，收藏状态变化会改变筛选结果，需要重新查询
+     */
+    searchAlbumsIfCollectedFiltered() {
+      const collected = this.albumQuery.collected
+      if (collected === true || collected === false) {
+        this.selectAlbums()
+      }
+    },
     openPreview(row) {
       this.previewAlbum = row
       this.previewDrawerVisible = true
@@ -904,6 +1019,49 @@ export default {
     line-height: 20px;
     text-align: left;
     white-space: nowrap;
+  }
+
+  /**
+   * 封面缩略图：本地封面优先，本地没有时回退JM远程封面(见 albumCoverSrc)
+   */
+  .jm-cover-image {
+    cursor: pointer;
+    display: block;
+    height: 76px;
+    margin: 0 auto;
+    width: 58px;
+
+    ::v-deep .el-image__inner {
+      border: 1px solid #ebeef5;
+      border-radius: 4px;
+      height: 100%;
+      width: 100%;
+    }
+  }
+
+  .jm-cover-state {
+    align-items: center;
+    background-color: #f5f7fa;
+    border: 1px dashed #dcdfe6;
+    border-radius: 4px;
+    color: #c0c4cc;
+    display: flex;
+    font-size: 16px;
+    height: 76px;
+    justify-content: center;
+    margin: 0 auto;
+    width: 58px;
+  }
+
+  /**
+   * 已收藏的行加底色，选择器带上ID/类名是为了盖过表格的斑马纹与hover样式
+   */
+  .el-table__body tr.jm-album-collected-row > td {
+    background-color: #fff8e1;
+  }
+
+  .el-table__body tr.jm-album-collected-row:hover > td {
+    background-color: #fdf0cc;
   }
 
 }

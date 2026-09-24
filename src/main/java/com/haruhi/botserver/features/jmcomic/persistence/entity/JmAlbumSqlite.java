@@ -29,6 +29,11 @@ public class JmAlbumSqlite {
     private String relatedList;
     private Boolean liked;
     private Boolean isFavorite;
+    /**
+     * 本地收藏标记(仅存本库，重新拉取JM数据不会覆盖)
+     * 注意：不要给这个字段设默认值，否则 updateById 会把已有记录的收藏状态重置
+     */
+    private Boolean collected;
     private Boolean isAids;
     private String price;
     private String purchased;

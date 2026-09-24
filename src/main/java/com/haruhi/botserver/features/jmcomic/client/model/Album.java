@@ -1,4 +1,4 @@
-package com.haruhi.botserver.features.jmcomic.client.model.jmcomic;
+package com.haruhi.botserver.features.jmcomic.client.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

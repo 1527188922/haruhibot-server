@@ -153,6 +153,7 @@
             `price` TEXT,
             `purchased` TEXT,
             `raw` TEXT,
+            `collected` INTEGER DEFAULT 0,
             `create_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
             `modify_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
         );

@@ -1,7 +1,7 @@
 package com.haruhi.botserver.features.jmcomic.service;
 
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Chapter;
-import com.haruhi.botserver.features.jmcomic.client.model.jmcomic.Series;
+import com.haruhi.botserver.features.jmcomic.client.model.Chapter;
+import com.haruhi.botserver.features.jmcomic.client.model.Series;
 import com.haruhi.botserver.features.jmcomic.persistence.entity.JmChapterImageSqlite;
 import org.junit.jupiter.api.Test;
 
