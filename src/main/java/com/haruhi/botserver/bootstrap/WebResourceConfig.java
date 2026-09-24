@@ -1,6 +1,8 @@
 package com.haruhi.botserver.bootstrap;
 
 import com.haruhi.botserver.configuration.metadata.ConfigKey;
+import com.haruhi.botserver.configuration.service.ConfigApplier;
+import com.haruhi.botserver.configuration.service.ConfigChange;
 import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.shared.util.FileUtil;
@@ -11,6 +13,9 @@ import org.springframework.stereotype.Component;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * 静态资源地址
@@ -20,30 +25,52 @@ import java.net.UnknownHostException;
  * {@code video/bilibili/} 都在程序目录下，由 {@code WebServletConfig} 的 {@code /**} 映射对外提供
  * （见 {@code src/assembly/package.xml} 打的部署包结构）。
  * <p>
- * 对外地址的取值顺序：配置的 {@code bot.internet-host} → 自动探测公网IP → 内网IP。
+ * 对外地址的取值顺序：配置的 {@code internet-host} → 自动探测公网IP → 内网IP。
  */
 @Slf4j
 @Component
-public class WebResourceConfig {
+public class WebResourceConfig implements ConfigApplier {
 
-    /** 对外访问地址，形如 http://ip:port；在类加载时确定，改端口/对外地址需重启 */
-    private static String WEB_HOME_PATH;
+    /** Host updates are hot; the port remains fixed until restart. */
+    private volatile String webHomePath;
+    private final int serverPort;
+    private final Supplier<String> publicIpSupplier;
+    private final Supplier<String> localIpSupplier;
 
-    static {
+    public WebResourceConfig() {
+        this(CommonUtil::getPublicIp, WebResourceConfig::localIp);
+    }
+
+    WebResourceConfig(Supplier<String> publicIpSupplier, Supplier<String> localIpSupplier) {
+        this.publicIpSupplier = publicIpSupplier;
+        this.localIpSupplier = localIpSupplier;
+        this.serverPort = Configs.getInt(ConfigKey.SERVER_PORT);
         setWebHomePath();
     }
 
-    private static void setWebHomePath() {
+    @Override
+    public Collection<ConfigKey> keys() {
+        return Set.of(ConfigKey.INTERNET_HOST);
+    }
+
+    @Override
+    public void onConfigChange(ConfigChange change) {
+        if (change.key() == ConfigKey.INTERNET_HOST) {
+            setWebHomePath();
+        }
+    }
+
+    private synchronized void setWebHomePath() {
         String host = Configs.getStr(ConfigKey.INTERNET_HOST, null);
         if (StringUtils.isBlank(host)) {
-            host = CommonUtil.getPublicIp();
+            host = publicIpSupplier.get();
             if (StringUtils.isBlank(host)) {
                 log.warn("自动获取公网IP失败，将使用内网IP");
-                host = localIp();
+                host = localIpSupplier.get();
             }
         }
-        WEB_HOME_PATH = "http://" + host + ":" + Configs.getInt(ConfigKey.SERVER_PORT);
-        log.info("web home path:{}", WEB_HOME_PATH);
+        webHomePath = "http://" + host + ":" + serverPort;
+        log.info("web home path:{}", webHomePath);
     }
 
     private static String localIp() {
@@ -57,7 +84,7 @@ public class WebResourceConfig {
     }
 
     public String webHomePath() {
-        return WEB_HOME_PATH;
+        return webHomePath;
     }
 
     public String webLogsPath() {

@@ -26,6 +26,8 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.util.ReflectionTestUtils;
+import java.util.function.Supplier;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -191,6 +193,10 @@ class ConfigSpringIntegrationTest {
      */
     @BeforeEach
     void resetConfigFiles() throws IOException {
+        // File refresh can clear internet-host; make fallback lookups deterministic and offline.
+        WebResourceConfig resources = applicationContext.getBean(WebResourceConfig.class);
+        ReflectionTestUtils.setField(resources, "publicIpSupplier", (Supplier<String>) () -> "203.0.113.10");
+        ReflectionTestUtils.setField(resources, "localIpSupplier", (Supplier<String>) () -> "192.0.2.20");
         writeBaseline();
         Configs.reloadAll();
     }
@@ -216,6 +222,8 @@ class ConfigSpringIntegrationTest {
     @Test
     void 订阅者已注册且能被ConfigHub通知() {
         Map<String, ConfigApplier> appliers = applicationContext.getBeansOfType(ConfigApplier.class);
+        assertTrue(appliers.containsValue(applicationContext.getBean(WebResourceConfig.class)),
+                "WebResourceConfig must subscribe to internet-host changes");
         assertTrue(appliers.containsValue(jobManage), "JobManager 应注册为 ConfigApplier");
         assertTrue(appliers.containsValue(openAiServiceHolder), "OpenAiServiceHolder 应注册为 ConfigApplier");
 
