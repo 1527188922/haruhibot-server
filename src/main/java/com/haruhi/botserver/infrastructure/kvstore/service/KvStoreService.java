@@ -1,46 +1,39 @@
-package com.haruhi.botserver.dictionary.service;
+package com.haruhi.botserver.infrastructure.kvstore.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.haruhi.botserver.dictionary.model.DictQueryReq;
-import com.haruhi.botserver.dictionary.persistence.entity.DictionarySqlite;
-import com.haruhi.botserver.dictionary.persistence.mapper.DictionarySqliteMapper;
+import com.haruhi.botserver.infrastructure.kvstore.model.KvQuery;
+import com.haruhi.botserver.infrastructure.kvstore.persistence.entity.KvEntry;
+import com.haruhi.botserver.infrastructure.kvstore.persistence.mapper.KvEntryMapper;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class DictionaryService {
+@RequiredArgsConstructor
+public class KvStoreService {
 
-    @Autowired
-    private DictionarySqliteMapper dictionarySqliteMapper;
+    private final KvEntryMapper kvEntryMapper;
 
-    public static final Map<String, List<String>> CACHE = new ConcurrentHashMap<>();
+    private volatile Map<String, List<String>> cache = Collections.emptyMap();
 
-    public void refreshCache(){
-        synchronized (DictionaryService.class){
-            List<DictionarySqlite> list = dictionarySqliteMapper.selectList(null);
-            CACHE.clear();
-            if(CollectionUtils.isEmpty(list)){
-                return;
-            }
-            Map<String, List<String>> collect = list.stream().collect(
-                    Collectors.groupingBy(DictionarySqlite::getKey,Collectors.mapping(
-                            DictionarySqlite::getContent,
-                            Collectors.toList()
-                    )));
-            CACHE.putAll(collect);
-        }
+    /** Replace the complete cache snapshot; readers never observe a partially refreshed map. */
+    public synchronized void refreshCache() {
+        List<KvEntry> entries = kvEntryMapper.selectList(null);
+        cache = CollectionUtils.isEmpty(entries) ? Collections.emptyMap()
+                : Collections.unmodifiableMap(entries.stream().collect(Collectors.groupingBy(
+                        KvEntry::getKey, Collectors.mapping(KvEntry::getContent, Collectors.toList()))));
     }
 
     public <T> List<T> getList(String key, String regex, Class<T> tClass, List<T> defaultList){
@@ -110,7 +103,7 @@ public class DictionaryService {
     }
 
     public String getInCache(String key, String defaultValue){
-        List<String> values = CACHE.get(key);
+        List<String> values = cache.get(key);
         if(CollectionUtils.isNotEmpty(values)){
             return values.getFirst();
         }
@@ -118,31 +111,31 @@ public class DictionaryService {
     }
 
 
-    public DictionarySqlite getOne(String key){
-        LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
-                .eq(DictionarySqlite::getKey, key)
-                .orderByDesc(DictionarySqlite::getModifyTime)
+    public KvEntry getOne(String key){
+        LambdaQueryWrapper<KvEntry> queryWrapper = new LambdaQueryWrapper<KvEntry>()
+                .eq(KvEntry::getKey, key)
+                .orderByDesc(KvEntry::getModifyTime)
                 .last("LIMIT 1");
-        return dictionarySqliteMapper.selectOne(queryWrapper);
+        return kvEntryMapper.selectOne(queryWrapper);
     }
 
     public String get(String key){
-        DictionarySqlite one = getOne(key);
+        KvEntry one = getOne(key);
         return one != null ? one.getContent() : null;
     }
 
-    public List<DictionarySqlite> getList(String key){
-        LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
-                .eq(StringUtils.isNotBlank(key), DictionarySqlite::getKey, key);
-        return dictionarySqliteMapper.selectList(queryWrapper);
+    public List<KvEntry> getList(String key){
+        LambdaQueryWrapper<KvEntry> queryWrapper = new LambdaQueryWrapper<KvEntry>()
+                .eq(StringUtils.isNotBlank(key), KvEntry::getKey, key);
+        return kvEntryMapper.selectList(queryWrapper);
     }
 
     public List<String> getValues(String key){
-        List<DictionarySqlite> list = getList(key);
+        List<KvEntry> list = getList(key);
         if(CollectionUtils.isEmpty(list)){
             return null;
         }
-        return list.stream().map(DictionarySqlite::getContent).collect(Collectors.toList());
+        return list.stream().map(KvEntry::getContent).collect(Collectors.toList());
     }
 
     /**
@@ -150,23 +143,29 @@ public class DictionaryService {
      * @param key
      * @param content
      */
-    public void put(String key,String content){
-        LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
-                .eq(DictionarySqlite::getKey, key);
-        Long count = dictionarySqliteMapper.selectCount(queryWrapper);
+    public void put(String key, String content) {
+        put(key, content, null);
+    }
 
-        DictionarySqlite dictionary = new DictionarySqlite();
+    /** The remark is applied only when inserting a new key. Existing metadata is preserved. */
+    public void put(String key, String content, String remark) {
+        LambdaQueryWrapper<KvEntry> queryWrapper = new LambdaQueryWrapper<KvEntry>()
+                .eq(KvEntry::getKey, key);
+        Long count = kvEntryMapper.selectCount(queryWrapper);
+
+        KvEntry dictionary = new KvEntry();
         if(count > 0){
             dictionary.setContent(content);
             dictionary.setModifyTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
-            dictionarySqliteMapper.update(dictionary,queryWrapper);
+            kvEntryMapper.update(dictionary,queryWrapper);
         }else{
             dictionary.setKey(key);
+            dictionary.setRemark(remark);
             dictionary.setContent(content);
             String date = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
             dictionary.setCreateTime(date);
             dictionary.setModifyTime(date);
-            dictionarySqliteMapper.insert(dictionary);
+            kvEntryMapper.insert(dictionary);
         }
     }
 
@@ -176,81 +175,81 @@ public class DictionaryService {
      * @param content
      */
     public void add(String key,String content){
-        DictionarySqlite dictionary = new DictionarySqlite();
+        KvEntry dictionary = new KvEntry();
         dictionary.setKey(key);
         dictionary.setContent(content);
         String date = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
         dictionary.setCreateTime(date);
         dictionary.setModifyTime(date);
-        dictionarySqliteMapper.insert(dictionary);
+        kvEntryMapper.insert(dictionary);
     }
 
-    public int add(DictionarySqlite request){
+    public int add(KvEntry request){
         request.setId(null);
         request.setContent(request.getContent() != null ? request.getContent() : "");
         String date = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
         request.setCreateTime(date);
         request.setModifyTime(date);
-        return dictionarySqliteMapper.insert(request);
+        return kvEntryMapper.insert(request);
     }
 
-    public int update(DictionarySqlite request) {
+    public int update(KvEntry request) {
         request.setContent(request.getContent() != null ? request.getContent() : "");
         request.setModifyTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
 
-        LambdaUpdateWrapper<DictionarySqlite> updateWrapper = new LambdaUpdateWrapper<DictionarySqlite>()
-                .eq(DictionarySqlite::getId, request.getId())
-                .set(DictionarySqlite::getKey, request.getKey())
-                .set(DictionarySqlite::getContent, request.getContent())
-                .set(DictionarySqlite::getRemark, request.getRemark())
-                .set(DictionarySqlite::getModifyTime, request.getModifyTime());
-        return dictionarySqliteMapper.update(updateWrapper);
+        LambdaUpdateWrapper<KvEntry> updateWrapper = new LambdaUpdateWrapper<KvEntry>()
+                .eq(KvEntry::getId, request.getId())
+                .set(KvEntry::getKey, request.getKey())
+                .set(KvEntry::getContent, request.getContent())
+                .set(KvEntry::getRemark, request.getRemark())
+                .set(KvEntry::getModifyTime, request.getModifyTime());
+        return kvEntryMapper.update(updateWrapper);
     }
 
-    public int deleteBatch(List<DictionarySqlite> request) {
+    public int deleteBatch(List<KvEntry> request) {
         if (CollectionUtils.isEmpty(request)) {
             return 0;
         }
-        return dictionarySqliteMapper.deleteByIds(request.stream().map(DictionarySqlite::getId).collect(Collectors.toList()));
+        return kvEntryMapper.deleteByIds(request.stream().map(KvEntry::getId).collect(Collectors.toList()));
     }
 
     public int remove(String key){
-        return dictionarySqliteMapper.delete(new LambdaQueryWrapper<DictionarySqlite>()
-                .eq(DictionarySqlite::getKey, key));
+        return kvEntryMapper.delete(new LambdaQueryWrapper<KvEntry>()
+                .eq(KvEntry::getKey, key));
     }
 
     public int removeByValue(String content){
-        return dictionarySqliteMapper.delete(new LambdaQueryWrapper<DictionarySqlite>()
-                .eq(DictionarySqlite::getContent, content));
+        return kvEntryMapper.delete(new LambdaQueryWrapper<KvEntry>()
+                .eq(KvEntry::getContent, content));
     }
 
     public boolean containsKey(String key){
-        LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
-                .eq(DictionarySqlite::getKey, key);
-        return dictionarySqliteMapper.selectCount(queryWrapper) > 0;
+        LambdaQueryWrapper<KvEntry> queryWrapper = new LambdaQueryWrapper<KvEntry>()
+                .eq(KvEntry::getKey, key);
+        return kvEntryMapper.selectCount(queryWrapper) > 0;
     }
 
     public boolean containsValue(String content){
-        LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
-                .eq(DictionarySqlite::getContent, content);
-        return dictionarySqliteMapper.selectCount(queryWrapper) > 0;
+        LambdaQueryWrapper<KvEntry> queryWrapper = new LambdaQueryWrapper<KvEntry>()
+                .eq(KvEntry::getContent, content);
+        return kvEntryMapper.selectCount(queryWrapper) > 0;
     }
 
 
-    public IPage<DictionarySqlite> search(DictQueryReq request, boolean isPage) {
-        LambdaQueryWrapper<DictionarySqlite> queryWrapper = new LambdaQueryWrapper<DictionarySqlite>()
-                .like(StringUtils.isNotBlank(request.getKey()),DictionarySqlite::getKey,request.getKey())
-                .like(StringUtils.isNotBlank(request.getContent()),DictionarySqlite::getContent,request.getContent())
-                .like(StringUtils.isNotBlank(request.getRemark()),DictionarySqlite::getRemark,request.getRemark())
-                .orderByAsc(DictionarySqlite::getKey)
-                .orderByDesc(DictionarySqlite::getModifyTime);
+    public IPage<KvEntry> search(KvQuery request, boolean isPage) {
+        LambdaQueryWrapper<KvEntry> queryWrapper = new LambdaQueryWrapper<KvEntry>()
+                .like(StringUtils.isNotBlank(request.getKey()),KvEntry::getKey,request.getKey())
+                .like(StringUtils.isNotBlank(request.getContent()),KvEntry::getContent,request.getContent())
+                .like(StringUtils.isNotBlank(request.getRemark()),KvEntry::getRemark,request.getRemark())
+                .orderByAsc(KvEntry::getKey)
+                .orderByDesc(KvEntry::getModifyTime);
 
-        IPage<DictionarySqlite> pageInfo = null;
+        IPage<KvEntry> pageInfo = null;
         if (isPage) {
-            pageInfo = dictionarySqliteMapper.selectPage(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
+            pageInfo = kvEntryMapper.selectPage(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
         }else{
             pageInfo = new Page<>(request.getCurrentPage(), request.getPageSize());
-            List<DictionarySqlite> list = dictionarySqliteMapper.selectList(queryWrapper);
+            List<KvEntry> list = kvEntryMapper.selectList(queryWrapper);
             pageInfo.setRecords(list);
             pageInfo.setTotal(list.size());
         }

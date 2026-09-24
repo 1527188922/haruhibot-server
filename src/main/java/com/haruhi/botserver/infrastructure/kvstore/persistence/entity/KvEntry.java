@@ -1,4 +1,4 @@
-package com.haruhi.botserver.dictionary.persistence.entity;
+package com.haruhi.botserver.infrastructure.kvstore.persistence.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -11,7 +11,7 @@ import java.util.Date;
 
 @Data
 @TableName(value = DataBaseConst.T_DICTIONARY)
-public class DictionarySqlite {
+public class KvEntry {
 
     @TableId(value = "id",type = IdType.AUTO)
     private Long id;

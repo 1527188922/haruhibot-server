@@ -54,6 +54,27 @@ support/             功能专用辅助代码
 
 ## 依赖与新增功能
 
+### 通用键值存储
+
+`infrastructure.kvstore` 提供 SQLite 键值存储，供管理界面及其他模块共同使用：
+
+```text
+infrastructure/kvstore/
+├── service/KvStoreService.java
+├── model/KvQuery.java
+└── persistence/
+    ├── entity/KvEntry.java
+    └── mapper/KvEntryMapper.java
+
+administration/dictionary/controller/DictionaryController.java
+```
+
+字典管理 Controller 和 `infrastructure.cache.SqlCacheStore` 都调用 `KvStoreService`，不跨层访问 Mapper。管理接口继续使用 `/api/dict` 和原有 JSON 字段；存储仍映射 `t_dictionary`，无需迁移已有数据。`db.sql_cache` 保持原有键名。
+
+当前表允许同一个 key 存储多行，`add` 追加、`getOne` 按修改时间取最新一行、`put` 更新该 key 的已有行或插入新行。带备注的 `put` 仅在插入时设置备注。缓存是服务实例内的完整快照，显式调用 `refreshCache()` 更新，写数据库不会自动刷新缓存。新增调用方应通过服务访问，不能把它当成具有唯一键约束或原子并发 upsert 的数据库。
+
+### 模块约定
+
 1. Controller、Handler、Job 调用业务服务。功能自己的 Mapper、DTO、常量和工具随功能存放。
 2. 消息分发器只依赖处理器契约。后台处理器通过 `bypassGroupRestrictions()` 声明是否绕过群命令开关和群访问列表；聊天记录保持原有放行行为，自发消息判断仍独立生效。
 3. 处理器注册表属于分发器实例，不能在静态字段里跨 Spring 容器累积。

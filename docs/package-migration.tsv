@@ -112,7 +112,7 @@ src/main/java/com/haruhi/botServer/entity/ChatRecordGroup.java	src/main/java/com
 src/main/java/com/haruhi/botServer/entity/ChatRecordPrivate.java	src/main/java/com/haruhi/botserver/features/chatrecord/persistence/entity/ChatRecordPrivate.java
 src/main/java/com/haruhi/botServer/entity/ChatRecordSqlite.java	src/main/java/com/haruhi/botserver/features/chatrecord/persistence/entity/ChatRecordSqlite.java
 src/main/java/com/haruhi/botServer/entity/CustomReplySqlite.java	src/main/java/com/haruhi/botserver/features/reply/persistence/entity/CustomReplySqlite.java
-src/main/java/com/haruhi/botServer/entity/DictionarySqlite.java	src/main/java/com/haruhi/botserver/infrastructure/persistence/persistence/entity/DictionarySqlite.java
+src/main/java/com/haruhi/botServer/entity/DictionarySqlite.java	src/main/java/com/haruhi/botserver/infrastructure/kvstore/persistence/entity/KvEntry.java
 src/main/java/com/haruhi/botServer/entity/FriendSqlite.java	src/main/java/com/haruhi/botserver/features/contacts/persistence/entity/FriendSqlite.java
 src/main/java/com/haruhi/botServer/entity/GroupInfoSqlite.java	src/main/java/com/haruhi/botserver/features/contacts/persistence/entity/GroupInfoSqlite.java
 src/main/java/com/haruhi/botServer/entity/GroupMemberSqlite.java	src/main/java/com/haruhi/botserver/features/contacts/persistence/entity/GroupMemberSqlite.java
@@ -216,7 +216,7 @@ src/main/java/com/haruhi/botServer/mapper/ChatRecordGroupMapper.java	src/main/ja
 src/main/java/com/haruhi/botServer/mapper/ChatRecordPrivateMapper.java	src/main/java/com/haruhi/botserver/features/chatrecord/persistence/mapper/ChatRecordPrivateMapper.java
 src/main/java/com/haruhi/botServer/mapper/ChatRecordSqliteMapper.java	src/main/java/com/haruhi/botserver/features/chatrecord/persistence/mapper/ChatRecordSqliteMapper.java
 src/main/java/com/haruhi/botServer/mapper/CustomReplySqliteMapper.java	src/main/java/com/haruhi/botserver/features/reply/persistence/mapper/CustomReplySqliteMapper.java
-src/main/java/com/haruhi/botServer/mapper/DictionarySqliteMapper.java	src/main/java/com/haruhi/botserver/infrastructure/persistence/persistence/mapper/DictionarySqliteMapper.java
+src/main/java/com/haruhi/botServer/mapper/DictionarySqliteMapper.java	src/main/java/com/haruhi/botserver/infrastructure/kvstore/persistence/mapper/KvEntryMapper.java
 src/main/java/com/haruhi/botServer/mapper/FriendSqliteMapper.java	src/main/java/com/haruhi/botserver/features/contacts/persistence/mapper/FriendSqliteMapper.java
 src/main/java/com/haruhi/botServer/mapper/GroupInfoSqliteMapper.java	src/main/java/com/haruhi/botserver/features/contacts/persistence/mapper/GroupInfoSqliteMapper.java
 src/main/java/com/haruhi/botServer/mapper/GroupMemberSqliteMapper.java	src/main/java/com/haruhi/botserver/features/contacts/persistence/mapper/GroupMemberSqliteMapper.java

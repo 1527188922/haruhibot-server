@@ -1,15 +1,11 @@
 package com.haruhi.botserver.infrastructure.cache;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.haruhi.botserver.dictionary.persistence.entity.DictionarySqlite;
-import com.haruhi.botserver.dictionary.persistence.mapper.DictionarySqliteMapper;
-import com.haruhi.botserver.shared.util.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
+import com.haruhi.botserver.infrastructure.kvstore.service.KvStoreService;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 
 /**
  * WebUI SQL 编辑器的内容缓存
@@ -21,24 +17,20 @@ import java.util.Date;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SqlCacheStore {
 
     /** 存放SQL编辑器内容的key */
     public static final String KEY_SQL_CACHE = "db.sql_cache";
 
-    @Autowired
-    private DictionarySqliteMapper dictionarySqliteMapper;
+    private final KvStoreService kvStoreService;
 
     /**
      * 读取缓存内容，没有记录返回null
      */
     public String get() {
         try {
-            DictionarySqlite one = dictionarySqliteMapper.selectOne(new LambdaQueryWrapper<DictionarySqlite>()
-                    .eq(DictionarySqlite::getKey, KEY_SQL_CACHE)
-                    .orderByDesc(DictionarySqlite::getModifyTime)
-                    .last("LIMIT 1"));
-            return one == null ? null : one.getContent();
+            return kvStoreService.get(KEY_SQL_CACHE);
         } catch (Exception e) {
             log.warn("读取SQL编辑器缓存失败：{}", e.getMessage());
             return null;
@@ -50,22 +42,8 @@ public class SqlCacheStore {
      */
     public void put(String content) {
         String value = content == null ? "" : content;
-        String now = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
         try {
-            LambdaQueryWrapper<DictionarySqlite> wrapper = new LambdaQueryWrapper<DictionarySqlite>()
-                    .eq(DictionarySqlite::getKey, KEY_SQL_CACHE);
-            Long count = dictionarySqliteMapper.selectCount(wrapper);
-            DictionarySqlite entity = new DictionarySqlite();
-            entity.setContent(value);
-            entity.setModifyTime(now);
-            if (count != null && count > 0) {
-                dictionarySqliteMapper.update(entity, wrapper);
-            } else {
-                entity.setKey(KEY_SQL_CACHE);
-                entity.setRemark("WebUI sql编辑器内容缓存");
-                entity.setCreateTime(now);
-                dictionarySqliteMapper.insert(entity);
-            }
+            kvStoreService.put(KEY_SQL_CACHE, value, "WebUI sql编辑器内容缓存");
         } catch (Exception e) {
             log.error("保存SQL编辑器缓存失败", e);
         }

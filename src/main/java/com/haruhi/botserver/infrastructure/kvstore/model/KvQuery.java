@@ -1,10 +1,10 @@
-package com.haruhi.botserver.dictionary.model;
+package com.haruhi.botserver.infrastructure.kvstore.model;
 
 import com.haruhi.botserver.shared.model.PageReq;
 import lombok.Data;
 
 @Data
-public class DictQueryReq extends PageReq {
+public class KvQuery extends PageReq {
     private String key;
     private String content;
     private String remark;
