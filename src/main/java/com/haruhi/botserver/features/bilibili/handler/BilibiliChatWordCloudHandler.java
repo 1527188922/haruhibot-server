@@ -99,7 +99,7 @@ public class BilibiliChatWordCloudHandler implements IAllMessageHandler {
                 FileUtil.deleteFile(file);
                 WordCloudUtil.generateWordCloudImage(map,outPutPath);
 
-                String url = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ?
+                String url = Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT) ?
                         "file://"+file.getAbsolutePath()
                         : abstractPathConfig.webBulletWordCloudPath() + "/" + fileName + "?t=" + System.currentTimeMillis();
                 log.info("弹幕词云地址：{}",url);

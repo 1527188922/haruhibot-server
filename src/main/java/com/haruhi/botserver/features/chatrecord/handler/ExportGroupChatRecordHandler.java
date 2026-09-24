@@ -101,7 +101,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageHandler {
                 bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
 
                 String filePath = "";
-                if (Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT)) {
+                if (Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT)) {
                     filePath = excelFile.getAbsolutePath();
                 }else{
                     long l6 = System.currentTimeMillis();

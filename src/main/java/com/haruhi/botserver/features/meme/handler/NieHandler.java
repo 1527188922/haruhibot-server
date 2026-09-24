@@ -50,7 +50,7 @@ public class NieHandler implements IGroupMessageHandler {
         }else{
             file = data[CommonUtil.randomInt(0, data.length - 1)];
         }
-        String imageUrl = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ? "file://"+file.getAbsolutePath()
+        String imageUrl = Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT) ? "file://"+file.getAbsolutePath()
                 : webResourceConfig.webFacePath() + "/" + file.getName() + "?t=" + System.currentTimeMillis();
 
         MessageHolder messageHolder = MessageHolder.instanceImage(imageUrl);

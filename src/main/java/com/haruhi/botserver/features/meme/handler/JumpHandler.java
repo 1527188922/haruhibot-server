@@ -106,7 +106,7 @@ public class JumpHandler implements IGroupMessageHandler {
     }
 
     private void sendFaceMsg(Bot bot,Long groupId, File file){
-        String imageUrl = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ? "file://"+file.getAbsolutePath()
+        String imageUrl = Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT) ? "file://"+file.getAbsolutePath()
                 : abstractPathConfig.webFacePath() + "/" + file.getName() + "?t=" + System.currentTimeMillis();
         log.info("jump图片url ：{}",imageUrl);
 

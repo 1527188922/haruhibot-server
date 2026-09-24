@@ -56,7 +56,7 @@ public class ScoldMeHandler implements IAllMessageHandler {
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
             int i = CommonUtil.randomInt(0, fileList.length - 1);
             File file = fileList[i];
-            String s = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ?
+            String s = Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT) ?
                     "file://"+file.getAbsolutePath() :
                     abstractPathConfig.webDgAudioPath() + "/" + file.getName();
             log.info("骂我音频地址：{}",s);

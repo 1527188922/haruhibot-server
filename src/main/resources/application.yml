@@ -18,5 +18,7 @@ logging:
     # for local development use: -Dlogging.level.com.haruhi.botserver=debug
     com.haruhi.botserver: debug
 
-
+#本服务对外访问的ip或域名，留空自动探测；用于拼接图片url
 internet-host:
+# qq客户端是否与本服务在同一台机器，true时图片/语音使用file://本地路径发送
+same-machine-qqclient: true

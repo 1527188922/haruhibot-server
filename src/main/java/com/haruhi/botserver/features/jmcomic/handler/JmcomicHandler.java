@@ -164,7 +164,7 @@ public class JmcomicHandler implements IAllMessageHandler {
 
     private void uploadFile(Bot bot,Message message,File file, String fileUrl, boolean isPdf){
         String absolutePath = null;
-        if (Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT)) {
+        if (Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT)) {
             absolutePath = file.getAbsolutePath();
         }else{
             log.info("qq客户端开始下载文件：{}",fileUrl);
@@ -309,7 +309,7 @@ public class JmcomicHandler implements IAllMessageHandler {
         String outputPath = outputDir + File.separator + fileName;
         HtmlToImageUtils.htmlToImage(html, outputPath, 1000);
 
-        String imageUrl = Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT)
+        String imageUrl = Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT)
                 ? "file://" + outputPath
                 : webResourceConfig.webResourcesJmcomicPathInClasses() + "/" + SEARCH_RESULT_IMAGE_DIR + "/" + fileName + "?t=" + System.currentTimeMillis();
         bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),

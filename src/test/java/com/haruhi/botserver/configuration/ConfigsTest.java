@@ -97,7 +97,7 @@ class ConfigsTest {
         assertEquals(5, Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS));
         assertFalse(Configs.isConfigured(ConfigKey.WS_MAX_CONNECTIONS));
         assertEquals(Configs.ConfigSource.DEFAULT, Configs.source(ConfigKey.WS_MAX_CONNECTIONS));
-        assertTrue(Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT));
+        assertTrue(Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT));
         // 未配置且没有默认值的项返回调用方给的默认值，而不是抛异常
         assertNull(Configs.getStr(ConfigKey.WS_ACCESS_TOKEN, null));
     }

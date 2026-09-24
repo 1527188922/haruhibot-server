@@ -164,7 +164,7 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
         log.info("qq客户端开始上传视频 {}", absolutePath);
         long l = System.currentTimeMillis();
 
-        MessageHolder messageHolder = MessageHolder.instanceVideo(Configs.getBool(ConfigKey.BOT_SAME_MACHINE_QQCLIENT) ? "file://" + absolutePath : abstractPathConfig.webVideoBiliPath() + "/" + fileName);
+        MessageHolder messageHolder = MessageHolder.instanceVideo(Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT) ? "file://" + absolutePath : abstractPathConfig.webVideoBiliPath() + "/" + fileName);
         SyncResponse<SendMsgResp> response = bot.sendSyncMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), Arrays.asList(messageHolder), 5 * 60 * 1000);
 
         log.info("qq客户端上传视频完成 cost:{} resp:{}", System.currentTimeMillis()-l,response.getRaw());
