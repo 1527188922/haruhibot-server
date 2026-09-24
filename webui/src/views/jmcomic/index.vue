@@ -48,6 +48,22 @@
             <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetChapterQuery">重置</el-button>
           </el-row>
         </el-tab-pane>
+        <el-tab-pane label="JM在线搜索" name="online">
+          <el-form :model="onlineQuery" label-width="70px" inline ref="onlineQueryForm" size="small" @submit.native.prevent>
+            <el-form-item label="关键字" prop="name">
+              <el-input v-model.trim="onlineQuery.name" class="form-input" clearable placeholder="漫画名称，JM只取前8个字符" @keyup.enter.native="searchOnlineFirst"></el-input>
+            </el-form-item>
+            <el-form-item label="排序" prop="sort">
+              <el-select v-model="onlineQuery.sort" class="form-input" @change="handleOnlineSortChange">
+                <el-option v-for="item in onlineSortOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+              </el-select>
+            </el-form-item>
+          </el-form>
+          <el-row class="query-form-option-buts">
+            <el-button type="primary" size="small" plain icon="el-icon-search" :loading="onlineLoading" @click="searchOnlineFirst">搜索</el-button>
+            <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetOnlineQuery">重置</el-button>
+          </el-row>
+        </el-tab-pane>
       </el-tabs>
     </basic-container>
 
@@ -296,6 +312,63 @@
       </div>
     </basic-container>
 
+    <basic-container v-if="activeTab === 'online'">
+      <div class="data-table-option-buts">
+        <span v-if="onlineSearched" class="jm-online-summary">
+          关键字「{{onlineResult.searchQuery}}」，共 {{formatOnlineTotal}} 条，第 {{onlineResult.page}}/{{Math.max(onlineResult.totalPage, 1)}} 页，每页 {{onlineResult.pageSize}} 条
+        </span>
+        <span v-else class="jm-online-summary">结果为JM服务器实时数据，搜索到的记录需要点「添加」才会入库</span>
+      </div>
+      <el-empty v-if="!onlineSearched" description="输入关键字后点击搜索"></el-empty>
+      <template v-else>
+        <el-table tooltip-effect="light" :data="onlineResult.content" v-loading="onlineLoading" border stripe
+                  max-height="800" size="small" row-key="id">
+          <template slot="empty">
+            <el-empty description="没有搜索到结果" :image-size="80"></el-empty>
+          </template>
+          <el-table-column label="封面" width="96" align="center">
+            <template slot-scope="{row}">
+              <el-image v-if="row.coverUrl" class="jm-cover-image" :src="row.coverUrl"
+                        :preview-src-list="[row.coverUrl]" fit="cover" referrerpolicy="no-referrer">
+                <div slot="placeholder" class="jm-cover-state"><i class="el-icon-loading"></i></div>
+                <div slot="error" class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
+              </el-image>
+              <div v-else class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
+            </template>
+          </el-table-column>
+          <el-table-column label="JM ID" prop="id" width="110" align="center"></el-table-column>
+          <el-table-column label="名称" prop="name" min-width="260" show-overflow-tooltip></el-table-column>
+          <el-table-column label="作者" prop="author" min-width="150" show-overflow-tooltip></el-table-column>
+          <el-table-column label="分类" prop="category" width="140" show-overflow-tooltip></el-table-column>
+          <el-table-column label="更新时间" prop="updateTime" width="150" align="center"></el-table-column>
+          <el-table-column label="状态" width="90" align="center">
+            <template slot-scope="{row}">
+              <el-tag size="mini" :type="row.existsLocal ? 'success' : 'info'">{{row.existsLocal ? '已入库' : '未入库'}}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" align="center">
+            <template slot-scope="{row}">
+              <el-tooltip :disabled="!row.existsLocal" content="本地已有该记录，无需重复添加" placement="top">
+                <span>
+                  <el-button type="primary" size="mini" plain icon="el-icon-plus"
+                             :loading="isOnlineAdding(row)" :disabled="isOnlineAddDisabled(row)"
+                             @click="addOnlineAlbum(row)">添加</el-button>
+                </span>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="pagination-box">
+          <el-pagination background
+                         :current-page="onlineResult.page"
+                         :page-size="onlineResult.pageSize"
+                         :total="onlineResult.total"
+                         layout="total, prev, pager, next, jumper"
+                         @current-change="onlineCurrentChange" />
+        </div>
+      </template>
+    </basic-container>
+
     <el-dialog title="删除JM主记录" :visible.sync="albumDeleteDialogVisible" width="420px"
                @closed="deleteAlbumDialogClosed">
       <div class="delete-tip">确认删除选中的 {{albumSelection.length}} 条JM主记录？</div>
@@ -352,7 +425,8 @@ import {
   requestAlbum,
   requestChapterImages,
   searchAlbums,
-  searchChapterImages
+  searchChapterImages,
+  searchOnlineAlbums
 } from "@/api/jmcomic";
 
 export default {
@@ -376,6 +450,21 @@ export default {
       previewAlbum: null,
       albumQuery: { id: '', name: '', author: '', tags: [], collected: '' },
       chapterQuery: { albumId: '', chapterId: '', chapterTitle: '', imageFile: '' },
+      // JM在线搜索：分页由JM服务器完成，页码从1开始
+      onlineQuery: { name: '', sort: 'mr', page: 1 },
+      onlineSortOptions: [
+        { value: 'mr', label: '最新' },
+        { value: 'mv', label: '最多观看' },
+        { value: 'mp', label: '最多图片' },
+        { value: 'tf', label: '最多喜欢' }
+      ],
+      onlineLoading: false,
+      onlineSearched: false,
+      onlineResult: this.defOnlineResult(),
+      // 正在添加的搜索结果，key=jmId
+      onlineAddingMap: {},
+      // 在线搜索里添加过记录后，JM主记录列表需要重新查询
+      albumListDirty: false,
       albumData: [],
       chapterData: [],
       albumSelection: [],
@@ -437,6 +526,13 @@ export default {
     },
     allFileDeleteDisabled(){
       return !this.deleteAllFileOptions.deletePdf && !this.deleteAllFileOptions.deleteZip && !this.deleteAllFileOptions.deleteImages
+    },
+    /**
+     * JM的total上限就是10000，到顶时按"10000+"展示，避免让人以为是精确总数
+     */
+    formatOnlineTotal() {
+      const total = Number(this.onlineResult.total || 0)
+      return total >= 10000 ? `${total}+` : total
     }
   },
   mounted() {
@@ -609,6 +705,11 @@ export default {
       if (this.activeTab === 'chapter' && this.chapterData.length === 0) {
         this.searchChaptersFirst()
       }
+      // 在线搜索里添加过记录，切回主记录时再刷新，避免每次添加都白查一次
+      if (this.activeTab === 'album' && this.albumListDirty) {
+        this.albumListDirty = false
+        this.searchAlbumsFirst()
+      }
     },
     albumSelectionChange(val) {
       this.albumSelection = val
@@ -629,6 +730,97 @@ export default {
     },
     resetChapterQuery() {
       this.$refs.chapterQueryForm.resetFields()
+    },
+    defOnlineResult() {
+      return { searchQuery: '', total: 0, page: 1, pageSize: 80, totalPage: 0, content: [] }
+    },
+    searchOnlineFirst() {
+      this.onlineQuery.page = 1
+      this.searchOnline()
+    },
+    /**
+     * JM在线搜索：排序与分页都直接透传给JM服务器，后端每页固定80条
+     */
+    searchOnline() {
+      const name = (this.onlineQuery.name || '').trim()
+      if (!name) {
+        return this.$message.warning('请输入搜索关键字')
+      }
+      this.onlineLoading = true
+      searchOnlineAlbums({
+        name,
+        sort: this.onlineQuery.sort,
+        page: this.onlineQuery.page
+      }).then(({data: {code, message, data}}) => {
+        if (code !== 200) {
+          return this.$message.error(message || 'JM在线搜索失败')
+        }
+        this.onlineResult = {
+          searchQuery: data.searchQuery || name,
+          total: Number(data.total || 0),
+          page: Number(data.page || this.onlineQuery.page),
+          pageSize: Number(data.pageSize || 80),
+          totalPage: Number(data.totalPage || 0),
+          content: (data.content || []).map(e => ({...e, existsLocal: !!e.existsLocal}))
+        }
+        this.onlineQuery.page = this.onlineResult.page
+        this.onlineSearched = true
+      }).catch(error => {
+        this.handleRequestError(error)
+      }).finally(() => {
+        this.onlineLoading = false
+      })
+    },
+    /**
+     * 排序变化后重新搜索(还没搜索过就不发请求)
+     */
+    handleOnlineSortChange() {
+      if (this.onlineSearched) {
+        this.searchOnlineFirst()
+      }
+    },
+    onlineCurrentChange(page) {
+      this.onlineQuery.page = page
+      this.searchOnline()
+    },
+    resetOnlineQuery() {
+      this.onlineQuery = { name: '', sort: 'mr', page: 1 }
+      this.onlineResult = this.defOnlineResult()
+      this.onlineSearched = false
+      if (this.$refs.onlineQueryForm) {
+        this.$refs.onlineQueryForm.clearValidate()
+      }
+    },
+    isOnlineAdding(row) {
+      return !!(row && this.onlineAddingMap[row.id])
+    },
+    isOnlineAddDisabled(row) {
+      return !row || !!row.existsLocal || this.isOnlineAdding(row)
+    },
+    /**
+     * 快捷添加：复用已有的 /manage/album/request/{aid}，只入库不下载
+     * 同一行添加中不允许重复点，添加成功后标记已入库并让主记录列表待刷新
+     */
+    addOnlineAlbum(row) {
+      if (this.isOnlineAddDisabled(row)) {
+        return
+      }
+      this.$set(this.onlineAddingMap, row.id, true)
+      requestAlbum(row.id).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message || '添加失败')
+        }
+        this.$set(row, 'existsLocal', true)
+        this.$message.success(`JM${row.id} 添加完成`)
+        // 入库后标签/作者候选可能变化，组件内部没加载过候选时不会发请求
+        this.refreshTagOptions()
+        this.refreshAuthorOptions()
+        this.albumListDirty = true
+      }).catch(error => {
+        this.handleRequestError(error)
+      }).finally(() => {
+        this.$delete(this.onlineAddingMap, row.id)
+      })
     },
     albumSizeChange(v) {
       this.albumPagination.pageSize = v
@@ -1037,6 +1229,12 @@ export default {
       height: 100%;
       width: 100%;
     }
+  }
+
+  .jm-online-summary {
+    color: #606266;
+    font-size: 13px;
+    line-height: 28px;
   }
 
   .jm-cover-state {

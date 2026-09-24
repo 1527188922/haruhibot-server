@@ -28,6 +28,17 @@ export const requestAlbum = (aid) => request({
   method: 'post'
 });
 
+/**
+ * JM在线搜索(调用JM服务器/search接口)
+ * @param data {name: 关键字, sort: mr|mv|mp|tf, page: 页码(从1开始)}
+ */
+export const searchOnlineAlbums = (data) => request({
+  url: baseUrl + '/jmcomic/manage/album/searchOnline',
+  method: 'post',
+  timeout: 30 * 1000,
+  data
+});
+
 export const downloadAlbum = (aid) => request({
   url: baseUrl + `/jmcomic/manage/album/download/${aid}`,
   timeout:60 * 1000,

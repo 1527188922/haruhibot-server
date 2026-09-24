@@ -40,6 +40,7 @@ import java.io.File;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -228,6 +229,19 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         } catch (Exception e) {
             return Stream.empty();
         }
+    }
+
+    @Override
+    public Set<Long> existsAlbumIds(Collection<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return Collections.emptySet();
+        }
+        return jmAlbumSqliteMapper.selectList(new LambdaQueryWrapper<JmAlbumSqlite>()
+                        .select(JmAlbumSqlite::getId)
+                        .in(JmAlbumSqlite::getId, ids))
+                .stream()
+                .map(JmAlbumSqlite::getId)
+                .collect(Collectors.toSet());
     }
 
     @Override

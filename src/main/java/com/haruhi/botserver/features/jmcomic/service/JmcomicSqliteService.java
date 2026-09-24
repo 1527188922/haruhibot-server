@@ -14,7 +14,9 @@ import com.haruhi.botserver.features.jmcomic.model.JmChapterImageQueryReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterInfoResp;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 public interface JmcomicSqliteService {
 
@@ -33,6 +35,11 @@ public interface JmcomicSqliteService {
     List<String> allTag();
 
     List<String> allAuthor();
+
+    /**
+     * 从传入的jmId中筛出本地已入库的
+     */
+    Set<Long> existsAlbumIds(Collection<Long> ids);
 
     IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request);
 

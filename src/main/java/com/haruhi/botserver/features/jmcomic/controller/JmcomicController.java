@@ -12,6 +12,8 @@ import com.haruhi.botserver.shared.model.HttpResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumCollectReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumDeleteReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumManageResp;
+import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchReq;
+import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumQueryReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageDeleteReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageManageResp;
@@ -112,6 +114,21 @@ public class JmcomicController {
     @GetMapping("/manage/authors")
     public HttpResp<List<String>> allAuthor() {
         return HttpResp.success(jmcomicSqliteService.allAuthor());
+    }
+
+    /**
+     * JM在线搜索(调用JM服务器/search接口)，支持排序与分页，返回结果会带上是否已入库
+     */
+    @PostMapping("/manage/album/searchOnline")
+    public HttpResp<JmAlbumOnlineSearchResp> searchOnline(@RequestBody JmAlbumOnlineSearchReq request) {
+        try {
+            return HttpResp.success(jmcomicService.onlineSearch(request));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return HttpResp.fail(e.getMessage(), null);
+        } catch (Exception e) {
+            log.error("JM在线搜索异常", e);
+            return HttpResp.fail("JM在线搜索异常：" + e.getMessage(), null);
+        }
     }
 
     @PostMapping("/manage/album/request/{aid}")

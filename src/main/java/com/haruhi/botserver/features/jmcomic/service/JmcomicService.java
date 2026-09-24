@@ -19,6 +19,10 @@ import com.haruhi.botserver.features.jmcomic.client.model.DownloadParam;
 import com.haruhi.botserver.features.jmcomic.client.model.SearchResp;
 import com.haruhi.botserver.features.jmcomic.client.model.Series;
 import com.haruhi.botserver.features.jmcomic.client.model.UserProfile;
+import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchReq;
+import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchResp;
+import com.haruhi.botserver.features.jmcomic.model.JmSearchSortEnum;
+import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
 import com.haruhi.botserver.shared.util.FileUtil;
@@ -66,6 +70,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -81,6 +86,12 @@ public class JmcomicService {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
     public static final String JM_DEFAULT_PASSWORD = "1234";
+
+    /**
+     * JM /search 接口每页固定返回80条
+     */
+    public static final int SEARCH_PAGE_SIZE = 80;
+    private static final int DEFAULT_SEARCH_PAGE = 1;
 
     // Tracks both running and queued aids; all scheduling state is guarded by JmcomicService.class.
     private static final ConcurrentMap<String, String> LOCK_ACTION_MAP = new ConcurrentHashMap<>();
@@ -887,11 +898,21 @@ public class JmcomicService {
     /**
      * 根据本子名称搜索
      * @param name jm后端会截取前8个字符串去搜索
-     * @param sort  Latest => "mr", View => "mv",Picture => "mp", Like => "tf",
+     * @param sort 排序方式，见 {@link JmSearchSortEnum}，为空时按默认排序
      * @return
      * @throws Exception
      */
-    public SearchResp search(String name, String sort) throws Exception {
+    public SearchResp search(String name, JmSearchSortEnum sort) throws Exception {
+        return search(name, sort, DEFAULT_SEARCH_PAGE);
+    }
+
+    /**
+     * 根据本子名称搜索(分页)
+     * @param name jm后端会截取前8个字符串去搜索
+     * @param sort 排序方式，见 {@link JmSearchSortEnum}，为空时按默认排序
+     * @param page 页码，从1开始，JM接口每页固定80条
+     */
+    public SearchResp search(String name, JmSearchSortEnum sort, int page) throws Exception {
         String url = "https://" + this.getJmApiDomain() + "/search";
         long ts = System.currentTimeMillis() / 1000;
         HttpHeaders headerParam = headerParam(ts);
@@ -899,8 +920,8 @@ public class JmcomicService {
         HashMap<String, Object> urlParam = new HashMap<>();
         urlParam.put("main_tag", 0);
         urlParam.put("search_query", name);
-        urlParam.put("page", 1);
-        urlParam.put("o", sort);
+        urlParam.put("page", page < 1 ? DEFAULT_SEARCH_PAGE : page);
+        urlParam.put("o", (sort == null ? JmSearchSortEnum.DEFAULT : sort).getSort());
         String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
         HttpRequest httpRequest = HttpUtil.createGet(s)
                 .addHeaders(headerParam.toSingleValueMap())
@@ -910,6 +931,86 @@ public class JmcomicService {
             JSONObject jsonObject = JSONObject.parseObject(httpResponse.body());
             String data = decryptData(ts, jsonObject.getString("data"));
             return JSONObject.parseObject(data, SearchResp.class);
+        }
+    }
+
+    /**
+     * 管理端JM在线搜索：分页交给JM服务器，另外补上封面地址和"是否已入库"标识
+     */
+    public JmAlbumOnlineSearchResp onlineSearch(JmAlbumOnlineSearchReq request) throws Exception {
+        String name = request == null ? null : request.getName();
+        if (StringUtils.isBlank(name)) {
+            throw new IllegalArgumentException("请输入搜索关键字");
+        }
+        // 前端传的是排序code，这里统一转成枚举，非法值回落默认排序
+        JmSearchSortEnum sort = JmSearchSortEnum.getOrDefault(request.getSort());
+        int page = (request.getPage() == null || request.getPage() < 1) ? DEFAULT_SEARCH_PAGE : request.getPage();
+        SearchResp searchResp = search(name.trim(), sort, page);
+        if (searchResp == null) {
+            throw new IllegalStateException("JM搜索接口未返回数据");
+        }
+
+        List<SearchResp.ContentItem> content = CollectionUtils.isEmpty(searchResp.getContent())
+                ? Collections.emptyList()
+                : searchResp.getContent().stream().filter(Objects::nonNull).toList();
+        Set<Long> localIds = jmcomicSqliteService.existsAlbumIds(content.stream()
+                .map(e -> parseJmId(e.getId()))
+                .filter(Objects::nonNull)
+                .toList());
+
+        long total = parseSearchTotal(searchResp.getTotal());
+        JmAlbumOnlineSearchResp resp = new JmAlbumOnlineSearchResp();
+        resp.setSearchQuery(searchResp.getSearchQuery());
+        resp.setTotal(total);
+        resp.setPage(page);
+        resp.setPageSize(SEARCH_PAGE_SIZE);
+        resp.setTotalPage((int) ((total + SEARCH_PAGE_SIZE - 1) / SEARCH_PAGE_SIZE));
+        resp.setContent(content.stream().map(e -> toOnlineSearchItem(e, localIds)).toList());
+        return resp;
+    }
+
+    private JmAlbumOnlineSearchResp.Item toOnlineSearchItem(SearchResp.ContentItem item, Set<Long> localIds) {
+        JmAlbumOnlineSearchResp.Item target = new JmAlbumOnlineSearchResp.Item();
+        target.setId(item.getId());
+        target.setName(item.getName());
+        target.setAuthor(item.getAuthor());
+        target.setCategory(Stream.of(
+                        item.getCategory() != null ? item.getCategory().getTitle() : null,
+                        item.getCategorySub() != null ? item.getCategorySub().getTitle() : null)
+                .filter(StringUtils::isNotBlank).distinct().collect(Collectors.joining("/")));
+        // 搜索结果里的image不是完整地址，这里按jmId拼封面地址
+        Long jmId = parseJmId(item.getId());
+        target.setCoverUrl(jmId == null ? null : buildCoverUrl(jmId, null));
+        target.setUpdateAt(item.getUpdateAt());
+        target.setUpdateTime(Objects.nonNull(item.getUpdateAt())
+                ? DateTimeUtil.dateTimeFormat(new Date(item.getUpdateAt() * 1000), DateTimeUtil.PatternEnum.yyyyMMddHHmmss)
+                : null);
+        target.setExistsLocal(jmId != null && localIds.contains(jmId));
+        return target;
+    }
+
+    private Long parseJmId(String id) {
+        if (StringUtils.isBlank(id)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(id.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * JM的total是字符串形态，解析失败按0处理
+     */
+    private long parseSearchTotal(String total) {
+        if (StringUtils.isBlank(total)) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(total.trim());
+        } catch (NumberFormatException e) {
+            return 0L;
         }
     }
 

@@ -18,6 +18,7 @@ import com.haruhi.botserver.integration.onebot.model.MessageTypeEnum;
 import com.haruhi.botserver.shared.model.BaseResp;
 import com.haruhi.botserver.features.jmcomic.client.model.Album;
 import com.haruhi.botserver.features.jmcomic.client.model.SearchResp;
+import com.haruhi.botserver.features.jmcomic.model.JmSearchSortEnum;
 import com.haruhi.botserver.integration.onebot.model.DownloadFileResp;
 import com.haruhi.botserver.integration.onebot.model.ForwardMsgItem;
 import com.haruhi.botserver.integration.onebot.model.Message;
@@ -93,7 +94,7 @@ public class JmcomicHandler implements IAllMessageHandler {
             try {
                 if (!StringUtils.isNumeric(finalAid)) {
                     // 根据名称搜索本子
-                    SearchResp searchResp = jmcomicService.search(finalAid, "mv");
+                    SearchResp searchResp = jmcomicService.search(finalAid, JmSearchSortEnum.VIEW);
                     List<SearchResp.ContentItem> content = searchResp.getContent();
                     if (CollectionUtils.isEmpty(content)) {
                         bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
