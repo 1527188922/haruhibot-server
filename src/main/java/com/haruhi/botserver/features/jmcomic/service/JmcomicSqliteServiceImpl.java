@@ -5,6 +5,7 @@ import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.haruhi.botserver.bootstrap.WebResourceConfig;
 import com.haruhi.botserver.features.jmcomic.client.model.Album;
@@ -195,52 +196,38 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
 
     @Override
     public List<String> allTag() {
+        return allJsonArrayField(JmAlbumSqlite::getTags);
+    }
+
+    @Override
+    public List<String> allAuthor() {
+        return allJsonArrayField(JmAlbumSqlite::getAuthor);
+    }
+
+    private List<String> allJsonArrayField(SFunction<JmAlbumSqlite, String> columnGetter) {
         List<JmAlbumSqlite> jmAlbumSqlites = this.jmAlbumSqliteMapper.selectList(new LambdaQueryWrapper<JmAlbumSqlite>()
-                .select(JmAlbumSqlite::getTags)
-                .isNotNull(JmAlbumSqlite::getTags));
+                        .select(columnGetter)
+                        .isNotNull(columnGetter));
         if (jmAlbumSqlites.isEmpty()) {
             return Collections.emptyList();
         }
         return jmAlbumSqlites.stream()
-                .map(JmAlbumSqlite::getTags)
+                .map(columnGetter)
                 .filter(StringUtils::isNotBlank)
-                .flatMap(e -> {
-                    try {
-                        List<String> tags = JSONObject.parseObject(e, new TypeReference<List<String>>() {});
-                        return tags.stream();
-                    }catch (Exception e1) {
-                        return Stream.empty();
-                    }
-                })
+                .flatMap(this::parseJsonArray)
                 .filter(StringUtils::isNotBlank)
                 .distinct()
                 .sorted()
                 .toList();
     }
 
-    @Override
-    public List<String> allAuthor() {
-        List<JmAlbumSqlite> jmAlbumSqlites = this.jmAlbumSqliteMapper.selectList(new LambdaQueryWrapper<JmAlbumSqlite>()
-                .select(JmAlbumSqlite::getAuthor)
-                .isNotNull(JmAlbumSqlite::getAuthor));
-        if (jmAlbumSqlites.isEmpty()) {
-            return Collections.emptyList();
+    private Stream<String> parseJsonArray(String json) {
+        try {
+            List<String> values = JSONObject.parseObject(json, new TypeReference<List<String>>() {});
+            return values == null ? Stream.empty() : values.stream();
+        } catch (Exception e) {
+            return Stream.empty();
         }
-        return jmAlbumSqlites.stream()
-                .map(JmAlbumSqlite::getAuthor)
-                .filter(StringUtils::isNotBlank)
-                .flatMap(e -> {
-                    try {
-                        List<String> authors = JSONObject.parseObject(e, new TypeReference<List<String>>() {});
-                        return authors == null ? Stream.empty() : authors.stream();
-                    }catch (Exception e1) {
-                        return Stream.empty();
-                    }
-                })
-                .filter(StringUtils::isNotBlank)
-                .distinct()
-                .sorted()
-                .toList();
     }
 
     @Override
