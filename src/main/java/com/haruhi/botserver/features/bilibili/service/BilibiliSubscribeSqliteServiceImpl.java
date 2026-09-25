@@ -76,9 +76,7 @@ public class BilibiliSubscribeSqliteServiceImpl extends ServiceImpl<BilibiliSubs
                 .like(StringUtils.isNotBlank(request.getUname()), BilibiliSubscribeSqlite::getUname, request.getUname())
                 .eq(StringUtils.isNotBlank(request.getSubType()), BilibiliSubscribeSqlite::getSubType, request.getSubType())
                 .eq(Objects.nonNull(request.getEnableStatus()), BilibiliSubscribeSqlite::getEnableStatus, request.getEnableStatus())
-                .eq(Objects.nonNull(request.getOffNotify()), BilibiliSubscribeSqlite::getOffNotify, request.getOffNotify())
-                .orderByDesc(BilibiliSubscribeSqlite::getUpdateTime)
-                .orderByDesc(BilibiliSubscribeSqlite::getId);
+                .eq(Objects.nonNull(request.getOffNotify()), BilibiliSubscribeSqlite::getOffNotify, request.getOffNotify());
 
         // 订阅数据量不大，这里不分页，直接查全部
         List<BilibiliSubscribeSqlite> records = this.list(queryWrapper);
@@ -98,12 +96,14 @@ public class BilibiliSubscribeSqliteServiceImpl extends ServiceImpl<BilibiliSubs
         Map<Long, GroupInfoSqlite> groupMap = this.selectGroupMap(groupIds);
         Map<Long, FriendSqlite> friendMap = this.selectFriendMap(friendIds);
 
-        List<BilibiliSubscribeResp> result = records.stream()
+        // 排序：1开播中 2启用中 3开启下播通知 4更新时间降序
+        return records.stream()
                 .map(e -> this.toResp(e, groupMap, friendMap))
+                .sorted(Comparator.comparing((BilibiliSubscribeResp e) -> Boolean.TRUE.equals(e.getLiving()) ? 0 : 1)
+                        .thenComparing(e -> Objects.equals(e.getEnableStatus(), BilibiliSubscribeSqlite.ENABLE_STATUS_ENABLE) ? 0 : 1)
+                        .thenComparing(e -> Objects.equals(e.getOffNotify(), 1) ? 0 : 1)
+                        .thenComparing(BilibiliSubscribeResp::getUpdateTime, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
-        // 正在开播的排到最前面，其余保持sql的更新时间倒序(排序是稳定的)
-        result.sort(Comparator.comparing(e -> Boolean.TRUE.equals(e.getLiving()) ? 0 : 1));
-        return result;
     }
 
     @Override
