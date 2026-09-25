@@ -63,6 +63,33 @@
             <el-button type="primary" size="small" plain icon="el-icon-search" :loading="onlineLoading" @click="searchOnlineFirst">搜索</el-button>
             <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetOnlineQuery">重置</el-button>
           </el-row>
+          <div class="jm-online-history">
+            <div class="jm-online-history-head">
+              <span class="jm-online-history-title">
+                最近搜索
+                <el-tag size="mini" type="info">{{onlineHistory.length}}</el-tag>
+              </span>
+              <span class="jm-online-history-hint">点击历史记录可回显当时的搜索条件与页码</span>
+              <span class="jm-online-history-ops">
+                <el-button type="text" size="mini" @click="toggleOnlineHistory">{{onlineHistoryCollapsed ? '展开' : '收起'}}</el-button>
+                <el-button type="text" size="mini" :disabled="onlineHistory.length === 0" @click="clearOnlineHistory">清空</el-button>
+              </span>
+            </div>
+            <div v-show="!onlineHistoryCollapsed" v-loading="onlineHistoryLoading" class="jm-online-history-list">
+              <span v-if="onlineHistory.length === 0" class="jm-online-history-empty">暂无搜索历史</span>
+              <el-tag v-for="item in onlineHistory" :key="item.id"
+                      class="jm-online-history-item"
+                      :type="isOnlineHistoryActive(item) ? 'primary' : 'info'"
+                      :effect="isOnlineHistoryActive(item) ? 'dark' : 'plain'"
+                      :title="onlineHistoryTitle(item)"
+                      size="small"
+                      @click="applyOnlineHistory(item)">
+                <span class="jm-online-history-name">{{item.name}}</span>
+                <span class="jm-online-history-meta">{{item.sortLabel}} · 第{{item.page}}页 · {{formatOnlineHistoryTime(item.searchTime)}}</span>
+                <i class="el-icon-close jm-online-history-remove" title="删除这条记录" @click.stop="removeOnlineHistory(item)"></i>
+              </el-tag>
+            </div>
+          </div>
         </el-tab-pane>
       </el-tabs>
     </basic-container>
@@ -318,10 +345,14 @@
           关键字「{{onlineResult.searchQuery}}」，共 {{formatOnlineTotal}} 条，第 {{onlineResult.page}}/{{Math.max(onlineResult.totalPage, 1)}} 页，每页 {{onlineResult.pageSize}} 条
         </span>
         <span v-else class="jm-online-summary">结果为JM服务器实时数据，搜索到的记录需要点「添加」才会入库</span>
+        <el-radio-group v-model="onlineViewMode" class="jm-online-view-switch" size="mini">
+          <el-radio-button label="list"><i class="el-icon-s-unfold"></i> 列表</el-radio-button>
+          <el-radio-button label="waterfall"><i class="el-icon-s-grid"></i> 瀑布流</el-radio-button>
+        </el-radio-group>
       </div>
       <el-empty v-if="!onlineSearched" description="输入关键字后点击搜索"></el-empty>
       <template v-else>
-        <el-table tooltip-effect="light" :data="onlineResult.content" v-loading="onlineLoading" border stripe
+        <el-table v-if="onlineViewMode === 'list'" tooltip-effect="light" :data="onlineResult.content" v-loading="onlineLoading" border stripe
                   max-height="800" size="small" row-key="id">
           <template slot="empty">
             <el-empty description="没有搜索到结果" :image-size="80"></el-empty>
@@ -358,6 +389,38 @@
             </template>
           </el-table-column>
         </el-table>
+        <template v-else>
+          <el-empty v-if="onlineResult.content.length === 0" description="没有搜索到结果" :image-size="80"></el-empty>
+          <div v-else v-loading="onlineLoading" class="jm-waterfall">
+            <div v-for="row in onlineResult.content" :key="`wf-${row.id}`" class="jm-waterfall-card">
+              <div class="jm-waterfall-cover">
+                <el-image v-if="row.coverUrl" :src="row.coverUrl" :preview-src-list="[row.coverUrl]"
+                          fit="cover" referrerpolicy="no-referrer">
+                  <div slot="placeholder" class="jm-waterfall-placeholder"><i class="el-icon-loading"></i></div>
+                  <div slot="error" class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
+                </el-image>
+                <div v-else class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
+                <el-tag class="jm-waterfall-status" size="mini" :type="row.existsLocal ? 'success' : 'info'">
+                  {{row.existsLocal ? '已入库' : '未入库'}}
+                </el-tag>
+              </div>
+              <div class="jm-waterfall-body">
+                <div class="jm-waterfall-name" :title="row.name">{{row.name}}</div>
+                <div class="jm-waterfall-meta">
+                  <span class="jm-waterfall-id">JM{{row.id}}</span>
+                  <span v-if="row.author" class="jm-waterfall-author" :title="row.author">{{row.author}}</span>
+                </div>
+                <div v-if="row.category" class="jm-waterfall-meta" :title="row.category">{{row.category}}</div>
+                <div class="jm-waterfall-footer">
+                  <span class="jm-waterfall-time">{{row.updateTime}}</span>
+                  <el-button type="primary" size="mini" plain icon="el-icon-plus"
+                             :loading="isOnlineAdding(row)" :disabled="isOnlineAddDisabled(row)"
+                             @click="addOnlineAlbum(row)">{{row.existsLocal ? '已入库' : '添加'}}</el-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
         <div class="pagination-box">
           <el-pagination background
                          :current-page="onlineResult.page"
@@ -426,8 +489,14 @@ import {
   requestChapterImages,
   searchAlbums,
   searchChapterImages,
-  searchOnlineAlbums
+  searchOnlineAlbums,
+  searchOnlineHistory,
+  deleteSearchOnlineHistory
 } from "@/api/jmcomic";
+import { getStore, setStore } from "@/util/store";
+
+// 在线搜索结果的展示方式记在本地，下次进来保持上次的选择
+const ONLINE_VIEW_MODE_KEY = 'jmOnlineViewMode';
 
 export default {
   name: 'JmcomicManage',
@@ -460,7 +529,14 @@ export default {
       ],
       onlineLoading: false,
       onlineSearched: false,
+      // 搜索结果展示方式：list=表格(默认)，waterfall=瀑布流卡片
+      onlineViewMode: getStore({ name: ONLINE_VIEW_MODE_KEY }) || 'list',
       onlineResult: this.defOnlineResult(),
+      // 搜索历史
+      onlineHistory: [],
+      onlineHistoryLoading: false,
+      onlineHistoryLoaded: false,
+      onlineHistoryCollapsed: false,
       // 正在添加的搜索结果，key=jmId
       onlineAddingMap: {},
       // 在线搜索里添加过记录后，JM主记录列表需要重新查询
@@ -533,6 +609,11 @@ export default {
     formatOnlineTotal() {
       const total = Number(this.onlineResult.total || 0)
       return total >= 10000 ? `${total}+` : total
+    }
+  },
+  watch: {
+    onlineViewMode(val) {
+      setStore({ name: ONLINE_VIEW_MODE_KEY, content: val })
     }
   },
   mounted() {
@@ -705,6 +786,9 @@ export default {
       if (this.activeTab === 'chapter' && this.chapterData.length === 0) {
         this.searchChaptersFirst()
       }
+      if (this.activeTab === 'online') {
+        this.ensureOnlineHistory()
+      }
       // 在线搜索里添加过记录，切回主记录时再刷新，避免每次添加都白查一次
       if (this.activeTab === 'album' && this.albumListDirty) {
         this.albumListDirty = false
@@ -765,6 +849,8 @@ export default {
         }
         this.onlineQuery.page = this.onlineResult.page
         this.onlineSearched = true
+        // 后端每次搜索都会记一条历史，这里同步刷新
+        this.loadOnlineHistory()
       }).catch(error => {
         this.handleRequestError(error)
       }).finally(() => {
@@ -790,6 +876,104 @@ export default {
       if (this.$refs.onlineQueryForm) {
         this.$refs.onlineQueryForm.clearValidate()
       }
+    },
+    /**
+     * 搜索历史：列表按时间倒序，条数由 jm.search.history.limit 控制
+     */
+    loadOnlineHistory() {
+      this.onlineHistoryLoading = true
+      searchOnlineHistory().then(({data: {code, message, data}}) => {
+        if (code !== 200) {
+          return this.$message.error(message || '搜索历史查询失败')
+        }
+        this.onlineHistory = data || []
+        this.onlineHistoryLoaded = true
+      }).catch(error => {
+        this.handleRequestError(error)
+      }).finally(() => {
+        this.onlineHistoryLoading = false
+      })
+    },
+    /**
+     * 切到在线搜索页签时才拉历史，拉过一次就不再重复请求
+     */
+    ensureOnlineHistory() {
+      if (!this.onlineHistoryLoaded) {
+        this.loadOnlineHistory()
+      }
+    },
+    toggleOnlineHistory() {
+      this.onlineHistoryCollapsed = !this.onlineHistoryCollapsed
+    },
+    /**
+     * 历史时间在后端是 yyyyMMddHHmmss，胶囊里只展示 MM-dd HH:mm
+     */
+    formatOnlineHistoryTime(value) {
+      const text = `${value || ''}`.trim()
+      if (!/^\d{14}$/.test(text)) {
+        return text
+      }
+      return `${text.slice(4, 6)}-${text.slice(6, 8)} ${text.slice(8, 10)}:${text.slice(10, 12)}`
+    },
+    onlineHistoryTitle(item) {
+      if (!item) {
+        return ''
+      }
+      return `关键字：${item.name || ''}\n排序：${item.sortLabel || ''}\n页码：第${item.page || 1}页`
+        + `\n结果：共${item.total || 0}条，本次返回${item.resultCount || 0}条`
+        + `\n搜索时间：${item.searchTime || ''}`
+    },
+    /**
+     * 当前搜索条件是否与这条历史一致，用于高亮
+     */
+    isOnlineHistoryActive(item) {
+      return !!item
+        && (item.name || '') === (this.onlineQuery.name || '').trim()
+        && item.sort === this.onlineQuery.sort
+        && Number(item.page || 1) === Number(this.onlineQuery.page || 1)
+    },
+    /**
+     * 回显历史记录的条件与页码，并按原条件重新搜索
+     */
+    applyOnlineHistory(item) {
+      if (!item || !item.name) {
+        return
+      }
+      this.onlineQuery.name = item.name
+      this.onlineQuery.sort = item.sort || 'mr'
+      this.onlineQuery.page = item.page || 1
+      this.searchOnline()
+    },
+    removeOnlineHistory(item) {
+      if (!item) {
+        return
+      }
+      deleteSearchOnlineHistory({ ids: [item.id] }).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message || '删除失败')
+        }
+        this.$message.success(message || '删除完成')
+        this.loadOnlineHistory()
+      }).catch(error => {
+        this.handleRequestError(error)
+      })
+    },
+    clearOnlineHistory() {
+      this.$confirm('确认清空全部JM在线搜索历史？', '清空搜索历史', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deleteSearchOnlineHistory({ clearAll: true }).then(({data: {code, message}}) => {
+          if (code !== 200) {
+            return this.$message.error(message || '清空失败')
+          }
+          this.$message.success(message || '清空完成')
+          this.loadOnlineHistory()
+        }).catch(error => {
+          this.handleRequestError(error)
+        })
+      }).catch(() => {})
     },
     isOnlineAdding(row) {
       return !!(row && this.onlineAddingMap[row.id])
@@ -1235,6 +1419,190 @@ export default {
     color: #606266;
     font-size: 13px;
     line-height: 28px;
+  }
+
+  .jm-online-view-switch {
+    margin-left: auto;
+  }
+
+  /**
+   * 搜索历史：胶囊列表，点击回显条件并重新搜索
+   */
+  .jm-online-history {
+    border-top: 1px solid #ebeef5;
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  .jm-online-history-head {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .jm-online-history-title {
+    color: #303133;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .jm-online-history-hint {
+    color: #c0c4cc;
+    font-size: 12px;
+  }
+
+  .jm-online-history-ops {
+    margin-left: auto;
+
+    .el-button {
+      margin-left: 8px;
+      padding: 0;
+    }
+  }
+
+  .jm-online-history-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    max-height: 116px;
+    min-height: 32px;
+    overflow: auto;
+  }
+
+  .jm-online-history-empty {
+    color: #c0c4cc;
+    font-size: 12px;
+    line-height: 32px;
+  }
+
+  .jm-online-history-item {
+    cursor: pointer;
+    max-width: 100%;
+
+    .jm-online-history-name {
+      font-weight: 600;
+    }
+
+    .jm-online-history-meta {
+      margin-left: 6px;
+      opacity: .8;
+    }
+
+    .jm-online-history-remove {
+      cursor: pointer;
+      margin-left: 6px;
+
+      &:hover {
+        color: #f56c6c;
+      }
+    }
+  }
+
+  /**
+   * 瀑布流卡片：column-width 让列宽自适应，卡片高度由封面原始比例决定
+   */
+  .jm-waterfall {
+    column-gap: 12px;
+    column-width: 176px;
+    padding: 4px 0;
+  }
+
+  .jm-waterfall-card {
+    background-color: #fff;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    break-inside: avoid;
+    display: inline-block;
+    margin: 0 0 12px;
+    overflow: hidden;
+    transition: box-shadow .2s;
+    width: 100%;
+
+    &:hover {
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);
+    }
+  }
+
+  .jm-waterfall-cover {
+    background-color: #f5f7fa;
+    position: relative;
+
+    ::v-deep .el-image {
+      display: block;
+      width: 100%;
+    }
+
+    ::v-deep .el-image__inner {
+      display: block;
+      height: auto;
+      width: 100%;
+    }
+  }
+
+  .jm-waterfall-placeholder {
+    align-items: center;
+    color: #c0c4cc;
+    display: flex;
+    font-size: 18px;
+    height: 180px;
+    justify-content: center;
+  }
+
+  .jm-waterfall-status {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+  }
+
+  .jm-waterfall-body {
+    padding: 8px;
+  }
+
+  .jm-waterfall-name {
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: #303133;
+    display: -webkit-box;
+    font-size: 13px;
+    line-height: 18px;
+    overflow: hidden;
+    word-break: break-all;
+  }
+
+  .jm-waterfall-meta {
+    align-items: center;
+    color: #909399;
+    display: flex;
+    font-size: 12px;
+    gap: 6px;
+    line-height: 18px;
+    margin-top: 4px;
+    min-width: 0;
+  }
+
+  .jm-waterfall-id {
+    color: #409eff;
+    flex-shrink: 0;
+  }
+
+  .jm-waterfall-author {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .jm-waterfall-footer {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+
+  .jm-waterfall-time {
+    color: #c0c4cc;
+    font-size: 12px;
   }
 
   .jm-cover-state {

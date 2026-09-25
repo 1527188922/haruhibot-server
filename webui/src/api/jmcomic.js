@@ -39,6 +39,24 @@ export const searchOnlineAlbums = (data) => request({
   data
 });
 
+/**
+ * JM在线搜索历史(按时间倒序，条数由 jm.search.history.limit 控制)
+ */
+export const searchOnlineHistory = () => request({
+  url: baseUrl + '/jmcomic/manage/album/searchOnline/history',
+  method: 'get'
+});
+
+/**
+ * 删除JM在线搜索历史
+ * @param data {ids: [], clearAll: 是否清空}
+ */
+export const deleteSearchOnlineHistory = (data) => request({
+  url: baseUrl + '/jmcomic/manage/album/searchOnline/history/delete',
+  method: 'post',
+  data
+});
+
 export const downloadAlbum = (aid) => request({
   url: baseUrl + `/jmcomic/manage/album/download/${aid}`,
   timeout:60 * 1000,

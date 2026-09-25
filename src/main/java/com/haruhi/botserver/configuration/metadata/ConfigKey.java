@@ -144,6 +144,8 @@ public enum ConfigKey {
             "JM搜索结果是否以HTML转图片方式发送，false为合并消息发送", 70),
     JM_SEARCH_RESULT_LIMIT(ConfigFile.JM, "jm.search_result.limit", ConfigType.INT, "12", true,
             "JM搜索结果返回条数上限，图片和合并消息共用；无效或小于等于0时使用12条", 80),
+    JM_SEARCH_HISTORY_LIMIT(ConfigFile.JM, "jm.search.history.limit", ConfigType.INT, "20", true,
+            "JM在线搜索历史保存条数，超出后自动删除最旧的记录；无效或小于等于0时不保存历史", 90),
 
     // ============================ 站点地址 ============================
     // ThirdPartyURL 中的地址常量已迁移到这里，除 identimg（识图，见 searchimg.properties）外

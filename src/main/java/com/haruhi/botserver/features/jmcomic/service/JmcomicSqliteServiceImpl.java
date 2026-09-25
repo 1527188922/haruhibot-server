@@ -159,8 +159,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 .like(StringUtils.isNotBlank(request.getName()), JmAlbumSqlite::getName, request.getName())
                 .like(StringUtils.isNotBlank(request.getAuthor()), JmAlbumSqlite::getAuthor, request.getAuthor())
                 .eq(Objects.nonNull(request.getCollected()), JmAlbumSqlite::getCollected, request.getCollected())
-                .orderByDesc(JmAlbumSqlite::getModifyTime)
-                .orderByDesc(JmAlbumSqlite::getId);
+                .orderByDesc(JmAlbumSqlite::getCreateTime);
         applyTagFilter(queryWrapper, request);
         IPage<JmAlbumSqlite> sourcePage = jmAlbumSqliteMapper.selectPage(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
         Page<JmAlbumManageResp> targetPage = new Page<>(sourcePage.getCurrent(), sourcePage.getSize(), sourcePage.getTotal());

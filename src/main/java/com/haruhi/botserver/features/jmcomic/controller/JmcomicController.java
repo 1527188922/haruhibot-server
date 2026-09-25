@@ -7,6 +7,7 @@ import com.haruhi.botserver.shared.model.BaseResp;
 import com.haruhi.botserver.features.jmcomic.client.model.Album;
 import com.haruhi.botserver.features.jmcomic.client.model.Chapter;
 import com.haruhi.botserver.features.jmcomic.service.JmcomicService;
+import com.haruhi.botserver.features.jmcomic.service.JmOnlineSearchHistoryStore;
 import com.haruhi.botserver.features.jmcomic.service.JmcomicSqliteService;
 import com.haruhi.botserver.shared.model.HttpResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumCollectReq;
@@ -15,6 +16,8 @@ import com.haruhi.botserver.features.jmcomic.model.JmAlbumManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumQueryReq;
+import com.haruhi.botserver.features.jmcomic.model.JmOnlineSearchHistory;
+import com.haruhi.botserver.features.jmcomic.model.JmOnlineSearchHistoryDeleteReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageDeleteReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageQueryReq;
@@ -48,6 +51,9 @@ public class JmcomicController {
 
     @Autowired
     private JmcomicSqliteService jmcomicSqliteService;
+
+    @Autowired
+    private JmOnlineSearchHistoryStore jmOnlineSearchHistoryStore;
 
     /**
     @IgnoreAuthentication
@@ -129,6 +135,33 @@ public class JmcomicController {
             log.error("JM在线搜索异常", e);
             return HttpResp.fail("JM在线搜索异常：" + e.getMessage(), null);
         }
+    }
+
+    /**
+     * JM在线搜索历史，按时间倒序
+     */
+    @GetMapping("/manage/album/searchOnline/history")
+    public HttpResp<List<JmOnlineSearchHistory>> searchOnlineHistory() {
+        return HttpResp.success(jmOnlineSearchHistoryStore.list());
+    }
+
+    /**
+     * 删除JM在线搜索历史(清空或按id删除)
+     */
+    @PostMapping("/manage/album/searchOnline/history/delete")
+    public HttpResp deleteSearchOnlineHistory(@RequestBody JmOnlineSearchHistoryDeleteReq request) {
+        if (request == null) {
+            return HttpResp.fail("缺少参数", null);
+        }
+        if (Boolean.TRUE.equals(request.getClearAll())) {
+            jmOnlineSearchHistoryStore.clear();
+            return HttpResp.success("清空完成", null);
+        }
+        if (CollectionUtils.isEmpty(request.getIds())) {
+            return HttpResp.fail("缺少要删除的记录id", null);
+        }
+        jmOnlineSearchHistoryStore.delete(request.getIds());
+        return HttpResp.success("删除完成", null);
     }
 
     @PostMapping("/manage/album/request/{aid}")

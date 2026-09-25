@@ -21,6 +21,7 @@ import com.haruhi.botserver.features.jmcomic.client.model.Series;
 import com.haruhi.botserver.features.jmcomic.client.model.UserProfile;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchResp;
+import com.haruhi.botserver.features.jmcomic.model.JmOnlineSearchHistory;
 import com.haruhi.botserver.features.jmcomic.model.JmSearchSortEnum;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.shared.util.CommonUtil;
@@ -104,6 +105,9 @@ public class JmcomicService {
 
     @Autowired
     private JmcomicSqliteService jmcomicSqliteService;
+
+    @Autowired
+    private JmOnlineSearchHistoryStore jmOnlineSearchHistoryStore;
 
     public String getJmApiDomain(){
         return Configs.getStr(ConfigKey.JM_API_DOMAIN, DEFAULT_API_DOMAIN);
@@ -966,7 +970,22 @@ public class JmcomicService {
         resp.setPageSize(SEARCH_PAGE_SIZE);
         resp.setTotalPage((int) ((total + SEARCH_PAGE_SIZE - 1) / SEARCH_PAGE_SIZE));
         resp.setContent(content.stream().map(e -> toOnlineSearchItem(e, localIds)).toList());
+        saveSearchHistory(name.trim(), sort, page, resp);
         return resp;
+    }
+
+    /**
+     * 记录本次在线搜索(关键字/排序/页码 + 结果概要)，保存条数见 jm.search.history.limit
+     */
+    private void saveSearchHistory(String name, JmSearchSortEnum sort, int page, JmAlbumOnlineSearchResp resp) {
+        JmOnlineSearchHistory history = new JmOnlineSearchHistory();
+        history.setName(name);
+        history.setSort(sort.getSort());
+        history.setPage(page);
+        history.setTotal(resp.getTotal());
+        history.setPageSize(resp.getPageSize());
+        history.setResultCount(resp.getContent() == null ? 0 : resp.getContent().size());
+        jmOnlineSearchHistoryStore.save(history);
     }
 
     private JmAlbumOnlineSearchResp.Item toOnlineSearchItem(SearchResp.ContentItem item, Set<Long> localIds) {
