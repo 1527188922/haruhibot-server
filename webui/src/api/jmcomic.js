@@ -40,10 +40,18 @@ export const searchOnlineAlbums = (data) => request({
 });
 
 /**
- * JM在线搜索历史(按时间倒序，条数由 jm.search.history.limit 控制)
+ * JM在线搜索历史(按时间倒序，条数由 jm.search.history.limit 控制，不含结果快照)
  */
 export const searchOnlineHistory = () => request({
   url: baseUrl + '/jmcomic/manage/album/searchOnline/history',
+  method: 'get'
+});
+
+/**
+ * JM在线搜索历史详情，含当时那一页的结果快照
+ */
+export const searchOnlineHistoryDetail = (id) => request({
+  url: baseUrl + `/jmcomic/manage/album/searchOnline/history/${id}`,
   method: 'get'
 });
 

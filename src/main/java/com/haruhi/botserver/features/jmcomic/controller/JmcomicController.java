@@ -7,7 +7,6 @@ import com.haruhi.botserver.shared.model.BaseResp;
 import com.haruhi.botserver.features.jmcomic.client.model.Album;
 import com.haruhi.botserver.features.jmcomic.client.model.Chapter;
 import com.haruhi.botserver.features.jmcomic.service.JmcomicService;
-import com.haruhi.botserver.features.jmcomic.service.JmOnlineSearchHistoryStore;
 import com.haruhi.botserver.features.jmcomic.service.JmcomicSqliteService;
 import com.haruhi.botserver.shared.model.HttpResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumCollectReq;
@@ -51,9 +50,6 @@ public class JmcomicController {
 
     @Autowired
     private JmcomicSqliteService jmcomicSqliteService;
-
-    @Autowired
-    private JmOnlineSearchHistoryStore jmOnlineSearchHistoryStore;
 
     /**
     @IgnoreAuthentication
@@ -138,11 +134,23 @@ public class JmcomicController {
     }
 
     /**
-     * JM在线搜索历史，按时间倒序
+     * JM在线搜索历史列表(不含结果快照)，按时间倒序
      */
     @GetMapping("/manage/album/searchOnline/history")
     public HttpResp<List<JmOnlineSearchHistory>> searchOnlineHistory() {
-        return HttpResp.success(jmOnlineSearchHistoryStore.list());
+        return HttpResp.success(jmcomicService.listSearchHistory());
+    }
+
+    /**
+     * JM在线搜索历史详情，含当时那一页的结果快照
+     */
+    @GetMapping("/manage/album/searchOnline/history/{id}")
+    public HttpResp<JmOnlineSearchHistory> searchOnlineHistoryDetail(@PathVariable("id") Long id) {
+        JmOnlineSearchHistory history = jmcomicService.getSearchHistory(id);
+        if (history == null) {
+            return HttpResp.fail("搜索历史不存在或已被清理", null);
+        }
+        return HttpResp.success(history);
     }
 
     /**
@@ -154,13 +162,13 @@ public class JmcomicController {
             return HttpResp.fail("缺少参数", null);
         }
         if (Boolean.TRUE.equals(request.getClearAll())) {
-            jmOnlineSearchHistoryStore.clear();
+            jmcomicService.clearSearchHistory();
             return HttpResp.success("清空完成", null);
         }
         if (CollectionUtils.isEmpty(request.getIds())) {
             return HttpResp.fail("缺少要删除的记录id", null);
         }
-        jmOnlineSearchHistoryStore.delete(request.getIds());
+        jmcomicService.deleteSearchHistory(request.getIds());
         return HttpResp.success("删除完成", null);
     }
 

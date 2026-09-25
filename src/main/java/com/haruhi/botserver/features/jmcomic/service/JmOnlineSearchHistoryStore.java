@@ -68,7 +68,7 @@ public class JmOnlineSearchHistoryStore {
     }
 
     /**
-     * 按时间倒序返回历史记录，条数不超过配置值；已禁用历史时返回空
+     * 按时间倒序返回历史记录(不含结果快照)，条数不超过配置值；已禁用历史时返回空
      */
     public List<JmOnlineSearchHistory> list() {
         int limit = historyLimit();
@@ -84,22 +84,34 @@ public class JmOnlineSearchHistoryStore {
                     // id自增，越大越新
                     .sorted(Comparator.comparing(KvEntry::getId).reversed())
                     .limit(limit)
-                    .map(e -> {
-                        JmOnlineSearchHistory history = parse(e.getContent());
-                        if (history == null) {
-                            return null;
-                        }
-                        history.setId(e.getId());
-                        // 同条件重复搜索时更新的是modifyTime
-                        history.setSearchTime(StringUtils.defaultIfBlank(e.getModifyTime(), e.getCreateTime()));
-                        history.setSortLabel(JmSearchSortEnum.getOrDefault(history.getSort()).getRemark());
-                        return history;
-                    })
+                    .map(e -> fill(parse(e.getContent()), e))
                     .filter(Objects::nonNull)
+                    // 列表只需要条件与概要，结果快照只在查详情时下发
+                    .peek(e -> e.setItems(null))
                     .toList();
         } catch (Exception e) {
             log.error("读取JM在线搜索历史失败", e);
             return List.of();
+        }
+    }
+
+    /**
+     * 查询单条历史详情(含结果快照)，不存在返回null
+     */
+    public JmOnlineSearchHistory get(Long id) {
+        if (id == null) {
+            return null;
+        }
+        try {
+            KvEntry entry = kvStoreService.getById(id);
+            // 防止传入其他kv记录的id
+            if (entry == null || !KEY_SEARCH_HISTORY.equals(entry.getKey())) {
+                return null;
+            }
+            return fill(parse(entry.getContent()), entry);
+        } catch (Exception e) {
+            log.error("查询JM在线搜索历史详情失败 id:{}", id, e);
+            return null;
         }
     }
 
@@ -157,6 +169,20 @@ public class JmOnlineSearchHistoryStore {
         return Objects.equals(left.getName(), right.getName())
                 && Objects.equals(left.getSort(), right.getSort())
                 && Objects.equals(left.getPage(), right.getPage());
+    }
+
+    /**
+     * 补齐只在下发时才有值的字段
+     */
+    private JmOnlineSearchHistory fill(JmOnlineSearchHistory history, KvEntry entry) {
+        if (history == null || entry == null) {
+            return null;
+        }
+        history.setId(entry.getId());
+        // 同条件重复搜索时刷新的是modifyTime
+        history.setSearchTime(StringUtils.defaultIfBlank(entry.getModifyTime(), entry.getCreateTime()));
+        history.setSortLabel(JmSearchSortEnum.getOrDefault(history.getSort()).getRemark());
+        return history;
     }
 
     private JmOnlineSearchHistory parse(String content) {

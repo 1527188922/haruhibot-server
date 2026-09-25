@@ -975,7 +975,7 @@ public class JmcomicService {
     }
 
     /**
-     * 记录本次在线搜索(关键字/排序/页码 + 结果概要)，保存条数见 jm.search.history.limit
+     * 记录本次在线搜索(条件+结果概要+结果快照)，保存条数见 jm.search.history.limit
      */
     private void saveSearchHistory(String name, JmSearchSortEnum sort, int page, JmAlbumOnlineSearchResp resp) {
         JmOnlineSearchHistory history = new JmOnlineSearchHistory();
@@ -985,7 +985,45 @@ public class JmcomicService {
         history.setTotal(resp.getTotal());
         history.setPageSize(resp.getPageSize());
         history.setResultCount(resp.getContent() == null ? 0 : resp.getContent().size());
+        history.setItems(resp.getContent());
         jmOnlineSearchHistoryStore.save(history);
+    }
+
+    /**
+     * 搜索历史列表(不含结果快照)
+     */
+    public List<JmOnlineSearchHistory> listSearchHistory() {
+        return jmOnlineSearchHistoryStore.list();
+    }
+
+    /**
+     * 搜索历史详情(含结果快照)，点历史记录时直接回显快照，不再请求JM
+     * <p>
+     * 快照里的"是否已入库"按当前jm_album的实际情况刷新，避免显示已经过期的状态
+     */
+    public JmOnlineSearchHistory getSearchHistory(Long id) {
+        JmOnlineSearchHistory history = jmOnlineSearchHistoryStore.get(id);
+        if (history == null || CollectionUtils.isEmpty(history.getItems())) {
+            return history;
+        }
+        List<JmAlbumOnlineSearchResp.Item> items = history.getItems();
+        Set<Long> localIds = jmcomicSqliteService.existsAlbumIds(items.stream()
+                .map(e -> parseJmId(e.getId()))
+                .filter(Objects::nonNull)
+                .toList());
+        items.forEach(item -> {
+            Long jmId = parseJmId(item.getId());
+            item.setExistsLocal(jmId != null && localIds.contains(jmId));
+        });
+        return history;
+    }
+
+    public void deleteSearchHistory(List<Long> ids) {
+        jmOnlineSearchHistoryStore.delete(ids);
+    }
+
+    public void clearSearchHistory() {
+        jmOnlineSearchHistoryStore.clear();
     }
 
     private JmAlbumOnlineSearchResp.Item toOnlineSearchItem(SearchResp.ContentItem item, Set<Long> localIds) {

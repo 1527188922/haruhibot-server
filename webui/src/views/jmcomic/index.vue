@@ -101,7 +101,7 @@
         <el-button type="warning" size="small" plain icon="el-icon-star-on" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'collect'" @click="collectSelectedAlbums(true)">批量收藏</el-button>
         <el-button type="info" size="small" plain icon="el-icon-star-off" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'uncollect'" @click="collectSelectedAlbums(false)">取消收藏</el-button>
         <el-button type="danger" size="small" plain icon="el-icon-delete" @click="openAllFileDelete">删除全部</el-button>
-        <el-dropdown trigger="click" :hide-on-click="false">
+        <el-dropdown v-if="albumViewMode === 'list'" trigger="click" :hide-on-click="false">
           <el-button type="primary" size="small" plain icon="el-icon-setting">列设置</el-button>
           <el-dropdown-menu slot="dropdown" class="jm-column-dropdown">
             <el-checkbox-group v-model="albumVisibleColumns" class="jm-column-check-group" @change="handleAlbumColumnsChange">
@@ -109,8 +109,12 @@
             </el-checkbox-group>
           </el-dropdown-menu>
         </el-dropdown>
+        <el-radio-group v-model="albumViewMode" class="jm-view-switch" size="mini">
+          <el-radio-button label="list"><i class="el-icon-s-unfold"></i> 列表</el-radio-button>
+          <el-radio-button label="waterfall"><i class="el-icon-s-grid"></i> 瀑布流</el-radio-button>
+        </el-radio-group>
       </div>
-      <el-table tooltip-effect="light" :data="albumData" v-loading="albumLoading" border stripe max-height="800"
+      <el-table v-if="albumViewMode === 'list'" tooltip-effect="light" :data="albumData" v-loading="albumLoading" border stripe max-height="800"
                 size="small" ref="albumTable" highlight-current-row :row-class-name="albumRowClassName" @selection-change="albumSelectionChange">
         <el-table-column v-if="isAlbumColumnVisible('selection')" type="selection" width="50" align="center"></el-table-column>
         <el-table-column v-if="isAlbumColumnVisible('action')" fixed label="操作" width="96" align="center">
@@ -299,6 +303,61 @@
 <!--        <el-table-column label="series" prop="series" min-width="220" show-overflow-tooltip></el-table-column>-->
         <el-table-column v-if="isAlbumColumnVisible('raw')" label="raw" prop="raw" min-width="100" show-overflow-tooltip></el-table-column>
       </el-table>
+
+      <el-empty v-else-if="albumData.length === 0" description="没有查询到JM主记录" :image-size="80"></el-empty>
+      <div v-else v-loading="albumLoading" class="jm-waterfall">
+        <div v-for="row in albumData" :key="`album-wf-${row.id}`" class="jm-waterfall-card"
+             :class="{'jm-waterfall-card-collected': isAlbumCollected(row)}">
+          <div class="jm-waterfall-cover">
+            <el-image v-if="albumCoverSrc(row)" :src="albumCoverSrc(row)" :preview-src-list="[albumCoverSrc(row)]"
+                      fit="cover" referrerpolicy="no-referrer">
+              <div slot="placeholder" class="jm-waterfall-placeholder"><i class="el-icon-loading"></i></div>
+              <div slot="error" class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
+            </el-image>
+            <div v-else class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
+            <el-tag v-if="isAlbumCollected(row)" class="jm-waterfall-status" size="mini" type="warning">已收藏</el-tag>
+            <i v-if="row.zipExists" class="jm-waterfall-badge jm-waterfall-badge-zip" title="已有ZIP">ZIP</i>
+            <i v-if="row.pdfExists" class="jm-waterfall-badge jm-waterfall-badge-pdf" title="已有PDF">PDF</i>
+          </div>
+          <div class="jm-waterfall-body">
+            <div class="jm-waterfall-name" :title="row.name">{{row.name}}</div>
+            <div class="jm-waterfall-meta">
+              <span class="jm-waterfall-id jm-waterfall-id-link" title="查看章节" @click="jumpToChapters(row)">JM{{row.id}}</span>
+              <el-tag v-for="(item, index) in visibleItems(row.authorList, 2)" :key="`album-wf-author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
+              <span v-if="row.authorList.length > 2">+{{row.authorList.length - 2}}</span>
+            </div>
+            <div v-if="row.tagsList.length > 0" class="jm-waterfall-meta">
+              <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`album-wf-tag-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
+              <span v-if="row.tagsList.length > 3">+{{row.tagsList.length - 3}}</span>
+            </div>
+            <div class="jm-waterfall-meta">
+              <span :class="safeNumber(row.imageCount) === 0 ? 'danger-text' : ''">DB图片 {{formatCount(row.imageCount)}}</span>
+              <span :class="safeNumber(row.actualImageCount) === 0 ? 'danger-text' : ''">文件 {{formatCount(row.actualImageCount)}}</span>
+            </div>
+            <div class="jm-waterfall-time">{{row.createTime}}</div>
+            <div class="jm-waterfall-actions">
+              <el-tooltip content="预览漫画" placement="top">
+                <el-button type="primary" size="mini" plain icon="el-icon-view" @click="openPreview(row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="下载漫画" placement="top">
+                <el-button type="primary" size="mini" plain icon="el-icon-download" :loading="isAlbumOperation(row, 'download')" :disabled="isAlbumOtherOperation(row, 'download')" @click="downloadAlbumData(row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="生成zip" placement="top">
+                <el-button type="success" size="mini" plain icon="el-icon-folder-add" :loading="isAlbumOperation(row, 'zip')" :disabled="isAlbumOtherOperation(row, 'zip')" @click="confirmGenerateZip(row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="生成pdf" placement="top">
+                <el-button type="warning" size="mini" plain icon="el-icon-document-add" :loading="isAlbumOperation(row, 'pdf')" :disabled="isAlbumOtherOperation(row, 'pdf')" @click="confirmGeneratePdf(row)"></el-button>
+              </el-tooltip>
+              <el-tooltip :content="isAlbumCollected(row) ? '取消收藏' : '收藏'" placement="top">
+                <el-button :type="isAlbumCollected(row) ? 'warning' : 'default'" size="mini" plain
+                           :icon="isAlbumCollected(row) ? 'el-icon-star-on' : 'el-icon-star-off'"
+                           :loading="isAlbumOperation(row, 'collect')" :disabled="isAlbumOtherOperation(row, 'collect')"
+                           @click="toggleAlbumCollected(row)"></el-button>
+              </el-tooltip>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="pagination-box">
         <el-pagination v-bind="albumPagination" @size-change="albumSizeChange" @current-change="albumCurrentChange" />
       </div>
@@ -344,8 +403,12 @@
         <span v-if="onlineSearched" class="jm-online-summary">
           关键字「{{onlineResult.searchQuery}}」，共 {{formatOnlineTotal}} 条，第 {{onlineResult.page}}/{{Math.max(onlineResult.totalPage, 1)}} 页，每页 {{onlineResult.pageSize}} 条
         </span>
-        <span v-else class="jm-online-summary">结果为JM服务器实时数据，搜索到的记录需要点「添加」才会入库</span>
-        <el-radio-group v-model="onlineViewMode" class="jm-online-view-switch" size="mini">
+        <span v-if="onlineSnapshotTime" class="jm-online-snapshot">
+          <el-tag size="mini" type="warning">历史快照 {{formatOnlineHistoryTime(onlineSnapshotTime)}}</el-tag>
+          <el-button type="text" size="mini" @click="refreshOnlineSearch">按此条件重新搜索</el-button>
+        </span>
+        <span v-if="!onlineSearched" class="jm-online-summary">结果为JM服务器实时数据，搜索到的记录需要点「添加」才会入库</span>
+        <el-radio-group v-model="onlineViewMode" class="jm-view-switch" size="mini">
           <el-radio-button label="list"><i class="el-icon-s-unfold"></i> 列表</el-radio-button>
           <el-radio-button label="waterfall"><i class="el-icon-s-grid"></i> 瀑布流</el-radio-button>
         </el-radio-group>
@@ -491,12 +554,14 @@ import {
   searchChapterImages,
   searchOnlineAlbums,
   searchOnlineHistory,
+  searchOnlineHistoryDetail,
   deleteSearchOnlineHistory
 } from "@/api/jmcomic";
 import { getStore, setStore } from "@/util/store";
 
-// 在线搜索结果的展示方式记在本地，下次进来保持上次的选择
+// 列表/瀑布流的选择记在本地，下次进来保持上次的选择
 const ONLINE_VIEW_MODE_KEY = 'jmOnlineViewMode';
+const ALBUM_VIEW_MODE_KEY = 'jmAlbumViewMode';
 
 export default {
   name: 'JmcomicManage',
@@ -518,6 +583,8 @@ export default {
       previewDrawerVisible: false,
       previewAlbum: null,
       albumQuery: { id: '', name: '', author: '', tags: [], collected: '' },
+      // JM主记录展示方式：list=表格(默认)，waterfall=瀑布流卡片
+      albumViewMode: getStore({ name: ALBUM_VIEW_MODE_KEY }) || 'list',
       chapterQuery: { albumId: '', chapterId: '', chapterTitle: '', imageFile: '' },
       // JM在线搜索：分页由JM服务器完成，页码从1开始
       onlineQuery: { name: '', sort: 'mr', page: 1 },
@@ -532,6 +599,10 @@ export default {
       // 搜索结果展示方式：list=表格(默认)，waterfall=瀑布流卡片
       onlineViewMode: getStore({ name: ONLINE_VIEW_MODE_KEY }) || 'list',
       onlineResult: this.defOnlineResult(),
+      // 当前展示的是哪条历史快照，为空表示是实时搜索结果
+      onlineSnapshotTime: null,
+      // 当前激活的历史记录id(只高亮被点的那一条)
+      onlineHistoryActiveId: null,
       // 搜索历史
       onlineHistory: [],
       onlineHistoryLoading: false,
@@ -614,6 +685,11 @@ export default {
   watch: {
     onlineViewMode(val) {
       setStore({ name: ONLINE_VIEW_MODE_KEY, content: val })
+    },
+    albumViewMode(val) {
+      setStore({ name: ALBUM_VIEW_MODE_KEY, content: val })
+      // 切到瀑布流后表格会卸载，选中态留着会让批量按钮作用在看不见的行上
+      this.albumSelection = []
     }
   },
   mounted() {
@@ -849,6 +925,9 @@ export default {
         }
         this.onlineQuery.page = this.onlineResult.page
         this.onlineSearched = true
+        // 实时搜索：不再是历史快照，历史高亮也取消
+        this.onlineSnapshotTime = null
+        this.onlineHistoryActiveId = null
         // 后端每次搜索都会记一条历史，这里同步刷新
         this.loadOnlineHistory()
       }).catch(error => {
@@ -873,6 +952,8 @@ export default {
       this.onlineQuery = { name: '', sort: 'mr', page: 1 }
       this.onlineResult = this.defOnlineResult()
       this.onlineSearched = false
+      this.onlineSnapshotTime = null
+      this.onlineHistoryActiveId = null
       if (this.$refs.onlineQueryForm) {
         this.$refs.onlineQueryForm.clearValidate()
       }
@@ -924,24 +1005,57 @@ export default {
         + `\n搜索时间：${item.searchTime || ''}`
     },
     /**
-     * 当前搜索条件是否与这条历史一致，用于高亮
+     * 当前激活的历史记录：只认被点击的那一条(条件相同的多条记录不会一起高亮)
      */
     isOnlineHistoryActive(item) {
-      return !!item
-        && (item.name || '') === (this.onlineQuery.name || '').trim()
-        && item.sort === this.onlineQuery.sort
-        && Number(item.page || 1) === Number(this.onlineQuery.page || 1)
+      return !!item && item.id === this.onlineHistoryActiveId
     },
     /**
-     * 回显历史记录的条件与页码，并按原条件重新搜索
+     * 点击历史记录：回显当时的搜索条件与页码，并直接渲染当时保存的结果快照，不再请求JM
+     * 快照不存在(比如已被清理)时退回实时搜索，保证点了有反应
      */
     applyOnlineHistory(item) {
-      if (!item || !item.name) {
+      if (!item || !item.id) {
         return
       }
-      this.onlineQuery.name = item.name
+      this.onlineQuery.name = item.name || ''
       this.onlineQuery.sort = item.sort || 'mr'
       this.onlineQuery.page = item.page || 1
+      this.onlineHistoryActiveId = item.id
+      searchOnlineHistoryDetail(item.id).then(({data: {code, message, data}}) => {
+        if (code !== 200) {
+          this.$message.warning(message || '历史记录不可用，已改为实时搜索')
+          this.onlineHistoryActiveId = null
+          return this.searchOnline()
+        }
+        this.onlineResult = this.buildOnlineResultFromSnapshot(data, item)
+        this.onlineSnapshotTime = data.searchTime || item.searchTime || ''
+        this.onlineSearched = true
+      }).catch(error => {
+        this.handleRequestError(error)
+      })
+    },
+    /**
+     * 用历史快照拼出与实时搜索一致的结果结构
+     */
+    buildOnlineResultFromSnapshot(data, item) {
+      const pageSize = Number(data.pageSize || 80)
+      const total = Number(data.total || 0)
+      return {
+        searchQuery: data.name || item.name || '',
+        total,
+        page: Number(data.page || item.page || 1),
+        pageSize,
+        totalPage: pageSize > 0 ? Math.ceil(total / pageSize) : 0,
+        content: (data.items || []).map(e => ({...e, existsLocal: !!e.existsLocal}))
+      }
+    },
+    /**
+     * 当前展示的是历史快照时，按同样的条件重新实时搜索一次
+     */
+    refreshOnlineSearch() {
+      this.onlineSnapshotTime = null
+      this.onlineHistoryActiveId = null
       this.searchOnline()
     },
     removeOnlineHistory(item) {
@@ -953,6 +1067,9 @@ export default {
           return this.$message.error(message || '删除失败')
         }
         this.$message.success(message || '删除完成')
+        if (this.onlineHistoryActiveId === item.id) {
+          this.onlineHistoryActiveId = null
+        }
         this.loadOnlineHistory()
       }).catch(error => {
         this.handleRequestError(error)
@@ -1421,8 +1538,18 @@ export default {
     line-height: 28px;
   }
 
-  .jm-online-view-switch {
+  .jm-view-switch {
     margin-left: auto;
+  }
+
+  .jm-online-snapshot {
+    align-items: center;
+    display: inline-flex;
+    gap: 6px;
+
+    .el-button {
+      padding: 0;
+    }
   }
 
   /**
@@ -1556,6 +1683,50 @@ export default {
     top: 6px;
   }
 
+  /**
+   * 卡片左下角的ZIP/PDF角标
+   */
+  .jm-waterfall-badge {
+    border-radius: 3px;
+    bottom: 6px;
+    color: #fff;
+    font-size: 10px;
+    font-style: normal;
+    line-height: 16px;
+    padding: 0 4px;
+    position: absolute;
+
+    &.jm-waterfall-badge-zip {
+      background-color: rgba(103, 194, 58, .9);
+      left: 6px;
+    }
+
+    &.jm-waterfall-badge-pdf {
+      background-color: rgba(230, 162, 60, .9);
+      left: 46px;
+    }
+  }
+
+  /**
+   * 已收藏的卡片描边提示，与表格里的行底色对应
+   */
+  .jm-waterfall-card-collected {
+    border-color: #f0c78a;
+    box-shadow: inset 0 0 0 1px #fdf0cc;
+  }
+
+  .jm-waterfall-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+
+    .el-button {
+      margin: 0;
+      padding: 5px 7px;
+    }
+  }
+
   .jm-waterfall-body {
     padding: 8px;
   }
@@ -1585,6 +1756,14 @@ export default {
   .jm-waterfall-id {
     color: #409eff;
     flex-shrink: 0;
+  }
+
+  .jm-waterfall-id-link {
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   .jm-waterfall-author {

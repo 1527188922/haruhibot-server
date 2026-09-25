@@ -124,6 +124,13 @@ public class KvStoreService {
         return one != null ? one.getContent() : null;
     }
 
+    /**
+     * 按主键查询，不存在返回null
+     */
+    public KvEntry getById(Long id){
+        return id == null ? null : kvEntryMapper.selectById(id);
+    }
+
     public List<KvEntry> getList(String key){
         LambdaQueryWrapper<KvEntry> queryWrapper = new LambdaQueryWrapper<KvEntry>()
                 .eq(StringUtils.isNotBlank(key), KvEntry::getKey, key);
