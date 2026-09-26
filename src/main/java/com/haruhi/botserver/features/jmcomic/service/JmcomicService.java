@@ -23,6 +23,9 @@ import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchResp;
 import com.haruhi.botserver.features.jmcomic.model.JmOnlineSearchHistory;
 import com.haruhi.botserver.features.jmcomic.model.JmSearchSortEnum;
+import com.haruhi.botserver.features.jmcomic.model.JmTaskAction;
+import com.haruhi.botserver.features.jmcomic.model.JmTaskSnapshot;
+import com.haruhi.botserver.features.jmcomic.model.JmTaskStatusEnum;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
@@ -94,13 +97,11 @@ public class JmcomicService {
     public static final int SEARCH_PAGE_SIZE = 80;
     private static final int DEFAULT_SEARCH_PAGE = 1;
 
-    // Tracks both running and queued aids; all scheduling state is guarded by JmcomicService.class.
-    private static final ConcurrentMap<String, String> LOCK_ACTION_MAP = new ConcurrentHashMap<>();
-    private static final ExecutorService SERIAL_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
-        Thread thread = new Thread(r, "jm-serial-queue");
-        thread.setDaemon(true);
-        return thread;
-    });
+    /**
+     * 内存中的JM任务队列，同时承担"同一个JM不允许重复提交"的占位职责。
+     * 只记录运行中和排队中的任务，不持久化，进程重启即清空。
+     */
+    private final JmTaskQueue taskQueue = new JmTaskQueue();
 
 
     @Autowired
@@ -159,44 +160,62 @@ public class JmcomicService {
         return executeWithJmLock(aid, actionName, operation, null);
     }
 
+    /**
+     * 兼容历史动作文案入口
+     */
     <T> BaseResp<T> executeWithJmLock(String aid, String actionName, JmOperation<T> operation, Consumer<BaseResp<T>> onComplete) {
+        return executeWithJmLock(aid, JmTaskAction.fromActionName(actionName), operation, onComplete, null);
+    }
+
+    <T> BaseResp<T> executeWithJmLock(String aid, JmTaskAction action, JmOperation<T> operation) {
+        return executeWithJmLock(aid, action, operation, null, null);
+    }
+
+    <T> BaseResp<T> executeWithJmLock(String aid, JmTaskAction action, String albumName, JmOperation<T> operation) {
+        return executeWithJmLock(aid, action, operation, null, albumName);
+    }
+
+    /**
+     * 统一的JM任务入口
+     * <p>
+     * 同一个JM同时只允许一个任务(运行中和排队中都算占用)。
+     * 串行模式：任务先入队，由队列工作线程按提交顺序执行，调用方立即得到"已加入队列"。
+     * 并行模式：在当前线程直接执行，调用方拿到的就是执行结果(保持原有行为)。
+     * <p>
+     * 任务状态只存在内存中，仅用于管理端展示以及取消排队中的任务。
+     */
+    <T> BaseResp<T> executeWithJmLock(String aid, JmTaskAction action, JmOperation<T> operation,
+                                     Consumer<BaseResp<T>> onComplete, String albumName) {
         boolean parallel = isJmOperationParallel();
-        BaseResp<T> rejected = null;
-        synchronized (JmcomicService.class) {
-            if (LOCK_ACTION_MAP.containsKey(aid)) {
-                String runningAction = LOCK_ACTION_MAP.get(aid);
-                rejected = BaseResp.fail("此JM" + aid + "正在执行或排队等待"
-                        + StringUtils.defaultIfBlank(runningAction, "操作") + "，请勿重复提交");
-            } else {
-                LOCK_ACTION_MAP.put(aid, actionName);
-            }
-        }
-        if (rejected != null) {
+        String actionName = action.getActionName();
+        String occupied = taskQueue.tryAcquire(aid, actionName);
+        if (occupied != null) {
+            BaseResp<T> rejected = BaseResp.fail("此JM" + aid + "正在执行或排队等待"
+                    + StringUtils.defaultIfBlank(occupied, "操作") + "，请勿重复提交");
             notifyResult(onComplete, rejected);
             return rejected;
         }
+        TaskBodyImpl<T> body = new TaskBodyImpl<>(aid, actionName, operation, onComplete);
+        String coverUrl = buildTaskCoverUrl(aid);
         if (parallel) {
-            BaseResp<T> result = doExecuteWithLock(aid, actionName, operation);
-            notifyResult(onComplete, result);
-            return result;
+            taskQueue.runNow(aid, action, albumName, coverUrl, body);
+            BaseResp<T> result = body.getResult();
+            // 极端情况下(任务体抛出Error)拿不到结果，兜底返回失败而不是null
+            return result == null ? BaseResp.fail(actionName + "执行异常") : result;
         }
-        SERIAL_EXECUTOR.execute(() -> {
-            BaseResp<T> result = doExecuteWithLock(aid, actionName, operation);
-            notifyResult(onComplete, result);
-        });
+        taskQueue.enqueue(aid, action, albumName, coverUrl, body);
         return BaseResp.queued(StrFormatter.format("【{}】已加入队列，等待执行", actionName));
     }
 
-    private <T> BaseResp<T> doExecuteWithLock(String aid, String actionName, JmOperation<T> operation) {
+    /**
+     * 执行任务操作，异常统一转成失败响应
+     */
+    private <T> BaseResp<T> doExecute(String aid, String actionName, JmOperation<T> operation) {
         try {
             return operation.execute();
         } catch (Exception e) {
             log.error("JM漫画操作异常 aid:{} action:{}", aid, actionName, e);
             return BaseResp.fail(actionName + "异常：" + e.getMessage());
-        } finally {
-            synchronized (JmcomicService.class) {
-                LOCK_ACTION_MAP.remove(aid);
-            }
         }
     }
 
@@ -216,8 +235,118 @@ public class JmcomicService {
         BaseResp<T> execute() throws Exception;
     }
 
+    /**
+     * 任务体：把带泛型的操作与回调适配成队列可持有的形式
+     * <p>
+     * run/complete/onCancelled 都由队列在释放JM占用之后调用，保证"执行结束即可重新提交"与原有行为一致
+     */
+    private final class TaskBodyImpl<T> implements JmTaskQueue.TaskBody {
+
+        private final String aid;
+        private final String actionName;
+        private final JmOperation<T> operation;
+        private final Consumer<BaseResp<T>> onComplete;
+        private volatile BaseResp<T> result;
+
+        private TaskBodyImpl(String aid, String actionName, JmOperation<T> operation, Consumer<BaseResp<T>> onComplete) {
+            this.aid = aid;
+            this.actionName = actionName;
+            this.operation = operation;
+            this.onComplete = onComplete;
+        }
+
+        private BaseResp<T> getResult() {
+            return result;
+        }
+
+        @Override
+        public JmTaskQueue.TaskResult run() {
+            BaseResp<T> baseResp = doExecute(aid, actionName, operation);
+            this.result = baseResp;
+            return baseResp.isSuccess()
+                    ? JmTaskQueue.TaskResult.success(baseResp.getMsg())
+                    : JmTaskQueue.TaskResult.fail(baseResp.getMsg());
+        }
+
+        @Override
+        public void complete(JmTaskQueue.TaskResult taskResult) {
+            if (result != null) {
+                notifyResult(onComplete, result);
+            }
+        }
+
+        @Override
+        public void onCancelled(String message) {
+            notifyResult(onComplete, BaseResp.fail(message));
+        }
+    }
+
+    /**
+     * 上报当前阶段，不在JM任务线程上时忽略
+     */
+    private void reportStage(String stage) {
+        JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
+        if (reporter != null) {
+            reporter.stage(stage);
+        }
+    }
+
+    /**
+     * 任务封面地址，aid不是数字时返回null
+     */
+    private String buildTaskCoverUrl(String aid) {
+        Long jmId = parseJmId(aid);
+        return jmId == null ? null : buildCoverUrl(jmId, null);
+    }
+
+    /**
+     * 任务展示名：优先本地已入库的名称，查不到时由前端回退显示 JM{aid}
+     */
+    private String resolveAlbumName(String aid) {
+        Long jmId = parseJmId(aid);
+        return jmId == null ? null : jmcomicSqliteService.findAlbumName(jmId);
+    }
+
+    /**
+     * 内存中的JM任务快照(运行中/排队中/最近完成)
+     */
+    public JmTaskSnapshot listTasks() {
+        return taskQueue.snapshot(isJmOperationParallel());
+    }
+
+    /**
+     * 取消排队中的任务，正在执行的任务不支持取消
+     *
+     * @return null 表示取消成功，否则返回失败原因
+     */
+    public String cancelTask(String taskId) {
+        JmTaskStatusEnum status = taskQueue.statusOf(taskId);
+        if (status == null) {
+            return "任务不存在或已结束";
+        }
+        if (status == JmTaskStatusEnum.RUNNING) {
+            return "任务正在执行中，不支持取消";
+        }
+        if (status != JmTaskStatusEnum.QUEUED) {
+            return "任务已结束，无需取消";
+        }
+        if (!taskQueue.cancel(taskId)) {
+            return "任务取消失败，可能已经开始执行，请刷新后重试";
+        }
+        return null;
+    }
+
+    /**
+     * 取消全部排队中的任务
+     *
+     * @return 实际取消数量
+     */
+    public int cancelQueuedTasks() {
+        return taskQueue.cancelQueued();
+    }
+
     public BaseResp<String> manageDownloadAlbum(String aid) {
-        return executeWithJmLock(aid, "下载漫画", () -> {
+        return executeWithJmLock(aid, JmTaskAction.DOWNLOAD, resolveAlbumName(aid), () -> {
             BaseResp<Album> albumResp = requestAlbum(aid);
             if (!albumResp.isSuccess()) {
                 return BaseResp.fail(albumResp.getMsg());
@@ -231,7 +360,7 @@ public class JmcomicService {
     }
 
     public BaseResp<String> manageGenerateZip(String aid) {
-        return executeWithJmLock(aid, "生成zip", () -> {
+        return executeWithJmLock(aid, JmTaskAction.GENERATE_ZIP, resolveAlbumName(aid), () -> {
             BaseResp<Album> albumResp = requestAlbum(aid);
             if (!albumResp.isSuccess()) {
                 return BaseResp.fail(albumResp.getMsg());
@@ -245,7 +374,7 @@ public class JmcomicService {
     }
 
     public BaseResp<String> manageGeneratePdf(String aid) {
-        return executeWithJmLock(aid, "生成pdf", () -> {
+        return executeWithJmLock(aid, JmTaskAction.GENERATE_PDF, resolveAlbumName(aid), () -> {
             BaseResp<Album> albumResp = requestAlbum(aid);
             if (!albumResp.isSuccess()) {
                 return BaseResp.fail(albumResp.getMsg());
@@ -270,16 +399,17 @@ public class JmcomicService {
     }
 
     public BaseResp<File> downloadAlbumAsZip(Album album, Consumer<BaseResp<File>> onComplete) throws Exception {
-        return executeWithJmLock(String.valueOf(album.getId()), "生成zip", () -> {
+        return executeWithJmLock(String.valueOf(album.getId()), JmTaskAction.GENERATE_ZIP, () -> {
             BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
             if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
                 return BaseResp.fail(baseResp.getMsg());
             }
             return generateLocalAlbumZipWithoutLock(album);
-        }, onComplete);
+        }, onComplete, album.getName());
     }
 
     private BaseResp<File> generateLocalAlbumZipWithoutLock(Album album) throws Exception {
+        reportStage("打包zip");
         BaseResp<File> albumDirResp = getLocalAlbumDir(album);
         if (!albumDirResp.isSuccess()) {
             return BaseResp.fail(albumDirResp.getMsg());
@@ -318,16 +448,17 @@ public class JmcomicService {
     }
 
     public BaseResp<File> downloadAlbumAsPdf(Album album, Consumer<BaseResp<File>> onComplete) throws Exception {
-        return executeWithJmLock(String.valueOf(album.getId()), "生成pdf", () -> {
+        return executeWithJmLock(String.valueOf(album.getId()), JmTaskAction.GENERATE_PDF, () -> {
             BaseResp<String> baseResp = this.downloadAlbumWithoutLock(album);
             if(!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())){
                 return BaseResp.fail(baseResp.getMsg());
             }
             return generateLocalAlbumPdfWithoutLock(album);
-        }, onComplete);
+        }, onComplete, album.getName());
     }
 
     private BaseResp<File> generateLocalAlbumPdfWithoutLock(Album album) throws Exception {
+        reportStage("生成pdf");
         BaseResp<File> albumDirResp = getLocalAlbumDir(album);
         if (!albumDirResp.isSuccess()) {
             return BaseResp.fail(albumDirResp.getMsg());
@@ -519,7 +650,8 @@ public class JmcomicService {
      * @throws Exception
      */
     public BaseResp<String> downloadAlbum(Album album) throws Exception {
-        return executeWithJmLock(String.valueOf(album.getId()), "下载漫画", () -> downloadAlbumWithoutLock(album));
+        return executeWithJmLock(String.valueOf(album.getId()), JmTaskAction.DOWNLOAD, album.getName(),
+                () -> downloadAlbumWithoutLock(album));
     }
 
     /**
@@ -583,14 +715,25 @@ public class JmcomicService {
         }
         String albumPath = FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName();
         log.info("开始下载：jm{} 共{}话", aid, album.getSeries().size());
+        JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
+        reportStage("下载漫画图片");
+        int chapterTotal = album.getSeries().size();
+        int chapterIndex = 0;
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()){
             executor.execute(() -> {
                 this.downloadCoverImage(album.getId(), albumPath, null, 4);
             });
             for (Series series : album.getSeries()) {
                 series.setTitle("第" + series.getSort() +"话");
+                chapterIndex++;
+                if (reporter != null) {
+                    // 新的一话开始，先清掉上一话的图片进度，避免显示上一话的残留数据
+                    reporter.chapter(chapterIndex, chapterTotal, series.getTitle());
+                    reporter.chapterImages(0, 0);
+                }
                 try {
                     String chapterPath = this.getChapterPath(albumPath, series);
+                    reportStage("获取章节图片列表");
                     Chapter chapter = this.requestChapter(series.getId());
                     jmcomicSqliteService.saveOrUpdateChapterImages(album.getId(), chapter, series);
                     this.downloadChapter(chapter,chapterPath,series.getTitle(),-1, executor);
@@ -626,6 +769,8 @@ public class JmcomicService {
             log.error("该章节无图片 c:{}",JSONObject.toJSONString(chapter));
             return;
         }
+        final JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
+        reportStage("下载漫画图片");
         long chapterId = chapter.getId();
         long scrambleId = this.getScrambleId(chapterId);
 
@@ -646,11 +791,19 @@ public class JmcomicService {
                 .collect(Collectors.toList());
         if (CollectionUtils.isEmpty(downloadParams)) {
             log.info("该章节无需下载图片：{}", this.getChapterNameInLog(new File(chapterPath)));
+            if (reporter != null) {
+                // 图片都已存在，本话进度直接拉满
+                reporter.chapterImages(images.size(), images.size());
+            }
             return;
         }
         if (downloadParams.size() == lastCount) {
             log.error("本次需下载数和上次需下载数相同，终止下载：{}", this.getChapterNameInLog(new File(chapterPath)));
             return;
+        }
+        if (reporter != null) {
+            // 重试递归时会重新进入本方法，这里按磁盘上已有的图片重算进度基数，保证进度不会回退也不会重复累加
+            reporter.chapterImages(images.size(), images.size() - downloadParams.size());
         }
         CountDownLatch countDownLatch = new CountDownLatch(downloadParams.size());
         FileUtil.mkdirs(chapterPath);
@@ -672,6 +825,9 @@ public class JmcomicService {
                         this.saveImg(param.getBlockNum(), tmpImgFile, param.getImgFile());
                         log.info("保存图片成功：{} path={}", imgUrl, param.getImgFile().getAbsolutePath());
                         countDownLatch.countDown();
+                        if (reporter != null) {
+                            reporter.imageDownloaded();
+                        }
                     }catch (Exception e) {
                         DbLog.error(BusinessModuleEnum.JMCOMIC,
                                 "保存图片异常：{}", JSONObject.toJSONString(param),e);
@@ -851,6 +1007,7 @@ public class JmcomicService {
      */
     public BaseResp<Album> requestAlbum(String aid) {
         try {
+            reportStage("请求本子详情");
             String url = "https://" + this.getJmApiDomain() + "/album";
             long ts = System.currentTimeMillis() / 1000;
             HttpHeaders headerParam = headerParam(ts);
@@ -891,6 +1048,11 @@ public class JmcomicService {
                 }
                 album.setAlbumFolderName(albumFolderName + "_JM" + aid);
                 jmcomicSqliteService.saveOrUpdateAlbum(album, data);
+                JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
+                if (reporter != null) {
+                    // 提交任务时本地可能还没有记录，拿到详情后补上展示名
+                    reporter.albumName(album.getName());
+                }
                 return BaseResp.success(album);
             }
         } catch (Exception e) {

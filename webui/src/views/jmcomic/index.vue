@@ -97,6 +97,9 @@
     <basic-container v-if="activeTab === 'album'">
       <div class="data-table-option-buts">
         <el-button type="primary" size="small" plain icon="el-icon-plus" :loading="albumRequestLoading" @click="addAlbum">新增</el-button>
+        <el-badge class="jm-task-badge" :value="taskActiveCount" :hidden="taskActiveCount === 0" type="warning">
+          <el-button type="primary" size="small" plain icon="el-icon-s-operation" @click="taskPanelVisible = true">任务队列</el-button>
+        </el-badge>
         <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="albumDeleteDisabled" @click="openAlbumDelete">批量删除</el-button>
         <el-button type="warning" size="small" plain icon="el-icon-star-on" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'collect'" @click="collectSelectedAlbums(true)">批量收藏</el-button>
         <el-button type="info" size="small" plain icon="el-icon-star-off" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'uncollect'" @click="collectSelectedAlbums(false)">取消收藏</el-button>
@@ -532,11 +535,13 @@
 
 
     <jm-preview-drawer :visible.sync="previewDrawerVisible" :album="previewAlbum" />
+    <jm-task-panel :visible.sync="taskPanelVisible" @snapshot="handleTaskSnapshot" />
   </div>
 </template>
 
 <script>
 import JmPreviewDrawer from "./jm-preview-drawer.vue";
+import JmTaskPanel from "./jm-task-panel.vue";
 import JmTagSelect from "./jm-tag-select.vue";
 import JmAuthorSelect from "./jm-author-select.vue";
 import numberInput from "@/components/input/numberInput.vue";
@@ -548,6 +553,7 @@ import {
   collectAlbums,
   generateAlbumPdf,
   generateAlbumZip,
+  listJmTasks,
   requestAlbum,
   requestChapterImages,
   searchAlbums,
@@ -562,10 +568,12 @@ import { getStore, setStore } from "@/util/store";
 // 列表/瀑布流的选择记在本地，下次进来保持上次的选择
 const ONLINE_VIEW_MODE_KEY = 'jmOnlineViewMode';
 const ALBUM_VIEW_MODE_KEY = 'jmAlbumViewMode';
+// 任务面板关闭时只做低频轮询，仅用于刷新徽标和行内状态
+const TASK_IDLE_POLL_MILLIS = 5000;
 
 export default {
   name: 'JmcomicManage',
-  components: { JmPreviewDrawer, JmTagSelect, JmAuthorSelect, numberInput },
+  components: { JmPreviewDrawer, JmTaskPanel, JmTagSelect, JmAuthorSelect, numberInput },
   data() {
     return {
       activeTab: 'album',
@@ -582,6 +590,10 @@ export default {
       deleteAllFileDialogVisible: false,
       previewDrawerVisible: false,
       previewAlbum: null,
+      // 内存中的JM任务面板(不持久化，后端重启即清空)
+      taskPanelVisible: false,
+      taskSnapshot: this.defTaskSnapshot(),
+      taskPollTimer: null,
       albumQuery: { id: '', name: '', author: '', tags: [], collected: '' },
       // JM主记录展示方式：list=表格(默认)，waterfall=瀑布流卡片
       albumViewMode: getStore({ name: ALBUM_VIEW_MODE_KEY }) || 'list',
@@ -680,6 +692,27 @@ export default {
     formatOnlineTotal() {
       const total = Number(this.onlineResult.total || 0)
       return total >= 10000 ? `${total}+` : total
+    },
+    /**
+     * 进行中 + 排队中的任务数，用于工具栏徽标
+     */
+    taskActiveCount() {
+      const counters = this.taskSnapshot.counters || {}
+      return (counters.running || 0) + (counters.queued || 0)
+    },
+    /**
+     * aid -> 正在执行或排队中的任务，用于让列表里的操作按钮与任务队列保持一致
+     */
+    taskMap() {
+      const map = {}
+      const collect = (list, status) => (list || []).forEach(task => {
+        if (task && task.aid) {
+          map[`${task.aid}`] = { status, action: task.action, taskId: task.taskId }
+        }
+      })
+      collect(this.taskSnapshot.runningList, 'running')
+      collect(this.taskSnapshot.queuedList, 'queued')
+      return map
     }
   },
   watch: {
@@ -694,6 +727,10 @@ export default {
   },
   mounted() {
     this.searchAlbumsFirst()
+    this.startTaskPolling()
+  },
+  beforeDestroy() {
+    this.stopTaskPolling()
   },
   methods: {
     formatBool(value) {
@@ -811,13 +848,83 @@ export default {
       }
     },
     isAlbumOperation(row, action) {
-      return row && this.albumOperationLoading[row.id] === action
+      if (!row) {
+        return false
+      }
+      if (this.albumOperationLoading[row.id] === action) {
+        return true
+      }
+      // 串行模式下HTTP请求会立刻返回"已加入队列"，之后靠任务快照维持按钮的loading态
+      return this.isAlbumTaskOperation(row, action)
     },
     isAlbumOperating(row) {
-      return row && !!this.albumOperationLoading[row.id]
+      return !!(row && (this.albumOperationLoading[row.id] || this.isAlbumTaskBusy(row)))
     },
     isAlbumOtherOperation(row, action) {
       return this.isAlbumOperating(row) && !this.isAlbumOperation(row, action)
+    },
+    isAlbumTaskBusy(row) {
+      return !!(row && this.taskMap[`${row.id}`])
+    },
+    isAlbumTaskOperation(row, action) {
+      const task = row ? this.taskMap[`${row.id}`] : null
+      return !!task && task.action === action
+    },
+    defTaskSnapshot() {
+      return {
+        parallel: false,
+        runningList: [],
+        queuedList: [],
+        finishedList: [],
+        counters: { running: 0, queued: 0, success: 0, fail: 0, cancelled: 0 }
+      }
+    },
+    /**
+     * 任务面板关闭时低频轮询，只为刷新徽标和行内状态；
+     * 面板打开时由面板自己按服务端建议频率轮询，并通过 snapshot 事件回传，避免重复请求
+     */
+    startTaskPolling() {
+      this.stopTaskPolling()
+      this.pollJmTasks()
+      this.taskPollTimer = setInterval(() => {
+        if (this.taskPanelVisible || document.hidden) {
+          return
+        }
+        this.pollJmTasks()
+      }, TASK_IDLE_POLL_MILLIS)
+    },
+    stopTaskPolling() {
+      if (this.taskPollTimer) {
+        clearInterval(this.taskPollTimer)
+        this.taskPollTimer = null
+      }
+    },
+    pollJmTasks() {
+      return listJmTasks().then(({data: {code, data}}) => {
+        if (code !== 200 || !data) {
+          return
+        }
+        this.applyTaskSnapshot(data)
+      }).catch(() => {
+        // 轮询失败静默处理
+      })
+    },
+    handleTaskSnapshot(data) {
+      this.applyTaskSnapshot(data)
+    },
+    /**
+     * 任务面板打开时由面板轮询并通过事件回传，关闭时由本页低频轮询，两条路径都要走这里
+     */
+    applyTaskSnapshot(data) {
+      if (!data) {
+        return
+      }
+      const previousActive = this.taskActiveCount
+      this.taskSnapshot = data
+      // 任务从"有"变为"无"时刷新一次列表，让zip/pdf等落盘状态跟上
+      if (previousActive > 0 && this.taskActiveCount === 0 && this.activeTab === 'album') {
+        this.selectAlbums()
+      }
     },
     formatTimestamp(value) {
       if (!value) {
@@ -1221,6 +1328,8 @@ export default {
         this.handleRequestError(error)
       }).finally(() => {
         this.$delete(this.albumOperationLoading, aid)
+        // 立即刷新任务快照，让徽标和行内按钮状态马上跟上
+        this.pollJmTasks()
       })
     },
     downloadAlbumData(row) {
@@ -1437,6 +1546,14 @@ export default {
     .el-button {
       margin-left: 0;
     }
+  }
+
+  /**
+   * 任务队列徽标：避免角标盖住右侧按钮
+   */
+  .jm-task-badge {
+    line-height: 1;
+    margin-right: 8px;
   }
 
   .jm-action-grid {

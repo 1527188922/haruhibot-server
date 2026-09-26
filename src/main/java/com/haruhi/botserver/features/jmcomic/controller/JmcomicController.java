@@ -22,6 +22,7 @@ import com.haruhi.botserver.features.jmcomic.model.JmChapterImageManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageQueryReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterInfoResp;
+import com.haruhi.botserver.features.jmcomic.model.JmTaskSnapshot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,6 +195,37 @@ public class JmcomicController {
     @PostMapping("/manage/album/generatePdf/{aid}")
     public HttpResp<String> generatePdf(@PathVariable("aid") String aid) {
         return toHttpResp(jmcomicService.manageGeneratePdf(aid));
+    }
+
+    /**
+     * 内存中的JM任务列表(运行中/排队中/最近完成)，供管理端轮询展示
+     * <p>
+     * 只反映当前进程的内存状态，不持久化，重启即清空
+     */
+    @GetMapping("/manage/task/list")
+    public HttpResp<JmTaskSnapshot> listTasks() {
+        return HttpResp.success(jmcomicService.listTasks());
+    }
+
+    /**
+     * 取消排队中的任务。正在执行的任务不支持取消
+     */
+    @PostMapping("/manage/task/cancel/{taskId}")
+    public HttpResp<String> cancelTask(@PathVariable("taskId") String taskId) {
+        String error = jmcomicService.cancelTask(taskId);
+        if (error != null) {
+            return HttpResp.fail(error, null);
+        }
+        return HttpResp.success("已取消排队任务", null);
+    }
+
+    /**
+     * 取消全部排队中的任务
+     */
+    @PostMapping("/manage/task/cancelQueued")
+    public HttpResp<String> cancelQueuedTasks() {
+        int count = jmcomicService.cancelQueuedTasks();
+        return HttpResp.success(count > 0 ? "已取消" + count + "个排队任务" : "没有排队中的任务", null);
     }
 
     @PostMapping("/manage/album/deleteBatch")

@@ -244,6 +244,17 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     }
 
     @Override
+    public String findAlbumName(Long id) {
+        if (id == null) {
+            return null;
+        }
+        JmAlbumSqlite album = jmAlbumSqliteMapper.selectOne(new LambdaQueryWrapper<JmAlbumSqlite>()
+                .select(JmAlbumSqlite::getName)
+                .eq(JmAlbumSqlite::getId, id));
+        return album == null ? null : album.getName();
+    }
+
+    @Override
     public IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request) {
         if (request == null) {
             request = new JmChapterImageQueryReq();

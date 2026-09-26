@@ -41,6 +41,11 @@ public interface JmcomicSqliteService {
      */
     Set<Long> existsAlbumIds(Collection<Long> ids);
 
+    /**
+     * 查询本地已入库的本子名称，仅用于任务面板展示，查不到返回null
+     */
+    String findAlbumName(Long id);
+
     IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request);
 
     void deleteAlbums(JmAlbumDeleteReq request);

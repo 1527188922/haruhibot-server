@@ -123,3 +123,28 @@ export const deleteChapterImages = (data) => request({
   method: 'post',
   data
 });
+
+/**
+ * 内存中的JM任务(运行中/排队中/最近完成)，不持久化，重启即清空
+ */
+export const listJmTasks = () => request({
+  url: baseUrl + '/jmcomic/manage/task/list',
+  method: 'get'
+});
+
+/**
+ * 取消排队中的任务(正在执行的任务不支持取消)
+ * @param taskId 任务id，来自任务列表
+ */
+export const cancelJmTask = (taskId) => request({
+  url: baseUrl + `/jmcomic/manage/task/cancel/${taskId}`,
+  method: 'post'
+});
+
+/**
+ * 取消全部排队中的任务
+ */
+export const cancelQueuedJmTasks = () => request({
+  url: baseUrl + '/jmcomic/manage/task/cancelQueued',
+  method: 'post'
+});
