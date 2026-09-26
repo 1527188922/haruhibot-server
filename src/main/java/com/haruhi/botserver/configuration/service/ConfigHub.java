@@ -5,6 +5,7 @@ import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.model.ConfigFileNode;
 import com.haruhi.botserver.configuration.model.ConfigItem;
 import com.haruhi.botserver.shared.error.BusinessException;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +15,13 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -25,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * 配置中心
@@ -47,14 +52,27 @@ public class ConfigHub {
     @Autowired
     private ApplicationContext applicationContext;
 
-    /** 文件最后修改时间，用于感知外部改动 */
-    private final Map<String, Long> fileLastModified = new ConcurrentHashMap<>();
+    /** 文件名 -> 最后一次加载时的内容摘要，用于判断外部是否真的改过文件 */
+    private final Map<String, String> fileDigest = new ConcurrentHashMap<>();
 
     /** 最近一次刷新/校验的错误，前端展示 */
     private final Map<String, String> fileError = new ConcurrentHashMap<>();
 
     /** fileName -> 配置项（启动与文件变更时重建） */
     private volatile Map<String, List<ConfigItem>> fileItems = new LinkedHashMap<>();
+
+    /**
+     * 启动时先记住各文件的内容摘要
+     * <p>
+     * 这样"外部改动检测"从第一秒起就有效（不必等第一次轮询），刷新接口也能准确回答
+     * "文件到底有没有变过"——不会把"改动早就被自动重载了"误报成"有变化"，也不会反过来漏报。
+     */
+    @PostConstruct
+    void rememberLoadedFiles() {
+        // 先确保 Configs 快照已按磁盘内容加载完成，摘要与快照才是同一时刻的
+        Configs.snapshot();
+        markAllLoaded();
+    }
 
     // ==================================================================
     // 查询
@@ -149,7 +167,7 @@ public class ConfigHub {
         // 2. 刷新内存快照
         for (ConfigFile file : touched) {
             Configs.reloadFile(file);
-            markModified(file);
+            markLoaded(file);
         }
 
         // 3. 逐项通知（仅 hot 配置需要通知；非hot配置重启后才生效）
@@ -211,26 +229,24 @@ public class ConfigHub {
      * 单key刷新：重新读取该key所在的配置文件
      * <p>
      * 与"保存"的区别是不写文件，用于外部直接改了文件、或用户手动点某个key的刷新按钮
-     *
-     * @return 变更列表（未发生变化时为空）
      */
-    public List<ConfigChange> refresh(ConfigKey key) {
+    public ConfigRefreshResult refresh(ConfigKey key) {
         return refreshFile(key.getFile(), Set.of(key.getKey()));
     }
 
     /**
      * 文件级刷新：重新读取整个配置文件
-     *
-     * @return 变更列表
      */
-    public List<ConfigChange> refreshFile(ConfigFile file) {
-        return refreshFile(file, ConfigKey.of(file).stream().map(ConfigKey::getKey).collect(java.util.stream.Collectors.toSet()));
+    public ConfigRefreshResult refreshFile(ConfigFile file) {
+        return refreshFile(file, ConfigKey.of(file).stream().map(ConfigKey::getKey).collect(Collectors.toSet()));
     }
 
-    private List<ConfigChange> refreshFile(ConfigFile file, Set<String> filter) {
+    private ConfigRefreshResult refreshFile(ConfigFile file, Set<String> filter) {
+        // 先判断文件内容有没有真的变过：没变说明快照本来就是最新的（例如改动已被自动重载过）
+        boolean fileChanged = fileChangedSinceLastLoad(file);
         Map<String, String> before = Configs.snapshot();
         Configs.reloadFile(file);
-        markModified(file);
+        markLoaded(file);
         fileError.remove(file.getFileName());
 
         List<ConfigChange> changes = new ArrayList<>();
@@ -248,7 +264,7 @@ public class ConfigHub {
         }
         fire(changes.stream().filter(e -> e.key().isHot()).toList());
         rebuildItems();
-        return changes;
+        return new ConfigRefreshResult(fileChanged, changes);
     }
 
     /**
@@ -256,7 +272,7 @@ public class ConfigHub {
      */
     public void refreshAll() {
         Configs.reloadAll();
-        markAllModified();
+        markAllLoaded();
         fireAll();
         rebuildItems();
     }
@@ -266,9 +282,11 @@ public class ConfigHub {
     // ==================================================================
 
     /**
-     * 每2秒检查一次配置文件是否被外部修改（直接改文件、其他进程写入等）
+     * 每2秒检查一次配置文件内容是否被外部修改（直接改文件、其他进程写入等）
      * <p>
-     * 这是"用编辑器改配置也能立刻生效"的关键：检测到变更后自动刷新快照并通知订阅者
+     * 这是"用编辑器改配置也能立刻生效"的关键：检测到变更后自动刷新快照并通知订阅者。
+     * 判断依据是<b>文件内容摘要</b>而不是最后修改时间——时间戳精度（Windows 约15ms）在同一刻的两次写入
+     * 会被漏掉，内容摘要不会。
      */
     @Scheduled(fixedDelay = 2000L, initialDelay = 5000L)
     public void watchFiles() {
@@ -277,13 +295,13 @@ public class ConfigHub {
             if (!disk.isFile()) {
                 continue;
             }
-            long modified = disk.lastModified();
-            Long last = fileLastModified.get(file.getFileName());
+            String current = digest(disk);
+            String last = fileDigest.get(file.getFileName());
             if (last == null) {
-                fileLastModified.put(file.getFileName(), modified);
+                fileDigest.put(file.getFileName(), current);
                 continue;
             }
-            if (last == modified) {
+            if (last.equals(current)) {
                 continue;
             }
             log.info("检测到配置文件变更，自动重载：{}", disk.getName());
@@ -368,14 +386,39 @@ public class ConfigHub {
     // 内部
     // ==================================================================
 
-    private void markModified(ConfigFile file) {
-        File disk = fileOf(file);
-        fileLastModified.put(file.getFileName(), disk.isFile() ? disk.lastModified() : 0L);
+    /**
+     * 记住该文件当前的内容摘要（表示"这份内容已经进快照了"）
+     */
+    private void markLoaded(ConfigFile file) {
+        fileDigest.put(file.getFileName(), digest(fileOf(file)));
     }
 
-    private void markAllModified() {
+    private void markAllLoaded() {
         for (ConfigFile file : ConfigFile.values()) {
-            markModified(file);
+            markLoaded(file);
+        }
+    }
+
+    /**
+     * 文件内容自上次加载后是否变过
+     */
+    private boolean fileChangedSinceLastLoad(ConfigFile file) {
+        return !Objects.equals(fileDigest.get(file.getFileName()), digest(fileOf(file)));
+    }
+
+    /**
+     * 文件内容摘要（SHA-256）；文件不存在或读取失败返回空串
+     */
+    private static String digest(File file) {
+        if (file == null || !file.isFile()) {
+            return "";
+        }
+        try {
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (Exception e) {
+            log.warn("计算配置文件摘要失败 {}", file.getName(), e);
+            return "";
         }
     }
 

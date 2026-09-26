@@ -6,6 +6,7 @@ import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.configuration.service.ConfigChange;
 import com.haruhi.botserver.configuration.service.ConfigHub;
+import com.haruhi.botserver.configuration.service.ConfigRefreshResult;
 import com.haruhi.botserver.configuration.model.ConfigFileNode;
 import com.haruhi.botserver.shared.error.BusinessException;
 import com.haruhi.botserver.shared.model.HttpResp;
@@ -131,8 +132,8 @@ public class ConfigController {
         } catch (BusinessException e) {
             return HttpResp.fail(e.getErrorMsg(), null);
         }
-        List<ConfigChange> changes = configHub.refresh(key);
-        return HttpResp.success(describe(changes, key.getKey()),null);
+        ConfigRefreshResult result = configHub.refresh(key);
+        return HttpResp.success(describe(result, key.getKey()),null);
     }
 
     /**
@@ -141,8 +142,8 @@ public class ConfigController {
     @PostMapping("/refreshFile")
     public HttpResp<String> refreshFile(@RequestBody ConfigReq request) {
         ConfigFile file = request.configFile();
-        List<ConfigChange> changes = configHub.refreshFile(file);
-        return HttpResp.success(describe(changes, file.getFileName()), null);
+        ConfigRefreshResult result = configHub.refreshFile(file);
+        return HttpResp.success(describe(result, file.getFileName()), null);
     }
 
     /**
@@ -196,9 +197,23 @@ public class ConfigController {
         return HttpResp.success(message, result);
     }
 
-    private String describe(List<ConfigChange> changes, String target) {
+    /**
+     * 刷新结果提示
+     * <p>
+     * 要区分三种情况，否则用户会困惑："我明明改了文件，为什么说无变化？"
+     * <ol>
+     *     <li>文件内容与内存快照一致 → 文件没改，或者改动已经被文件监听自动重载了（正常情况下 2 秒内就会自动生效）</li>
+     *     <li>文件内容变了、但声明的配置值没变 → 改的是注释/空行/未声明的key</li>
+     *     <li>声明的配置值变了 → 报出变更项与是否即时生效</li>
+     * </ol>
+     */
+    private String describe(ConfigRefreshResult result, String target) {
+        List<ConfigChange> changes = result.changes();
         if (CollectionUtils.isEmpty(changes)) {
-            return target + " 无变化";
+            if (!result.fileChanged()) {
+                return target + " 已是最新（文件内容与当前配置一致；若刚改过文件，改动已被自动重载并生效）";
+            }
+            return target + " 已重新读取，但声明的配置值没有变化（可能只改了注释、空行或未声明的key）";
         }
         List<String> names = changes.stream()
                 .filter(e -> e.key().isHot())

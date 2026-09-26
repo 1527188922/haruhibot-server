@@ -305,12 +305,42 @@ class ConfigSpringIntegrationTest {
         // 模拟用户在服务器上直接用编辑器把开关改成 false（不经过接口）
         Files.writeString(file, "job.bilibiliLive.enable=false\njob.bilibiliLive.cron=0 0/5 * * * ?\n",
                 StandardCharsets.UTF_8);
-        // 文件监听按"最后修改时间"判断是否变化，而 Windows 时间戳精度约15ms，这里显式推后避免同刻误判
-        assertTrue(file.toFile().setLastModified(System.currentTimeMillis() + 2000));
+        // 文件监听按"内容摘要"判断是否变化，不依赖文件时间戳精度
         configHub.watchFiles();
 
         assertFalse(Configs.getBool(ConfigKey.JOB_BILIBILI_LIVE_ENABLE), "外部改动应被自动重载");
         assertFalse(scheduler.checkExists(triggerKey), "外部关掉开关后应即时取消任务");
+    }
+
+    @Test
+    void 手工改文件后点刷新会报出变化的配置项() throws IOException {
+        String fileName = ConfigFile.WEBSOCKET.getFileName();
+        Files.writeString(configDir.resolve(fileName), "bot.ws.max_connections=13\n", StandardCharsets.UTF_8);
+
+        HttpResp<String> resp = configController.refreshFile(fileReq(fileName));
+
+        assertEquals(200, resp.getCode());
+        assertTrue(resp.getMessage().contains("bot.ws.max_connections"), resp.getMessage());
+        assertEquals(13, Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS));
+    }
+
+    @Test
+    void 改动已被自动重载后点刷新会说明原因而不是含糊的无变化() throws IOException {
+        String fileName = ConfigFile.WEBSOCKET.getFileName();
+        Files.writeString(configDir.resolve(fileName),
+                "bot.ws.access_token=token-123456\nbot.ws.max_connections=11\n", StandardCharsets.UTF_8);
+
+        // 文件监听会自动重载（等价于：改完文件过了两秒，改动已经生效）
+        configHub.watchFiles();
+        assertEquals(11, Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS));
+
+        // 此时再点"刷新此文件"：值本来就是最新的，提示要说清楚原因
+        HttpResp<String> resp = configController.refreshFile(fileReq(fileName));
+
+        assertEquals(200, resp.getCode());
+        assertTrue(resp.getMessage().contains("已是最新"), resp.getMessage());
+        assertTrue(resp.getMessage().contains("自动重载"), resp.getMessage());
+        assertEquals(11, Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS));
     }
 
     @Test
@@ -376,8 +406,8 @@ class ConfigSpringIntegrationTest {
         assertFalse(logging.getControl().isMultiple());
 
         ConfigItem playwright = items.get("playwright.skip-browser-download-mode");
-        assertEquals(ConfigType.STRING, playwright.getType());
-        assertEquals(ControlType.RADIO, playwright.getControl().getType());
+        assertEquals(ConfigType.INT, playwright.getType(), "值类型是整数");
+        assertEquals(ControlType.RADIO, playwright.getControl().getType(), "控件仍然可以是单选组");
 
         ConfigItem druidFilters = items.get("spring.datasource.dynamic.datasource.master.druid.filters");
         assertEquals(ConfigType.STRING, druidFilters.getType());

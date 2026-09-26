@@ -7,6 +7,7 @@ import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.configuration.service.ConfigApplier;
 import com.haruhi.botserver.configuration.service.ConfigChange;
 import com.haruhi.botserver.configuration.service.ConfigHub;
+import com.haruhi.botserver.configuration.service.ConfigRefreshResult;
 import com.haruhi.botserver.configuration.store.PropertiesFileUtil;
 import com.haruhi.botserver.configuration.store.YamlFileUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -634,17 +635,42 @@ class ConfigsTest {
     void 文件级刷新能发现外部改动() throws IOException {
         Files.writeString(propertyFile(ConfigFile.BOT), "bot.switch.disable_group=true\n", StandardCharsets.UTF_8);
         Configs.reloadFile(ConfigFile.BOT);
+        configHub.refreshFile(ConfigFile.BOT); // 让 ConfigHub 记住这份内容
         assertTrue(Configs.getBool(ConfigKey.BOT_SWITCH_DISABLE_GROUP));
 
         // 模拟用户在服务器上直接改了文件（true -> false）
         Files.writeString(propertyFile(ConfigFile.BOT), "bot.switch.disable_group=false\n", StandardCharsets.UTF_8);
-        List<ConfigChange> changes = configHub.refreshFile(ConfigFile.BOT);
+        ConfigRefreshResult result = configHub.refreshFile(ConfigFile.BOT);
+        List<ConfigChange> changes = result.changes();
 
+        assertTrue(result.fileChanged(), "文件内容变了，应如实回报");
         assertFalse(Configs.getBool(ConfigKey.BOT_SWITCH_DISABLE_GROUP));
         assertEquals(1, changes.size());
         assertEquals(ConfigKey.BOT_SWITCH_DISABLE_GROUP, changes.get(0).key());
         assertEquals("true", changes.get(0).oldValue());
         assertEquals("false", changes.get(0).newValue());
+
+        // 再刷一次：文件没动过 → fileChanged=false、无变更
+        // （页面上"改了文件却提示无变化"就是这种情况：改动已被自动重载）
+        ConfigRefreshResult again = configHub.refreshFile(ConfigFile.BOT);
+        assertFalse(again.fileChanged());
+        assertTrue(again.changes().isEmpty());
+        assertEquals("false", Configs.getStr(ConfigKey.BOT_SWITCH_DISABLE_GROUP));
+    }
+
+    @Test
+    void 只改注释时刷新会回报文件变了但配置值没变() throws IOException {
+        Files.writeString(propertyFile(ConfigFile.BOT), "bot.switch.disable_group=false\n", StandardCharsets.UTF_8);
+        Configs.reloadFile(ConfigFile.BOT);
+        configHub.refreshFile(ConfigFile.BOT);
+
+        // 只改注释：文件内容变了，声明的配置值没变
+        Files.writeString(propertyFile(ConfigFile.BOT),
+                "# 注释改了一下\nbot.switch.disable_group=false\n", StandardCharsets.UTF_8);
+        ConfigRefreshResult result = configHub.refreshFile(ConfigFile.BOT);
+
+        assertTrue(result.fileChanged(), "内容确实变了");
+        assertTrue(result.changes().isEmpty(), "但声明的配置值没变");
     }
 
     @Test
@@ -659,7 +685,7 @@ class ConfigsTest {
         Files.writeString(propertyFile(ConfigFile.BOT),
                 "# 加群提示\nbot.switch.group_increase=false\n", StandardCharsets.UTF_8);
 
-        List<ConfigChange> changes = configHub.refresh(ConfigKey.BOT_SWITCH_GROUP_INCREASE);
+        List<ConfigChange> changes = configHub.refresh(ConfigKey.BOT_SWITCH_GROUP_INCREASE).changes();
         assertEquals(1, changes.size());
         assertFalse(Configs.getBool(ConfigKey.BOT_SWITCH_GROUP_INCREASE));
         // 其它文件的配置不受影响
