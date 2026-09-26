@@ -22,9 +22,13 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -66,18 +70,46 @@ class ConfigsTest {
      * 只需要 getBeansOfType 返回空集合的最小 ApplicationContext
      */
     private static ApplicationContext emptyApplicationContext() {
+        return applicationContext();
+    }
+
+    /**
+     * 只需要 getBeansOfType 返回指定订阅者的最小 ApplicationContext
+     */
+    private static ApplicationContext applicationContext(ConfigApplier... appliers) {
+        Map<String, ConfigApplier> beans = new LinkedHashMap<>();
+        for (int i = 0; i < appliers.length; i++) {
+            beans.put("applier-" + i, appliers[i]);
+        }
         return (ApplicationContext) Proxy.newProxyInstance(
                 ConfigsTest.class.getClassLoader(),
                 new Class<?>[]{ApplicationContext.class},
                 (proxy, method, args) -> {
                     if ("getBeansOfType".equals(method.getName())) {
-                        return Collections.emptyMap();
+                        return beans;
                     }
                     if ("toString".equals(method.getName())) {
-                        return "EmptyApplicationContext";
+                        return "StubApplicationContext";
                     }
                     throw new UnsupportedOperationException(method.getName());
                 });
+    }
+
+    /**
+     * 只统计被通知了哪些 key 的订阅者
+     */
+    private static class CountingApplier implements ConfigApplier {
+        final List<String> notified = new ArrayList<>();
+
+        @Override
+        public Collection<ConfigKey> keys() {
+            return Set.of(ConfigKey.BOT_SWITCH_DISABLE_GROUP);
+        }
+
+        @Override
+        public void onConfigChange(ConfigChange change) {
+            notified.add(change.keyName());
+        }
     }
 
     private Path propertyFile(ConfigFile file) {
@@ -690,6 +722,22 @@ class ConfigsTest {
         assertFalse(Configs.getBool(ConfigKey.BOT_SWITCH_GROUP_INCREASE));
         // 其它文件的配置不受影响
         assertEquals("https://a.example", Configs.getStr(ConfigKey.URL_CONF_BTBTLA_SEARCH));
+    }
+
+    @Test
+    void 启动时的静默重载不通知订阅者而兜底全量刷新会() {
+        CountingApplier applier = new CountingApplier();
+        ReflectionTestUtils.setField(configHub, "applicationContext", applicationContext(applier));
+
+        // 启动走静默重载：值没变就不该产生通知（否则启动日志里会刷一堆 "0 -> 0"）
+        configHub.loadAll();
+        assertTrue(applier.notified.isEmpty(),
+                "静默重载不应通知订阅者：" + applier.notified);
+
+        // 兜底按钮（重新加载全部配置）要强制通知一次，用来把运行期状态和文件对齐
+        configHub.refreshAll();
+        assertEquals(List.of(ConfigKey.BOT_SWITCH_DISABLE_GROUP.getKey()), applier.notified,
+                "全量刷新应强制通知订阅者一次");
     }
 
     @Test

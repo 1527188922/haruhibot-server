@@ -198,7 +198,11 @@ save(key, value)
 
 - **key 级刷新**：`refresh(key)` —— 重读该 key 所在文件，不写文件。
 - **文件级刷新**：`refreshFile(file)` —— 重读整个文件。
-- **全量刷新**：`refreshAll()` —— 兜底按钮。
+- **全量刷新**：`refreshAll()` —— 兜底按钮（配置页「重新加载全部配置」）：重读全部文件后**强制**给每个订阅者发一次通知（不看值有没有变），
+  用来把运行期状态和文件对齐；`loadAll()` 是**启动用的静默重载**（重读 + 重建展示缓存，**不通知**订阅者）。
+  > 启动阶段（`StartupRunner` → `SystemService.loadCache(1)`）用 `loadAll()`：快照在 Spring 启动前就已按文件加载好、
+  > 组件也是按最新配置初始化的，此时再强制通知一遍只会在启动日志里刷一堆 `0 -> 0` 的"变更"（值并没有变）。
+  > 用户主动点刷新（`loadCache(2/3)`、配置页按钮）才走 `refreshAll()`。
 - **重置**：`resetAll(keys)` —— 把每个 key 的值改回声明中的默认值（**保留该 key**），走的还是同一套写文件逻辑，
   因此既不会重复追加，也不会在 yml 里写成 properties 风格的点分行。
 - **刷新结果会区分三种情况**（`ConfigRefreshResult{fileChanged, changes}`），否则"我明明改了文件，为什么说无变化？"很费解：

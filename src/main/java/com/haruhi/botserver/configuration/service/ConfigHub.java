@@ -268,7 +268,20 @@ public class ConfigHub {
     }
 
     /**
-     * 全量刷新（含非hot项，用于兜底）
+     * 静默重载：重读全部配置文件 + 重建展示缓存，<b>不通知订阅者</b>
+     * <p>
+     * 用于启动阶段（{@code StartupRunner} → {@code SystemService.loadCache(1)}）：此时各组件本来就会按最新配置
+     * 初始化，再"强制通知"一遍只会刷一堆 {@code 0 -> 0} 的无意义日志（值并没有变）。
+     */
+    public void loadAll() {
+        Configs.reloadAll();
+        markAllLoaded();
+        rebuildItems();
+    }
+
+    /**
+     * 全量刷新（配置页的"重新加载全部配置"兜底按钮）：重读全部文件后<b>强制给每个订阅者发一次通知</b>
+     * （不看值有没有变），用于把运行期状态与配置文件对齐——例如某个组件缓存了值、而文件被外部直接改过。
      */
     public void refreshAll() {
         Configs.reloadAll();

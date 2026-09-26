@@ -103,14 +103,22 @@ public class SystemService {
     /**
      * 加载缓存
      * <p>
-     * 配置部分由 {@link ConfigHub} 负责（会顺带通知各 ConfigApplier，例如按新配置重建OpenAiService），
-     * 这里只处理需要"从数据库重建内存缓存"的数据
+     * 配置部分由 {@link ConfigHub} 负责，这里只处理需要"从数据库重建内存缓存"的数据。
+     * <p>
+     * 注意启动（mode=1）走的是<b>静默重载</b>：快照在 Spring 启动之前就已按文件加载好，各组件也是按最新配置初始化的，
+     * 此时再强制通知一遍订阅者只会刷一堆 {@code 0 -> 0} 的变更日志（见 {@link ConfigHub#loadAll()}）。
+     * 接口/命令（mode=2/3）是用户主动要求刷新，走 {@link ConfigHub#refreshAll()}：除了重读文件，
+     * 还会强制通知所有订阅者，把运行期状态和文件对齐。
      *
      * @param mode 1系统启动刷新 2接口刷新 3bot命令刷新
      */
     public synchronized void loadCache(int mode){
        try {
-           configHub.refreshAll();
+           if (mode == 1) {
+               configHub.loadAll();
+           } else {
+               configHub.refreshAll();
+           }
            pokeReplyService.loadPokeReply();
            customReplySqliteService.loadToCache();
            wordStripService.loadWordStrip();
