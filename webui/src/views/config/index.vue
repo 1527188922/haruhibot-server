@@ -62,8 +62,8 @@
 
           <el-table-column label="值" min-width="300">
             <template slot-scope="{row}">
-              <!-- 布尔 -->
-              <el-switch v-if="row.type === 'BOOL'"
+              <!-- 开关 -->
+              <el-switch v-if="controlType(row) === 'SWITCH'"
                          v-model="row.editValue"
                          active-value="true"
                          inactive-value="false"
@@ -72,7 +72,70 @@
                          @change="markDirty(row)">
               </el-switch>
 
-              <!-- 整数 -->
+              <!-- 下拉：单选 -->
+              <el-select v-else-if="controlType(row) === 'SELECT' && !isMulti(row)"
+                         v-model="row.editValue"
+                         size="small"
+                         class="value-input"
+                         clearable
+                         default-first-option
+                         :filterable="control(row).allowCustom"
+                         :allow-create="control(row).allowCustom"
+                         :placeholder="control(row).allowCustom ? '选择或直接输入' : '请选择'"
+                         @change="markDirty(row)">
+                <el-option v-for="opt in options(row)"
+                           :key="opt.value"
+                           :label="opt.label"
+                           :value="opt.value">
+                </el-option>
+              </el-select>
+
+              <!-- 下拉：多选（允许自定义值时相当于标签输入框，回车创建） -->
+              <el-select v-else-if="controlType(row) === 'SELECT'"
+                         v-model="row.editList"
+                         size="small"
+                         class="value-input"
+                         multiple
+                         default-first-option
+                         :filterable="control(row).allowCustom"
+                         :allow-create="control(row).allowCustom"
+                         :placeholder="control(row).allowCustom ? '选择或输入后回车' : '请选择'"
+                         @change="syncList(row)">
+                <el-option v-for="opt in options(row)"
+                           :key="opt.value"
+                           :label="opt.label"
+                           :value="opt.value">
+                </el-option>
+              </el-select>
+
+              <!-- 复选组（多个值，逗号拼接） -->
+              <el-checkbox-group v-else-if="controlType(row) === 'CHECKBOX' && isMulti(row)"
+                                 v-model="row.editList"
+                                 class="value-checks"
+                                 @change="syncList(row)">
+                <el-checkbox v-for="opt in options(row)"
+                             :key="opt.value"
+                             :label="opt.value">{{ opt.label }}</el-checkbox>
+              </el-checkbox-group>
+
+              <!-- 单个复选框 -->
+              <el-checkbox v-else-if="controlType(row) === 'CHECKBOX'"
+                           :value="row.editValue === 'true'"
+                           @change="v => setScalarValue(row, v ? 'true' : 'false')">
+                {{ row.editValue === 'true' ? '开启' : '关闭' }}
+              </el-checkbox>
+
+              <!-- 单选框组：必须用 v-model，:value + @change 拿不到点击后的值 -->
+              <el-radio-group v-else-if="controlType(row) === 'RADIO'"
+                              v-model="row.editValue"
+                              class="value-radios"
+                              @change="markDirty(row)">
+                <el-radio v-for="opt in options(row)"
+                          :key="opt.value"
+                          :label="opt.value">{{ opt.label }}</el-radio>
+              </el-radio-group>
+
+              <!-- 输入框：按值类型细分 -->
               <el-input v-else-if="row.type === 'INT'"
                         v-model.trim="row.editValue"
                         size="small"
@@ -91,24 +154,14 @@
                         @input="markDirty(row)">
               </el-input>
 
-              <!-- 列表 -->
-              <el-input v-else-if="row.type === 'LIST'"
+              <!-- 列表 / JSON：多行文本 -->
+              <el-input v-else-if="row.type === 'LIST' || row.type === 'JSON'"
                         v-model="row.editValue"
                         size="small"
                         type="textarea"
-                        :autosize="{minRows:1, maxRows:3}"
+                        :autosize="{minRows:1, maxRows: row.type === 'JSON' ? 6 : 3}"
                         class="value-input"
-                        placeholder="多个值用逗号分隔"
-                        @input="markDirty(row)">
-              </el-input>
-
-              <!-- JSON -->
-              <el-input v-else-if="row.type === 'JSON'"
-                        v-model="row.editValue"
-                        size="small"
-                        type="textarea"
-                        :autosize="{minRows:1, maxRows:6}"
-                        class="value-input"
+                        :placeholder="row.type === 'JSON' ? 'JSON 文本' : '多个值用逗号分隔'"
                         @input="markDirty(row)">
               </el-input>
 
@@ -247,18 +300,81 @@ export default {
       this.current = Object.assign({}, file, {items})
     },
     decorate(item) {
-      return Object.assign({}, item, {
+      const value = item.value === null || item.value === undefined ? '' : item.value
+      const row = Object.assign({}, item, {
         // SECRET 类型后端不下发明文，用空串开始编辑
-        editValue: item.value === null || item.value === undefined ? '' : item.value,
+        editValue: value,
+        // 多值控件（多选下拉 / 复选组）绑定用的数组模型，保存时再拼成逗号分隔的字符串
+        editList: [],
         dirty: false,
-        originValue: item.value === null || item.value === undefined ? '' : item.value
+        originValue: value
       })
+      if (this.isMulti(row)) {
+        // 归一化后再比较，避免 "a, b" 和 "a,b" 这种差异被当成改动
+        row.editList = this.listValue(row)
+        row.editValue = row.editList.join(',')
+        row.originValue = row.editValue
+      }
+      return row
     },
     markDirty(row) {
       row.dirty = row.editValue !== row.originValue
     },
     rowClass({row}) {
       return row.dirty ? 'config-row--dirty' : ''
+    },
+
+    // ==================== 控件 ====================
+    /**
+     * 控件元数据（后端 ConfigItem.control）：
+     * 控件类型与值类型解耦，同一个值类型可以配不同控件
+     */
+    control(row) {
+      return row.control || {type: 'INPUT', multiple: false, allowCustom: false, options: []}
+    },
+    controlType(row) {
+      return this.control(row).type
+    },
+    /** 是否多值控件（多选下拉 / 复选组） */
+    isMulti(row) {
+      const control = this.control(row)
+      return (control.type === 'SELECT' || control.type === 'CHECKBOX') && control.multiple === true
+    },
+    /**
+     * 候选项：把"当前值/原值里有、候选项里却没有"的值也补进去，
+     * 否则已配置的值显示不出来，一保存还会被丢掉（例如 druid filters 里多配了一项）；
+     * 原值也补是为了取消勾选之后还能再勾回来
+     */
+    options(row) {
+      const declared = this.control(row).options || []
+      const known = declared.map(e => e.value)
+      const values = this.listValue(row).concat(this.originList(row))
+      const extra = values
+        .filter((e, i) => !known.includes(e) && values.indexOf(e) === i)
+        .map(e => ({value: e, label: e}))
+      return declared.concat(extra)
+    },
+    /** 多值控件的模型：逗号/空白分隔的字符串 <-> 数组 */
+    listValue(row) {
+      return this.splitList(row.editValue)
+    },
+    /** 原值的数组模型（用于候选项补全） */
+    originList(row) {
+      return this.splitList(row.originValue)
+    },
+    splitList(value) {
+      const text = value === null || value === undefined ? '' : String(value)
+      return text === '' ? [] : text.split(/[,，\s]+/).filter(e => e !== '')
+    },
+    /** 多值控件 v-model 写回数组后，同步成保存用的逗号分隔字符串 */
+    syncList(row) {
+      row.editValue = (row.editList || []).join(',')
+      this.markDirty(row)
+    },
+    /** 单值控件（单个复选框）写回字符串值 */
+    setScalarValue(row, value) {
+      row.editValue = value
+      this.markDirty(row)
     },
 
     // ==================== 保存 ====================
@@ -279,7 +395,7 @@ export default {
     saveAllRows(rows) {
       this.saveLoading = true
       return batchSaveApi({
-        // 带上 fileName：同一个属性名可能出现在多个文件里（如 dev/prod 的日志级别）
+        // 带上 fileName：后端按"文件 + key"定位配置项
         items: rows.map(e => ({key: e.key, value: e.editValue, fileName: this.current.fileName}))
       }).then(({data: {code, message}}) => {
         if (code !== 200) {
@@ -522,6 +638,25 @@ export default {
 
 .value-input--number {
   max-width: 180px;
+}
+
+// 复选组 / 单选框组：换行排列，收掉 element 默认的 30px 间距
+.value-checks,
+.value-radios {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  line-height: 32px;
+
+  ::v-deep .el-checkbox,
+  ::v-deep .el-radio {
+    margin-right: 12px;
+  }
+
+  ::v-deep .el-checkbox + .el-checkbox,
+  ::v-deep .el-radio + .el-radio {
+    margin-left: 0;
+  }
 }
 
 .item-name {

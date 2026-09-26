@@ -269,8 +269,8 @@ public class HtmlToImageUtils {
     }
 
     private static Boolean forcedSkipBrowserDownload() {
-        String mode = Configs.getStr(ConfigKey.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE);
-        return Objects.equals(mode, "0") ? null : Objects.equals(mode, "1") ? Boolean.TRUE : Boolean.FALSE;
+        int mode = Configs.getInt(ConfigKey.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE);
+        return Objects.equals(mode, 0) ? null : Objects.equals(mode, 1) ? Boolean.TRUE : Boolean.FALSE;
     }
 
     private static boolean isTruthy(String value) {

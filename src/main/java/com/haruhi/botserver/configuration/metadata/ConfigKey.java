@@ -55,13 +55,15 @@ public enum ConfigKey {
     SERVER_PORT(ConfigFile.APPLICATION, "server.port", ConfigType.INT, "8090", false,
             "http服务端口，可在配置管理页修改，修改后需重启", 10),
     LOGGING_LEVEL(ConfigFile.APPLICATION, "logging.level.com.haruhi.botserver", ConfigType.STRING, "info", false,
-            "本项目自身的日志级别（TRACE/DEBUG/INFO/WARN/ERROR），修改后需重启", 20),
+            "本项目自身的日志级别（TRACE/DEBUG/INFO/WARN/ERROR），修改后需重启", 20,
+            ControlMeta.select("TRACE,DEBUG,INFO,WARN,ERROR")),
     INTERNET_HOST(ConfigFile.APPLICATION, "internet-host", ConfigType.STRING, "", true,
             "本服务对外访问的ip或域名，留空自动探测；用于拼接图片url", 30),
     SAME_MACHINE_QQCLIENT(ConfigFile.APPLICATION, "same-machine-qqclient", ConfigType.BOOL, "true", true,
             "qq客户端是否与本服务在同一台机器，true时图片/语音使用file://本地路径发送", 40),
-    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE(ConfigFile.APPLICATION, "playwright.skip-browser-download-mode", ConfigType.STRING, "0", true,
-            "浏览器强制下载模式 0自动判断 1强制跳过下载直接使用系统浏览器 2强制使用playwright下载的浏览器", 50),
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE(ConfigFile.APPLICATION, "playwright.skip-browser-download-mode", ConfigType.INT, "0", false,
+            "浏览器强制下载模式 0自动判断 1强制跳过下载直接使用系统浏览器 2强制使用playwright下载的浏览器", 50,
+            ControlMeta.radio("0:自动判断,1:强制跳过下载（用系统浏览器）,2:使用playwright下载的浏览器")),
 
 
     // ============================ 定时任务 ============================
@@ -190,7 +192,8 @@ public enum ConfigKey {
             "druid连接校验语句，修改后需重启", 30),
     DATABASE_DRUID_FILTERS(ConfigFile.DATABASE,
             "spring.datasource.dynamic.datasource.master.druid.filters", ConfigType.STRING, "stat", false,
-            "druid过滤器，修改后需重启", 40),
+            "druid过滤器（可多选，保存时逗号拼接），修改后需重启", 40,
+            ControlMeta.checkboxGroup("stat,wall,log4j,slf4j")),
     DATABASE_DRUID_TEST_ON_BORROW(ConfigFile.DATABASE,
             "spring.datasource.dynamic.datasource.master.druid.test-on-borrow", ConfigType.BOOL, "false", false,
             "druid取连接时是否校验，修改后需重启", 50),
@@ -222,8 +225,18 @@ public enum ConfigKey {
     private final String remark;
     /** 前端展示排序 */
     private final int sort;
+    /** 前端控件元数据（不声明时按值类型取默认控件） */
+    private final ControlMeta control;
 
     ConfigKey(ConfigFile file, String key, ConfigType type, String defaultValue, boolean hot, String remark, int sort) {
+        this(file, key, type, defaultValue, hot, remark, sort, null);
+    }
+
+    /**
+     * @param control 前端控件；传 null 表示按值类型取默认控件（BOOL→开关、LIST→多选下拉、其余→输入框）
+     */
+    ConfigKey(ConfigFile file, String key, ConfigType type, String defaultValue, boolean hot, String remark,
+              int sort, ControlMeta control) {
         this.file = file;
         this.key = key;
         this.type = type;
@@ -231,6 +244,7 @@ public enum ConfigKey {
         this.hot = hot;
         this.remark = remark;
         this.sort = sort;
+        this.control = control == null ? ControlMeta.of(type) : control;
     }
 
     /** key -> 配置项；同一属性名可以出现在不同文件（如 dev/prod 的日志级别），此时取第一个 */

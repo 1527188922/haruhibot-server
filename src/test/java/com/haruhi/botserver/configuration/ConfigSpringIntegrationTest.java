@@ -2,12 +2,15 @@ package com.haruhi.botserver.configuration;
 
 import com.haruhi.botserver.configuration.metadata.ConfigFile;
 import com.haruhi.botserver.configuration.metadata.ConfigKey;
+import com.haruhi.botserver.configuration.metadata.ConfigType;
+import com.haruhi.botserver.configuration.metadata.ControlType;
 import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.configuration.service.ConfigApplier;
 import com.haruhi.botserver.configuration.service.ConfigHub;
 import com.haruhi.botserver.configuration.store.PropertiesFileUtil;
 import com.haruhi.botserver.configuration.store.YamlFileUtil;
 import com.haruhi.botserver.configuration.model.ConfigFileNode;
+import com.haruhi.botserver.configuration.model.ConfigItem;
 import com.haruhi.botserver.bootstrap.WebResourceConfig;
 import com.haruhi.botserver.configuration.controller.ConfigController;
 import com.haruhi.botserver.infrastructure.scheduling.JobManager;
@@ -354,6 +357,40 @@ class ConfigSpringIntegrationTest {
                 .findFirst().orElseThrow();
         assertEquals("应用主配置", app.getDisplayName());
         assertTrue(app.getItems().stream().anyMatch(e -> "server.port".equals(e.getKey()) && "8090".equals(e.getValue())));
+    }
+
+    @Test
+    void 配置项下发控件元数据() {
+        Map<String, ConfigItem> items = new java.util.HashMap<>();
+        for (ConfigFileNode node : configController.list().getData()) {
+            for (ConfigItem item : node.getItems()) {
+                items.put(item.getKey(), item);
+            }
+        }
+
+        // 值类型与控件类型分别下发：同一个值类型可以配不同控件
+        ConfigItem logging = items.get("logging.level.com.haruhi.botserver");
+        assertEquals(ConfigType.STRING, logging.getType());
+        assertEquals(ControlType.SELECT, logging.getControl().getType());
+        assertEquals(5, logging.getControl().getOptions().size());
+        assertFalse(logging.getControl().isMultiple());
+
+        ConfigItem playwright = items.get("playwright.skip-browser-download-mode");
+        assertEquals(ConfigType.STRING, playwright.getType());
+        assertEquals(ControlType.RADIO, playwright.getControl().getType());
+
+        ConfigItem druidFilters = items.get("spring.datasource.dynamic.datasource.master.druid.filters");
+        assertEquals(ConfigType.STRING, druidFilters.getType());
+        assertEquals(ControlType.CHECKBOX, druidFilters.getControl().getType());
+        assertTrue(druidFilters.getControl().isMultiple());
+
+        // LIST → 多选下拉 + 可自定义值；BOOL → 开关；SECRET → 输入框
+        ConfigItem superusers = items.get("bot.superusers");
+        assertEquals(ControlType.SELECT, superusers.getControl().getType());
+        assertTrue(superusers.getControl().isMultiple());
+        assertTrue(superusers.getControl().isAllowCustom());
+        assertEquals(ControlType.SWITCH, items.get("bot.upload_file.parallel").getControl().getType());
+        assertEquals(ControlType.INPUT, items.get("bot.ws.access_token").getControl().getType());
     }
 
     @Test

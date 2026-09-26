@@ -421,6 +421,7 @@ public class ConfigHub {
         item.setName(key.name());
         item.setDisplayName(displayName(key));
         item.setType(key.getType());
+        item.setControl(key.getControl());
         // 敏感配置不下发明文：前端展示掩码，用户输入新值才会覆盖
         boolean secret = key.getType() == com.haruhi.botserver.configuration.metadata.ConfigType.SECRET;
         String raw = Configs.getRaw(key);
