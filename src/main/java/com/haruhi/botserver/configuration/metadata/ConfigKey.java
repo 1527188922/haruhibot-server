@@ -60,6 +60,9 @@ public enum ConfigKey {
             "本服务对外访问的ip或域名，留空自动探测；用于拼接图片url", 30),
     SAME_MACHINE_QQCLIENT(ConfigFile.APPLICATION, "same-machine-qqclient", ConfigType.BOOL, "true", true,
             "qq客户端是否与本服务在同一台机器，true时图片/语音使用file://本地路径发送", 40),
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE(ConfigFile.APPLICATION, "playwright.skip-browser-download-mode", ConfigType.STRING, "0", true,
+            "浏览器强制下载模式 0自动判断 1强制跳过下载直接使用系统浏览器 2强制使用playwright下载的浏览器", 50),
+
 
     // ============================ 定时任务 ============================
     JOB_DOWNLOAD_PIXIV_ENABLE(ConfigFile.JOB, "job.downloadPixiv.enable", ConfigType.BOOL, "false", true,

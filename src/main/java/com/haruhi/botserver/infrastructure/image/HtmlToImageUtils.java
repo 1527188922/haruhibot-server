@@ -1,5 +1,7 @@
 package com.haruhi.botserver.infrastructure.image;
 
+import com.haruhi.botserver.configuration.metadata.ConfigKey;
+import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
 
 import cn.hutool.core.io.FileUtil;
@@ -214,6 +216,7 @@ public class HtmlToImageUtils {
                 return openPlaywright(skipBrowserDownload);
             }
 
+//            Boolean forced = forcedSkipBrowserDownloadInEnv();
             Boolean forced = forcedSkipBrowserDownload();
             if (forced != null) {
                 skipBrowserDownload = forced;
@@ -253,7 +256,7 @@ public class HtmlToImageUtils {
     /**
      * 读取强制模式配置，返回 null 表示走自动探测。
      */
-    private static Boolean forcedSkipBrowserDownload() {
+    private static Boolean forcedSkipBrowserDownloadInEnv() {
         String property = System.getProperty(SKIP_BROWSER_DOWNLOAD_PROPERTY);
         if (StrUtil.isNotBlank(property)) {
             return Boolean.valueOf(isTruthy(property));
@@ -263,6 +266,11 @@ public class HtmlToImageUtils {
             return Boolean.TRUE;
         }
         return null;
+    }
+
+    private static Boolean forcedSkipBrowserDownload() {
+        String mode = Configs.getStr(ConfigKey.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE);
+        return Objects.equals(mode, "0") ? null : Objects.equals(mode, "1") ? Boolean.TRUE : Boolean.FALSE;
     }
 
     private static boolean isTruthy(String value) {

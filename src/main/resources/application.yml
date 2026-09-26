@@ -22,3 +22,7 @@ logging:
 internet-host:
 # qq客户端是否与本服务在同一台机器，true时图片/语音使用file://本地路径发送
 same-machine-qqclient: true
+
+playwright:
+  # true：跳过playwright下载浏览器（强制使用服务器环境中的浏览器）
+  skip-browser-download-mode: 0
