@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -232,6 +233,63 @@ class JmTaskQueueTest {
         assertEquals(5, info.getImageDownloaded());
         assertEquals(JmTaskStatusEnum.SUCCESS.name(), info.getStatus());
         assertFalse(info.isCancellable());
+    }
+
+    /**
+     * 任务的生命周期与进度变化都要通知到推送方
+     */
+    @Test
+    void changeNotifierFiresOnLifecycleAndProgress() throws Exception {
+        JmTaskQueue queue = new JmTaskQueue();
+        AtomicInteger notified = new AtomicInteger();
+        queue.setChangeNotifier(notified::incrementAndGet);
+
+        CountDownLatch completed = new CountDownLatch(1);
+        queue.tryAcquire("300", JmTaskAction.DOWNLOAD.getActionName());
+        queue.enqueue("300", JmTaskAction.DOWNLOAD, "album300", null, new JmTaskQueue.TaskBody() {
+            @Override
+            public JmTaskQueue.TaskResult run() {
+                JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
+                reporter.stage("下载漫画图片");
+                reporter.chapter(1, 2, "第1话");
+                reporter.chapterImages(10, 0);
+                reporter.imageDownloaded();
+                return JmTaskQueue.TaskResult.success("ok");
+            }
+
+            @Override
+            public void complete(JmTaskQueue.TaskResult result) {
+                completed.countDown();
+            }
+
+            @Override
+            public void onCancelled(String message) {
+            }
+        });
+
+        assertTrue(completed.await(5, TimeUnit.SECONDS));
+        // 入队 + 开始执行 + 4次进度上报 + 完成
+        assertTrue(notified.get() >= 7, "任务变化通知次数不足:" + notified.get());
+    }
+
+    /**
+     * 通知方异常不能影响任务执行
+     */
+    @Test
+    void brokenChangeNotifierDoesNotBreakQueue() throws Exception {
+        JmTaskQueue queue = new JmTaskQueue();
+        queue.setChangeNotifier(() -> {
+            throw new IllegalStateException("notifier boom");
+        });
+
+        CountDownLatch completed = new CountDownLatch(1);
+        List<String> order = Collections.synchronizedList(new ArrayList<>());
+        queue.tryAcquire("100", JmTaskAction.DOWNLOAD.getActionName());
+        String taskId = queue.enqueue("100", JmTaskAction.DOWNLOAD, "album100", null,
+                recordingBody("100", order, completed));
+
+        assertTrue(completed.await(5, TimeUnit.SECONDS));
+        assertEquals(JmTaskStatusEnum.SUCCESS, queue.statusOf(taskId));
     }
 
     private JmTaskQueue.TaskBody recordingBody(String aid, List<String> order, CountDownLatch completed) {

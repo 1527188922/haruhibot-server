@@ -96,6 +96,32 @@ public class JmTaskQueue {
      */
     private final Deque<JmTask> finished = new ArrayDeque<>();
     private Thread worker;
+    /**
+     * 任务状态/进度变化通知，用于向webui推送。实现必须轻量且非阻塞
+     */
+    private volatile Runnable changeNotifier;
+
+    /**
+     * 注册变化通知(由推送服务启动时注册)
+     */
+    public void setChangeNotifier(Runnable changeNotifier) {
+        this.changeNotifier = changeNotifier;
+    }
+
+    /**
+     * 通知任务有变化。绝不能因为通知方异常影响下载主流程
+     */
+    private void notifyChange() {
+        Runnable notifier = this.changeNotifier;
+        if (notifier == null) {
+            return;
+        }
+        try {
+            notifier.run();
+        } catch (Exception e) {
+            log.warn("JM任务变化通知异常:{}", e.getMessage());
+        }
+    }
 
     /**
      * 原子占位，避免同一个JM重复提交
@@ -136,6 +162,7 @@ public class JmTaskQueue {
             lock.notifyAll();
         }
         ensureWorker();
+        notifyChange();
         return task.taskId;
     }
 
@@ -149,6 +176,7 @@ public class JmTaskQueue {
             running.put(task.taskId, task);
             tasksById.put(task.taskId, task);
         }
+        notifyChange();
         TaskResult result = null;
         try {
             JmTaskContext.set(task);
@@ -197,6 +225,7 @@ public class JmTaskQueue {
         } catch (Exception e) {
             log.error("JM任务取消回调异常 taskId:{}", taskId, e);
         }
+        notifyChange();
         return true;
     }
 
@@ -288,6 +317,7 @@ public class JmTaskQueue {
                 task.startTime = System.currentTimeMillis();
                 running.put(task.taskId, task);
             }
+            notifyChange();
             TaskResult result = null;
             try {
                 JmTaskContext.set(task);
@@ -325,6 +355,7 @@ public class JmTaskQueue {
             addFinishedLocked(task);
             pruneLocked();
         }
+        notifyChange();
     }
 
     private void addFinishedLocked(JmTask task) {
@@ -379,8 +410,10 @@ public class JmTaskQueue {
 
     /**
      * 内部任务对象，同时作为进度上报口
+     * <p>
+     * 非静态内部类：进度变化需要回调外部队列的变化通知
      */
-    private static final class JmTask implements ProgressReporter {
+    private final class JmTask implements ProgressReporter {
 
         private final String taskId = UUID.randomUUID().toString().replace("-", "");
         private final String aid;
@@ -413,12 +446,14 @@ public class JmTaskQueue {
         @Override
         public void stage(String stage) {
             this.stage = stage;
+            notifyChange();
         }
 
         @Override
         public void albumName(String albumName) {
             if (StringUtils.isNotBlank(albumName)) {
                 this.albumName = albumName;
+                notifyChange();
             }
         }
 
@@ -427,17 +462,20 @@ public class JmTaskQueue {
             this.chapterIndex = index;
             this.chapterTotal = total;
             this.chapterTitle = title;
+            notifyChange();
         }
 
         @Override
         public void chapterImages(int total, int downloaded) {
             this.imageTotal = total;
             this.imageDownloaded.set(Math.max(downloaded, 0));
+            notifyChange();
         }
 
         @Override
         public void imageDownloaded() {
             this.imageDownloaded.incrementAndGet();
+            notifyChange();
         }
     }
 }

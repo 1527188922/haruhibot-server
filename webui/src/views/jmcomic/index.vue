@@ -594,6 +594,12 @@ export default {
       taskPanelVisible: false,
       taskSnapshot: this.defTaskSnapshot(),
       taskPollTimer: null,
+      // 全局WebSocket是否已连通(连通时任务状态由推送更新，不再轮询)
+      wsConnected: false,
+      // 是否已订阅任务主题，避免重复订阅造成引用计数泄漏
+      taskPushBound: false,
+      taskSnapshotOff: null,
+      taskStatusOff: null,
       albumQuery: { id: '', name: '', author: '', tags: [], collected: '' },
       // JM主记录展示方式：list=表格(默认)，waterfall=瀑布流卡片
       albumViewMode: getStore({ name: ALBUM_VIEW_MODE_KEY }) || 'list',
@@ -728,9 +734,11 @@ export default {
   mounted() {
     this.searchAlbumsFirst()
     this.startTaskPolling()
+    this.bindTaskPush()
   },
   beforeDestroy() {
     this.stopTaskPolling()
+    this.unbindTaskPush()
   },
   methods: {
     formatBool(value) {
@@ -880,14 +888,14 @@ export default {
       }
     },
     /**
-     * 任务面板关闭时低频轮询，只为刷新徽标和行内状态；
-     * 面板打开时由面板自己按服务端建议频率轮询，并通过 snapshot 事件回传，避免重复请求
+     * 任务状态走全局WebSocket推送；WebSocket未连通时回退到低频HTTP轮询，
+     * 保证代理挡掉ws、后端未重启等情况下页面依然有数据
      */
     startTaskPolling() {
       this.stopTaskPolling()
       this.pollJmTasks()
       this.taskPollTimer = setInterval(() => {
-        if (this.taskPanelVisible || document.hidden) {
+        if (this.wsConnected || document.hidden) {
           return
         }
         this.pollJmTasks()
@@ -898,6 +906,36 @@ export default {
         clearInterval(this.taskPollTimer)
         this.taskPollTimer = null
       }
+    },
+    /**
+     * 注册全局WebSocket的JM任务推送，并把连接状态同步给轮询兜底
+     */
+    bindTaskPush() {
+      if (this.taskPushBound) {
+        return
+      }
+      this.taskPushBound = true
+      this.taskSnapshotOff = this.$ws.on('jm.task.snapshot', this.handleTaskSnapshot)
+      this.taskStatusOff = this.$ws.onStatus(this.handleWsStatus)
+      this.$ws.subscribe('jm.task')
+    },
+    unbindTaskPush() {
+      if (!this.taskPushBound) {
+        return
+      }
+      this.taskPushBound = false
+      if (this.taskSnapshotOff) {
+        this.taskSnapshotOff()
+        this.taskSnapshotOff = null
+      }
+      if (this.taskStatusOff) {
+        this.taskStatusOff()
+        this.taskStatusOff = null
+      }
+      this.$ws.unsubscribe('jm.task')
+    },
+    handleWsStatus(status) {
+      this.wsConnected = status === 'open'
     },
     pollJmTasks() {
       return listJmTasks().then(({data: {code, data}}) => {
@@ -913,7 +951,7 @@ export default {
       this.applyTaskSnapshot(data)
     },
     /**
-     * 任务面板打开时由面板轮询并通过事件回传，关闭时由本页低频轮询，两条路径都要走这里
+     * HTTP轮询、WebSocket推送、任务面板回传三条来源都汇总到这里
      */
     applyTaskSnapshot(data) {
       if (!data) {

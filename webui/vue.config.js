@@ -64,6 +64,8 @@ module.exports = {
         target: 'http://127.0.0.1:8090',
         // target: 'http://115.29.215.124:8090',
         changeOrigin: true,
+        // webui 全局WebSocket(/api/webui/ws)需要走代理，缺少ws:true时开发环境永远连不上
+        ws: true,
       }
     }
   }

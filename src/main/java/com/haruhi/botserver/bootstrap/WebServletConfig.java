@@ -2,6 +2,8 @@ package com.haruhi.botserver.bootstrap;
 
 import com.haruhi.botserver.infrastructure.web.interceptor.ApiHeaderInterceptor;
 import com.haruhi.botserver.infrastructure.web.interceptor.WebSocketHandshakeInterceptor;
+import com.haruhi.botserver.infrastructure.web.websocket.WebuiWsHandler;
+import com.haruhi.botserver.infrastructure.web.websocket.WebuiWsHandshakeInterceptor;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.integration.onebot.websocket.BotServer;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +27,20 @@ public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
     private BotServer botServer;
     @Autowired
     private WebSocketHandshakeInterceptor webSocketHandshakeInterceptor;
+    @Autowired
+    private WebuiWsHandler webuiWsHandler;
+    @Autowired
+    private WebuiWsHandshakeInterceptor webuiWsHandshakeInterceptor;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        // 机器人反向ws(gocq)
         registry.addHandler(botServer, SysConstants.WEB_SOCKET_PATH)
                 .addInterceptors(webSocketHandshakeInterceptor)
+                .setAllowedOrigins("*");
+        // webui 全局实时消息总线，鉴权用登录token(?token=)
+        registry.addHandler(webuiWsHandler, SysConstants.WEBUI_WEB_SOCKET_PATH)
+                .addInterceptors(webuiWsHandshakeInterceptor)
                 .setAllowedOrigins("*");
     }
 

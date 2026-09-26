@@ -73,6 +73,28 @@ administration/dictionary/controller/DictionaryController.java
 
 当前表允许同一个 key 存储多行，`add` 追加、`getOne` 按修改时间取最新一行、`put` 更新该 key 的已有行或插入新行。带备注的 `put` 仅在插入时设置备注。缓存是服务实例内的完整快照，显式调用 `refreshCache()` 更新，写数据库不会自动刷新缓存。新增调用方应通过服务访问，不能把它当成具有唯一键约束或原子并发 upsert 的数据库。
 
+### WebUI 实时消息总线
+
+WebUI 与后端之间除 HTTP 外还有一条全局 WebSocket：`/api/webui/ws`（`SysConstants.WEBUI_WEB_SOCKET_PATH`），与机器人反向 ws `/api/ws` 相互独立，各自使用自己的握手拦截器与鉴权方式。
+
+```text
+infrastructure/web/websocket/
+├── WebuiWsHandler.java               连接生命周期与消息分发
+├── WebuiWsHandshakeInterceptor.java  用登录token校验握手(?token=)
+├── WebuiWsSessionRegistry.java       会话注册表、按主题广播、登出踢线
+├── WebuiWsMessage.java               消息信封 {type,id,ts,message,data}
+├── WebuiWsCloseCodes.java            自定义关闭码(4001登录态失效/4002登出)
+├── WebuiWsCommandHandler.java        客户端命令扩展点
+├── WebuiWsCommandContext.java        命令上下文(reply/error/subscribe)
+└── WebuiWsTopicProvider.java         订阅后补发首帧的扩展点
+```
+
+功能模块实现 `WebuiWsCommandHandler`（处理前端发来的命令）与 `WebuiWsTopicProvider`（订阅后补发首帧、按变化主动推送）即可接入，基础设施层不反向依赖功能包。现有实现是 `features.jmcomic.service.JmTaskPushService` 与 `JmTaskWsCommandHandler`：JM任务队列变化触发通知，推送服务按 300ms 节流并比对快照签名后只广播有变化的快照。
+
+前端单例客户端为 `webui/src/api/ws-client.js`，登录后建立一条连接，页面/组件通过 `this.$ws` 的 `on`/`send`/`subscribe` 使用，断线自动重连并恢复订阅；服务端判定登录态失效时以 4001 关闭，前端按 401 的流程退出登录。`WebSocketSession#sendMessage` 不是线程安全的，所有会话统一包一层 `ConcurrentWebSocketSessionDecorator`。HTTP 接口保持不变，WebSocket 未连通时前端回退到轮询。
+
+注意：浏览器 WebSocket 不能自定义请求头，token 只能放在查询参数里；MVC 的 `ApiHeaderInterceptor` 不作用于 WebSocket 握手，因此必须由握手拦截器单独鉴权。
+
 ### 模块约定
 
 1. Controller、Handler、Job 调用业务服务。功能自己的 Mapper、DTO、常量和工具随功能存放。

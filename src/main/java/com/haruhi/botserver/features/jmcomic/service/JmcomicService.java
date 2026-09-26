@@ -315,6 +315,14 @@ public class JmcomicService {
     }
 
     /**
+     * 注册任务变化通知，用于向webui实时推送(由推送服务启动时注册)。
+     * 回调在任务执行线程/队列线程上触发，实现必须轻量且非阻塞
+     */
+    public void setTaskChangeNotifier(Runnable changeNotifier) {
+        taskQueue.setChangeNotifier(changeNotifier);
+    }
+
+    /**
      * 取消排队中的任务，正在执行的任务不支持取消
      *
      * @return null 表示取消成功，否则返回失败原因

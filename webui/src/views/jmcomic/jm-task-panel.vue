@@ -10,7 +10,10 @@
           <el-tag v-if="counters.cancelled" size="mini" type="warning">已取消 {{counters.cancelled}}</el-tag>
         </span>
         <span class="jm-task-toolbar-ops">
-          <el-switch v-model="autoRefresh" class="jm-task-switch" size="mini" active-text="自动刷新"></el-switch>
+          <el-tag size="mini" effect="plain" :type="wsConnected ? 'success' : 'info'">
+            {{wsConnected ? '实时推送' : '未连接 · 轮询兜底'}}
+          </el-tag>
+          <el-switch v-model="autoRefresh" class="jm-task-switch" size="mini" active-text="自动更新"></el-switch>
           <el-button type="text" size="mini" :loading="loading" @click="loadTasks()">刷新</el-button>
           <el-button type="text" size="mini" :disabled="counters.queued === 0" @click="cancelAllQueued">取消全部排队</el-button>
         </span>
@@ -134,6 +137,12 @@
 <script>
 import { cancelJmTask, cancelQueuedJmTasks, listJmTasks } from "@/api/jmcomic";
 
+// 任务主题与命令，与后端 JmTaskPushService 保持一致
+const JM_TASK_TOPIC = 'jm.task'
+const JM_TASK_LIST_COMMAND = 'jm.task.list'
+// 全局WebSocket未连通时的轮询兜底间隔
+const FALLBACK_POLL_MILLIS = 3000
+
 export default {
   name: 'JmTaskPanel',
   props: {
@@ -147,6 +156,8 @@ export default {
       loading: false,
       loaded: false,
       autoRefresh: true,
+      // 全局WebSocket是否连通，未连通时降级为轮询
+      wsConnected: false,
       parallel: false,
       runningList: [],
       queuedList: [],
@@ -154,10 +165,13 @@ export default {
       counters: this.defCounters(),
       finishedCollapsed: false,
       cancellingMap: {},
-      pollTimer: null,
       tickTimer: null,
+      fallbackTimer: null,
       nowTick: Date.now(),
-      pollInterval: 2000
+      // 是否已向总线订阅(避免重复订阅造成引用计数泄漏)
+      pushBound: false,
+      snapshotOff: null,
+      statusOff: null
     }
   },
   computed: {
@@ -177,90 +191,133 @@ export default {
   watch: {
     visible(value) {
       if (value) {
+        this.startTick()
+        this.bindPush()
         this.loadTasks()
-        this.startTimers()
       } else {
-        this.stopTimers()
+        this.stopTick()
+        this.unbindPush()
       }
     },
     autoRefresh(value) {
       if (value) {
-        this.startPollTimer()
+        this.bindPush()
       } else {
-        this.clearPollTimer()
+        this.unbindPush()
       }
     }
   },
-  mounted() {
-    document.addEventListener('visibilitychange', this.handleVisibilityChange)
-  },
   beforeDestroy() {
-    this.stopTimers()
-    document.removeEventListener('visibilitychange', this.handleVisibilityChange)
+    this.stopTick()
+    this.unbindPush()
   },
   methods: {
     defCounters() {
       return { running: 0, queued: 0, success: 0, fail: 0, cancelled: 0 }
     },
-    startTimers() {
-      // 已运行/已等待是本地走表的，不依赖轮询
-      this.clearTickTimer()
+    /**
+     * 已运行/已等待是本地走表的，不依赖推送
+     */
+    startTick() {
+      this.stopTick()
       this.tickTimer = setInterval(() => {
         this.nowTick = Date.now()
       }, 1000)
-      this.startPollTimer()
     },
-    stopTimers() {
-      this.clearPollTimer()
-      this.clearTickTimer()
-    },
-    startPollTimer() {
-      this.clearPollTimer()
-      if (!this.visible || !this.autoRefresh || document.hidden) {
-        return
-      }
-      this.pollTimer = setInterval(() => this.loadTasks(), this.pollInterval)
-    },
-    clearPollTimer() {
-      if (this.pollTimer) {
-        clearInterval(this.pollTimer)
-        this.pollTimer = null
-      }
-    },
-    clearTickTimer() {
+    stopTick() {
       if (this.tickTimer) {
         clearInterval(this.tickTimer)
         this.tickTimer = null
       }
     },
-    handleVisibilityChange() {
-      if (document.hidden) {
-        this.clearPollTimer()
-      } else if (this.visible && this.autoRefresh) {
-        this.loadTasks()
-        this.startPollTimer()
+    /**
+     * 订阅全局WebSocket的任务推送；未连通时启动轮询兜底
+     */
+    bindPush() {
+      if (!this.visible || !this.autoRefresh || this.pushBound) {
+        return
+      }
+      this.pushBound = true
+      this.snapshotOff = this.$ws.on('jm.task.snapshot', this.applySnapshot)
+      this.statusOff = this.$ws.onStatus(this.handleWsStatus)
+      this.$ws.subscribe(JM_TASK_TOPIC)
+      this.syncFallbackTimer()
+    },
+    unbindPush() {
+      if (!this.pushBound) {
+        this.clearFallbackTimer()
+        return
+      }
+      this.pushBound = false
+      if (this.snapshotOff) {
+        this.snapshotOff()
+        this.snapshotOff = null
+      }
+      if (this.statusOff) {
+        this.statusOff()
+        this.statusOff = null
+      }
+      this.$ws.unsubscribe(JM_TASK_TOPIC)
+      this.clearFallbackTimer()
+    },
+    handleWsStatus(status) {
+      this.wsConnected = status === 'open'
+      this.syncFallbackTimer()
+    },
+    /**
+     * WebSocket断开时（或未支持时）用HTTP轮询兜底，保证抽屉里始终有数据
+     */
+    syncFallbackTimer() {
+      this.clearFallbackTimer()
+      if (!this.visible || this.wsConnected || document.hidden) {
+        return
+      }
+      this.fallbackTimer = setInterval(() => this.loadTasks(), FALLBACK_POLL_MILLIS)
+    },
+    clearFallbackTimer() {
+      if (this.fallbackTimer) {
+        clearInterval(this.fallbackTimer)
+        this.fallbackTimer = null
       }
     },
-    loadTasks() {
+    /**
+     * 手动刷新：WebSocket连通时走总线命令，否则回退HTTP接口
+     */
+    async loadTasks() {
       this.loading = true
-      return listJmTasks().then(({data: {code, data}}) => {
-        if (code !== 200 || !data) {
-          return
+      try {
+        if (this.$ws.isOpen()) {
+          const message = await this.$ws.send(JM_TASK_LIST_COMMAND)
+          if (message && message.data) {
+            this.applySnapshot(message.data)
+          }
+        } else {
+          const { data: { code, data } } = await listJmTasks()
+          if (code === 200 && data) {
+            this.applySnapshot(data)
+          }
         }
-        this.parallel = !!data.parallel
-        this.runningList = data.runningList || []
-        this.queuedList = data.queuedList || []
-        this.finishedList = data.finishedList || []
-        this.counters = data.counters || this.defCounters()
-        this.pollInterval = Number(data.pollIntervalMillis) || 2000
-        this.loaded = true
-        // 把快照回传给页面，页面据此刷新徽标与列表行内状态，避免重复请求
-        this.$emit('snapshot', data)
-      }).catch(() => {
-        // 轮询失败静默处理，避免刷屏
-      }).finally(() => {
+      } catch (e) {
+        // 静默处理，避免轮询失败刷屏
+      } finally {
         this.loading = false
-      })
+      }
+    },
+    /**
+     * 推送、轮询、手动刷新三条来源都汇总到这里
+     */
+    applySnapshot(data) {
+      if (!data) {
+        return
+      }
+      this.parallel = !!data.parallel
+      this.runningList = data.runningList || []
+      this.queuedList = data.queuedList || []
+      this.finishedList = data.finishedList || []
+      this.counters = data.counters || this.defCounters()
+      this.loaded = true
+      // 把快照回传给页面，页面据此刷新徽标与列表行内状态
+      this.$emit('snapshot', data)
     },
     taskDisplayName(task) {
       return task && task.albumName ? task.albumName : `JM${task.aid}`
