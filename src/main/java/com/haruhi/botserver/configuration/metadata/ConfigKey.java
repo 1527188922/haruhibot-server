@@ -61,8 +61,8 @@ public enum ConfigKey {
             "本服务对外访问的ip或域名，留空自动探测；用于拼接图片url", 30),
     SAME_MACHINE_QQCLIENT(ConfigFile.APPLICATION, "same-machine-qqclient", ConfigType.BOOL, "true", true,
             "qq客户端是否与本服务在同一台机器，true时图片/语音使用file://本地路径发送", 40),
-    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE(ConfigFile.APPLICATION, "playwright.skip-browser-download-mode", ConfigType.INT, "0", false,
-            "浏览器强制下载模式 0自动判断 1强制跳过下载直接使用系统浏览器 2强制使用playwright下载的浏览器", 50,
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE(ConfigFile.APPLICATION, "playwright.skip-browser-download-mode", ConfigType.INT, "0", true,
+            "浏览器下载模式 0自动判断（正常优先，失败降级为跳过下载）1强制跳过下载直接使用系统浏览器 2强制使用playwright下载的浏览器；改完下次截图生效", 50,
             ControlMeta.radio("0:自动判断,1:强制跳过下载（用系统浏览器）,2:使用playwright下载的浏览器")),
 
 

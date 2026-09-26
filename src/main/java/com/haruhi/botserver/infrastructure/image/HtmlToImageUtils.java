@@ -273,6 +273,22 @@ public class HtmlToImageUtils {
         return Objects.equals(mode, 0) ? null : Objects.equals(mode, 1) ? Boolean.TRUE : Boolean.FALSE;
     }
 
+    /**
+     * 清除浏览器获取模式的缓存，让下一次截图按最新配置重新决策
+     * <p>
+     * 模式一旦探测出来就会被固定（{@link #skipBrowserDownload}），否则每次截图都可能重跑一遍长达 10 分钟的
+     * 浏览器安装流程；因此 {@code playwright.skip-browser-download-mode} 热更新后必须由
+     * {@link PlaywrightBrowserModeApplier} 触发这里把缓存清掉。
+     * <p>
+     * 同时清掉"上次成功的浏览器方案"（{@link #workingStrategy}）：切换模式后不再沿用旧方案，
+     * 例如原来降级到了系统 chromium，切到"强制正常模式"后会重新优先尝试 Playwright 自带浏览器。
+     * 重新探测只是本地启动尝试，不会重新下载。
+     */
+    public static void resetBrowserModeCache() {
+        skipBrowserDownload = null;
+        workingStrategy = null;
+    }
+
     private static boolean isTruthy(String value) {
         return StrUtil.isNotBlank(value) && !"0".equals(value) && !"false".equalsIgnoreCase(value);
     }

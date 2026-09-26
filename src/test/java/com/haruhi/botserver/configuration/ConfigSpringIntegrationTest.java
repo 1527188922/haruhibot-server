@@ -13,6 +13,8 @@ import com.haruhi.botserver.configuration.model.ConfigFileNode;
 import com.haruhi.botserver.configuration.model.ConfigItem;
 import com.haruhi.botserver.bootstrap.WebResourceConfig;
 import com.haruhi.botserver.configuration.controller.ConfigController;
+import com.haruhi.botserver.infrastructure.image.HtmlToImageUtils;
+import com.haruhi.botserver.infrastructure.image.PlaywrightBrowserModeApplier;
 import com.haruhi.botserver.infrastructure.scheduling.JobManager;
 import com.haruhi.botserver.features.ai.support.OpenAiServiceHolder;
 import com.haruhi.botserver.shared.model.HttpResp;
@@ -44,6 +46,7 @@ import javax.sql.DataSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -232,6 +235,26 @@ class ConfigSpringIntegrationTest {
 
         configHub.save(ConfigKey.DEEP_SEEK_API_TIMEOUT, "60");
         assertEquals(60, Configs.getInt(ConfigKey.DEEP_SEEK_API_TIMEOUT));
+    }
+
+    @Test
+    void playwright浏览器下载模式支持热更新() {
+        assertTrue(applicationContext.getBeansOfType(ConfigApplier.class).values().stream()
+                        .anyMatch(e -> e instanceof PlaywrightBrowserModeApplier),
+                "PlaywrightBrowserModeApplier 应注册为 ConfigApplier");
+
+        // 先让模式缓存处于"已决定"状态（等价于已经探测过一次）
+        ReflectionTestUtils.setField(HtmlToImageUtils.class, "skipBrowserDownload", Boolean.TRUE);
+
+        HttpResp<ConfigController.SaveResult> resp =
+                configController.save(saveReq("playwright.skip-browser-download-mode", "2"));
+
+        assertEquals(200, resp.getCode());
+        assertTrue(resp.getData().isHot(), "该项应为热更新项：" + resp.getMessage());
+        assertTrue(resp.getData().getHotKeys().contains("playwright.skip-browser-download-mode"), resp.getMessage());
+        assertEquals(2, Configs.getInt(ConfigKey.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE));
+        assertNull(ReflectionTestUtils.getField(HtmlToImageUtils.class, "skipBrowserDownload"),
+                "配置变更后应清空模式缓存，下一次截图按新配置重新决策");
     }
 
     @Test

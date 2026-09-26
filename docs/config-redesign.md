@@ -223,9 +223,16 @@ save(key, value)
 | 组件 | 订阅的 key | 行为 |
 |---|---|---|
 | `OpenAiServiceHolder` | `ds.api.key` / `ds.api.base_url` / `ds.api.timeout` | 释放旧 `OpenAiService`，下次调用按新配置重建 |
-| `JobManage` | `job.*` 全部 | `enable` 变化 → 即时注册/取消任务；`cron` 变化 → 即时重新排期 |
+| `JobManager` | `job.*` 全部 | `enable` 变化 → 即时注册/取消任务；`cron` 变化 → 即时重新排期 |
+| `WebResourceConfig` | `internet-host` | 重算对外访问地址（端口需重启） |
+| `PlaywrightBrowserModeApplier` | `playwright.skip-browser-download-mode` | 清掉 `HtmlToImageUtils` 里"要不要跳过浏览器下载"的缓存，下一次截图按新配置重新决策（模式一旦探测出来就会固定，否则每次截图都可能重跑一遍长达 10 分钟的浏览器安装） |
 
 **只读 `Configs` 的代码不需要实现本接口**——这就是热更新粒度能做到单个 key 的原因。
+反过来，像上面两个"缓存了值/决策"的组件就**必须**实现本接口，把缓存清掉或重算，否则配置改了也不会生效。
+
+> 新增一个这样的订阅者只需三步：类上加 `@Component` 并实现 `ConfigApplier` → `keys()` 返回关心的 key
+> → `onConfigChange()` 里清缓存/重算；然后把对应 `ConfigKey` 的 `hot` 改成 `true`
+> （**hot=false 的项不会被通知**，页面也会显示"需重启"）。
 
 ### 2.6 properties 读写：`PropertiesFileUtil`
 
@@ -356,7 +363,7 @@ save(key, value)
 |---|---|
 | `ControlMetaTest`（5 项） | **值类型与控件类型解耦**：默认控件映射（BOOL→开关、LIST→多选下拉、其余→输入框）、同一值类型配不同控件、下拉的单选/多选/可自定义值三种模式、`"值:显示名"` 候选项解析、现有配置项声明了预期控件（日志级别下拉、下载模式单选组、druid过滤器复选组、superusers 多选+自定义） |
 | `ConfigsTest`（36 项） | 声明默认值回落、未声明key无法反查、properties 保存并落盘、写文件保留注释与顺序、新增 key 追加、多行值转义往返、注释/未声明 key 被忽略、类型校验、**yml 拍平进快照**、**yml 原地改值保留注释与缩进**、**yml 插入/删除键**、**带点key反复保存不新增行**、**历史点分重复行的清理与改写**、**坏文件自动去重**、**重置写回默认值且不新增行**、**日志级别在同一份 yml 且无歧义**、**文件级刷新能发现外部改动且二次刷新回报"文件没变"**、**只改注释时回报文件变了但配置值没变**、key 级刷新、重置、程序写入、标量引号规则、加载顺序、数据源配置读取、文件归属校验 |
-| `ConfigSpringIntegrationTest`（20 项） | **完整应用上下文启动成功**、properties 与 yml 同时被 `Configs` 与 Spring Environment 读到、**数据源以 database.properties 为准（真实取一条连接）**、`ConfigApplier` 订阅者已注册并被通知、**job.properties 的 enable/cron 热更新（真实断言 Quartz 触发器注册/取消/重新排期）**、**文件里缺少该 key 时保存后同样能热更新**、**直接用编辑器改文件也会被自动感知并热更新**、**手工改文件后点刷新会报出变化的配置项**、**改动已被自动重载后点刷新会说明原因（"已是最新…自动重载"）而不是含糊的"无变化"**、接口分组数据完整、**配置项下发控件元数据**、保存 properties / yml 后落盘并保留注释、**缺少的 yml key 写成嵌套结构而不是点分行**、**重置接口写回默认值而不是删行**、**日志级别没有歧义且能保存**、**静态资源地址只注册一个实现**、所有配置文件都有可编辑项、读取文件原文 |
+| `ConfigSpringIntegrationTest`（21 项） | **完整应用上下文启动成功**、properties 与 yml 同时被 `Configs` 与 Spring Environment 读到、**数据源以 database.properties 为准（真实取一条连接）**、`ConfigApplier` 订阅者已注册并被通知、**playwright 浏览器下载模式热更新（真实断言缓存被清空）**、**job.properties 的 enable/cron 热更新（真实断言 Quartz 触发器注册/取消/重新排期）**、**文件里缺少该 key 时保存后同样能热更新**、**直接用编辑器改文件也会被自动感知并热更新**、**手工改文件后点刷新会报出变化的配置项**、**改动已被自动重载后点刷新会说明原因（"已是最新…自动重载"）而不是含糊的"无变化"**、接口分组数据完整、**配置项下发控件元数据**、保存 properties / yml 后落盘并保留注释、**缺少的 yml key 写成嵌套结构而不是点分行**、**重置接口写回默认值而不是删行**、**日志级别没有歧义且能保存**、**静态资源地址只注册一个实现**、所有配置文件都有可编辑项、读取文件原文 |
 | `BotTest`（3 项） | 上传文件并发/排队行为（配置读取已改为 `Configs`） |
 
 > 注：`ConfigSpringIntegrationTest` 使用 `@NoMockitoSpringTest` 替换默认测试监听器，原因见该注解的 javadoc。
@@ -368,6 +375,7 @@ save(key, value)
 | key | 文件 | 热更新 |
 |---|---|---|
 | `server.port`、`logging.level.com.haruhi.botserver` | application.yml | 否 |
+| `internet-host`、`same-machine-qqclient`、`playwright.skip-browser-download-mode` | application.yml | **是** |
 | `spring.datasource.dynamic.datasource.master.*` | database.properties | 否 |
 | `login.*`、`druid.*` | webui.properties | 否 |
 | `job.downloadPixiv.*`、`job.bilibiliLive.*` | job.properties | **是** |
