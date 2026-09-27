@@ -527,12 +527,25 @@ export default {
     // 左右各留 2px，让图片尽量铺满又不至于紧贴屏幕边缘
     padding: 0 2px 4px;
 
+    ::v-deep .el-tabs {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
     ::v-deep .el-tabs__content {
       padding-left: 0;
       padding-right: 0;
-      // 移动端图片固定满宽，本来就不需要横向滚动
+      // 纵向滚动只发生在这里，占满 Tab 头之外的剩余高度。
+      // 本组件基础块（非媒体查询）里写了 height:100%，scoped 权重高于全局规则，
+      // 必须用 !important 才能覆盖，否则高度链会断、滚动条会跑到抽屉 body 上。
+      height: auto !important;
+      flex: 1 1 auto;
+      min-height: 0;
       overflow-x: hidden;
       overflow-x: clip;
+      overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
     }
