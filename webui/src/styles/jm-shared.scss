@@ -257,3 +257,26 @@
 .el-table__body tr.jm-album-collected-row:hover > td {
   background-color: #fdf0cc;
 }
+
+/* 相关列表单元格：列表/瀑布流组件（jm-album-view.vue）里的行内多行展示 */
+.jm-related-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0;
+}
+
+.jm-related-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.jm-related-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

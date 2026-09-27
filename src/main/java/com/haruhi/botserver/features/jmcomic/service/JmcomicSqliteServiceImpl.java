@@ -52,6 +52,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -189,7 +190,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         List<JmAlbumManageResp> records = sourcePage.getRecords().stream()
                 .map(this::toAlbumManageResp)
                 .collect(Collectors.toList());
-        fillFavoriteIds(records);
+        fillFavoriteIds(records, request.getFavoriteId());
         targetPage.setRecords(records);
         return targetPage;
     }
@@ -208,9 +209,10 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     }
 
     /**
-     * 批量回填每条记录所属的收藏夹id，避免逐条查询。
+     * 批量回填每条记录所属的收藏夹id（避免逐条查询）。
+     * 指定了收藏夹查询时，顺带回填"加入该收藏夹的时间"，供收藏夹 tab 列表展示。
      */
-    private void fillFavoriteIds(List<JmAlbumManageResp> records) {
+    private void fillFavoriteIds(List<JmAlbumManageResp> records, Long filterFavoriteId) {
         if (CollectionUtils.isEmpty(records)) {
             return;
         }
@@ -222,14 +224,32 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (albumIds.isEmpty()) {
             return;
         }
-        Map<Long, List<Long>> favoriteIdMap = jmFavoriteAlbumSqliteMapper.selectList(
-                        new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
-                                .in(JmFavoriteAlbumSqlite::getAlbumId, albumIds))
-                .stream()
+        List<JmFavoriteAlbumSqlite> relations = jmFavoriteAlbumSqliteMapper.selectList(
+                new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                        .in(JmFavoriteAlbumSqlite::getAlbumId, albumIds));
+        Map<Long, List<Long>> favoriteIdMap = relations.stream()
                 .collect(Collectors.groupingBy(JmFavoriteAlbumSqlite::getAlbumId,
                         Collectors.mapping(JmFavoriteAlbumSqlite::getFavoriteId, Collectors.toList())));
-        records.forEach(record -> record.setFavoriteIds(
-                favoriteIdMap.getOrDefault(record.getId(), Collections.emptyList())));
+        Map<Long, String> addTimeMap = filterFavoriteId == null ? Collections.emptyMap() : relations.stream()
+                .filter(relation -> Objects.equals(filterFavoriteId, relation.getFavoriteId()))
+                .collect(Collectors.toMap(JmFavoriteAlbumSqlite::getAlbumId,
+                        relation -> formatFavoriteAddTime(relation.getCreateTime()), (first, second) -> first));
+        records.forEach(record -> {
+            record.setFavoriteIds(favoriteIdMap.getOrDefault(record.getId(), Collections.emptyList()));
+            record.setFavoriteAddTime(addTimeMap.get(record.getId()));
+        });
+    }
+
+    /**
+     * 关联表里存的是 yyyyMMddHHmmss，这里转成便于前端直接展示的 yyyy-MM-dd HH:mm:ss
+     */
+    private String formatFavoriteAddTime(String value) {
+        String text = StringUtils.trimToEmpty(value);
+        if (text.length() < 14) {
+            return text;
+        }
+        return text.substring(0, 4) + "-" + text.substring(4, 6) + "-" + text.substring(6, 8)
+                + " " + text.substring(8, 10) + ":" + text.substring(10, 12) + ":" + text.substring(12, 14);
     }
 
     private static void applyTagFilter(LambdaQueryWrapper<JmAlbumSqlite> query, JmAlbumQueryReq reqVO) {
@@ -392,8 +412,10 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
             setCollectedFlag(ids, false);
             return;
         }
-        Long favoriteId = resolveFavoriteId(request.getFavoriteId(), request.getFavoriteName());
-        addAlbumsToFavoriteInternal(favoriteId, ids);
+        // 支持一次收藏到多个收藏夹（多选）
+        resolveFavoriteIds(request.getFavoriteId(), request.getFavoriteName(),
+                request.getFavoriteIds(), request.getFavoriteNames(), true)
+                .forEach(favoriteId -> addAlbumsToFavoriteInternal(favoriteId, ids));
         setCollectedFlag(ids, true);
     }
 
@@ -496,9 +518,32 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (ids.isEmpty()) {
             return;
         }
-        Long favoriteId = resolveFavoriteId(request.getFavoriteId(), request.getFavoriteName());
-        addAlbumsToFavoriteInternal(favoriteId, ids);
+        // 支持一次加入多个收藏夹（多选）
+        resolveFavoriteIds(request.getFavoriteId(), request.getFavoriteName(),
+                request.getFavoriteIds(), request.getFavoriteNames(), true)
+                .forEach(favoriteId -> addAlbumsToFavoriteInternal(favoriteId, ids));
         setCollectedFlag(ids, true);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveAlbumFavorites(JmFavoriteAlbumReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getAlbumIds())) {
+            return;
+        }
+        List<Long> ids = request.getAlbumIds().stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        // 多选在前端是"勾选即属于"，所以这里不使用默认收藏夹兜底：
+        // 不传任何一个收藏夹表示"从所有收藏夹移出"，与取消收藏等价
+        LinkedHashSet<Long> targetFavoriteIds = resolveFavoriteIds(request.getFavoriteId(), request.getFavoriteName(),
+                request.getFavoriteIds(), request.getFavoriteNames(), false);
+        jmFavoriteAlbumSqliteMapper.delete(new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                .in(JmFavoriteAlbumSqlite::getAlbumId, ids)
+                .notIn(!targetFavoriteIds.isEmpty(), JmFavoriteAlbumSqlite::getFavoriteId, targetFavoriteIds));
+        targetFavoriteIds.forEach(favoriteId -> addAlbumsToFavoriteInternal(favoriteId, ids));
+        setCollectedFlag(ids, !targetFavoriteIds.isEmpty());
     }
 
     @Override
@@ -564,16 +609,37 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     }
 
     /**
-     * 定位目标收藏夹：优先 favoriteId，其次按 favoriteName 查找或新建，都没有则用默认收藏夹
+     * 解析本次操作涉及的收藏夹id集合，支持多选：
+     * <ul>
+     *     <li>单选：favoriteId 优先于 favoriteName，名称不存在时新建</li>
+     *     <li>多选：favoriteIds / favoriteNames 逐个解析，名称不存在时新建</li>
+     *     <li>单选与多选同时传时取并集</li>
+     *     <li>都没传：useDefaultWhenEmpty=true 时回落到默认收藏夹，否则返回空集合</li>
+     * </ul>
+     * 用 LinkedHashSet 保证顺序（先多选后单选）且天然去重。
      */
-    private Long resolveFavoriteId(Long favoriteId, String favoriteName) {
+    private LinkedHashSet<Long> resolveFavoriteIds(Long favoriteId, String favoriteName,
+                                                   List<Long> favoriteIds, List<String> favoriteNames,
+                                                   boolean useDefaultWhenEmpty) {
+        LinkedHashSet<Long> target = new LinkedHashSet<>();
+        if (favoriteIds != null) {
+            favoriteIds.stream().filter(Objects::nonNull).forEach(target::add);
+        }
+        if (favoriteNames != null) {
+            favoriteNames.stream()
+                    .filter(StringUtils::isNotBlank)
+                    .map(this::getOrCreateFavoriteIdByName)
+                    .forEach(target::add);
+        }
         if (favoriteId != null) {
-            return requireFavorite(favoriteId).getId();
+            target.add(requireFavorite(favoriteId).getId());
+        } else if (StringUtils.isNotBlank(favoriteName)) {
+            target.add(getOrCreateFavoriteIdByName(favoriteName));
         }
-        if (StringUtils.isNotBlank(favoriteName)) {
-            return getOrCreateFavoriteIdByName(favoriteName);
+        if (target.isEmpty() && useDefaultWhenEmpty) {
+            target.add(getOrCreateDefaultFavoriteId());
         }
-        return getOrCreateDefaultFavoriteId();
+        return target;
     }
 
     private Long getOrCreateFavoriteIdByName(String name) {

@@ -330,4 +330,96 @@ class JmcomicFavoriteTest {
         assertEquals(2L, favoriteByName("两本夹").getAlbumCount());
         assertEquals(1L, favoriteByName("一本夹").getAlbumCount());
     }
+
+    /**
+     * 收藏时可以一次多选多个收藏夹（含按名称新建），漫画应同时进入这些收藏夹
+     */
+    @Test
+    void collectIntoMultipleFavoritesAtOnce() {
+        insertAlbum(1011L, "album-k");
+        service.createFavorite("多选甲");
+        JmFavoriteAlbumReq addReq = new JmFavoriteAlbumReq();
+        addReq.setAlbumIds(List.of(1011L));
+        addReq.setFavoriteIds(List.of(favoriteByName("多选甲").getId()));
+        addReq.setFavoriteNames(List.of("多选乙"));
+        service.addAlbumsToFavorite(addReq);
+
+        JmAlbumCollectReq collectReq = new JmAlbumCollectReq();
+        collectReq.setIds(List.of(1011L));
+        collectReq.setCollected(true);
+        collectReq.setFavoriteIds(List.of(favoriteByName("多选甲").getId()));
+        collectReq.setFavoriteNames(List.of("多选乙"));
+        service.collectAlbums(collectReq);
+
+        assertEquals(1L, favoriteByName("多选甲").getAlbumCount());
+        assertEquals(1L, favoriteByName("多选乙").getAlbumCount());
+        assertTrue(loadAlbum(1011L).getCollected());
+    }
+
+    /**
+     * 同一本漫画重复多选收藏不应产生重复关联
+     */
+    @Test
+    void addingToMultipleFavoritesIsIdempotent() {
+        insertAlbum(1012L, "album-l");
+        JmFavoriteAlbumReq req = new JmFavoriteAlbumReq();
+        req.setAlbumIds(List.of(1012L));
+        req.setFavoriteNames(List.of("幂等甲", "幂等甲", "幂等乙"));
+
+        service.addAlbumsToFavorite(req);
+        service.addAlbumsToFavorite(req);
+
+        assertEquals(1L, favoriteByName("幂等甲").getAlbumCount());
+        assertEquals(1L, favoriteByName("幂等乙").getAlbumCount());
+    }
+
+    /**
+     * 更改收藏夹：保存的集合为准，缺的补上、多的移出，未涉及的收藏夹不受影响
+     */
+    @Test
+    void saveAlbumFavoritesReplacesMembership() {
+        insertAlbum(1013L, "album-m");
+        JmFavoriteAlbumReq origin = new JmFavoriteAlbumReq();
+        origin.setAlbumIds(List.of(1013L));
+        origin.setFavoriteNames(List.of("保留夹", "移出夹"));
+        service.addAlbumsToFavorite(origin);
+        JmFavoriteAlbumReq untouched = new JmFavoriteAlbumReq();
+        untouched.setAlbumIds(List.of(1014L));
+        untouched.setFavoriteName("无关夹");
+        insertAlbum(1014L, "album-n");
+        service.addAlbumsToFavorite(untouched);
+
+        JmFavoriteAlbumReq saveReq = new JmFavoriteAlbumReq();
+        saveReq.setAlbumIds(List.of(1013L));
+        saveReq.setFavoriteIds(List.of(favoriteByName("保留夹").getId()));
+        saveReq.setFavoriteNames(List.of("新增夹"));
+        service.saveAlbumFavorites(saveReq);
+
+        assertEquals(1L, favoriteByName("保留夹").getAlbumCount(), "保留夹应继续保留");
+        assertEquals(0L, favoriteByName("移出夹").getAlbumCount(), "未勾选的收藏夹应被移出");
+        assertEquals(1L, favoriteByName("新增夹").getAlbumCount(), "新增勾选的收藏夹应被加入");
+        assertEquals(1L, favoriteByName("无关夹").getAlbumCount(), "其他漫画的收藏夹归属不应受影响");
+        assertTrue(loadAlbum(1013L).getCollected());
+    }
+
+    /**
+     * 更改收藏夹时取消所有勾选 = 从所有收藏夹移出，collected 同步为 false
+     */
+    @Test
+    void saveAlbumFavoritesWithEmptySetUncollects() {
+        insertAlbum(1015L, "album-o");
+        JmFavoriteAlbumReq origin = new JmFavoriteAlbumReq();
+        origin.setAlbumIds(List.of(1015L));
+        origin.setFavoriteNames(List.of("甲夹", "乙夹"));
+        service.addAlbumsToFavorite(origin);
+
+        JmFavoriteAlbumReq saveReq = new JmFavoriteAlbumReq();
+        saveReq.setAlbumIds(List.of(1015L));
+        saveReq.setFavoriteIds(List.of());
+        service.saveAlbumFavorites(saveReq);
+
+        assertEquals(0L, favoriteByName("甲夹").getAlbumCount());
+        assertEquals(0L, favoriteByName("乙夹").getAlbumCount());
+        assertFalse(loadAlbum(1015L).getCollected());
+    }
 }

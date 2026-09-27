@@ -91,7 +91,9 @@ export const deleteAlbums = (data) => request({
 
 /**
  * 收藏/取消收藏JM主记录
- * @param data {ids: [], collected: true|false, favoriteId?: 收藏夹id, favoriteName?: 收藏夹名称(不存在时自动新建)}
+ * @param data {ids: [], collected: true|false,
+ *              favoriteId?: 收藏夹id, favoriteName?: 收藏夹名称(不存在时自动新建),
+ *              favoriteIds?: 多选收藏夹id列表, favoriteNames?: 多选收藏夹名称列表}
  */
 export const collectAlbums = (data) => request({
   url: baseUrl + '/jmcomic/manage/album/collect',
@@ -139,11 +141,22 @@ export const deleteFavorite = (id) => request({
 });
 
 /**
- * 把漫画加入收藏夹，收藏夹不存在时按名称新建
- * @param data {albumIds: [], favoriteId?: 收藏夹id, favoriteName?: 收藏夹名称}
+ * 把漫画加入收藏夹（可多选收藏夹），收藏夹不存在时按名称新建
+ * @param data {albumIds: [], favoriteId?, favoriteName?, favoriteIds?: [], favoriteNames?: []}
  */
 export const addAlbumsToFavorite = (data) => request({
   url: baseUrl + '/jmcomic/manage/favorite/album/add',
+  method: 'post',
+  data
+});
+
+/**
+ * 更改漫画所属的收藏夹：以传入的收藏夹集合为准，缺的补上、多的移出
+ * （集合为空表示从所有收藏夹移出）
+ * @param data {albumIds: [], favoriteIds?: [], favoriteNames?: []}
+ */
+export const saveAlbumFavorites = (data) => request({
+  url: baseUrl + '/jmcomic/manage/favorite/album/save',
   method: 'post',
   data
 });

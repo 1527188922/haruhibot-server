@@ -137,250 +137,22 @@
           <el-radio-button label="waterfall"><i class="el-icon-s-grid"></i> 瀑布流</el-radio-button>
         </el-radio-group>
       </div>
-      <el-table v-if="albumViewMode === 'list'" tooltip-effect="light" :data="albumData" v-loading="albumLoading" border stripe max-height="800"
-                size="small" ref="albumTable" highlight-current-row :row-class-name="albumRowClassName" @selection-change="albumSelectionChange">
-        <el-table-column v-if="isAlbumColumnVisible('selection')" type="selection" width="50" align="center"></el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('action')" :fixed="!isMobileView" label="操作" width="96" align="center">
-          <template slot-scope="{row}">
-            <div class="jm-action-grid">
-              <el-tooltip content="预览漫画" placement="top">
-                <el-button type="primary" size="mini" plain icon="el-icon-view" @click="openPreview(row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="下载漫画" placement="top">
-                <el-button type="primary" size="mini" plain icon="el-icon-download" :loading="isAlbumOperation(row, 'download')" :disabled="isAlbumOtherOperation(row, 'download')" @click="downloadAlbumData(row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="生成zip" placement="top">
-                <el-button type="success" size="mini" plain icon="el-icon-folder-add" :loading="isAlbumOperation(row, 'zip')" :disabled="isAlbumOtherOperation(row, 'zip')" @click="confirmGenerateZip(row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="生成pdf" placement="top">
-                <el-button type="warning" size="mini" plain icon="el-icon-document-add" :loading="isAlbumOperation(row, 'pdf')" :disabled="isAlbumOtherOperation(row, 'pdf')" @click="confirmGeneratePdf(row)"></el-button>
-              </el-tooltip>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('index')" :fixed="!isMobileView" label="序号" width="50" align="center">
-          <template slot-scope="scope">{{scope.$index + 1}}</template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('id')" :fixed="!isMobileView" label="JM ID" prop="id" min-width="110" align="center">
-          <template slot-scope="{row}">
-            <span class="primary-text" style="cursor:pointer;" @click="jumpToChapters(row)">{{row.id}}</span>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('cover')" label="封面" width="96" align="center">
-          <template slot-scope="{row}">
-            <el-tooltip v-if="albumCoverSrc(row)" :content="albumCoverTip(row)" placement="right">
-              <el-image
-                class="jm-cover-image"
-                :src="albumCoverSrc(row)"
-                :preview-src-list="[albumCoverSrc(row)]"
-                fit="cover"
-                referrerpolicy="no-referrer">
-                <div slot="placeholder" class="jm-cover-state"><i class="el-icon-loading"></i></div>
-                <div slot="error" class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
-              </el-image>
-            </el-tooltip>
-            <el-tooltip v-else content="本地与JM均无封面" placement="right">
-              <div class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('collected')" label="收藏" width="70" align="center">
-          <template slot-scope="{row}">
-            <el-tooltip :content="isAlbumCollected(row) ? '点击取消收藏' : '点击收藏'" placement="top">
-              <el-button
-                :type="isAlbumCollected(row) ? 'warning' : 'default'"
-                size="mini"
-                plain
-                :icon="isAlbumCollected(row) ? 'el-icon-star-on' : 'el-icon-star-off'"
-                :loading="isAlbumOperation(row, 'collect')"
-                :disabled="isAlbumOtherOperation(row, 'collect')"
-                @click="toggleAlbumCollected(row)"></el-button>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('name')" label="名称" prop="name" min-width="240" show-overflow-tooltip></el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('author')" label="作者" prop="author" min-width="180">
-          <template slot-scope="{row}">
-            <div class="jm-tag-list">
-              <el-tag v-for="(item, index) in row.authorList" :key="`author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('tags')" label="标签" prop="tags" min-width="240">
-          <template slot-scope="{row}">
-            <div v-if="row.tagsList.length > 0" class="jm-tag-summary">
-              <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`tags-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
-              <el-popover v-if="row.tagsList.length > 3" placement="bottom-start" trigger="click" width="360" popper-class="jm-tag-popover">
-                <div class="jm-popover-title">全部标签</div>
-                <div class="jm-popover-tags">
-                  <el-tag v-for="(item, index) in row.tagsList" :key="`all-tags-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
-                </div>
-                <el-button slot="reference" type="text" size="mini">+{{hiddenCount(row.tagsList, 3)}}</el-button>
-              </el-popover>
-            </div>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('interactionStats')" label="互动统计" min-width="130" align="center">
-          <template slot-scope="{row}">
-            <div class="jm-stat-cell">
-              <div>观看：{{formatCount(row.totalViews)}}</div>
-              <div>Like：{{formatCount(row.likes)}}</div>
-              <div>评论：{{formatCount(row.commentTotal)}}</div>
-            </div>
-          </template>
-        </el-table-column>
+      <!-- 列表 / 瀑布流：与收藏夹 tab 共用同一个组件，两边展示的信息保持一致 -->
+      <jm-album-view ref="albumView"
+                     :albums="albumData"
+                     :loading="albumLoading"
+                     :view-mode="albumViewMode"
+                     :visible-columns="albumVisibleColumns"
+                     :actions="albumRowActions"
+                     :action-loading="isAlbumOperation"
+                     :action-disabled="isAlbumOtherOperation"
+                     empty-text="没有查询到JM主记录"
+                     @action="handleAlbumRowAction"
+                     @collect-toggle="toggleAlbumCollected"
+                     @selection-change="albumSelectionChange"
+                     @chapters="jumpToChapters"
+                     @jump-album="jumpToAlbum"></jm-album-view>
 
-        <el-table-column v-if="isAlbumColumnVisible('imageStats')" label="图片统计" min-width="130" align="center">
-          <template slot-scope="{row}">
-            <div class="jm-stat-cell">
-              <div :class="safeNumber(row.imageCount) === 0 ? 'danger-text' : ''">数据库：{{formatCount(row.imageCount)}}</div>
-              <div :class="safeNumber(row.actualImageCount) === 0 ? 'danger-text' : ''">文件：{{formatCount(row.actualImageCount)}}</div>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('zip')" label="ZIP" prop="zipExists" width="80" align="center">
-          <template slot-scope="{row}">
-            <el-tooltip v-if="row.zipExists" content="点击下载ZIP文件" placement="top">
-              <a :href="$localUrl(row.serverZipUrl)" target="_blank" download>
-                <el-tag size="mini" type="success">{{formatBool(row.zipExists)}}</el-tag>
-              </a>
-            </el-tooltip>
-            <el-tag v-else size="mini" type="info">{{formatBool(row.zipExists)}}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('pdf')" label="PDF" prop="pdfExists" width="80" align="center">
-          <template slot-scope="{row}">
-            <el-tooltip v-if="row.pdfExists" content="点击下载PDF文件" placement="top">
-              <a :href="$localUrl(row.serverPdfUrl)" target="_blank" download>
-                <el-tag size="mini" type="success">{{formatBool(row.pdfExists)}}</el-tag>
-              </a>
-            </el-tooltip>
-            <el-tag v-else size="mini" type="info">{{formatBool(row.pdfExists)}}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('createTime')" label="下载时间" prop="createTime" min-width="150" align="center"></el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('chapterCount')" label="章节数" min-width="80" align="center">
-          <template slot-scope="{row}">{{(row.chapterList || []).length}}</template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('chapterList')" label="列表章节" min-width="240" show-overflow-tooltip>
-          <template slot-scope="{row}">{{formatChapterList(row.chapterList)}}</template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('works')" label="作品" prop="works" min-width="160">
-          <template slot-scope="{row}">
-            <div class="jm-tag-list">
-              <el-tag v-for="(item, index) in row.worksList" :key="`works-${row.id}-${index}`" size="mini" type="warning">{{item}}</el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('actors')" label="角色" prop="actors" min-width="160">
-          <template slot-scope="{row}">
-            <div class="jm-tag-list">
-              <el-tag v-for="(item, index) in row.actorsList" :key="`actors-${row.id}-${index}`" size="mini">{{item}}</el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('description')" label="描述" prop="description" min-width="280" show-overflow-tooltip></el-table-column>
-<!--        <el-table-column label="系列ID" prop="seriesId" min-width="100" align="center"></el-table-column>-->
-        <el-table-column v-if="isAlbumColumnVisible('albumFolderName')" label="文件夹" prop="albumFolderName" min-width="220" show-overflow-tooltip></el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('relatedList')" label="相关列表" prop="relatedList" min-width="300">
-          <template slot-scope="{row}">
-            <div v-if="row.relatedItems.length > 0" class="jm-related-cell">
-              <div v-for="(item, index) in visibleItems(row.relatedItems, 2)" :key="`related-${row.id}-${index}`" class="jm-related-line">
-                <el-button type="text" size="mini" @click="jumpToAlbum(item.id)">JM{{item.id}}</el-button>
-                <span class="jm-related-name">{{item.name}}</span>
-              </div>
-              <el-popover placement="bottom-start" trigger="click" width="520" popper-class="jm-related-popover">
-                <div class="jm-popover-title">相关漫画</div>
-                <div class="jm-related-popover-list">
-                  <div v-for="(item, index) in row.relatedItems" :key="`all-related-${row.id}-${index}`" class="jm-related-popover-item">
-                    <div class="jm-related-popover-main">
-                      <el-button type="text" size="mini" @click="jumpToAlbum(item.id)">JM{{item.id}}</el-button>
-                      <span class="jm-related-popover-name">{{item.name}}</span>
-                    </div>
-                    <div v-if="item.author" class="jm-related-author">{{item.author}}</div>
-                  </div>
-                </div>
-                <el-button slot="reference" type="text" size="mini">全部 {{row.relatedItems.length}} 条</el-button>
-              </el-popover>
-            </div>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-<!--        <el-table-column label="已喜欢" prop="liked" min-width="80" align="center">-->
-<!--          <template slot-scope="{row}">{{formatBool(row.liked)}}</template>-->
-<!--        </el-table-column>-->
-<!--        <el-table-column label="已收藏" prop="isFavorite" min-width="80" align="center">-->
-<!--          <template slot-scope="{row}">{{formatBool(row.isFavorite)}}</template>-->
-<!--        </el-table-column>-->
-<!--        <el-table-column label="isAids" prop="isAids" min-width="80" align="center">-->
-<!--          <template slot-scope="{row}">{{formatBool(row.isAids)}}</template>-->
-<!--        </el-table-column>-->
-<!--        <el-table-column label="价格" prop="price" min-width="80" align="center"></el-table-column>-->
-<!--        <el-table-column label="已购买" prop="purchased" min-width="90" align="center"></el-table-column>-->
-        <el-table-column v-if="isAlbumColumnVisible('addTime')" label="JM发布时间" prop="addTime" min-width="150" align="center">
-          <template slot-scope="{row}">{{row.formattedAddTime}}</template>
-        </el-table-column>
-<!--        <el-table-column label="修改时间" prop="modifyTime" min-width="150" align="center"></el-table-column>-->
-<!--        <el-table-column label="封面列表" prop="images" min-width="180" show-overflow-tooltip></el-table-column>-->
-<!--        <el-table-column label="series" prop="series" min-width="220" show-overflow-tooltip></el-table-column>-->
-        <el-table-column v-if="isAlbumColumnVisible('raw')" label="raw" prop="raw" min-width="100" show-overflow-tooltip></el-table-column>
-      </el-table>
-
-      <el-empty v-else-if="albumData.length === 0" description="没有查询到JM主记录" :image-size="80"></el-empty>
-      <div v-else v-loading="albumLoading" class="jm-waterfall">
-        <div v-for="row in albumData" :key="`album-wf-${row.id}`" class="jm-waterfall-card"
-             :class="{'jm-waterfall-card-collected': isAlbumCollected(row)}">
-          <div class="jm-waterfall-cover">
-            <el-image v-if="albumCoverSrc(row)" :src="albumCoverSrc(row)" :preview-src-list="[albumCoverSrc(row)]"
-                      fit="cover" referrerpolicy="no-referrer">
-              <div slot="placeholder" class="jm-waterfall-placeholder"><i class="el-icon-loading"></i></div>
-              <div slot="error" class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
-            </el-image>
-            <div v-else class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
-            <el-tag v-if="isAlbumCollected(row)" class="jm-waterfall-status" size="mini" type="warning">已收藏</el-tag>
-            <i v-if="row.zipExists" class="jm-waterfall-badge jm-waterfall-badge-zip" title="已有ZIP">ZIP</i>
-            <i v-if="row.pdfExists" class="jm-waterfall-badge jm-waterfall-badge-pdf" title="已有PDF">PDF</i>
-          </div>
-          <div class="jm-waterfall-body">
-            <div class="jm-waterfall-name" :title="row.name">{{row.name}}</div>
-            <div class="jm-waterfall-meta">
-              <span class="jm-waterfall-id jm-waterfall-id-link" title="查看章节" @click="jumpToChapters(row)">JM{{row.id}}</span>
-              <el-tag v-for="(item, index) in visibleItems(row.authorList, 2)" :key="`album-wf-author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
-              <span v-if="row.authorList.length > 2">+{{row.authorList.length - 2}}</span>
-            </div>
-            <div v-if="row.tagsList.length > 0" class="jm-waterfall-meta">
-              <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`album-wf-tag-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
-              <span v-if="row.tagsList.length > 3">+{{row.tagsList.length - 3}}</span>
-            </div>
-            <div class="jm-waterfall-meta">
-              <span :class="safeNumber(row.imageCount) === 0 ? 'danger-text' : ''">DB图片 {{formatCount(row.imageCount)}}</span>
-              <span :class="safeNumber(row.actualImageCount) === 0 ? 'danger-text' : ''">文件 {{formatCount(row.actualImageCount)}}</span>
-            </div>
-            <div class="jm-waterfall-time">{{row.createTime}}</div>
-            <div class="jm-waterfall-actions">
-              <el-tooltip content="预览漫画" placement="top">
-                <el-button type="primary" size="mini" plain icon="el-icon-view" @click="openPreview(row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="下载漫画" placement="top">
-                <el-button type="primary" size="mini" plain icon="el-icon-download" :loading="isAlbumOperation(row, 'download')" :disabled="isAlbumOtherOperation(row, 'download')" @click="downloadAlbumData(row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="生成zip" placement="top">
-                <el-button type="success" size="mini" plain icon="el-icon-folder-add" :loading="isAlbumOperation(row, 'zip')" :disabled="isAlbumOtherOperation(row, 'zip')" @click="confirmGenerateZip(row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="生成pdf" placement="top">
-                <el-button type="warning" size="mini" plain icon="el-icon-document-add" :loading="isAlbumOperation(row, 'pdf')" :disabled="isAlbumOtherOperation(row, 'pdf')" @click="confirmGeneratePdf(row)"></el-button>
-              </el-tooltip>
-              <el-tooltip :content="isAlbumCollected(row) ? '取消收藏' : '收藏'" placement="top">
-                <el-button :type="isAlbumCollected(row) ? 'warning' : 'default'" size="mini" plain
-                           :icon="isAlbumCollected(row) ? 'el-icon-star-on' : 'el-icon-star-off'"
-                           :loading="isAlbumOperation(row, 'collect')" :disabled="isAlbumOtherOperation(row, 'collect')"
-                           @click="toggleAlbumCollected(row)"></el-button>
-              </el-tooltip>
-            </div>
-          </div>
-        </div>
-      </div>
       <div class="pagination-box">
         <el-pagination v-bind="albumPagination" @size-change="albumSizeChange" @current-change="albumCurrentChange" />
       </div>
@@ -389,8 +161,12 @@
     <basic-container v-if="activeTab === 'favorite'">
       <jm-favorite-panel ref="favoritePanel"
                          :query="favoriteQuery"
-                         @preview="openPreview"
+                         :operation-loading="isAlbumOperation"
+                         :operation-disabled="isAlbumOtherOperation"
+                         @action="handleAlbumRowAction"
                          @chapters="jumpToChapters"
+                         @jump-album="jumpToAlbum"
+                         @change-favorites="handleFavoriteChangeRequest"
                          @error="handleRequestError"
                          @create-favorite="handleCreateFavorite"
                          @albums-changed="handleFavoriteAlbumsChanged"></jm-favorite-panel>
@@ -575,6 +351,8 @@
                    @collect="handleAddDialogCollect"></jm-add-dialog>
     <jm-favorite-picker :visible.sync="favoritePickerVisible"
                         :album-ids="favoritePickerAlbumIds"
+                        :mode="favoritePickerMode"
+                        :current-favorite-ids="favoritePickerCurrentIds"
                         :favorite-options="favoriteOptions"
                         @confirm="handleFavoritePicked"
                         @error="handleRequestError"></jm-favorite-picker>
@@ -587,8 +365,10 @@ import JmTaskPanel from "./jm-task-panel.vue";
 import JmTagSelect from "./jm-tag-select.vue";
 import JmAuthorSelect from "./jm-author-select.vue";
 import JmFavoritePanel from "./jm-favorite-panel.vue";
+import JmAlbumView from "./jm-album-view.vue";
 import JmAddDialog from "./jm-add-dialog.vue";
 import JmFavoritePicker from "./jm-favorite-picker.vue";
+import { ALBUM_COLUMN_OPTIONS, DEFAULT_ALBUM_COLUMNS } from "./jm-album-columns";
 import numberInput from "@/components/input/numberInput.vue";
 import {
   deleteAlbums,
@@ -597,6 +377,7 @@ import {
   downloadAlbum,
   collectAlbums,
   addAlbumsToFavorite,
+  saveAlbumFavorites,
   createFavorite,
   listFavorites,
   generateAlbumPdf,
@@ -621,7 +402,7 @@ const TASK_IDLE_POLL_MILLIS = 5000;
 
 export default {
   name: 'JmcomicManage',
-  components: { JmPreviewDrawer, JmTaskPanel, JmTagSelect, JmAuthorSelect, JmFavoritePanel, JmAddDialog, JmFavoritePicker, numberInput },
+  components: { JmPreviewDrawer, JmTaskPanel, JmTagSelect, JmAuthorSelect, JmFavoritePanel, JmAlbumView, JmAddDialog, JmFavoritePicker, numberInput },
   data() {
     return {
       activeTab: 'album',
@@ -637,9 +418,12 @@ export default {
       deleteAllFileDialogVisible: false,
       // 新增JM主记录弹窗（支持剪贴板/批量/链接解析）
       addDialogVisible: false,
-      // 收藏夹选择弹窗：收藏时先选收藏夹
+      // 收藏夹选择弹窗：收藏时先选收藏夹；mode=edit 时是"更改收藏夹"
       favoritePickerVisible: false,
       favoritePickerAlbumIds: [],
+      favoritePickerMode: 'collect',
+      // 更改收藏夹时回显：这些漫画当前所属的收藏夹id
+      favoritePickerCurrentIds: [],
       // 收藏夹列表，供新增弹窗与收藏选择弹窗复用，避免各自请求
       favoriteOptions: [],
       previewDrawerVisible: false,
@@ -692,31 +476,15 @@ export default {
       albumSelection: [],
       chapterSelection: [],
       albumOperationLoading: {},
-      albumVisibleColumns: ['selection', 'action', 'index', 'id', 'cover', 'collected', 'name', 'author', 'tags', 'zip', 'pdf', 'createTime','imageStats','interactionStats'],
-      albumColumnOptions: [
-        { key: 'selection', label: 'selection' },
-        { key: 'action', label: '操作' },
-        { key: 'index', label: '序号' },
-        { key: 'id', label: 'JM ID' },
-        { key: 'cover', label: '封面' },
-        { key: 'collected', label: '收藏' },
-        { key: 'name', label: '名称' },
-        { key: 'author', label: '作者' },
-        { key: 'tags', label: '标签' },
-        { key: 'interactionStats', label: '互动统计' },
-        { key: 'imageStats', label: '图片统计' },
-        { key: 'zip', label: 'ZIP' },
-        { key: 'pdf', label: 'PDF' },
-        { key: 'createTime', label: '下载时间' },
-        { key: 'chapterCount', label: '章节数' },
-        { key: 'chapterList', label: '列表章节' },
-        { key: 'works', label: '作品' },
-        { key: 'actors', label: '角色' },
-        { key: 'description', label: '描述' },
-        { key: 'albumFolderName', label: '文件夹' },
-        { key: 'relatedList', label: '相关列表' },
-        { key: 'addTime', label: 'JM发布时间' },
-        { key: 'raw', label: 'raw' }
+      albumVisibleColumns: [...DEFAULT_ALBUM_COLUMNS],
+      // 列定义与收藏夹 tab 共用（jm-album-columns.js），避免两边列集合漂移
+      albumColumnOptions: ALBUM_COLUMN_OPTIONS,
+      // 行操作按钮：由共享组件 jm-album-view 渲染，点击后回到 handleAlbumRowAction
+      albumRowActions: [
+        { key: 'preview', icon: 'el-icon-view', type: 'primary', tooltip: '预览漫画' },
+        { key: 'download', icon: 'el-icon-download', type: 'primary', tooltip: '下载漫画' },
+        { key: 'zip', icon: 'el-icon-folder-add', type: 'success', tooltip: '生成zip' },
+        { key: 'pdf', icon: 'el-icon-document-add', type: 'warning', tooltip: '生成pdf' }
       ],
       albumDeleteOptions: this.defAlbumDeleteOptions(),
       chapterDeleteOptions: this.defChapterDeleteOptions(),
@@ -809,21 +577,6 @@ export default {
     safeNumber(v){
       return !v || !(typeof v === 'number') ? 0 : v
     },
-    isAlbumColumnVisible(key) {
-      return this.albumVisibleColumns.includes(key)
-    },
-    /**
-     * 封面展示地址：优先本地服务器封面(下载漫画时会落盘)，本地没有时回退JM远程封面
-     * <p>
-     * 本地封面由后端按配置的host拼出，这里换成当前访问站点，保证局域网其他机器也能加载；
-     * JM远程封面不是本地资源，$localUrl 会原样返回
-     */
-    albumCoverSrc(row) {
-      return row ? (this.$localUrl(row.serverCoverUrl) || row.coverUrl || '') : ''
-    },
-    albumCoverTip(row) {
-      return row && row.serverCoverUrl ? `本地封面：${this.$localUrl(row.serverCoverUrl)}` : `JM封面：${row.coverUrl || ''}`
-    },
     /**
      * 章节图片的服务器地址，同样按当前访问站点替换，便于直接点开查看
      */
@@ -834,70 +587,26 @@ export default {
       return !!(row && row.collected)
     },
     /**
-     * 已收藏的行加个底色，方便在长列表里一眼区分
+     * 共享列表组件里的行操作：按 action key 分发到具体处理逻辑
      */
-    albumRowClassName({row}) {
-      return this.isAlbumCollected(row) ? 'jm-album-collected-row' : ''
+    handleAlbumRowAction(key, row) {
+      if (key === 'preview') {
+        return this.openPreview(row)
+      }
+      if (key === 'download') {
+        return this.downloadAlbumData(row)
+      }
+      if (key === 'zip') {
+        return this.confirmGenerateZip(row)
+      }
+      if (key === 'pdf') {
+        return this.confirmGeneratePdf(row)
+      }
     },
     handleAlbumColumnsChange() {
-      this.$nextTick(() => {
-        if (this.$refs.albumTable) {
-          this.$refs.albumTable.doLayout()
-        }
-      })
-    },
-    formatChapterList(chapterList) {
-      if (!chapterList || chapterList.length === 0) {
-        return ''
+      if (this.$refs.albumView) {
+        this.$refs.albumView.doLayout()
       }
-      return chapterList.map(e => `${e.title || e.name || ''}(${e.chapterId})`).join('，')
-    },
-    parseJsonList(value) {
-      if (!value) {
-        return []
-      }
-      if (Array.isArray(value)) {
-        return value.map(e => `${e}`).filter(e => e)
-      }
-      try {
-        const parsed = JSON.parse(value)
-        if (Array.isArray(parsed)) {
-          return parsed.map(e => `${e}`).filter(e => e)
-        }
-      } catch (e) {
-        return [`${value}`]
-      }
-      return [`${value}`]
-    },
-    parseJsonArray(value) {
-      if (!value) {
-        return []
-      }
-      if (Array.isArray(value)) {
-        return value
-      }
-      try {
-        const parsed = JSON.parse(value)
-        return Array.isArray(parsed) ? parsed : []
-      } catch (e) {
-        return []
-      }
-    },
-    parseRelatedList(value) {
-      return this.parseJsonArray(value)
-        .filter(e => e && e.id)
-        .map(e => ({
-          id: `${e.id}`,
-          name: e.name || '',
-          author: e.author || '',
-          image: e.image || ''
-        }))
-    },
-    visibleItems(list, count) {
-      return (list || []).slice(0, count)
-    },
-    hiddenCount(list, count) {
-      return Math.max((list || []).length - count, 0)
     },
     handleRequestError(error) {
       // const message = error && error.data && error.data.message
@@ -1047,17 +756,6 @@ export default {
       }
       const pad = val => `${val}`.padStart(2, '0')
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-    },
-    normalizeAlbum(row) {
-      return {
-        ...row,
-        authorList: this.parseJsonList(row.author),
-        tagsList: this.parseJsonList(row.tags),
-        worksList: this.parseJsonList(row.works),
-        actorsList: this.parseJsonList(row.actors),
-        relatedItems: this.parseRelatedList(row.relatedList),
-        formattedAddTime: this.formatTimestamp(row.addTime)
-      }
     },
     cleanQuery(query) {
       const res = { ...query }
@@ -1364,7 +1062,8 @@ export default {
         currentPage: this.albumPagination.currentPage,
         pageSize: this.albumPagination.pageSize
       }).then(({data: {data}}) => {
-        this.albumData = (data.records || []).map(row => this.normalizeAlbum(row))
+        // 记录里的JSON字段（作者/标签/作品/角色/相关列表）由共享列表组件统一展开
+        this.albumData = data.records || []
         this.albumPagination.total = data.total
       }).catch(error => {
         this.handleRequestError(error)
@@ -1464,17 +1163,28 @@ export default {
     },
     /**
      * 打开收藏夹选择弹窗
-     * @param albumIds 待收藏的漫画id
+     * @param albumIds 待处理的漫画id
+     * @param mode collect=收藏到收藏夹（默认）；edit=更改漫画所属的收藏夹
+     * @param currentFavoriteIds edit 模式下这些漫画当前所属的收藏夹id，用于回显
      */
-    openFavoritePicker(albumIds) {
+    openFavoritePicker(albumIds, mode = 'collect', currentFavoriteIds = []) {
       const ids = (albumIds || []).filter(id => id !== null && id !== undefined)
       if (ids.length === 0) {
         return
       }
+      this.favoritePickerMode = mode
       this.favoritePickerAlbumIds = ids
+      this.favoritePickerCurrentIds = currentFavoriteIds || []
       // 打开前刷新收藏夹列表，保证刚新建的收藏夹能立刻选到
       this.loadFavoriteOptions()
       this.favoritePickerVisible = true
+    },
+    /**
+     * 收藏夹 tab 里点"更改收藏夹"：面板只负责告诉父组件要改哪些漫画，
+     * 弹窗与请求统一由父组件处理（与"收藏到收藏夹"共用同一个弹窗）
+     */
+    handleFavoriteChangeRequest({ albumIds, favoriteIds }) {
+      this.openFavoritePicker(albumIds, 'edit', favoriteIds)
     },
     getFavoritePanel() {
       return this.$refs.favoritePanel || null
@@ -1505,32 +1215,40 @@ export default {
       this.searchFavoriteFirst()
     },
     /**
-     * 收藏夹选择确认：按 id 或名称（不存在则新建）收藏
+     * 收藏夹选择确认，两种模式共用一个弹窗：
+     * - collect：收藏到勾选的收藏夹（可多选、可按名称新建）
+     * - edit：更改漫画所属的收藏夹，以勾选结果为准（未勾选的移出，全不勾=从所有收藏夹移出）
      */
     handleFavoritePicked(payload) {
       const albumIds = this.favoritePickerAlbumIds
       if (!albumIds || albumIds.length === 0) {
         return
       }
+      const isEdit = this.favoritePickerMode === 'edit'
+      const favoriteIds = payload.favoriteIds || []
+      const favoriteNames = payload.favoriteNames || []
       this.favoritePickerVisible = false
       const isBatch = albumIds.length > 1
       if (isBatch) {
-        this.albumCollectLoading = 'collect'
+        this.albumCollectLoading = isEdit ? 'favorite' : 'collect'
       } else {
-        this.$set(this.albumOperationLoading, albumIds[0], 'collect')
+        this.$set(this.albumOperationLoading, albumIds[0], isEdit ? 'favorite' : 'collect')
       }
-      collectAlbums({
-        ids: albumIds,
-        collected: true,
-        favoriteId: payload.favoriteId,
-        favoriteName: payload.favoriteName
-      }).then(({data: {code, message}}) => {
+      const request = isEdit
+        ? saveAlbumFavorites({ albumIds, favoriteIds, favoriteNames })
+        : collectAlbums({ ids: albumIds, collected: true, favoriteIds, favoriteNames })
+      request.then(({data: {code, message}}) => {
         if (code !== 200) {
           return this.$message.error(message)
         }
-        this.$message.success(message || '收藏完成')
+        this.$message.success(message || (isEdit ? '收藏夹已更新' : '收藏完成'))
         this.loadFavoriteOptions()
         this.refreshFavoritePanel()
+        if (isEdit) {
+          // 收藏夹归属变了，主记录列表的收藏标记要重新查（切回主记录 tab 时刷新）
+          this.albumListDirty = true
+          return
+        }
         if (isBatch) {
           this.selectAlbums()
         } else {
@@ -1550,6 +1268,8 @@ export default {
           this.$delete(this.albumOperationLoading, albumIds[0])
         }
         this.favoritePickerAlbumIds = []
+        this.favoritePickerCurrentIds = []
+        this.favoritePickerMode = 'collect'
       })
     },
     /**
@@ -1820,30 +1540,10 @@ export default {
    * 以下类由 jmcomic/index.vue 与 jm-favorite-panel.vue 共用，定义已移到
    * styles/jm-shared.scss（全局），避免只对某个组件的模板生效：
    * jm-waterfall*、jm-action-grid、jm-tag-list、jm-tag-summary、
-   * jm-cover-image、jm-cover-state、jm-stat-cell、jm-album-collected-row
+   * jm-cover-image、jm-cover-state、jm-stat-cell、jm-album-collected-row、
+   * jm-related-cell、jm-related-line、jm-related-name
+   * （列表/瀑布流本身也已抽到 jm-album-view.vue，两个 tab 共用）
    */
-
-  .jm-related-cell {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 2px 0;
-  }
-
-  .jm-related-line {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  .jm-related-name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
 
   .jm-online-summary {
     color: #606266;

@@ -57,117 +57,38 @@
       <div class="data-table-option-buts">
         <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="selection.length === 0"
                    @click="removeSelectedFromFavorite">移出本收藏夹</el-button>
+        <el-button type="primary" size="small" plain icon="el-icon-folder-opened" :disabled="selection.length === 0"
+                   @click="changeSelectedFavorites">更改收藏夹</el-button>
+        <el-dropdown v-if="viewMode === 'list'" trigger="click" :hide-on-click="false">
+          <el-button type="primary" size="small" plain icon="el-icon-setting">列设置</el-button>
+          <el-dropdown-menu slot="dropdown" class="jm-column-dropdown">
+            <el-checkbox-group v-model="favoriteVisibleColumns" class="jm-column-check-group" @change="handleColumnsChange">
+              <el-checkbox v-for="column in favoriteColumnOptions" :key="column.key" :label="column.key">{{column.label}}</el-checkbox>
+            </el-checkbox-group>
+          </el-dropdown-menu>
+        </el-dropdown>
         <el-radio-group v-model="viewMode" class="jm-view-switch" size="mini">
           <el-radio-button label="list"><i class="el-icon-s-unfold"></i> 列表</el-radio-button>
           <el-radio-button label="waterfall"><i class="el-icon-s-grid"></i> 瀑布流</el-radio-button>
         </el-radio-group>
       </div>
 
-      <el-table v-if="viewMode === 'list'" :data="albums" v-loading="loading" border stripe
-                max-height="800" size="small" :fixed="false" highlight-current-row
-                @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="50" align="center"></el-table-column>
-        <el-table-column label="操作" width="150" align="center">
-          <template slot-scope="{row}">
-            <div class="jm-action-grid">
-              <el-tooltip content="预览漫画" placement="top">
-                <el-button type="primary" size="mini" plain icon="el-icon-view" @click="$emit('preview', row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="下载漫画" placement="top">
-                <el-button type="primary" size="mini" plain icon="el-icon-download" @click="$emit('download', row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="生成zip" placement="top">
-                <el-button type="success" size="mini" plain icon="el-icon-folder-add" @click="$emit('zip', row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="生成pdf" placement="top">
-                <el-button type="warning" size="mini" plain icon="el-icon-document-add" @click="$emit('pdf', row)"></el-button>
-              </el-tooltip>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="序号" width="50" align="center">
-          <template slot-scope="scope">{{scope.$index + 1}}</template>
-        </el-table-column>
-        <el-table-column label="JM ID" prop="id" min-width="110" align="center">
-          <template slot-scope="{row}">
-            <span class="primary-text" style="cursor:pointer;" @click="$emit('chapters', row)">{{row.id}}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="封面" width="96" align="center">
-          <template slot-scope="{row}">
-            <el-image v-if="albumCoverSrc(row)" class="jm-cover-image" :src="albumCoverSrc(row)"
-                      :preview-src-list="[albumCoverSrc(row)]" fit="cover" referrerpolicy="no-referrer">
-              <div slot="placeholder" class="jm-cover-state"><i class="el-icon-loading"></i></div>
-              <div slot="error" class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
-            </el-image>
-            <div v-else class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
-          </template>
-        </el-table-column>
-        <el-table-column label="名称" prop="name" min-width="240" show-overflow-tooltip></el-table-column>
-        <el-table-column label="作者" prop="author" min-width="160">
-          <template slot-scope="{row}">
-            <div class="jm-tag-list">
-              <el-tag v-for="(item, index) in row.authorList" :key="`fav-author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="标签" prop="tags" min-width="200">
-          <template slot-scope="{row}">
-            <div v-if="row.tagsList && row.tagsList.length > 0" class="jm-tag-list">
-              <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`fav-tag-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
-              <span v-if="row.tagsList.length > 3">+{{row.tagsList.length - 3}}</span>
-            </div>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="加入时间" prop="favoriteAddTime" min-width="150" align="center" show-overflow-tooltip></el-table-column>
-      </el-table>
-
-      <el-empty v-else-if="albums.length === 0" description="该收藏夹下还没有漫画" :image-size="80"></el-empty>
-      <div v-else v-loading="loading" class="jm-waterfall">
-        <div v-for="row in albums" :key="`fav-wf-${row.id}`" class="jm-waterfall-card">
-          <div class="jm-waterfall-cover">
-            <el-image v-if="albumCoverSrc(row)" :src="albumCoverSrc(row)" :preview-src-list="[albumCoverSrc(row)]"
-                      fit="cover" referrerpolicy="no-referrer">
-              <div slot="placeholder" class="jm-waterfall-placeholder"><i class="el-icon-loading"></i></div>
-              <div slot="error" class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
-            </el-image>
-            <div v-else class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
-            <i v-if="row.zipExists" class="jm-waterfall-badge jm-waterfall-badge-zip" title="已有ZIP">ZIP</i>
-            <i v-if="row.pdfExists" class="jm-waterfall-badge jm-waterfall-badge-pdf" title="已有PDF">PDF</i>
-          </div>
-          <div class="jm-waterfall-body">
-            <div class="jm-waterfall-name" :title="row.name">{{row.name}}</div>
-            <div class="jm-waterfall-meta">
-              <span class="jm-waterfall-id jm-waterfall-id-link" title="查看章节" @click="$emit('chapters', row)">JM{{row.id}}</span>
-              <el-tag v-for="(item, index) in visibleItems(row.authorList, 2)" :key="`fav-wf-author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
-              <span v-if="row.authorList && row.authorList.length > 2">+{{row.authorList.length - 2}}</span>
-            </div>
-            <div v-if="row.tagsList && row.tagsList.length > 0" class="jm-waterfall-meta">
-              <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`fav-wf-tag-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
-              <span v-if="row.tagsList.length > 3">+{{row.tagsList.length - 3}}</span>
-            </div>
-            <div class="jm-waterfall-time">加入于 {{row.favoriteAddTime}}</div>
-            <div class="jm-waterfall-actions">
-              <el-tooltip content="预览漫画" placement="top">
-                <el-button type="primary" size="mini" plain icon="el-icon-view" @click="$emit('preview', row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="下载漫画" placement="top">
-                <el-button type="primary" size="mini" plain icon="el-icon-download" @click="$emit('download', row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="生成zip" placement="top">
-                <el-button type="success" size="mini" plain icon="el-icon-folder-add" @click="$emit('zip', row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="生成pdf" placement="top">
-                <el-button type="warning" size="mini" plain icon="el-icon-document-add" @click="$emit('pdf', row)"></el-button>
-              </el-tooltip>
-              <el-tooltip content="移出本收藏夹" placement="top">
-                <el-button type="danger" size="mini" plain icon="el-icon-delete" @click="removeOneFromFavorite(row)"></el-button>
-              </el-tooltip>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- 列表/瀑布流：与 JM主记录 tab 共用同一个组件，展示的信息完全一致 -->
+      <jm-album-view ref="albumView"
+                     :albums="albums"
+                     :loading="loading"
+                     :view-mode="viewMode"
+                     :visible-columns="favoriteVisibleColumns"
+                     :actions="favoriteRowActions"
+                     :action-loading="operationLoading"
+                     :action-disabled="operationDisabled"
+                     :favorite-name-map="favoriteNameMap"
+                     empty-text="该收藏夹下还没有漫画"
+                     @action="handleRowAction"
+                     @collect-toggle="handleCollectToggle"
+                     @selection-change="handleSelectionChange"
+                     @chapters="emitChapters"
+                     @jump-album="emitJumpAlbum"></jm-album-view>
 
       <div class="pagination-box">
         <el-pagination background
@@ -189,12 +110,15 @@ import {
   searchAlbums,
   removeAlbumsFromFavorite
 } from "@/api/jmcomic";
+import JmAlbumView from "./jm-album-view.vue";
+import { FAVORITE_COLUMN_OPTIONS, DEFAULT_FAVORITE_COLUMNS } from "./jm-album-columns";
 import { getStore, setStore } from "@/util/store";
 
 const FAVORITE_VIEW_MODE_KEY = 'jmFavoriteViewMode';
 
 export default {
   name: 'JmFavoritePanel',
+  components: { JmAlbumView },
   props: {
     /**
      * 查询条件由父组件（jmcomic/index.vue）持有：
@@ -204,6 +128,18 @@ export default {
     query: {
       type: Object,
       default: () => ({ name: '', author: '' })
+    },
+    /**
+     * 下载/生成zip/pdf 的按钮 loading/disabled 判定，由父组件传入，
+     * 与 JM主记录 tab 用的是同一套（(row, action) => boolean）
+     */
+    operationLoading: {
+      type: Function,
+      default: null
+    },
+    operationDisabled: {
+      type: Function,
+      default: null
     }
   },
   data() {
@@ -216,7 +152,18 @@ export default {
       loading: false,
       selection: [],
       page: { currentPage: 1, pageSize: 20, total: 0 },
-      viewMode: getStore({ name: FAVORITE_VIEW_MODE_KEY }) || 'list'
+      viewMode: getStore({ name: FAVORITE_VIEW_MODE_KEY }) || 'list',
+      // 列定义与 JM主记录 tab 共用（jm-album-columns.js），另外多两列收藏夹专属信息
+      favoriteVisibleColumns: [...DEFAULT_FAVORITE_COLUMNS],
+      favoriteColumnOptions: FAVORITE_COLUMN_OPTIONS,
+      favoriteRowActions: [
+        { key: 'preview', icon: 'el-icon-view', type: 'primary', tooltip: '预览漫画' },
+        { key: 'download', icon: 'el-icon-download', type: 'primary', tooltip: '下载漫画' },
+        { key: 'zip', icon: 'el-icon-folder-add', type: 'success', tooltip: '生成zip' },
+        { key: 'pdf', icon: 'el-icon-document-add', type: 'warning', tooltip: '生成pdf' },
+        { key: 'change-favorites', icon: 'el-icon-folder-opened', type: 'primary', tooltip: '更改收藏夹' },
+        { key: 'remove', icon: 'el-icon-delete', type: 'danger', tooltip: '移出本收藏夹' }
+      ]
     }
   },
   computed: {
@@ -226,6 +173,16 @@ export default {
     },
     activeFavorite() {
       return this.favorites.find(item => item.id === this.activeFavoriteId) || null
+    },
+    /**
+     * 收藏夹id -> 名称，供列表展示"所属收藏夹"
+     */
+    favoriteNameMap() {
+      const map = {}
+      this.favorites.forEach(item => {
+        map[`${item.id}`] = item.name
+      })
+      return map
     }
   },
   watch: {
@@ -324,6 +281,40 @@ export default {
     handleSelectionChange(selection) {
       this.selection = selection
     },
+    handleColumnsChange() {
+      if (this.$refs.albumView) {
+        this.$refs.albumView.doLayout()
+      }
+    },
+    emitChapters(row) {
+      this.$emit('chapters', row)
+    },
+    emitJumpAlbum(id) {
+      this.$emit('jump-album', id)
+    },
+    /**
+     * 行操作分发：
+     * - remove / change-favorites 是收藏夹 tab 独有的，本组件自己处理
+     * - preview / download / zip / pdf 抛给父组件，用与 JM主记录 tab 完全相同的那套逻辑
+     */
+    handleRowAction(key, row) {
+      if (key === 'remove') {
+        this.removeOneFromFavorite(row)
+        return
+      }
+      if (key === 'change-favorites') {
+        this.$emit('change-favorites', { albumIds: [row.id], favoriteIds: [...(row.favoriteIds || [])] })
+        return
+      }
+      this.$emit('action', key, row)
+    },
+    /**
+     * 收藏夹 tab 里的漫画必然已收藏，星标只提供"取消收藏（从所有收藏夹移出）"
+     */
+    handleCollectToggle(row) {
+      this.doRemove([row.id],
+        `确认取消收藏「${row.name || ('JM' + row.id)}」？<br/>会把它从<b>所有收藏夹</b>移出。`, false)
+    },
     openCreateFavorite() {
       this.$prompt('请输入收藏夹名称', '新建收藏夹', {
         confirmButtonText: '确定',
@@ -378,20 +369,42 @@ export default {
     removeOneFromFavorite(row) {
       this.doRemove([row.id], `确认把「${row.name || ('JM' + row.id)}」移出本收藏夹？`)
     },
-    doRemove(albumIds, tip) {
-      this.$confirm(tip, '移出收藏夹', {
+    /**
+     * 更改选中漫画的收藏夹。
+     * 回显取所有选中漫画"共同所属"的收藏夹；保存后统一改为弹窗里勾选的集合
+     */
+    changeSelectedFavorites() {
+      if (this.selection.length === 0) {
+        return
+      }
+      const commonFavoriteIds = this.selection.reduce((acc, row) => {
+        const ids = row.favoriteIds || []
+        return acc === null ? [...ids] : acc.filter(id => ids.includes(id))
+      }, null) || []
+      this.$emit('change-favorites', {
+        albumIds: this.selection.map(row => row.id),
+        favoriteIds: commonFavoriteIds
+      })
+    },
+    /**
+     * 移出收藏夹
+     * @param keepInOtherFavorites true=只移出当前收藏夹；false=从所有收藏夹移出（取消收藏）
+     */
+    doRemove(albumIds, tip, keepInOtherFavorites = true) {
+      this.$confirm(tip, keepInOtherFavorites ? '移出收藏夹' : '取消收藏', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
+        dangerouslyUseHTMLString: true
       }).then(async () => {
         const { data: { code, message } } = await removeAlbumsFromFavorite({
           albumIds,
-          favoriteId: this.activeFavoriteId
+          favoriteId: keepInOtherFavorites ? this.activeFavoriteId : undefined
         })
         if (code !== 200) {
           return this.$message.error(message || '移出失败')
         }
-        this.$message.success('已移出本收藏夹')
+        this.$message.success(keepInOtherFavorites ? '已移出本收藏夹' : '已取消收藏')
         await this.loadFavorites()
         this.loadAlbums()
         this.$emit('albums-changed')
@@ -409,12 +422,6 @@ export default {
      */
     findFavoriteByName(name) {
       return this.favorites.find(item => item.name === name) || null
-    },
-    albumCoverSrc(row) {
-      return this.$localUrl(row.serverCoverUrl) || row.coverUrl || ''
-    },
-    visibleItems(list, count) {
-      return (list || []).slice(0, count)
     }
   }
 }
@@ -514,7 +521,7 @@ export default {
  * 操作按钮行：与 index.vue 里 "#JmcomicManage .data-table-option-buts" 保持一致。
  * index.vue 那条规则写在 scoped 样式里（编译后带 [data-v-xxx]），只能命中它自己
  * 模板里的元素，本组件的模板命不中，这一行就会退化成普通块级元素，
- * "列表/瀑布流"的 margin-left:auto 随之失效，切换按钮会紧贴"移出本收藏夹"。
+ * "列表/瀑布流"的 margin-left:auto 随之失效，切换按钮会紧贴左侧按钮。
  * 所以这里必须再声明一份。
  */
 .data-table-option-buts {
@@ -529,7 +536,7 @@ export default {
 }
 
 /**
- * 列表/瀑布流切换靠最右，与左侧"移出本收藏夹"按钮拉开距离。
+ * 列表/瀑布流切换靠最右，与左侧按钮拉开距离。
  * 需要上面 .data-table-option-buts 是 flex 容器才生效。
  */
 .jm-view-switch {

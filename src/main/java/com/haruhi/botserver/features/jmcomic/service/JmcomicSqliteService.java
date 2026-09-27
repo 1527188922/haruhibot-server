@@ -77,9 +77,16 @@ public interface JmcomicSqliteService {
     void deleteFavorite(Long id);
 
     /**
-     * 把漫画加入收藏夹，收藏夹不存在时按名称新建
+     * 把漫画加入收藏夹，收藏夹不存在时按名称新建。
+     * 支持一次加入多个收藏夹（favoriteIds/favoriteNames）
      */
     void addAlbumsToFavorite(JmFavoriteAlbumReq request);
+
+    /**
+     * 重设漫画所属的收藏夹（前端"更改收藏夹"）：以传入的收藏夹集合为准，
+     * 缺的补上、多的移出。集合为空表示从所有收藏夹移出（等价于取消收藏）
+     */
+    void saveAlbumFavorites(JmFavoriteAlbumReq request);
 
     /**
      * 把漫画移出收藏夹；favoriteId 为空表示从所有收藏夹移出

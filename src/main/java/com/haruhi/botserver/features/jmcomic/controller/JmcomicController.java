@@ -299,7 +299,8 @@ public class JmcomicController {
     }
 
     /**
-     * 把漫画加入收藏夹，收藏夹不存在时按名称新建
+     * 把漫画加入收藏夹，收藏夹不存在时按名称新建。
+     * favoriteIds/favoriteNames 支持一次加入多个收藏夹（前端多选）
      */
     @PostMapping("/manage/favorite/album/add")
     public HttpResp addAlbumsToFavorite(@RequestBody JmFavoriteAlbumReq request) {
@@ -308,6 +309,20 @@ public class JmcomicController {
         }
         jmcomicSqliteService.addAlbumsToFavorite(request);
         return HttpResp.success("收藏完成", null);
+    }
+
+    /**
+     * 重设漫画所属的收藏夹（收藏夹 tab 内"更改收藏夹"）。
+     * favoriteIds/favoriteNames 表示保存后漫画应属于的收藏夹集合：
+     * 不在集合里的会被移出；集合为空表示从所有收藏夹移出（等价于取消收藏）
+     */
+    @PostMapping("/manage/favorite/album/save")
+    public HttpResp saveAlbumFavorites(@RequestBody JmFavoriteAlbumReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getAlbumIds())) {
+            return HttpResp.fail("缺少JM ID", null);
+        }
+        jmcomicSqliteService.saveAlbumFavorites(request);
+        return HttpResp.success("收藏夹已更新", null);
     }
 
     /**

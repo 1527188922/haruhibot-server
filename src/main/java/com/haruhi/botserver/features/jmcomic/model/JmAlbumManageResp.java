@@ -30,4 +30,9 @@ public class JmAlbumManageResp extends JmAlbumSqlite {
      * 与 collected 字段的关系：collected=true 等价于 favoriteIds 非空。
      */
     private List<Long> favoriteIds;
+    /**
+     * 加入"当前查询的收藏夹"的时间（yyyy-MM-dd HH:mm:ss）。
+     * 只在按 favoriteId 查询收藏夹时有值，其余场景为null
+     */
+    private String favoriteAddTime;
 }

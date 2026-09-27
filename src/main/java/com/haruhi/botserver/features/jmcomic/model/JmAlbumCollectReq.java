@@ -25,4 +25,12 @@ public class JmAlbumCollectReq {
      * 与 favoriteId 同时传时优先 favoriteId。仅在 collected=true 时生效。
      */
     private String favoriteName;
+    /**
+     * 多选收藏：收藏夹id列表，与 favoriteId 取并集。仅在 collected=true 时生效
+     */
+    private List<Long> favoriteIds;
+    /**
+     * 多选收藏：收藏夹名称列表，不存在时直接新建，与 favoriteName 取并集。仅在 collected=true 时生效
+     */
+    private List<String> favoriteNames;
 }
