@@ -221,5 +221,7 @@ a{
 @import "./login.scss";
 //适配
 @import './media.scss';
+//JM漫画模块跨组件共享样式(瀑布流卡片、封面、标签列表等)
+@import './jm-shared.scss';
 //滚动条样式
 @include scrollBar;
