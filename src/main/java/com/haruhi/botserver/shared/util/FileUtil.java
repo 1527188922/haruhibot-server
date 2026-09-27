@@ -3,6 +3,7 @@ package com.haruhi.botserver.shared.util;
 import com.haruhi.botserver.infrastructure.persistence.DataBaseConst;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.mozilla.universalchardet.UniversalDetector;
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -116,6 +118,99 @@ public class FileUtil {
         }
 
         return fileName.substring(0, dotIndex);
+    }
+
+    /**
+     * windows文件名非法字符：{@code \ / : * ? " < > |}
+     */
+    private static final Pattern INVALID_FILE_NAME_CHARS = Pattern.compile("[\\\\/:*?\"<>|]");
+
+    /**
+     * windows保留设备名，不能作为文件(夹)名称(不区分大小写)
+     */
+    private static final Set<String> WINDOWS_RESERVED_FILE_NAMES = Set.of(
+            "CON", "PRN", "AUX", "NUL",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9");
+
+    /**
+     * 生成同时兼容windows和linux的文件(夹)名字
+     * <p>
+     * 处理内容：windows非法字符{@code \ / : * ? " < > |}替换为'-'、去掉控制字符、去掉首尾空白，
+     * 去掉windows下不能作为结尾的点和空格、规避windows保留设备名；
+     * 结果最多保留maxBytes字节(按字符边界截断，不会截出半个字符)。
+     * <p>
+     * linux只禁止'/'和'\0'，但为了两个平台落盘名称一致，这里统一按更严格的windows规则处理。
+     * 只处理单个名字(不含目录部分)，不处理路径总长度。
+     *
+     * @param name     原始名字
+     * @param fallback 清洗后没有可用字符时的兜底名字(如本子名只有"?"、"*"这类字符)，兜底名字同样会做清洗与去尾
+     * @param maxBytes 结果最大字节数(UTF-8)，必须大于0，否则不截断
+     * @return 可安全落盘的名字
+     */
+    public static String sanitizeFileName(String name, String fallback, int maxBytes) {
+        String cleaned = StringUtils.isBlank(name) ? "" : INVALID_FILE_NAME_CHARS.matcher(name).replaceAll("-");
+        StringBuilder sb = new StringBuilder(cleaned.length());
+        int bytes = 0;
+        boolean hasMeaningfulChar = false;
+        for (int i = 0; i < cleaned.length(); ) {
+            int codePoint = cleaned.codePointAt(i);
+            i += Character.charCount(codePoint);
+            // 控制字符(含\u0000)无法落盘
+            if (Character.isISOControl(codePoint)) {
+                continue;
+            }
+            int charBytes = utf8Length(codePoint);
+            if (maxBytes > 0 && bytes + charBytes > maxBytes) {
+                break;
+            }
+            sb.appendCodePoint(codePoint);
+            bytes += charBytes;
+            // 只有非法字符(已替换为'-')和空白时，名字没有意义，应走兜底
+            if (codePoint != '-' && !Character.isWhitespace(codePoint)) {
+                hasMeaningfulChar = true;
+            }
+        }
+        // windows下名字以点或空格结尾时无法创建，这里统一去掉；顺带去掉首尾空白
+        String result = trimEndDotsAndBlank(sb.toString());
+        if (!hasMeaningfulChar) {
+            result = trimEndDotsAndBlank(StringUtils.defaultIfBlank(fallback, "unnamed"));
+        }
+        if (WINDOWS_RESERVED_FILE_NAMES.contains(result.toUpperCase(Locale.ROOT))) {
+            result = result + "_";
+        }
+        return result;
+    }
+
+    /**
+     * 去掉首尾空白，并去掉末尾的点(末尾是点或空格时windows无法创建该文件)
+     */
+    private static String trimEndDotsAndBlank(String text) {
+        int end = text.length();
+        while (end > 0 && (text.charAt(end - 1) == '.' || Character.isWhitespace(text.charAt(end - 1)))) {
+            end--;
+        }
+        int start = 0;
+        while (start < end && Character.isWhitespace(text.charAt(start))) {
+            start++;
+        }
+        return text.substring(start, end);
+    }
+
+    /**
+     * 单个码点编码为UTF-8后的字节数
+     */
+    private static int utf8Length(int codePoint) {
+        if (codePoint < 0x80) {
+            return 1;
+        }
+        if (codePoint < 0x800) {
+            return 2;
+        }
+        if (codePoint < 0x10000) {
+            return 3;
+        }
+        return 4;
     }
     /**
      * 获取一个路径下所有的文件对象

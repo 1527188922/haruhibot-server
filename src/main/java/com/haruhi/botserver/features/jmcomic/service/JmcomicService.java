@@ -1008,6 +1008,30 @@ public class JmcomicService {
 
 
     /**
+     * 构建本子文件夹名称，名称会直接作为文件夹名落盘，必须同时兼容windows和linux。
+     * <p>
+     * 规则：
+     * <ol>
+     *     <li>本子名为空时使用jm号(aid)兜底</li>
+     *     <li>过滤windows非法字符{@code \ / : * ? " < > |}、控制字符、首尾空白以及windows下不能作为结尾的点和空格
+     *         (linux只禁止'/'，但统一按更严格的windows规则处理，保证两个平台落盘名称一致)</li>
+     *     <li>按长度为 {@link ConfigKey#JM_ALBUM_NAME_MAX_LENGTH} 的字节数截断，按字符边界截断，不会截出半个字符</li>
+     *     <li>追加 {@code _JM{aid}} 后缀，后缀不受长度限制，保证同一个jm号有唯一的文件夹名</li>
+     * </ol>
+     *
+     * @param albumName 本子名称(接口响应字段)
+     * @param aid       jm号
+     * @return 本子文件夹名称(如 {@code 标题_JM480854})
+     */
+    protected String buildAlbumFolderName(String albumName, String aid) {
+        int maxBytes = Configs.getInt(ConfigKey.JM_ALBUM_NAME_MAX_LENGTH, Integer.parseInt(ConfigKey.JM_ALBUM_NAME_MAX_LENGTH.getDefaultValue()));
+        String suffix = "_JM" + aid;
+        // 后缀不参与截断，先按总数上限扣除后缀占用，避免整个名字(fileName+suffix)超过文件系统单个名字的字节上限
+        String baseName = FileUtil.sanitizeFileName(albumName, aid, maxBytes - suffix.getBytes(StandardCharsets.UTF_8).length);
+        return baseName + suffix;
+    }
+
+    /**
      * 根据jm号查询本子详情
      * @param aid
      * @return
@@ -1049,12 +1073,8 @@ public class JmcomicService {
                 String data = decryptData(ts, encryptedData);
                 Album album = JSONObject.parseObject(data, Album.class);
 
-                String albumFolderName = StringUtils.isNotBlank(album.getName()) ? album.getName().replace(File.separator,"-") : aid;
-                int filenameLength = Configs.getInt(ConfigKey.JM_ALBUM_NAME_MAX_LENGTH, 215);
-                if (albumFolderName.getBytes().length >= filenameLength) {
-                    albumFolderName = albumFolderName.substring(0,50);
-                }
-                album.setAlbumFolderName(albumFolderName + "_JM" + aid);
+                String albumFolderName = buildAlbumFolderName(album.getName(), aid);
+                album.setAlbumFolderName(albumFolderName);
                 jmcomicSqliteService.saveOrUpdateAlbum(album, data);
                 JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
                 if (reporter != null) {
