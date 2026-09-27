@@ -1,8 +1,30 @@
 <template>
-  <basic-container>
-    <div class="jm-favorite">
-      <!-- 移动端：收藏夹列表收成横向子 tab；桌面端为左侧竖列 -->
-      <div class="jm-favorite-side" :class="{'jm-favorite-side--collapsed': isMobileView && !sideExpanded}">
+  <!--
+    Vue 2 要求模板有且只有一个根节点，这里用一层 div 包裹。
+    内部拆成两块 basic-container：查询条件一块，收藏夹列表+漫画列表/瀑布流一块
+    （与 JM主记录 tab 的"查询条件独立成块"保持一致）。
+  -->
+  <div class="jm-favorite-page">
+    <basic-container>
+      <el-form :model="query" label-width="70px" inline size="small">
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="query.name" class="form-input" clearable @keyup.enter.native="searchFirst"></el-input>
+        </el-form-item>
+        <el-form-item label="作者" prop="author">
+          <el-input v-model="query.author" class="form-input" clearable @keyup.enter.native="searchFirst"></el-input>
+        </el-form-item>
+      </el-form>
+      <el-row class="query-form-option-buts">
+        <el-button type="primary" size="small" plain icon="el-icon-search" @click="searchFirst">查询</el-button>
+        <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetQuery">重置</el-button>
+      </el-row>
+    </basic-container>
+
+    <!-- 收藏夹列表与漫画列表/瀑布流同处一块 -->
+    <basic-container class="jm-favorite-container">
+      <div class="jm-favorite">
+        <!-- 移动端：收藏夹列表收成横向子 tab；桌面端为左侧竖列 -->
+        <div class="jm-favorite-side" :class="{'jm-favorite-side--collapsed': isMobileView && !sideExpanded}">
         <div class="jm-favorite-side-head">
           <span class="jm-favorite-side-title">收藏夹</span>
           <span class="jm-favorite-side-ops">
@@ -45,19 +67,8 @@
                        class="danger-text-btn" @click="confirmDeleteFavorite(activeFavorite)">删除</el-button>
           </span>
         </div>
-        <el-form :model="query" label-width="70px" inline size="small">
-          <el-form-item label="名称" prop="name">
-            <el-input v-model="query.name" class="form-input" clearable @keyup.enter.native="searchFirst"></el-input>
-          </el-form-item>
-          <el-form-item label="作者" prop="author">
-            <el-input v-model="query.author" class="form-input" clearable @keyup.enter.native="searchFirst"></el-input>
-          </el-form-item>
-        </el-form>
-        <el-row class="query-form-option-buts">
-          <el-button type="primary" size="small" plain icon="el-icon-search" @click="searchFirst">查询</el-button>
-          <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetQuery">重置</el-button>
-        </el-row>
 
+        <!-- 与 JM主记录/在线搜索保持一致：操作按钮靠左，列表/瀑布流切换靠最右 -->
         <div class="data-table-option-buts">
           <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="selection.length === 0"
                      @click="removeSelectedFromFavorite">移出本收藏夹</el-button>
@@ -182,8 +193,9 @@
                          @current-change="currentChange" />
         </div>
       </div>
-    </div>
-  </basic-container>
+      </div>
+    </basic-container>
+  </div>
 </template>
 
 <script>
@@ -406,7 +418,7 @@ export default {
       return this.favorites.find(item => item.name === name) || null
     },
     albumCoverSrc(row) {
-      return row.serverCoverUrl || row.coverUrl || ''
+      return this.$localUrl(row.serverCoverUrl) || row.coverUrl || ''
     },
     visibleItems(list, count) {
       return (list || []).slice(0, count)
@@ -418,16 +430,23 @@ export default {
 <style lang="scss" scoped>
 .jm-favorite {
   display: flex;
-  gap: 10px;
+  // 左右两块顶对齐，避免侧栏被拉伸到与表格同高
   align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
 }
 
+/**
+ * 左侧收藏夹列表。
+ * 放在 basic-container 的卡片内，因此自身不再需要边框和底，改用右侧分隔线。
+ * flex-shrink:0 保证窄屏下不会被右侧表格挤扁。
+ */
 .jm-favorite-side {
-  flex: 0 0 190px;
-  width: 190px;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  padding: 8px;
+  flex: 0 0 170px;
+  width: 170px;
+  min-width: 0;
+  border-right: 1px solid #ebeef5;
+  padding-right: 12px;
 
   &-head {
     display: flex;
@@ -498,6 +517,15 @@ export default {
   min-width: 0;
 }
 
+/**
+ * 列表/瀑布流切换靠最右，与左侧"移出本收藏夹"按钮拉开距离。
+ * 这里是子组件，index.vue 里 scoped 的 "#JmcomicManage .jm-view-switch" 作用不到，
+ * 必须在本组件内单独声明。
+ */
+.jm-view-switch {
+  margin-left: auto;
+}
+
 .jm-favorite-current-ops {
   display: none;
 }
@@ -513,6 +541,9 @@ export default {
   .jm-favorite-side {
     flex: none;
     width: 100%;
+    // 竖列改为横向子 tab 后，右侧分隔线不再有意义
+    border-right: none;
+    padding-right: 0;
     margin-bottom: 8px;
 
     &-list {

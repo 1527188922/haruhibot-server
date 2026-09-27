@@ -252,10 +252,13 @@
     margin-left: 0 !important;
   }
 
-  // 表格上方的工具栏（按钮 + 视图切换）允许换行
-  .jm-view-switch {
-    flex-wrap: wrap;
-  }
+  /**
+   * 注意：这里不要再写 .jm-view-switch 的规则。
+   * 它是 el-radio-group（不是 flex 容器），写在组件 scoped 里的
+   * "#JmcomicManage .jm-view-switch[data-v]" 权重为 (1,1,0)，
+   * 全局媒体查询里的 (0,2,0) / (0,1,0) 都压不过，规则必然失效。
+   * 移动端需要换行时，统一作用于外层 .data-table-option-buts。
+   */
 
   /* ---------- 弹窗：改用 vw 尺寸并抬高，避免 15vh + 固定宽度溢出 ---------- */
   .el-dialog__wrapper {
