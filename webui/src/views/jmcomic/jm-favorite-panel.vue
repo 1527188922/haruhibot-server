@@ -1,200 +1,183 @@
 <template>
   <!--
-    Vue 2 要求模板有且只有一个根节点，这里用一层 div 包裹。
-    内部拆成两块 basic-container：查询条件一块，收藏夹列表+漫画列表/瀑布流一块
-    （与 JM主记录 tab 的"查询条件独立成块"保持一致）。
+    收藏夹 tab 的内容区。
+    查询条件块、内容块这两块 basic-container 由父组件 jmcomic/index.vue 提供：
+    它们必须是页面根节点（#JmcomicManage）的直接子节点，才能和 JM主记录 tab 一样，
+    在两块卡片之间露出页面基底色；若放在本组件里，就会被 el-tabs 所在的卡片包住，
+    露出的全是卡片白底，上下两块看起来连成一片。
+    这里只负责内容卡片内部：左侧收藏夹列表 + 右侧漫画列表/瀑布流。
   -->
-  <div class="jm-favorite-page">
-    <basic-container>
-      <el-form :model="query" label-width="70px" inline size="small">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="query.name" class="form-input" clearable @keyup.enter.native="searchFirst"></el-input>
-        </el-form-item>
-        <el-form-item label="作者" prop="author">
-          <el-input v-model="query.author" class="form-input" clearable @keyup.enter.native="searchFirst"></el-input>
-        </el-form-item>
-      </el-form>
-      <el-row class="query-form-option-buts">
-        <el-button type="primary" size="small" plain icon="el-icon-search" @click="searchFirst">查询</el-button>
-        <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetQuery">重置</el-button>
-      </el-row>
-    </basic-container>
-
-    <!-- 收藏夹列表与漫画列表/瀑布流同处一块 -->
-    <basic-container class="jm-favorite-container">
-      <div class="jm-favorite">
-        <!-- 移动端：收藏夹列表收成横向子 tab；桌面端为左侧竖列 -->
-        <div class="jm-favorite-side" :class="{'jm-favorite-side--collapsed': isMobileView && !sideExpanded}">
-        <div class="jm-favorite-side-head">
-          <span class="jm-favorite-side-title">收藏夹</span>
-          <span class="jm-favorite-side-ops">
-            <el-button type="text" size="mini" icon="el-icon-refresh" :loading="favoriteLoading" @click="loadFavorites"></el-button>
-            <el-button type="text" size="mini" icon="el-icon-plus" @click="openCreateFavorite">新建</el-button>
-            <el-button v-if="isMobileView" type="text" size="mini"
-                       :icon="sideExpanded ? 'el-icon-arrow-up' : 'el-icon-arrow-down'"
-                       @click="sideExpanded = !sideExpanded"></el-button>
+  <div class="jm-favorite">
+    <!-- 移动端：收藏夹列表收成横向子 tab；桌面端为左侧竖列 -->
+    <div class="jm-favorite-side" :class="{'jm-favorite-side--collapsed': isMobileView && !sideExpanded}">
+      <div class="jm-favorite-side-head">
+        <span class="jm-favorite-side-title">收藏夹</span>
+        <span class="jm-favorite-side-ops">
+          <el-button type="text" size="mini" icon="el-icon-refresh" :loading="favoriteLoading" @click="loadFavorites"></el-button>
+          <el-button type="text" size="mini" icon="el-icon-plus" @click="openCreateFavorite">新建</el-button>
+          <el-button v-if="isMobileView" type="text" size="mini"
+                     :icon="sideExpanded ? 'el-icon-arrow-up' : 'el-icon-arrow-down'"
+                     @click="sideExpanded = !sideExpanded"></el-button>
+        </span>
+      </div>
+      <div v-show="!isMobileView || sideExpanded" class="jm-favorite-side-list">
+        <div v-for="item in favorites" :key="`fav-${item.id}`"
+             class="jm-favorite-item"
+             :class="{'jm-favorite-item--active': item.id === activeFavoriteId}"
+             @click="selectFavorite(item)">
+          <span class="jm-favorite-item-name" :title="item.name">{{item.name}}</span>
+          <span class="jm-favorite-item-count">{{item.albumCount}}</span>
+          <span class="jm-favorite-item-ops" @click.stop>
+            <el-tooltip v-if="!item.isDefault" content="重命名" placement="top">
+              <el-button type="text" size="mini" icon="el-icon-edit" @click="openRenameFavorite(item)"></el-button>
+            </el-tooltip>
+            <el-tooltip v-if="!item.isDefault" content="删除收藏夹" placement="top">
+              <el-button type="text" size="mini" icon="el-icon-delete" class="danger-text-btn" @click="confirmDeleteFavorite(item)"></el-button>
+            </el-tooltip>
+            <el-tag v-else size="mini" type="info" effect="plain">默认</el-tag>
           </span>
         </div>
-        <div v-show="!isMobileView || sideExpanded" class="jm-favorite-side-list">
-          <div v-for="item in favorites" :key="`fav-${item.id}`"
-               class="jm-favorite-item"
-               :class="{'jm-favorite-item--active': item.id === activeFavoriteId}"
-               @click="selectFavorite(item)">
-            <span class="jm-favorite-item-name" :title="item.name">{{item.name}}</span>
-            <span class="jm-favorite-item-count">{{item.albumCount}}</span>
-            <span class="jm-favorite-item-ops" @click.stop>
-              <el-tooltip v-if="!item.isDefault" content="重命名" placement="top">
-                <el-button type="text" size="mini" icon="el-icon-edit" @click="openRenameFavorite(item)"></el-button>
-              </el-tooltip>
-              <el-tooltip v-if="!item.isDefault" content="删除收藏夹" placement="top">
-                <el-button type="text" size="mini" icon="el-icon-delete" class="danger-text-btn" @click="confirmDeleteFavorite(item)"></el-button>
-              </el-tooltip>
-              <el-tag v-else size="mini" type="info" effect="plain">默认</el-tag>
-            </span>
-          </div>
-          <div v-if="!favoriteLoading && favorites.length === 0" class="jm-favorite-empty">暂无收藏夹</div>
-        </div>
+        <div v-if="!favoriteLoading && favorites.length === 0" class="jm-favorite-empty">暂无收藏夹</div>
+      </div>
+    </div>
+
+    <div class="jm-favorite-main">
+      <!-- 移动端：收藏夹的重命名/删除收进横向 tab 后单独一行，否则小屏上无法操作 -->
+      <div v-if="isMobileView && activeFavorite" class="jm-favorite-current-ops">
+        <span class="jm-favorite-current-name" :title="activeFavorite.name">{{activeFavorite.name}}</span>
+        <span class="jm-favorite-current-btns">
+          <el-button v-if="!activeFavorite.isDefault" type="text" size="mini" icon="el-icon-edit"
+                     @click="openRenameFavorite(activeFavorite)">重命名</el-button>
+          <el-button v-if="!activeFavorite.isDefault" type="text" size="mini" icon="el-icon-delete"
+                     class="danger-text-btn" @click="confirmDeleteFavorite(activeFavorite)">删除</el-button>
+        </span>
       </div>
 
-      <div class="jm-favorite-main">
-        <!-- 移动端：收藏夹的重命名/删除收进横向 tab 后单独一行，否则小屏上无法操作 -->
-        <div v-if="isMobileView && activeFavorite" class="jm-favorite-current-ops">
-          <span class="jm-favorite-current-name" :title="activeFavorite.name">{{activeFavorite.name}}</span>
-          <span class="jm-favorite-current-btns">
-            <el-button v-if="!activeFavorite.isDefault" type="text" size="mini" icon="el-icon-edit"
-                       @click="openRenameFavorite(activeFavorite)">重命名</el-button>
-            <el-button v-if="!activeFavorite.isDefault" type="text" size="mini" icon="el-icon-delete"
-                       class="danger-text-btn" @click="confirmDeleteFavorite(activeFavorite)">删除</el-button>
-          </span>
-        </div>
+      <!-- 与 JM主记录/在线搜索保持一致：操作按钮靠左，列表/瀑布流切换靠最右 -->
+      <div class="data-table-option-buts">
+        <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="selection.length === 0"
+                   @click="removeSelectedFromFavorite">移出本收藏夹</el-button>
+        <el-radio-group v-model="viewMode" class="jm-view-switch" size="mini">
+          <el-radio-button label="list"><i class="el-icon-s-unfold"></i> 列表</el-radio-button>
+          <el-radio-button label="waterfall"><i class="el-icon-s-grid"></i> 瀑布流</el-radio-button>
+        </el-radio-group>
+      </div>
 
-        <!-- 与 JM主记录/在线搜索保持一致：操作按钮靠左，列表/瀑布流切换靠最右 -->
-        <div class="data-table-option-buts">
-          <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="selection.length === 0"
-                     @click="removeSelectedFromFavorite">移出本收藏夹</el-button>
-          <el-radio-group v-model="viewMode" class="jm-view-switch" size="mini">
-            <el-radio-button label="list"><i class="el-icon-s-unfold"></i> 列表</el-radio-button>
-            <el-radio-button label="waterfall"><i class="el-icon-s-grid"></i> 瀑布流</el-radio-button>
-          </el-radio-group>
-        </div>
-
-        <el-table v-if="viewMode === 'list'" :data="albums" v-loading="loading" border stripe
-                  max-height="800" size="small" :fixed="false" highlight-current-row
-                  @selection-change="handleSelectionChange">
-          <el-table-column type="selection" width="50" align="center"></el-table-column>
-          <el-table-column label="操作" width="150" align="center">
-            <template slot-scope="{row}">
-              <div class="jm-action-grid">
-                <el-tooltip content="预览漫画" placement="top">
-                  <el-button type="primary" size="mini" plain icon="el-icon-view" @click="$emit('preview', row)"></el-button>
-                </el-tooltip>
-                <el-tooltip content="下载漫画" placement="top">
-                  <el-button type="primary" size="mini" plain icon="el-icon-download" @click="$emit('download', row)"></el-button>
-                </el-tooltip>
-                <el-tooltip content="生成zip" placement="top">
-                  <el-button type="success" size="mini" plain icon="el-icon-folder-add" @click="$emit('zip', row)"></el-button>
-                </el-tooltip>
-                <el-tooltip content="生成pdf" placement="top">
-                  <el-button type="warning" size="mini" plain icon="el-icon-document-add" @click="$emit('pdf', row)"></el-button>
-                </el-tooltip>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="序号" width="50" align="center">
-            <template slot-scope="scope">{{scope.$index + 1}}</template>
-          </el-table-column>
-          <el-table-column label="JM ID" prop="id" min-width="110" align="center">
-            <template slot-scope="{row}">
-              <span class="primary-text" style="cursor:pointer;" @click="$emit('chapters', row)">{{row.id}}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="封面" width="96" align="center">
-            <template slot-scope="{row}">
-              <el-image v-if="albumCoverSrc(row)" class="jm-cover-image" :src="albumCoverSrc(row)"
-                        :preview-src-list="[albumCoverSrc(row)]" fit="cover" referrerpolicy="no-referrer">
-                <div slot="placeholder" class="jm-cover-state"><i class="el-icon-loading"></i></div>
-                <div slot="error" class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
-              </el-image>
-              <div v-else class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
-            </template>
-          </el-table-column>
-          <el-table-column label="名称" prop="name" min-width="240" show-overflow-tooltip></el-table-column>
-          <el-table-column label="作者" prop="author" min-width="160">
-            <template slot-scope="{row}">
-              <div class="jm-tag-list">
-                <el-tag v-for="(item, index) in row.authorList" :key="`fav-author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="标签" prop="tags" min-width="200">
-            <template slot-scope="{row}">
-              <div v-if="row.tagsList && row.tagsList.length > 0" class="jm-tag-list">
-                <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`fav-tag-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
-                <span v-if="row.tagsList.length > 3">+{{row.tagsList.length - 3}}</span>
-              </div>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="加入时间" prop="favoriteAddTime" min-width="150" align="center" show-overflow-tooltip></el-table-column>
-        </el-table>
-
-        <el-empty v-else-if="albums.length === 0" description="该收藏夹下还没有漫画" :image-size="80"></el-empty>
-        <div v-else v-loading="loading" class="jm-waterfall">
-          <div v-for="row in albums" :key="`fav-wf-${row.id}`" class="jm-waterfall-card">
-            <div class="jm-waterfall-cover">
-              <el-image v-if="albumCoverSrc(row)" :src="albumCoverSrc(row)" :preview-src-list="[albumCoverSrc(row)]"
-                        fit="cover" referrerpolicy="no-referrer">
-                <div slot="placeholder" class="jm-waterfall-placeholder"><i class="el-icon-loading"></i></div>
-                <div slot="error" class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
-              </el-image>
-              <div v-else class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
-              <i v-if="row.zipExists" class="jm-waterfall-badge jm-waterfall-badge-zip" title="已有ZIP">ZIP</i>
-              <i v-if="row.pdfExists" class="jm-waterfall-badge jm-waterfall-badge-pdf" title="已有PDF">PDF</i>
+      <el-table v-if="viewMode === 'list'" :data="albums" v-loading="loading" border stripe
+                max-height="800" size="small" :fixed="false" highlight-current-row
+                @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="50" align="center"></el-table-column>
+        <el-table-column label="操作" width="150" align="center">
+          <template slot-scope="{row}">
+            <div class="jm-action-grid">
+              <el-tooltip content="预览漫画" placement="top">
+                <el-button type="primary" size="mini" plain icon="el-icon-view" @click="$emit('preview', row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="下载漫画" placement="top">
+                <el-button type="primary" size="mini" plain icon="el-icon-download" @click="$emit('download', row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="生成zip" placement="top">
+                <el-button type="success" size="mini" plain icon="el-icon-folder-add" @click="$emit('zip', row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="生成pdf" placement="top">
+                <el-button type="warning" size="mini" plain icon="el-icon-document-add" @click="$emit('pdf', row)"></el-button>
+              </el-tooltip>
             </div>
-            <div class="jm-waterfall-body">
-              <div class="jm-waterfall-name" :title="row.name">{{row.name}}</div>
-              <div class="jm-waterfall-meta">
-                <span class="jm-waterfall-id jm-waterfall-id-link" title="查看章节" @click="$emit('chapters', row)">JM{{row.id}}</span>
-                <el-tag v-for="(item, index) in visibleItems(row.authorList, 2)" :key="`fav-wf-author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
-                <span v-if="row.authorList && row.authorList.length > 2">+{{row.authorList.length - 2}}</span>
-              </div>
-              <div v-if="row.tagsList && row.tagsList.length > 0" class="jm-waterfall-meta">
-                <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`fav-wf-tag-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
-                <span v-if="row.tagsList.length > 3">+{{row.tagsList.length - 3}}</span>
-              </div>
-              <div class="jm-waterfall-time">加入于 {{row.favoriteAddTime}}</div>
-              <div class="jm-waterfall-actions">
-                <el-tooltip content="预览漫画" placement="top">
-                  <el-button type="primary" size="mini" plain icon="el-icon-view" @click="$emit('preview', row)"></el-button>
-                </el-tooltip>
-                <el-tooltip content="下载漫画" placement="top">
-                  <el-button type="primary" size="mini" plain icon="el-icon-download" @click="$emit('download', row)"></el-button>
-                </el-tooltip>
-                <el-tooltip content="生成zip" placement="top">
-                  <el-button type="success" size="mini" plain icon="el-icon-folder-add" @click="$emit('zip', row)"></el-button>
-                </el-tooltip>
-                <el-tooltip content="生成pdf" placement="top">
-                  <el-button type="warning" size="mini" plain icon="el-icon-document-add" @click="$emit('pdf', row)"></el-button>
-                </el-tooltip>
-                <el-tooltip content="移出本收藏夹" placement="top">
-                  <el-button type="danger" size="mini" plain icon="el-icon-delete" @click="removeOneFromFavorite(row)"></el-button>
-                </el-tooltip>
-              </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="序号" width="50" align="center">
+          <template slot-scope="scope">{{scope.$index + 1}}</template>
+        </el-table-column>
+        <el-table-column label="JM ID" prop="id" min-width="110" align="center">
+          <template slot-scope="{row}">
+            <span class="primary-text" style="cursor:pointer;" @click="$emit('chapters', row)">{{row.id}}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="封面" width="96" align="center">
+          <template slot-scope="{row}">
+            <el-image v-if="albumCoverSrc(row)" class="jm-cover-image" :src="albumCoverSrc(row)"
+                      :preview-src-list="[albumCoverSrc(row)]" fit="cover" referrerpolicy="no-referrer">
+              <div slot="placeholder" class="jm-cover-state"><i class="el-icon-loading"></i></div>
+              <div slot="error" class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
+            </el-image>
+            <div v-else class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
+          </template>
+        </el-table-column>
+        <el-table-column label="名称" prop="name" min-width="240" show-overflow-tooltip></el-table-column>
+        <el-table-column label="作者" prop="author" min-width="160">
+          <template slot-scope="{row}">
+            <div class="jm-tag-list">
+              <el-tag v-for="(item, index) in row.authorList" :key="`fav-author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="标签" prop="tags" min-width="200">
+          <template slot-scope="{row}">
+            <div v-if="row.tagsList && row.tagsList.length > 0" class="jm-tag-list">
+              <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`fav-tag-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
+              <span v-if="row.tagsList.length > 3">+{{row.tagsList.length - 3}}</span>
+            </div>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="加入时间" prop="favoriteAddTime" min-width="150" align="center" show-overflow-tooltip></el-table-column>
+      </el-table>
+
+      <el-empty v-else-if="albums.length === 0" description="该收藏夹下还没有漫画" :image-size="80"></el-empty>
+      <div v-else v-loading="loading" class="jm-waterfall">
+        <div v-for="row in albums" :key="`fav-wf-${row.id}`" class="jm-waterfall-card">
+          <div class="jm-waterfall-cover">
+            <el-image v-if="albumCoverSrc(row)" :src="albumCoverSrc(row)" :preview-src-list="[albumCoverSrc(row)]"
+                      fit="cover" referrerpolicy="no-referrer">
+              <div slot="placeholder" class="jm-waterfall-placeholder"><i class="el-icon-loading"></i></div>
+              <div slot="error" class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
+            </el-image>
+            <div v-else class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
+            <i v-if="row.zipExists" class="jm-waterfall-badge jm-waterfall-badge-zip" title="已有ZIP">ZIP</i>
+            <i v-if="row.pdfExists" class="jm-waterfall-badge jm-waterfall-badge-pdf" title="已有PDF">PDF</i>
+          </div>
+          <div class="jm-waterfall-body">
+            <div class="jm-waterfall-name" :title="row.name">{{row.name}}</div>
+            <div class="jm-waterfall-meta">
+              <span class="jm-waterfall-id jm-waterfall-id-link" title="查看章节" @click="$emit('chapters', row)">JM{{row.id}}</span>
+              <el-tag v-for="(item, index) in visibleItems(row.authorList, 2)" :key="`fav-wf-author-${row.id}-${index}`" size="mini" type="info">{{item}}</el-tag>
+              <span v-if="row.authorList && row.authorList.length > 2">+{{row.authorList.length - 2}}</span>
+            </div>
+            <div v-if="row.tagsList && row.tagsList.length > 0" class="jm-waterfall-meta">
+              <el-tag v-for="(item, index) in visibleItems(row.tagsList, 3)" :key="`fav-wf-tag-${row.id}-${index}`" size="mini" type="success">{{item}}</el-tag>
+              <span v-if="row.tagsList.length > 3">+{{row.tagsList.length - 3}}</span>
+            </div>
+            <div class="jm-waterfall-time">加入于 {{row.favoriteAddTime}}</div>
+            <div class="jm-waterfall-actions">
+              <el-tooltip content="预览漫画" placement="top">
+                <el-button type="primary" size="mini" plain icon="el-icon-view" @click="$emit('preview', row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="下载漫画" placement="top">
+                <el-button type="primary" size="mini" plain icon="el-icon-download" @click="$emit('download', row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="生成zip" placement="top">
+                <el-button type="success" size="mini" plain icon="el-icon-folder-add" @click="$emit('zip', row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="生成pdf" placement="top">
+                <el-button type="warning" size="mini" plain icon="el-icon-document-add" @click="$emit('pdf', row)"></el-button>
+              </el-tooltip>
+              <el-tooltip content="移出本收藏夹" placement="top">
+                <el-button type="danger" size="mini" plain icon="el-icon-delete" @click="removeOneFromFavorite(row)"></el-button>
+              </el-tooltip>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="pagination-box">
-          <el-pagination background
-                         :current-page="page.currentPage"
-                         :page-size="page.pageSize"
-                         :total="page.total"
-                         :layout="paginationLayout"
-                         @current-change="currentChange" />
-        </div>
+      <div class="pagination-box">
+        <el-pagination background
+                       :current-page="page.currentPage"
+                       :page-size="page.pageSize"
+                       :total="page.total"
+                       :layout="paginationLayout"
+                       @current-change="currentChange" />
       </div>
-      </div>
-    </basic-container>
+    </div>
   </div>
 </template>
 
@@ -212,6 +195,17 @@ const FAVORITE_VIEW_MODE_KEY = 'jmFavoriteViewMode';
 
 export default {
   name: 'JmFavoritePanel',
+  props: {
+    /**
+     * 查询条件由父组件（jmcomic/index.vue）持有：
+     * 查询条件已经独立成一块 basic-container 放在父组件里，
+     * 和本组件所在的卡片平级，父组件的查询/重置按钮通过 searchFirst() 驱动本组件。
+     */
+    query: {
+      type: Object,
+      default: () => ({ name: '', author: '' })
+    }
+  },
   data() {
     return {
       favorites: [],
@@ -221,7 +215,6 @@ export default {
       albums: [],
       loading: false,
       selection: [],
-      query: { name: '', author: '' },
       page: { currentPage: 1, pageSize: 20, total: 0 },
       viewMode: getStore({ name: FAVORITE_VIEW_MODE_KEY }) || 'list'
     }
@@ -289,13 +282,13 @@ export default {
       }
       this.searchFirst()
     },
+    /**
+     * 从第一页开始查询，供内部（初始化/切换收藏夹）与父组件的查询按钮调用。
+     * 查询条件取值自 query prop，父组件是同一个对象引用，改完立即生效。
+     */
     searchFirst() {
       this.page.currentPage = 1
       this.loadAlbums()
-    },
-    resetQuery() {
-      this.query = { name: '', author: '' }
-      this.searchFirst()
     },
     currentChange(page) {
       this.page.currentPage = page
@@ -518,9 +511,26 @@ export default {
 }
 
 /**
+ * 操作按钮行：与 index.vue 里 "#JmcomicManage .data-table-option-buts" 保持一致。
+ * index.vue 那条规则写在 scoped 样式里（编译后带 [data-v-xxx]），只能命中它自己
+ * 模板里的元素，本组件的模板命不中，这一行就会退化成普通块级元素，
+ * "列表/瀑布流"的 margin-left:auto 随之失效，切换按钮会紧贴"移出本收藏夹"。
+ * 所以这里必须再声明一份。
+ */
+.data-table-option-buts {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .el-button {
+    margin-left: 0;
+  }
+}
+
+/**
  * 列表/瀑布流切换靠最右，与左侧"移出本收藏夹"按钮拉开距离。
- * 这里是子组件，index.vue 里 scoped 的 "#JmcomicManage .jm-view-switch" 作用不到，
- * 必须在本组件内单独声明。
+ * 需要上面 .data-table-option-buts 是 flex 容器才生效。
  */
 .jm-view-switch {
   margin-left: auto;

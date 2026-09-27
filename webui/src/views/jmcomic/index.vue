@@ -28,14 +28,25 @@
             <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetAlbumQuery">重置</el-button>
           </el-row>
         </el-tab-pane>
+        <!--
+          收藏夹 tab 这里只保留 tab 标题：el-tabs 本身就挂在一张 basic-container 卡片里，
+          内容若写在这个 tab-pane 内，就会被那张卡片包住，收藏夹内部的两块卡片之间
+          露出的全是卡片白底，看起来连成一片。它的查询块与内容块改由下面的
+          两块 basic-container 承载（与 JM主记录 tab 同处一级）。
+        -->
         <el-tab-pane label="收藏夹" name="favorite">
-          <jm-favorite-panel v-if="activeTab === 'favorite'"
-                             ref="favoritePanel"
-                             @preview="openPreview"
-                             @chapters="jumpToChapters"
-                             @error="handleRequestError"
-                             @create-favorite="handleCreateFavorite"
-                             @albums-changed="handleFavoriteAlbumsChanged"></jm-favorite-panel>
+          <el-form :model="favoriteQuery" label-width="70px" inline size="small">
+            <el-form-item label="名称" prop="name">
+              <el-input v-model="favoriteQuery.name" class="form-input" clearable @keyup.enter.native="searchFavoriteFirst"></el-input>
+            </el-form-item>
+            <el-form-item label="作者" prop="author">
+              <el-input v-model="favoriteQuery.author" class="form-input" clearable @keyup.enter.native="searchFavoriteFirst"></el-input>
+            </el-form-item>
+          </el-form>
+          <el-row class="query-form-option-buts">
+            <el-button type="primary" size="small" plain icon="el-icon-search" @click="searchFavoriteFirst">查询</el-button>
+            <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetFavoriteQuery">重置</el-button>
+          </el-row>
         </el-tab-pane>
         <el-tab-pane label="JM章节信息" name="chapter">
           <el-form :model="chapterQuery" label-width="80px" inline ref="chapterQueryForm" size="small">
@@ -374,6 +385,16 @@
         <el-pagination v-bind="albumPagination" @size-change="albumSizeChange" @current-change="albumCurrentChange" />
       </div>
     </basic-container>
+    <!-- 收藏夹 tab：收藏夹列表 + 漫画列表/瀑布流同处一块 -->
+    <basic-container v-if="activeTab === 'favorite'">
+      <jm-favorite-panel ref="favoritePanel"
+                         :query="favoriteQuery"
+                         @preview="openPreview"
+                         @chapters="jumpToChapters"
+                         @error="handleRequestError"
+                         @create-favorite="handleCreateFavorite"
+                         @albums-changed="handleFavoriteAlbumsChanged"></jm-favorite-panel>
+    </basic-container>
 
     <basic-container v-if="activeTab === 'chapter'">
       <div class="data-table-option-buts">
@@ -634,6 +655,9 @@ export default {
       taskSnapshotOff: null,
       taskStatusOff: null,
       albumQuery: { id: '', name: '', author: '', tags: [], collected: '' },
+      // 收藏夹 tab 的查询条件：和 JM主记录一样由页面持有（查询块是父组件里的独立卡片），
+      // 收藏夹面板只通过 query prop 读取，查询/重置按钮也在父组件这一侧
+      favoriteQuery: { name: '', author: '' },
       // JM主记录展示方式：list=表格(默认)，waterfall=瀑布流卡片
       albumViewMode: getStore({ name: ALBUM_VIEW_MODE_KEY }) || 'list',
       chapterQuery: { albumId: '', chapterId: '', chapterTitle: '', imageFile: '' },
@@ -1460,6 +1484,25 @@ export default {
       if (panel) {
         panel.reload()
       }
+    },
+    /**
+     * 收藏夹 tab 查询：查询条件在父组件，取数逻辑在收藏夹面板里
+     */
+    searchFavoriteFirst() {
+      const panel = this.getFavoritePanel()
+      if (panel) {
+        panel.searchFirst()
+      }
+    },
+    /**
+     * 重置收藏夹查询条件
+     * 这里逐项改属性、不整体替换对象：面板读的是同一个对象引用，立即生效；
+     * 若整个对象替换掉，要等父组件重新渲染才会同步到 prop，紧接着的查询会用旧条件。
+     */
+    resetFavoriteQuery() {
+      this.favoriteQuery.name = ''
+      this.favoriteQuery.author = ''
+      this.searchFavoriteFirst()
     },
     /**
      * 收藏夹选择确认：按 id 或名称（不存在则新建）收藏
