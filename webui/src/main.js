@@ -21,10 +21,14 @@ import website from '@/config/website'
 import './util/directives'
 import Print from 'vue-print-nb'
 import wsClient, { WS_CLOSE_LOGOUT, WS_EVENT_AUTH_EXPIRED } from '@/api/ws-client'
+import { toCurrentSiteUrl } from '@/util/url'
 Vue.use(Print)
 window.$crudCommon = crudCommon
 Vue.prototype.$dayjs = dayjs
 Vue.prototype.website = website;
+//后端本地静态资源地址(封面/漫画图片/zip/pdf等)按当前访问站点替换，避免局域网其他机器加载失败；
+//不是自动全站替换：只在确实展示本地资源的字段上调用 $localUrl(...)
+Vue.prototype.$localUrl = toCurrentSiteUrl
 Vue.config.productionTip = false;
 Vue.use(VueAxios, axios)
 Vue.use(Element, {

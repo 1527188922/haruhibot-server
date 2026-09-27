@@ -222,7 +222,7 @@
         <el-table-column v-if="isAlbumColumnVisible('zip')" label="ZIP" prop="zipExists" width="80" align="center">
           <template slot-scope="{row}">
             <el-tooltip v-if="row.zipExists" content="点击下载ZIP文件" placement="top">
-              <a :href="row.serverZipUrl" target="_blank" download>
+              <a :href="$localUrl(row.serverZipUrl)" target="_blank" download>
                 <el-tag size="mini" type="success">{{formatBool(row.zipExists)}}</el-tag>
               </a>
             </el-tooltip>
@@ -232,7 +232,7 @@
         <el-table-column v-if="isAlbumColumnVisible('pdf')" label="PDF" prop="pdfExists" width="80" align="center">
           <template slot-scope="{row}">
             <el-tooltip v-if="row.pdfExists" content="点击下载PDF文件" placement="top">
-              <a :href="row.serverPdfUrl" target="_blank" download>
+              <a :href="$localUrl(row.serverPdfUrl)" target="_blank" download>
                 <el-tag size="mini" type="success">{{formatBool(row.pdfExists)}}</el-tag>
               </a>
             </el-tooltip>
@@ -391,7 +391,10 @@
           <template slot-scope="{row}"><a :href="row.imgUrl" target="_blank">{{row.imgUrl}}</a></template>
         </el-table-column>
         <el-table-column label="服务器图片url" prop="serverImgUrl" min-width="300" show-overflow-tooltip>
-          <template slot-scope="{row}"><a :href="row.serverImgUrl" target="_blank">{{row.serverImgUrl}}</a></template>
+          <template slot-scope="{row}">
+            <a v-if="row.serverImgUrl" :href="serverImgUrlFor(row)" target="_blank">{{serverImgUrlFor(row)}}</a>
+            <span v-else>-</span>
+          </template>
         </el-table-column>
         <el-table-column label="seriesId" prop="seriesId" min-width="100" align="center"></el-table-column>
         <el-table-column label="章节添加时间" prop="formattedChapterAddTime" min-width="150" align="center"></el-table-column>
@@ -755,12 +758,21 @@ export default {
     },
     /**
      * 封面展示地址：优先本地服务器封面(下载漫画时会落盘)，本地没有时回退JM远程封面
+     * <p>
+     * 本地封面由后端按配置的host拼出，这里换成当前访问站点，保证局域网其他机器也能加载；
+     * JM远程封面不是本地资源，$localUrl 会原样返回
      */
     albumCoverSrc(row) {
-      return row ? (row.serverCoverUrl || row.coverUrl || '') : ''
+      return row ? (this.$localUrl(row.serverCoverUrl) || row.coverUrl || '') : ''
     },
     albumCoverTip(row) {
-      return row && row.serverCoverUrl ? `本地封面：${row.serverCoverUrl}` : `JM封面：${row.coverUrl || ''}`
+      return row && row.serverCoverUrl ? `本地封面：${this.$localUrl(row.serverCoverUrl)}` : `JM封面：${row.coverUrl || ''}`
+    },
+    /**
+     * 章节图片的服务器地址，同样按当前访问站点替换，便于直接点开查看
+     */
+    serverImgUrlFor(row) {
+      return this.$localUrl(row && row.serverImgUrl)
     },
     isAlbumCollected(row) {
       return !!(row && row.collected)

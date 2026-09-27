@@ -22,7 +22,7 @@
                   <span>{{formatPreviewImageIndex(image)}}</span>
                   <span :title="formatPreviewImageFileName(image)" class="jm-preview-image-name">{{formatPreviewImageFileName(image)}}</span>
                 </div>
-                <img v-if="isPreviewImageAvailable(image) && image.lazyVisible" :src="image.serverImgUrl" :alt="image.imageFile" class="jm-preview-image" @error="markPreviewImageLoadFailed(image)">
+                <img v-if="isPreviewImageAvailable(image) && image.lazyVisible" :src="$localUrl(image.serverImgUrl)" :alt="image.imageFile" class="jm-preview-image" @error="markPreviewImageLoadFailed(image)">
                 <div v-else-if="isPreviewImageAvailable(image)" class="jm-preview-image-pending">
                   <i class="el-icon-loading"></i>
                   <div>图片进入可视区域后加载</div>
@@ -262,6 +262,9 @@ export default {
     formatPreviewImageFileName(image) {
       return image && image.imageFile ? image.imageFile : '未知文件'
     },
+    /**
+     * 可展示性只看字段本身；地址按当前访问站点替换由 $localUrl 在渲染时完成
+     */
     isPreviewImageAvailable(image) {
       return image && image.imageFileExists && image.serverImgUrl && !image.loadFailed
     },

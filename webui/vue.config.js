@@ -1,5 +1,26 @@
-// 基础路径 注意发布之前要先修改这里
+//基础路径 注意发布之前要先修改这里
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
+
+const devTarget = 'http://127.0.0.1:8090'
+//本地静态资源目录：前端会把后端返回的封面/漫画图片地址换成当前访问站点(src/util/url.js)，
+//开发环境这些路径同样需要代理到后端，否则dev(8091)下会404
+const localResourcePaths = ['/jmcomic', '/image', '/audio', '/excel', '/video', '/logs']
+const devProxy = {
+  '/api': {
+    target: devTarget,
+    // target: 'http://115.29.215.124:8090',
+    changeOrigin: true,
+    // webui 全局WebSocket(/api/webui/ws)需要走代理，缺少ws:true时开发环境永远连不上
+    ws: true,
+  }
+}
+localResourcePaths.forEach(path => {
+  devProxy[path] = {
+    target: devTarget,
+    changeOrigin: true,
+  }
+})
+
 module.exports = {
   publicPath: process.env.VUE_APP_BASE_URL,
   lintOnSave: true,
@@ -59,14 +80,6 @@ module.exports = {
         }
       }
     },
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8090',
-        // target: 'http://115.29.215.124:8090',
-        changeOrigin: true,
-        // webui 全局WebSocket(/api/webui/ws)需要走代理，缺少ws:true时开发环境永远连不上
-        ws: true,
-      }
-    }
+    proxy: devProxy
   }
 }
