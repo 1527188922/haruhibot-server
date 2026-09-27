@@ -331,6 +331,94 @@
       padding-bottom: constant(safe-area-inset-bottom);
       padding-bottom: env(safe-area-inset-bottom);
     }
+
+    /**
+     * 抽屉标题常含长且不可断的片段（如 JM529510、[manymanyrain），
+     * 不强制断词会把标题行撑宽，导致抽屉内容整体横向溢出：
+     * 底部会因此冒出横向滚动条，把固定在底部的章节 Tab 顶出可视区。
+     */
+    .el-drawer__header > :first-child {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+  }
+
+  /**
+   * 漫画预览抽屉：移动端绝不能出现横向滚动条。
+   * 滚动条一旦出现会占掉一整条高度，把固定在底部的章节 Tab 顶出可视区。
+   *
+   * 放在全局而不是组件 scoped 里，是因为 custom-class(.jm-preview-drawer) 挂在
+   * element-ui 抽屉根节点上、不属于组件 scoped 模板，写进 scoped 会编译成
+   * "[data-v-x] .el-drawer"，把规则扩散到全站抽屉。
+   *
+   * overflow-x: clip 只裁剪、不会把元素变成滚动容器，所以横向不产生滚动条，
+   * 纵向滚动仍由内层 .el-tabs__content 承担；先写 hidden 作为老浏览器回退。
+   */
+  .jm-preview-drawer {
+    .el-drawer__body {
+      overflow-x: hidden;
+      overflow-x: clip;
+    }
+  }
+
+  .jm-preview {
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+
+    .el-tabs__content {
+      padding-left: 0;
+      padding-right: 0;
+      overflow-x: hidden;
+      overflow-x: clip;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    // 章节 Tab 在底部
+    .el-tabs--bottom .el-tabs__header.is-bottom {
+      margin-top: 4px;
+      margin-bottom: 0;
+    }
+
+    .el-tabs__nav-wrap {
+      padding: 0 6px;
+    }
+
+    .el-tabs__item {
+      font-size: 13px;
+      height: 36px;
+      line-height: 36px;
+      padding: 0 12px;
+    }
+
+    // 章节可能很多，底部 Tab 条自身允许横向滑动
+    .el-tabs__nav-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .jm-preview-content {
+      // 手机上把纵向空间尽量留给图片
+      min-height: 200px;
+    }
+
+    .jm-preview-image-meta {
+      font-size: 12px;
+      gap: 6px;
+    }
+
+    .jm-preview-image-missing,
+    .jm-preview-image-pending {
+      min-height: 120px;
+      padding: 12px;
+    }
+
+    .jm-preview-load-more {
+      // 底部 Tab 已占据底部空间，这里留出一点间距即可
+      padding-bottom: 4px;
+    }
   }
 
   /* ---------- 表格：强制横向滚动，禁止列被等比压缩到不可读 ---------- */
