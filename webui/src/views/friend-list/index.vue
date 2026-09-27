@@ -38,7 +38,7 @@
       </div>
       <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row >
-        <el-table-column fixed label="序号" width="45" align="center">
+        <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
         <el-table-column label="好友" prop="userId" min-width="130" align="center" show-tooltip-when-overflow >

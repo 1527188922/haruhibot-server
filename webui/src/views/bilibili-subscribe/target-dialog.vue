@@ -1,6 +1,6 @@
 <template>
   <div id="BilibiliSubscribeTargetDialog">
-    <el-dialog :visible.sync="visible" :title="title" width="660px" @closed="dialogClosed" v-dialogDrag
+    <el-dialog :visible.sync="visible" :title="title" width="660px" @closed="dialogClosed" :dialog-drag-enabled="!isMobileView"
                :close-on-click-modal="false">
       <push-target-select ref="selector" :type="type"
                           :ids.sync="selectedIds" :at-all-ids.sync="atAllIds"

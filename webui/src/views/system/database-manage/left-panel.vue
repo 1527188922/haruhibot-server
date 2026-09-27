@@ -8,6 +8,7 @@
     <div class="tree-container">
       <el-tree ref="tree" :data="tableNodes" :props="props" :load="loadNode" node-key="key" lazy
                highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode"
+               v-contextmenu-longpress
                @node-contextmenu="nodeContextmenu">
             <span class="alignment" slot-scope="{ node, data }">
                <span>

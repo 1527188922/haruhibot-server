@@ -16,6 +16,7 @@ import './styles/common.scss';
 import basicBlock from './components/basic-block/main'
 import basicContainer from './components/basic-container/main'
 import crudCommon from '@/mixins/crud.js'
+import mobileMixin from '@/mixins/mobile.js'
 import dayjs from 'dayjs'
 import website from '@/config/website'
 import './util/directives'
@@ -40,6 +41,8 @@ Vue.use(AVUE, {
 //注册全局容器
 Vue.component('basicContainer', basicContainer)
 Vue.component('basicBlock', basicBlock)
+//全站混入移动端标记(isMobileView/screenWidth)，供各页面做移动端条件渲染
+Vue.mixin(mobileMixin)
 
 //全局WebSocket：登录后建立一条连接，任何页面/组件都通过 this.$ws 注册监听或发送消息
 Vue.prototype.$ws = wsClient

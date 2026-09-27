@@ -1,12 +1,12 @@
 <template>
   <div id="UserListDialog">
     <el-dialog :visible.sync="visible" :title="title"
-               width="700px" @closed="dialogClosed" v-dialogDrag :close-on-click-modal="false">
+               width="700px" @closed="dialogClosed" :dialog-drag-enabled="!isMobileView" :close-on-click-modal="false">
       <multi-cell slot="title" :text-list="[title]" :image-url="avatarUrl"></multi-cell>
       <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row
                 @sort-change="sortChange" class="sortable-table">
-        <el-table-column fixed label="序号" width="45" align="center">
+        <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
         <el-table-column label="群成员" prop="userId" min-width="130" align="center" show-tooltip-when-overflow >

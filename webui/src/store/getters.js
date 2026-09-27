@@ -11,6 +11,10 @@ const getters = {
   isCollapse: state => state.common.isCollapse,
   keyCollapse: (state, getters) => getters.screen > 1 ? getters.isCollapse : false,
   screen: state => state.common.screen,
+  screenWidth: state => state.common.screenWidth,
+  screenHeight: state => state.common.screenHeight,
+  // 移动端形态：screen<=1 即窗口宽度 < 992px（断点定义见 util/admin.js）
+  isMobile: (state, getters) => getters.screen === 0 || getters.screen === 1,
   isLock: state => state.common.isLock,
   isFullScren: state => state.common.isFullScren,
   isMenu: state => state.common.isMenu,

@@ -2,6 +2,12 @@
   <div class="right-panel">
     <el-container>
       <el-aside>
+        <!-- 移动端：资源树默认收起，这里提供展开入口（桌面端隐藏） -->
+        <div class="btn-dev btn-dev--mobile-only" title="资源树">
+          <el-button type="text" @click="$emit('toggle-left-panel')">
+            <i class="el-icon-s-fold"></i>
+          </el-button>
+        </div>
         <div class="btn-dev" title="执行">
           <el-button type="text" @click="exec">▶</el-button>
         </div>
@@ -21,7 +27,7 @@
                         @change="handleSqlChange"></sql-textarea>
         </el-main>
 
-        <!-- 拖动条 -->
+        <!-- 拖动条：移动端无鼠标拖拽，由下方样式隐藏 -->
         <div class="drag-bar" @mousedown="startDrag" :style="{ height: dragBarHeight + 'px'}"></div>
 
         <el-footer ref="footer" :style="{ height: footerHeight + 'px' }">
@@ -249,6 +255,11 @@ export default {
       border-bottom: 1px solid #DCDFE6;
     }
 
+    // 资源树开关只在移动端出现（桌面端资源树常驻，无需开关）
+    .btn-dev--mobile-only {
+      display: none;
+    }
+
   }
 
   ::v-deep .el-footer{
@@ -266,6 +277,36 @@ export default {
   }
   .drag-bar:hover {
     background: #409EFF;
+  }
+
+  /**
+   * 移动端：显示资源树开关，放大按钮触控区域，隐藏鼠标拖拽条。
+   * 结果面板占位高度改由样式控制，避免拖动条失效后出现极端高度。
+   */
+  @media screen and (max-width: 768px) {
+    ::v-deep .el-aside {
+      width: 40px !important;
+      padding: 2px;
+
+      .btn-dev {
+        .el-button {
+          padding: 12px 4px;
+        }
+      }
+    }
+
+    .btn-dev--mobile-only {
+      display: block;
+    }
+
+    .drag-bar {
+      display: none;
+    }
+
+    ::v-deep .el-main,
+    ::v-deep .el-footer {
+      min-height: 120px;
+    }
   }
 
 }

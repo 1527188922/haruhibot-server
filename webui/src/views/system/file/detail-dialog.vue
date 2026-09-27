@@ -1,6 +1,6 @@
 <template>
   <div id="DetailDialog">
-    <el-dialog :visible.sync="visible" title="文件详细信息" width="650px" @closed="dialogClosed" v-dialogDrag>
+    <el-dialog :visible.sync="visible" title="文件详细信息" width="650px" @closed="dialogClosed" :dialog-drag-enabled="!isMobileView">
       <el-form :model="nodeData" label-width="115px">
         <el-form-item label="绝对路径：" class="info-form-item">
           {{nodeData.absolutePath}}

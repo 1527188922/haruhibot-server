@@ -1,6 +1,6 @@
 <template>
   <div class="import-data-dialog">
-    <el-dialog :title="title" :visible.sync="dialogVisible" width="500px" v-dialogDrag :close-on-click-modal="false"
+    <el-dialog :title="title" :visible.sync="dialogVisible" width="500px" :dialog-drag-enabled="!isMobileView" :close-on-click-modal="false"
                 @closed="dialogClosed">
       <el-row>
         <el-tooltip class="item" effect="dark" placement="top">

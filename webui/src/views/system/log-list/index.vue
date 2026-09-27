@@ -58,10 +58,10 @@
     <basic-container>
       <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row>
-        <el-table-column fixed label="序号" width="45" align="center">
+        <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{ scope.$index + 1 }}</template>
         </el-table-column>
-        <el-table-column label="级别" prop="level" width="80" align="center" fixed>
+        <el-table-column label="级别" prop="level" width="80" align="center" :fixed="!isMobileView">
           <template slot-scope="{row}">
             <el-tag size="mini" :type="levelTagType(row.level)" effect="plain">{{ row.level }}</el-tag>
           </template>

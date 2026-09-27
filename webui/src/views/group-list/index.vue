@@ -63,10 +63,10 @@
       </div>
       <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row >
-        <el-table-column fixed label="序号" width="45" align="center">
+        <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
-        <el-table-column label="操作" width="230" align="center" fixed>
+        <el-table-column label="操作" width="230" align="center" :fixed="!isMobileView">
           <template slot-scope="{row}">
             <el-button type="text" size="small" @click="showMemberList(row)">查看群员</el-button>
             <el-button type="text" size="small" @click="showUserList(row)">发言人列表</el-button>
@@ -105,10 +105,10 @@
       </div>
       <el-table tooltip-effect="light" :data="memberTableData" v-loading="memberTableLoading" border
                 stripe max-height="800" size="small" ref="memberDataTable" highlight-current-row >
-        <el-table-column fixed label="序号" width="45" align="center">
+        <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
-        <el-table-column label="状态" prop="leftFlag" width="80" align="center" fixed>
+        <el-table-column label="状态" prop="leftFlag" width="80" align="center" :fixed="!isMobileView">
           <template slot-scope="{row}">
             <el-tag size="mini" :type="row.leftFlag === 1 ? 'danger' : 'success'">{{row.leftFlag === 1 ? '已离群' : '在群'}}</el-tag>
           </template>

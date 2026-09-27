@@ -1,6 +1,6 @@
 <template>
   <div id="MemberRefreshResultDialog">
-    <el-dialog :visible.sync="visible" :title="title" width="520px" @closed="dialogClosed" v-dialogDrag
+    <el-dialog :visible.sync="visible" :title="title" width="520px" @closed="dialogClosed" :dialog-drag-enabled="!isMobileView"
                :close-on-click-modal="false">
       <template v-if="result">
         <el-collapse v-model="activeNames">

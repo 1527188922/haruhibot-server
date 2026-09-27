@@ -1,6 +1,6 @@
 <template>
   <div id="DictEditDialog">
-    <el-dialog :visible.sync="visible" :title="title" width="450px" @closed="dialogClosed" v-dialogDrag
+    <el-dialog :visible.sync="visible" :title="title" width="450px" @closed="dialogClosed" :dialog-drag-enabled="!isMobileView"
                :close-on-click-modal="false">
       <el-form :model="formData" label-position="right" ref="editForm" label-width="50px">
         <el-form-item label="key" prop="key" :rules="[{required: true, message:'请输入key',trigger: 'blur'}]">

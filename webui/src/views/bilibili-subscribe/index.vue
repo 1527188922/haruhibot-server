@@ -46,10 +46,10 @@
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row
                 @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" align="center"></el-table-column>
-        <el-table-column fixed label="序号" width="45" align="center">
+        <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
-        <el-table-column fixed label="操作" width="90" align="center">
+        <el-table-column :fixed="!isMobileView" label="操作" width="90" align="center">
           <template slot-scope="{row}">
             <el-button type="text" size="small" @click="edit(row)">修改</el-button>
           </template>

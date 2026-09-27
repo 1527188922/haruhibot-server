@@ -1,3 +1,5 @@
 $sidebar_width: 230px;
 $sidebar_collapse:60px;
 $top_height:50px;
+// 移动端(<768px)表格最小宽度：低于该值时强制横向滚动，避免多列被等比压扁到不可读
+$mobile_table_min_width: 720px;

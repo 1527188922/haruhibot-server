@@ -1,6 +1,6 @@
 <template>
   <div id="RefreshResultDialog">
-    <el-dialog :visible.sync="visible" title="刷新群聊完成" width="450px" @closed="dialogClosed" v-dialogDrag
+    <el-dialog :visible.sync="visible" title="刷新群聊完成" width="450px" @closed="dialogClosed" :dialog-drag-enabled="!isMobileView"
     :close-on-click-modal="false">
 <!--      <PopoverResultPlan :result="result"/>-->
       <CollapseResultPlan :result="result"/>

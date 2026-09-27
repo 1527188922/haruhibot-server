@@ -22,6 +22,7 @@
           </div>
           <el-tree ref="tree" :data="fileNodes" :props="props" :load="loadNode" node-key="absolutePath" lazy
               highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode"
+                   v-contextmenu-longpress
                    @node-contextmenu="nodeContextmenu">
             <span class="alignment" slot-scope="{ node, data }">
                <span>

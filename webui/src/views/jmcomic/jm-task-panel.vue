@@ -1,5 +1,5 @@
 <template>
-  <el-drawer :title="drawerTitle" :visible.sync="visibleProxy" size="660px" direction="rtl" custom-class="jm-task-drawer">
+  <el-drawer :title="drawerTitle" :visible.sync="visibleProxy" :size="drawerSize" :direction="drawerDirection" custom-class="jm-task-drawer">
     <div class="jm-task-panel">
       <div class="jm-task-toolbar">
         <span class="jm-task-summary">
@@ -186,6 +186,13 @@ export default {
     drawerTitle() {
       const active = this.counters.running + this.counters.queued
       return active > 0 ? `JM任务队列（${active}）` : 'JM任务队列'
+    },
+    // 移动端改用底部抽屉并铺满宽度，桌面端保持右侧 660px 面板
+    drawerDirection() {
+      return this.isMobileView ? 'btt' : 'rtl'
+    },
+    drawerSize() {
+      return this.isMobileView ? '92%' : '660px'
     }
   },
   watch: {

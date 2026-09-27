@@ -1,10 +1,17 @@
 <template>
   <div class="avue-top">
     <div class="top-bar__left">
+      <!--
+        侧边栏开关。图标改用 element-ui 自带字体：
+        原来的 icon-navicon 依赖 index.html 里 //at.alicdn.com 的外部 iconfont，
+        该字体在国内手机网络/拦截规则下经常加载失败，<i> 会渲染成空白，
+        导致移动端看不到也点不到菜单入口。el-icon 字体随 element-ui 一起打包，不依赖外网。
+      -->
       <div class="avue-breadcrumb"
-           :class="[{ 'avue-breadcrumb--active': isCollapse }]"
            v-if="setting.collapse&&!isHorizontal">
-        <i class="icon-navicon"
+        <i class="avue-breadcrumb__icon"
+           :class="isCollapse ? 'el-icon-s-unfold' : 'el-icon-s-fold'"
+           title="展开/收起菜单"
            @click="setCollapse"></i>
       </div>
     </div>
@@ -195,4 +202,18 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+/**
+ * 侧边栏开关按钮。
+ * 图标用 element-ui 自带字体，不依赖 index.html 里的外部 iconfont CDN；
+ * 字体家族显式声明，避免字体未就绪时把内容当普通文本渲染成方框。
+ */
+.avue-breadcrumb {
+  &__icon {
+    cursor: pointer;
+    display: inline-block;
+    font-family: element-icons !important;
+    // 保证足够大的点击区域，便于手机上点按
+    padding: 0 2px;
+  }
+}
 </style>

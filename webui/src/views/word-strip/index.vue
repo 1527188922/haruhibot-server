@@ -42,7 +42,7 @@
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row
                 @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" align="center"></el-table-column>
-        <el-table-column fixed label="序号" width="45" align="center">
+        <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
         </el-table-column>
         <el-table-column label="关键字" prop="keyWord" min-width="100">

@@ -152,7 +152,7 @@ public class ConfigController {
     @PostMapping("/refreshAll")
     public HttpResp<String> refreshAll() {
         configHub.refreshAll();
-        return HttpResp.success("已重新加载全部配置文件");
+        return HttpResp.success("已重新加载全部配置文件", null);
     }
 
     private HttpResp<SaveResult> doSave(Map<ConfigKey, String> values) {

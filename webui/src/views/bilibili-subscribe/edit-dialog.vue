@@ -1,6 +1,6 @@
 <template>
   <div id="BilibiliSubscribeEditDialog">
-    <el-dialog :visible.sync="visible" :title="title" width="660px" @closed="dialogClosed" v-dialogDrag
+    <el-dialog :visible.sync="visible" :title="title" width="660px" @closed="dialogClosed" :dialog-drag-enabled="!isMobileView"
                :close-on-click-modal="false">
       <el-form :model="formData" label-position="right" ref="editForm" label-width="100px" size="small">
         <el-form-item label="主播UID" prop="uid" :rules="[{required: true, message:'请输入b站主播uid',trigger: 'blur'}]">

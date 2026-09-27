@@ -12,6 +12,9 @@ const common = {
     isMenu: true,
     isRefresh: true,
     screen: -1,
+    // 视口尺寸：只随断点变化刷新，供移动端布局/像素计算使用
+    screenWidth: 0,
+    screenHeight: 0,
     isLock: getStore({ name: 'isLock' }),
     colorName: getStore({ name: 'colorName' }) || '#409EFF',
     themeName: getStore({ name: 'themeName' }) || 'default',
@@ -47,6 +50,12 @@ const common = {
       })
     },
     SET_SCREEN: (state, screen) => {
+      if (typeof screen === 'object' && screen !== null) {
+        state.screen = screen.screen;
+        state.screenWidth = screen.width;
+        state.screenHeight = screen.height;
+        return;
+      }
       state.screen = screen;
     },
     SET_COLOR_NAME: (state, colorName) => {

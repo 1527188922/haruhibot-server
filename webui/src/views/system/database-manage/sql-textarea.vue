@@ -1,5 +1,5 @@
 <template>
-  <div class="sql-editor-container">
+  <div class="sql-editor-container" v-contextmenu-longpress>
     <el-input
         ref="textarea"
         type="textarea"

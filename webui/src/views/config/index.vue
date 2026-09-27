@@ -195,7 +195,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="180" align="center" fixed="right">
+          <el-table-column label="操作" width="180" align="center" :fixed="!isMobileView ? 'right' : false">
             <template slot-scope="{row}">
               <el-button type="text" size="mini" :disabled="!row.dirty" @click="saveOne(row)">保存</el-button>
               <el-button v-if="row.hot" type="text" size="mini" @click="refreshOne(row)">刷新</el-button>
@@ -207,7 +207,7 @@
     </div>
 
     <!-- 查看文件原始内容 -->
-    <el-dialog :visible.sync="fileDialog.visible" :title="fileDialog.title" width="760px" v-dialogDrag>
+    <el-dialog :visible.sync="fileDialog.visible" :title="fileDialog.title" width="760px" :dialog-drag-enabled="!isMobileView">
       <pre class="file-preview">{{ fileDialog.content }}</pre>
       <span slot="footer">
         <el-button @click="fileDialog.visible = false">关闭</el-button>

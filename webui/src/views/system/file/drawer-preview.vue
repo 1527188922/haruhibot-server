@@ -2,9 +2,9 @@
   <div id="DrawerPreview">
     <el-drawer
         :visible.sync="drawer"
-        :direction="direction"
+        :direction="drawerDirection"
         :destroy-on-close="true"
-        size="70%"
+        :size="drawerSize"
         @closed="closed">
       <div slot="title" v-loading="saveLoading">
         <div class="" >
@@ -66,6 +66,15 @@ export default {
       },
       editable:false,
       oldValue:''
+    }
+  },
+  computed:{
+    // 移动端改用底部抽屉并铺满，代码/文本在小屏上可从底部整块拉起
+    drawerDirection(){
+      return this.isMobileView ? 'btt' : this.direction
+    },
+    drawerSize(){
+      return this.isMobileView ? '92%' : '70%'
     }
   },
   created() {

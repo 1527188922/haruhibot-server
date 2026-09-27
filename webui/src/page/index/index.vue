@@ -3,6 +3,10 @@
        :class="{'avue--collapse':isCollapse,}">
     <screenshot v-if="setting.screenshot"></screenshot>
 <!--    <setting></setting>-->
+    <!-- 移动端侧边栏遮罩：点空白处收起抽屉 -->
+    <div class="avue-sidebar-mask"
+         v-if="mobileSidebarOpen"
+         @click="closeMobileSidebar"></div>
     <div class="avue-layout"
          :class="{'avue-layout--horizontal':isHorizontal}">
       <div class="avue-sidebar"
@@ -20,15 +24,17 @@
           <search class="avue-view"
                   v-show="isSearch"></search>
         </transition>
-        <!-- 主体视图层 -->
+        <!-- 主体视图层：外层统一负责横向滚动，移动端表格不会撑破页面 -->
         <div style="flex:auto;overflow-y:auto;overflow-x:hidden;"
              id="avue-view"
              v-show="!isSearch">
-          <keep-alive>
-            <router-view class="avue-view"
-                         :key="key"
-                         v-if="isRefresh" />
-          </keep-alive>
+          <div class="page-table-scroll">
+            <keep-alive>
+              <router-view class="avue-view"
+                           :key="key"
+                           v-if="isRefresh" />
+            </keep-alive>
+          </div>
         </div>
         <div class="avue-footer">
 <!--          <p class="copyright">© 2018-2021 Avue designed by smallwei</p>-->
@@ -71,11 +77,17 @@ export default {
   data () {
     return {
       //搜索控制
-      isSearch: false
+      isSearch: false,
+      // 是否已完成首屏初始化：避免初始化过程中 isMobileView 由 false 变 true 时误关侧边栏
+      screenReady: false
     };
   },
   mounted () {
     this.init();
+  },
+  beforeDestroy () {
+    window.removeEventListener('resize', this.handleWindowResize);
+    window.removeEventListener('orientationchange', this.handleWindowResize);
   },
   computed: {
     ...mapGetters(["isHorizontal", "setting", "isRefresh", "isCollapse", "menu"]),
@@ -84,18 +96,60 @@ export default {
     },
     validSidebar () {
       return !((this.$route.meta || {}).menu == false || (this.$route.query || {}).menu == 'false')
+    },
+    // 移动端侧边栏以抽屉形式展开时，显示遮罩以便点击空白处收起
+    mobileSidebarOpen () {
+      return this.isMobileView && this.isCollapse && this.validSidebar
+    }
+  },
+  watch: {
+    /**
+     * isCollapse 在桌面端表示"折叠成图标栏"，在移动端却表示"抽屉展开"，
+     * 两者共用同一份状态。若在桌面折叠过侧边栏再把窗口缩到手机宽度，
+     * 进页面就会莫名其妙弹出抽屉和遮罩。进入移动端形态时统一复位为收起。
+     */
+    isMobileView (value) {
+      if (!this.screenReady) {
+        return
+      }
+      if (value && this.isCollapse) {
+        this.$store.commit("SET_COLLAPSE");
+      }
     }
   },
   props: [],
   methods: {
-    // 屏幕检测
+    // 屏幕检测：断点变化时才提交，避免拖动窗口/移动端地址栏伸缩导致的高频渲染
     init () {
-      this.$store.commit("SET_SCREEN", admin.getScreen());
-      window.onresize = () => {
-        setTimeout(() => {
-          this.$store.commit("SET_SCREEN", admin.getScreen());
-        }, 0);
-      };
+      this.commitScreen(true);
+      window.addEventListener('resize', this.handleWindowResize);
+      window.addEventListener('orientationchange', this.handleWindowResize);
+      // 首屏渲染完成后再开启跨断点复位逻辑
+      this.$nextTick(() => {
+        this.screenReady = true;
+      });
+    },
+    handleWindowResize () {
+      this.commitScreen(false);
+    },
+    commitScreen (force) {
+      const width = admin.getWindowWidth();
+      if (!force
+        && width === this.screenWidth
+        && admin.getScreen() === this.screen) {
+        return;
+      }
+      this.$store.commit("SET_SCREEN", {
+        screen: admin.getScreen(),
+        width,
+        height: admin.getWindowHeight()
+      });
+    },
+    // 收起移动端侧边栏抽屉
+    closeMobileSidebar () {
+      if (this.isCollapse) {
+        this.$store.commit("SET_COLLAPSE");
+      }
     },
     //打开菜单
     openMenu (item = {}) {

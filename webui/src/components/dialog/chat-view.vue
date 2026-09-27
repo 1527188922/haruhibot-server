@@ -1,6 +1,6 @@
 <template>
   <div id="ChatView">
-    <el-dialog :visible.sync="visible" :title="title" width="600px" @closed="dialogClosed" v-dialogDrag>
+    <el-dialog :visible.sync="visible" :title="title" width="600px" @closed="dialogClosed" :dialog-drag-enabled="!isMobileView">
       <div class="chat-wrap">
         <div class="chat-window">
           <div class="message-item" :id="'msg-' + item.id"  v-for="item in messageList" :key="item.id">

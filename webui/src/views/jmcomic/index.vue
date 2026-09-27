@@ -120,7 +120,7 @@
       <el-table v-if="albumViewMode === 'list'" tooltip-effect="light" :data="albumData" v-loading="albumLoading" border stripe max-height="800"
                 size="small" ref="albumTable" highlight-current-row :row-class-name="albumRowClassName" @selection-change="albumSelectionChange">
         <el-table-column v-if="isAlbumColumnVisible('selection')" type="selection" width="50" align="center"></el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('action')" fixed label="操作" width="96" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('action')" :fixed="!isMobileView" label="操作" width="96" align="center">
           <template slot-scope="{row}">
             <div class="jm-action-grid">
               <el-tooltip content="预览漫画" placement="top">
@@ -138,10 +138,10 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('index')" fixed label="序号" width="50" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('index')" :fixed="!isMobileView" label="序号" width="50" align="center">
           <template slot-scope="scope">{{scope.$index + 1}}</template>
         </el-table-column>
-        <el-table-column v-if="isAlbumColumnVisible('id')" fixed label="JM ID" prop="id" min-width="110" align="center">
+        <el-table-column v-if="isAlbumColumnVisible('id')" :fixed="!isMobileView" label="JM ID" prop="id" min-width="110" align="center">
           <template slot-scope="{row}">
             <span class="primary-text" style="cursor:pointer;" @click="jumpToChapters(row)">{{row.id}}</span>
           </template>
@@ -374,10 +374,10 @@
       <el-table tooltip-effect="light" :data="chapterData" v-loading="chapterLoading" border stripe max-height="800"
                 size="small" ref="chapterTable" highlight-current-row @selection-change="chapterSelectionChange">
         <el-table-column type="selection" width="50" align="center"></el-table-column>
-        <el-table-column fixed label="序号" width="50" align="center">
+        <el-table-column :fixed="!isMobileView" label="序号" width="50" align="center">
           <template slot-scope="scope">{{scope.$index + 1}}</template>
         </el-table-column>
-        <el-table-column fixed label="JM ID" prop="albumId" min-width="110" align="center"></el-table-column>
+        <el-table-column :fixed="!isMobileView" label="JM ID" prop="albumId" min-width="110" align="center"></el-table-column>
         <el-table-column label="章节ID" prop="chapterId" min-width="110" align="center"></el-table-column>
         <el-table-column label="章节序号" prop="chapterSort" min-width="90" align="center"></el-table-column>
         <el-table-column label="章节title" prop="chapterTitle" min-width="130" show-overflow-tooltip></el-table-column>

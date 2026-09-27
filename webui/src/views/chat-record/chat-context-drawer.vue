@@ -1,6 +1,6 @@
 <template>
   <div id="chat-context-drawer">
-    <el-drawer :visible.sync="visible" :direction="direction" @closed="closed" size="680px">
+    <el-drawer :visible.sync="visible" :direction="drawerDirection" @closed="closed" :size="drawerSize">
       <template slot="title">
         <span v-if="v">
           <multi-cell v-if="isGroupMsg" :image-url="v.groupAvatarUrl" :text-list="[v.groupName,v.groupId ]" :title-list="[v.groupName ]"></multi-cell>
@@ -115,7 +115,6 @@ export default {
     return{
       loading:false,
       visible:false,
-      direction: 'rtl',
       v:null,
       messageList:[],
       errMsg:null,
@@ -138,6 +137,13 @@ export default {
   computed:{
     isGroupMsg(){
       return this.v.messageType === 'group'
+    },
+    // 移动端改为底部抽屉并铺满宽度，便于单手滑动浏览聊天上下文
+    drawerDirection(){
+      return this.isMobileView ? 'btt' : 'rtl'
+    },
+    drawerSize(){
+      return this.isMobileView ? '92%' : '680px'
     }
   },
   methods:{
