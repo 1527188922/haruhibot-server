@@ -8,14 +8,19 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.haruhi.botserver.bootstrap.WebResourceConfig;
+import com.haruhi.botserver.infrastructure.persistence.DataBaseConst;
 import com.haruhi.botserver.features.jmcomic.client.model.Album;
 import com.haruhi.botserver.features.jmcomic.client.model.Chapter;
 import com.haruhi.botserver.features.jmcomic.client.model.Series;
 import com.haruhi.botserver.features.jmcomic.persistence.entity.JmAlbumSqlite;
 import com.haruhi.botserver.features.jmcomic.persistence.entity.JmChapterImageSqlite;
+import com.haruhi.botserver.features.jmcomic.persistence.entity.JmFavoriteAlbumSqlite;
+import com.haruhi.botserver.features.jmcomic.persistence.entity.JmFavoriteSqlite;
 import com.haruhi.botserver.shared.error.BusinessException;
 import com.haruhi.botserver.features.jmcomic.persistence.mapper.JmAlbumSqliteMapper;
 import com.haruhi.botserver.features.jmcomic.persistence.mapper.JmChapterImageSqliteMapper;
+import com.haruhi.botserver.features.jmcomic.persistence.mapper.JmFavoriteAlbumSqliteMapper;
+import com.haruhi.botserver.features.jmcomic.persistence.mapper.JmFavoriteSqliteMapper;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumDeleteReq;
@@ -27,6 +32,9 @@ import com.haruhi.botserver.features.jmcomic.model.JmChapterImageManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageQueryReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterInfoResp;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteAlbumRemoveReq;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteAlbumReq;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteResp;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
@@ -58,11 +66,23 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
 
     private static final Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("jpg", "jpeg", "png", "gif", "webp", "bmp"));
 
+    /**
+     * 默认收藏夹名称。初始化时由 SqliteDatabaseService 写入，不允许删除/重命名。
+     * 收藏时不指定收藏夹、或漫画被移出所有收藏夹时，都会回落到这里。
+     */
+    public static final String DEFAULT_FAVORITE_NAME = "默认收藏夹";
+
     @Autowired
     private JmAlbumSqliteMapper jmAlbumSqliteMapper;
 
     @Autowired
     private JmChapterImageSqliteMapper jmChapterImageSqliteMapper;
+
+    @Autowired
+    private JmFavoriteSqliteMapper jmFavoriteSqliteMapper;
+
+    @Autowired
+    private JmFavoriteAlbumSqliteMapper jmFavoriteAlbumSqliteMapper;
 
     @Autowired
     private WebResourceConfig webResourceConfig;
@@ -158,16 +178,58 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 .eq(Objects.nonNull(request.getId()), JmAlbumSqlite::getId, request.getId())
                 .like(StringUtils.isNotBlank(request.getName()), JmAlbumSqlite::getName, request.getName())
                 .like(StringUtils.isNotBlank(request.getAuthor()), JmAlbumSqlite::getAuthor, request.getAuthor())
-                .eq(Objects.nonNull(request.getCollected()), JmAlbumSqlite::getCollected, request.getCollected())
+                // 指定收藏夹时以收藏夹为准：收藏夹本身已隐含"已收藏"，不再叠加 collected 条件
+                .eq(request.getFavoriteId() == null && Objects.nonNull(request.getCollected()),
+                        JmAlbumSqlite::getCollected, request.getCollected())
                 .orderByDesc(JmAlbumSqlite::getCreateTime);
         applyTagFilter(queryWrapper, request);
+        applyFavoriteFilter(queryWrapper, request.getFavoriteId());
         IPage<JmAlbumSqlite> sourcePage = jmAlbumSqliteMapper.selectPage(new Page<>(request.getCurrentPage(), request.getPageSize()), queryWrapper);
         Page<JmAlbumManageResp> targetPage = new Page<>(sourcePage.getCurrent(), sourcePage.getSize(), sourcePage.getTotal());
         List<JmAlbumManageResp> records = sourcePage.getRecords().stream()
                 .map(this::toAlbumManageResp)
                 .collect(Collectors.toList());
+        fillFavoriteIds(records);
         targetPage.setRecords(records);
         return targetPage;
+    }
+
+    /**
+     * 只看指定收藏夹下的漫画。
+     * 用 EXISTS 子查询而不是 JOIN，避免与分页 count 语句产生重复行。
+     */
+    private void applyFavoriteFilter(LambdaQueryWrapper<JmAlbumSqlite> query, Long favoriteId) {
+        if (favoriteId == null) {
+            return;
+        }
+        query.apply("EXISTS (SELECT 1 FROM `" + DataBaseConst.T_JM_FAVORITE_ALBUM
+                + "` fa WHERE fa.album_id = `" + DataBaseConst.T_JM_ALBUM
+                + "`.id AND fa.favorite_id = {0})", favoriteId);
+    }
+
+    /**
+     * 批量回填每条记录所属的收藏夹id，避免逐条查询。
+     */
+    private void fillFavoriteIds(List<JmAlbumManageResp> records) {
+        if (CollectionUtils.isEmpty(records)) {
+            return;
+        }
+        List<Long> albumIds = records.stream()
+                .map(JmAlbumManageResp::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (albumIds.isEmpty()) {
+            return;
+        }
+        Map<Long, List<Long>> favoriteIdMap = jmFavoriteAlbumSqliteMapper.selectList(
+                        new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                                .in(JmFavoriteAlbumSqlite::getAlbumId, albumIds))
+                .stream()
+                .collect(Collectors.groupingBy(JmFavoriteAlbumSqlite::getAlbumId,
+                        Collectors.mapping(JmFavoriteAlbumSqlite::getFavoriteId, Collectors.toList())));
+        records.forEach(record -> record.setFavoriteIds(
+                favoriteIdMap.getOrDefault(record.getId(), Collections.emptyList())));
     }
 
     private static void applyTagFilter(LambdaQueryWrapper<JmAlbumSqlite> query, JmAlbumQueryReq reqVO) {
@@ -308,8 +370,10 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     }
 
     /**
-     * 收藏/取消收藏JM主记录
-     * 只更新 collected 列，不动 modifyTime，避免打乱列表默认的修改时间排序
+     * 收藏/取消收藏JM主记录。
+     * 收藏：加入目标收藏夹（未指定则默认收藏夹，名称为新名称时自动新建），并置 collected=true；
+     * 取消：从所有收藏夹移出，并置 collected=false。
+     * 只更新 collected 列与关联表，不动 modifyTime，避免打乱列表默认的修改时间排序。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -317,9 +381,285 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (request == null || CollectionUtils.isEmpty(request.getIds())) {
             return;
         }
+        List<Long> ids = request.getIds().stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        if (!Boolean.TRUE.equals(request.getCollected())) {
+            // 取消收藏 = 从所有收藏夹移出
+            jmFavoriteAlbumSqliteMapper.delete(new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                    .in(JmFavoriteAlbumSqlite::getAlbumId, ids));
+            setCollectedFlag(ids, false);
+            return;
+        }
+        Long favoriteId = resolveFavoriteId(request.getFavoriteId(), request.getFavoriteName());
+        addAlbumsToFavoriteInternal(favoriteId, ids);
+        setCollectedFlag(ids, true);
+    }
+
+    @Override
+    public List<JmFavoriteResp> listFavorites() {
+        List<JmFavoriteSqlite> favorites = jmFavoriteSqliteMapper.selectList(
+                new LambdaQueryWrapper<JmFavoriteSqlite>()
+                        .orderByAsc(JmFavoriteSqlite::getSortOrder)
+                        .orderByAsc(JmFavoriteSqlite::getId));
+        if (favorites.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 一次查询统计所有收藏夹的数量，避免逐个 count
+        Map<Long, Long> countMap = jmFavoriteAlbumSqliteMapper.selectList(
+                        new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                                .select(JmFavoriteAlbumSqlite::getFavoriteId))
+                .stream()
+                .collect(Collectors.groupingBy(JmFavoriteAlbumSqlite::getFavoriteId, Collectors.counting()));
+        return favorites.stream().map(favorite -> {
+            JmFavoriteResp resp = new JmFavoriteResp();
+            BeanUtils.copyProperties(favorite, resp);
+            resp.setAlbumCount(countMap.getOrDefault(favorite.getId(), 0L));
+            resp.setIsDefault(isDefaultFavorite(favorite));
+            return resp;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public JmFavoriteResp createFavorite(String name) {
+        String trimmed = normalizeFavoriteName(name);
+        if (findFavoriteByName(trimmed) != null) {
+            throw new BusinessException("收藏夹「" + trimmed + "」已存在");
+        }
+        JmFavoriteSqlite entity = new JmFavoriteSqlite();
+        entity.setName(trimmed);
+        entity.setSortOrder(nextFavoriteSortOrder());
+        String now = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+        entity.setCreateTime(now);
+        entity.setModifyTime(now);
+        jmFavoriteSqliteMapper.insert(entity);
+        return toFavoriteResp(entity, 0L);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public JmFavoriteResp renameFavorite(Long id, String name) {
+        JmFavoriteSqlite favorite = requireFavorite(id);
+        if (isDefaultFavorite(favorite)) {
+            throw new BusinessException("默认收藏夹不支持重命名");
+        }
+        String trimmed = normalizeFavoriteName(name);
+        JmFavoriteSqlite sameName = findFavoriteByName(trimmed);
+        if (sameName != null && !Objects.equals(sameName.getId(), id)) {
+            throw new BusinessException("收藏夹「" + trimmed + "」已存在");
+        }
+        favorite.setName(trimmed);
+        favorite.setModifyTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+        jmFavoriteSqliteMapper.updateById(favorite);
+        Long albumCount = jmFavoriteAlbumSqliteMapper.selectCount(new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                .eq(JmFavoriteAlbumSqlite::getFavoriteId, id));
+        return toFavoriteResp(favorite, albumCount);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteFavorite(Long id) {
+        JmFavoriteSqlite favorite = requireFavorite(id);
+        if (isDefaultFavorite(favorite)) {
+            throw new BusinessException("默认收藏夹不支持删除");
+        }
+        // 先取出该收藏夹下的漫画，删除后把这些漫画回落到默认收藏夹，避免它们"凭空取消收藏"
+        List<Long> albumIds = jmFavoriteAlbumSqliteMapper.selectList(
+                        new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                                .select(JmFavoriteAlbumSqlite::getAlbumId)
+                                .eq(JmFavoriteAlbumSqlite::getFavoriteId, id))
+                .stream()
+                .map(JmFavoriteAlbumSqlite::getAlbumId)
+                .distinct()
+                .toList();
+        jmFavoriteAlbumSqliteMapper.delete(new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                .eq(JmFavoriteAlbumSqlite::getFavoriteId, id));
+        jmFavoriteSqliteMapper.deleteById(id);
+        if (albumIds.isEmpty()) {
+            return;
+        }
+        Long defaultFavoriteId = getOrCreateDefaultFavoriteId();
+        addAlbumsToFavoriteInternal(defaultFavoriteId, albumIds);
+        // 这些漫画仍在默认收藏夹中，collected 保持 true
+        setCollectedFlag(albumIds, true);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addAlbumsToFavorite(JmFavoriteAlbumReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getAlbumIds())) {
+            return;
+        }
+        List<Long> ids = request.getAlbumIds().stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        Long favoriteId = resolveFavoriteId(request.getFavoriteId(), request.getFavoriteName());
+        addAlbumsToFavoriteInternal(favoriteId, ids);
+        setCollectedFlag(ids, true);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void removeAlbumsFromFavorite(JmFavoriteAlbumRemoveReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getAlbumIds())) {
+            return;
+        }
+        List<Long> ids = request.getAlbumIds().stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        jmFavoriteAlbumSqliteMapper.delete(new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                .in(JmFavoriteAlbumSqlite::getAlbumId, ids)
+                .eq(request.getFavoriteId() != null, JmFavoriteAlbumSqlite::getFavoriteId, request.getFavoriteId()));
+        // 移出后仍属于其他收藏夹的，collected 保持 true
+        Set<Long> stillCollected = jmFavoriteAlbumSqliteMapper.selectList(
+                        new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                                .select(JmFavoriteAlbumSqlite::getAlbumId)
+                                .in(JmFavoriteAlbumSqlite::getAlbumId, ids))
+                .stream()
+                .map(JmFavoriteAlbumSqlite::getAlbumId)
+                .collect(Collectors.toSet());
+        List<Long> lostAll = ids.stream().filter(id -> !stillCollected.contains(id)).toList();
+        if (!lostAll.isEmpty()) {
+            setCollectedFlag(lostAll, false);
+        }
+    }
+
+    /* ==================== 收藏夹内部辅助方法 ==================== */
+
+    private void setCollectedFlag(List<Long> albumIds, boolean collected) {
         jmAlbumSqliteMapper.update(null, new LambdaUpdateWrapper<JmAlbumSqlite>()
-                .in(JmAlbumSqlite::getId, request.getIds())
-                .set(JmAlbumSqlite::getCollected, Boolean.TRUE.equals(request.getCollected())));
+                .in(JmAlbumSqlite::getId, albumIds)
+                .set(JmAlbumSqlite::getCollected, collected));
+    }
+
+    /**
+     * 把漫画加入收藏夹，已存在的关联跳过（避免触发唯一索引冲突）
+     */
+    private void addAlbumsToFavoriteInternal(Long favoriteId, List<Long> albumIds) {
+        if (favoriteId == null || CollectionUtils.isEmpty(albumIds)) {
+            return;
+        }
+        Set<Long> exists = jmFavoriteAlbumSqliteMapper.selectList(
+                        new LambdaQueryWrapper<JmFavoriteAlbumSqlite>()
+                                .select(JmFavoriteAlbumSqlite::getAlbumId)
+                                .eq(JmFavoriteAlbumSqlite::getFavoriteId, favoriteId)
+                                .in(JmFavoriteAlbumSqlite::getAlbumId, albumIds))
+                .stream()
+                .map(JmFavoriteAlbumSqlite::getAlbumId)
+                .collect(Collectors.toSet());
+        String now = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+        albumIds.stream()
+                .filter(albumId -> !exists.contains(albumId))
+                .forEach(albumId -> {
+                    JmFavoriteAlbumSqlite entity = new JmFavoriteAlbumSqlite();
+                    entity.setFavoriteId(favoriteId);
+                    entity.setAlbumId(albumId);
+                    entity.setCreateTime(now);
+                    jmFavoriteAlbumSqliteMapper.insert(entity);
+                });
+    }
+
+    /**
+     * 定位目标收藏夹：优先 favoriteId，其次按 favoriteName 查找或新建，都没有则用默认收藏夹
+     */
+    private Long resolveFavoriteId(Long favoriteId, String favoriteName) {
+        if (favoriteId != null) {
+            return requireFavorite(favoriteId).getId();
+        }
+        if (StringUtils.isNotBlank(favoriteName)) {
+            return getOrCreateFavoriteIdByName(favoriteName);
+        }
+        return getOrCreateDefaultFavoriteId();
+    }
+
+    private Long getOrCreateFavoriteIdByName(String name) {
+        String trimmed = normalizeFavoriteName(name);
+        JmFavoriteSqlite exist = findFavoriteByName(trimmed);
+        if (exist != null) {
+            return exist.getId();
+        }
+        JmFavoriteSqlite entity = new JmFavoriteSqlite();
+        entity.setName(trimmed);
+        entity.setSortOrder(nextFavoriteSortOrder());
+        String now = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+        entity.setCreateTime(now);
+        entity.setModifyTime(now);
+        jmFavoriteSqliteMapper.insert(entity);
+        return entity.getId();
+    }
+
+    /**
+     * 默认收藏夹id。理论上初始化时已建好；这里兜底建一次，避免历史库缺少该记录时报错
+     */
+    private Long getOrCreateDefaultFavoriteId() {
+        JmFavoriteSqlite exist = findFavoriteByName(DEFAULT_FAVORITE_NAME);
+        if (exist != null) {
+            return exist.getId();
+        }
+        JmFavoriteSqlite entity = new JmFavoriteSqlite();
+        entity.setName(DEFAULT_FAVORITE_NAME);
+        entity.setSortOrder(0);
+        String now = DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss);
+        entity.setCreateTime(now);
+        entity.setModifyTime(now);
+        jmFavoriteSqliteMapper.insert(entity);
+        return entity.getId();
+    }
+
+    private JmFavoriteSqlite findFavoriteByName(String name) {
+        if (StringUtils.isBlank(name)) {
+            return null;
+        }
+        return jmFavoriteSqliteMapper.selectOne(new LambdaQueryWrapper<JmFavoriteSqlite>()
+                .eq(JmFavoriteSqlite::getName, name)
+                .last("LIMIT 1"));
+    }
+
+    private JmFavoriteSqlite requireFavorite(Long id) {
+        if (id == null) {
+            throw new BusinessException("缺少收藏夹id");
+        }
+        JmFavoriteSqlite favorite = jmFavoriteSqliteMapper.selectById(id);
+        if (favorite == null) {
+            throw new BusinessException("收藏夹不存在或已被删除");
+        }
+        return favorite;
+    }
+
+    private boolean isDefaultFavorite(JmFavoriteSqlite favorite) {
+        return favorite != null && DEFAULT_FAVORITE_NAME.equals(favorite.getName());
+    }
+
+    private String normalizeFavoriteName(String name) {
+        String trimmed = StringUtils.trimToEmpty(name);
+        if (StringUtils.isBlank(trimmed)) {
+            throw new BusinessException("收藏夹名称不能为空");
+        }
+        if (trimmed.length() > 50) {
+            throw new BusinessException("收藏夹名称不能超过50个字符");
+        }
+        return trimmed;
+    }
+
+    private Integer nextFavoriteSortOrder() {
+        JmFavoriteSqlite last = jmFavoriteSqliteMapper.selectOne(new LambdaQueryWrapper<JmFavoriteSqlite>()
+                .orderByDesc(JmFavoriteSqlite::getSortOrder)
+                .orderByDesc(JmFavoriteSqlite::getId)
+                .last("LIMIT 1"));
+        int max = last == null || last.getSortOrder() == null ? 0 : last.getSortOrder();
+        return max + 1;
+    }
+
+    private JmFavoriteResp toFavoriteResp(JmFavoriteSqlite favorite, Long albumCount) {
+        JmFavoriteResp resp = new JmFavoriteResp();
+        BeanUtils.copyProperties(favorite, resp);
+        resp.setAlbumCount(albumCount == null ? 0L : albumCount);
+        resp.setIsDefault(isDefaultFavorite(favorite));
+        return resp;
     }
 
     /**

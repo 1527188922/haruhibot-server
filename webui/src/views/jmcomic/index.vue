@@ -28,6 +28,15 @@
             <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetAlbumQuery">重置</el-button>
           </el-row>
         </el-tab-pane>
+        <el-tab-pane label="收藏夹" name="favorite">
+          <jm-favorite-panel v-if="activeTab === 'favorite'"
+                             ref="favoritePanel"
+                             @preview="openPreview"
+                             @chapters="jumpToChapters"
+                             @error="handleRequestError"
+                             @create-favorite="handleCreateFavorite"
+                             @albums-changed="handleFavoriteAlbumsChanged"></jm-favorite-panel>
+        </el-tab-pane>
         <el-tab-pane label="JM章节信息" name="chapter">
           <el-form :model="chapterQuery" label-width="80px" inline ref="chapterQueryForm" size="small">
             <el-form-item label="JM ID" prop="albumId">
@@ -96,12 +105,12 @@
 
     <basic-container v-if="activeTab === 'album'">
       <div class="data-table-option-buts">
-        <el-button type="primary" size="small" plain icon="el-icon-plus" :loading="albumRequestLoading" @click="addAlbum">新增</el-button>
+        <el-button type="primary" size="small" plain icon="el-icon-plus" @click="addDialogVisible = true">新增</el-button>
         <el-badge class="jm-task-badge" :value="taskActiveCount" :hidden="taskActiveCount === 0" type="warning">
           <el-button type="primary" size="small" plain icon="el-icon-s-operation" @click="taskPanelVisible = true">任务队列</el-button>
         </el-badge>
         <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="albumDeleteDisabled" @click="openAlbumDelete">批量删除</el-button>
-        <el-button type="warning" size="small" plain icon="el-icon-star-on" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'collect'" @click="collectSelectedAlbums(true)">批量收藏</el-button>
+        <el-button type="warning" size="small" plain icon="el-icon-star-on" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'collect'" @click="openFavoritePickerForSelection">批量收藏</el-button>
         <el-button type="info" size="small" plain icon="el-icon-star-off" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'uncollect'" @click="collectSelectedAlbums(false)">取消收藏</el-button>
         <el-button type="danger" size="small" plain icon="el-icon-delete" @click="openAllFileDelete">删除全部</el-button>
         <el-dropdown v-if="albumViewMode === 'list'" trigger="click" :hide-on-click="false">
@@ -539,6 +548,15 @@
 
     <jm-preview-drawer :visible.sync="previewDrawerVisible" :album="previewAlbum" />
     <jm-task-panel :visible.sync="taskPanelVisible" @snapshot="handleTaskSnapshot" />
+    <jm-add-dialog :visible.sync="addDialogVisible"
+                   :favorite-options="favoriteOptions"
+                   @added="handleAlbumsAdded"
+                   @collect="handleAddDialogCollect"></jm-add-dialog>
+    <jm-favorite-picker :visible.sync="favoritePickerVisible"
+                        :album-ids="favoritePickerAlbumIds"
+                        :favorite-options="favoriteOptions"
+                        @confirm="handleFavoritePicked"
+                        @error="handleRequestError"></jm-favorite-picker>
   </div>
 </template>
 
@@ -547,6 +565,9 @@ import JmPreviewDrawer from "./jm-preview-drawer.vue";
 import JmTaskPanel from "./jm-task-panel.vue";
 import JmTagSelect from "./jm-tag-select.vue";
 import JmAuthorSelect from "./jm-author-select.vue";
+import JmFavoritePanel from "./jm-favorite-panel.vue";
+import JmAddDialog from "./jm-add-dialog.vue";
+import JmFavoritePicker from "./jm-favorite-picker.vue";
 import numberInput from "@/components/input/numberInput.vue";
 import {
   deleteAlbums,
@@ -554,6 +575,9 @@ import {
   deleteChapterImages,
   downloadAlbum,
   collectAlbums,
+  addAlbumsToFavorite,
+  createFavorite,
+  listFavorites,
   generateAlbumPdf,
   generateAlbumZip,
   listJmTasks,
@@ -576,13 +600,12 @@ const TASK_IDLE_POLL_MILLIS = 5000;
 
 export default {
   name: 'JmcomicManage',
-  components: { JmPreviewDrawer, JmTaskPanel, JmTagSelect, JmAuthorSelect, numberInput },
+  components: { JmPreviewDrawer, JmTaskPanel, JmTagSelect, JmAuthorSelect, JmFavoritePanel, JmAddDialog, JmFavoritePicker, numberInput },
   data() {
     return {
       activeTab: 'album',
       albumLoading: false,
       chapterLoading: false,
-      albumRequestLoading: false,
       chapterRequestLoading: false,
       albumDeleteLoading: false,
       albumCollectLoading: null,
@@ -591,6 +614,13 @@ export default {
       albumDeleteDialogVisible: false,
       chapterDeleteDialogVisible: false,
       deleteAllFileDialogVisible: false,
+      // 新增JM主记录弹窗（支持剪贴板/批量/链接解析）
+      addDialogVisible: false,
+      // 收藏夹选择弹窗：收藏时先选收藏夹
+      favoritePickerVisible: false,
+      favoritePickerAlbumIds: [],
+      // 收藏夹列表，供新增弹窗与收藏选择弹窗复用，避免各自请求
+      favoriteOptions: [],
       previewDrawerVisible: false,
       previewAlbum: null,
       // 内存中的JM任务面板(不持久化，后端重启即清空)
@@ -738,6 +768,8 @@ export default {
     this.searchAlbumsFirst()
     this.startTaskPolling()
     this.bindTaskPush()
+    // 收藏夹列表供"新增"与"收藏到收藏夹"复用，进页面就取一次
+    this.loadFavoriteOptions()
   },
   beforeDestroy() {
     this.stopTaskPolling()
@@ -1021,6 +1053,11 @@ export default {
       }
       if (this.activeTab === 'online') {
         this.ensureOnlineHistory()
+      }
+      // 收藏夹 tab 由 v-if 控制挂载，切进来时重新拉一次列表，保证数量是最新的
+      if (this.activeTab === 'favorite') {
+        this.loadFavoriteOptions()
+        this.refreshFavoritePanel()
       }
       // 在线搜索里添加过记录，切回主记录时再刷新，避免每次添加都白查一次
       if (this.activeTab === 'album' && this.albumListDirty) {
@@ -1342,29 +1379,6 @@ export default {
       this.albumQuery.id = id
       this.searchAlbumsFirst()
     },
-    addAlbum() {
-      this.$prompt('请输入JM ID', '新增JM主记录', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        inputPattern: /^\d+$/,
-        inputErrorMessage: 'JM ID必须是数字'
-      }).then(({value}) => {
-        this.albumRequestLoading = true
-        requestAlbum(value).then(({data: {code, message}}) => {
-          if (code !== 200) {
-            return this.$message.error(message)
-          }
-          this.$message.success('拉取完成')
-          this.refreshTagOptions()
-          this.refreshAuthorOptions()
-          this.searchAlbumsFirst()
-        }).catch(error => {
-          this.handleRequestError(error)
-        }).finally(() => {
-          this.albumRequestLoading = false
-        })
-      }).catch(() => {})
-    },
     executeAlbumOperation(row, action, requestFn) {
       const aid = row.id
       this.$set(this.albumOperationLoading, aid, action)
@@ -1387,20 +1401,27 @@ export default {
     },
     /**
      * 单条收藏/取消收藏，只更新该行，避免整页刷新
+     * 收藏：先让用户选收藏夹；取消：直接从所有收藏夹移出
      * 当前带有收藏筛选条件时，该行可能已经不满足条件，重新查询一次
      */
     toggleAlbumCollected(row) {
       if (this.isAlbumOperating(row)) {
         return
       }
-      const collected = !this.isAlbumCollected(row)
+      if (!this.isAlbumCollected(row)) {
+        // 收藏前先选收藏夹，默认选中默认收藏夹
+        this.openFavoritePicker([row.id])
+        return
+      }
       this.$set(this.albumOperationLoading, row.id, 'collect')
-      collectAlbums({ ids: [row.id], collected }).then(({data: {code, message}}) => {
+      collectAlbums({ ids: [row.id], collected: false }).then(({data: {code, message}}) => {
         if (code !== 200) {
           return this.$message.error(message)
         }
-        this.$set(row, 'collected', collected)
-        this.$message.success(message || (collected ? '收藏完成' : '取消收藏完成'))
+        this.$set(row, 'collected', false)
+        this.$set(row, 'favoriteIds', [])
+        this.$message.success(message || '取消收藏完成')
+        this.refreshFavoritePanel()
         this.searchAlbumsIfCollectedFiltered()
       }).catch(error => {
         this.handleRequestError(error)
@@ -1409,7 +1430,87 @@ export default {
       })
     },
     /**
-     * 批量收藏/取消收藏选中的记录
+     * 批量收藏：先选收藏夹再提交
+     */
+    openFavoritePickerForSelection() {
+      if (this.albumDeleteDisabled) {
+        return
+      }
+      this.openFavoritePicker(this.albumSelection.map(e => e.id))
+    },
+    /**
+     * 打开收藏夹选择弹窗
+     * @param albumIds 待收藏的漫画id
+     */
+    openFavoritePicker(albumIds) {
+      const ids = (albumIds || []).filter(id => id !== null && id !== undefined)
+      if (ids.length === 0) {
+        return
+      }
+      this.favoritePickerAlbumIds = ids
+      // 打开前刷新收藏夹列表，保证刚新建的收藏夹能立刻选到
+      this.loadFavoriteOptions()
+      this.favoritePickerVisible = true
+    },
+    getFavoritePanel() {
+      return this.$refs.favoritePanel || null
+    },
+    refreshFavoritePanel() {
+      const panel = this.getFavoritePanel()
+      if (panel) {
+        panel.reload()
+      }
+    },
+    /**
+     * 收藏夹选择确认：按 id 或名称（不存在则新建）收藏
+     */
+    handleFavoritePicked(payload) {
+      const albumIds = this.favoritePickerAlbumIds
+      if (!albumIds || albumIds.length === 0) {
+        return
+      }
+      this.favoritePickerVisible = false
+      const isBatch = albumIds.length > 1
+      if (isBatch) {
+        this.albumCollectLoading = 'collect'
+      } else {
+        this.$set(this.albumOperationLoading, albumIds[0], 'collect')
+      }
+      collectAlbums({
+        ids: albumIds,
+        collected: true,
+        favoriteId: payload.favoriteId,
+        favoriteName: payload.favoriteName
+      }).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message)
+        }
+        this.$message.success(message || '收藏完成')
+        this.loadFavoriteOptions()
+        this.refreshFavoritePanel()
+        if (isBatch) {
+          this.selectAlbums()
+        } else {
+          // 单条就地更新，避免整页刷新
+          const row = this.albumData.find(item => item.id === albumIds[0])
+          if (row) {
+            this.$set(row, 'collected', true)
+          }
+          this.searchAlbumsIfCollectedFiltered()
+        }
+      }).catch(error => {
+        this.handleRequestError(error)
+      }).finally(() => {
+        if (isBatch) {
+          this.albumCollectLoading = null
+        } else {
+          this.$delete(this.albumOperationLoading, albumIds[0])
+        }
+        this.favoritePickerAlbumIds = []
+      })
+    },
+    /**
+     * 取消收藏选中的记录（从所有收藏夹移出）
      */
     collectSelectedAlbums(collected) {
       if (this.albumDeleteDisabled) {
@@ -1422,12 +1523,78 @@ export default {
           return this.$message.error(message)
         }
         this.$message.success(message || (collected ? '收藏完成' : '取消收藏完成'))
+        this.refreshFavoritePanel()
         this.selectAlbums()
       }).catch(error => {
         this.handleRequestError(error)
       }).finally(() => {
         this.albumCollectLoading = null
       })
+    },
+    /**
+     * 加载收藏夹列表，供新增弹窗与收藏选择弹窗复用
+     */
+    loadFavoriteOptions() {
+      listFavorites().then(({data: {code, data}}) => {
+        if (code === 200) {
+          this.favoriteOptions = data || []
+        }
+      }).catch(() => {
+        // 收藏夹列表失败不阻塞主流程
+      })
+    },
+    /**
+     * 新增弹窗里选择了"同时收藏到"时的处理
+     */
+    handleAddDialogCollect({ albumIds, favoriteName }) {
+      if (!albumIds || albumIds.length === 0 || !favoriteName) {
+        return
+      }
+      addAlbumsToFavorite({ albumIds, favoriteName }).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message || '收藏失败')
+        }
+        this.$message.success(`已收藏到「${favoriteName}」`)
+        this.loadFavoriteOptions()
+        this.refreshFavoritePanel()
+      }).catch(error => {
+        this.handleRequestError(error)
+      })
+    },
+    /**
+     * 新增弹窗完成拉取后刷新列表与标签/作者候选
+     */
+    handleAlbumsAdded({ successIds }) {
+      if (!successIds || successIds.length === 0) {
+        return
+      }
+      this.refreshTagOptions()
+      this.refreshAuthorOptions()
+      this.searchAlbumsFirst()
+      this.refreshFavoritePanel()
+      this.loadFavoriteOptions()
+    },
+    /**
+     * 收藏夹 tab 内新建收藏夹
+     */
+    handleCreateFavorite(name) {
+      createFavorite({ name }).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message || '新建失败')
+        }
+        this.$message.success('新建成功')
+        this.loadFavoriteOptions()
+        this.refreshFavoritePanel()
+      }).catch(error => {
+        this.handleRequestError(error)
+      })
+    },
+    /**
+     * 收藏夹内容变化（移出/删除收藏夹）后，主记录列表的收藏标记可能已过期
+     */
+    handleFavoriteAlbumsChanged() {
+      this.loadFavoriteOptions()
+      this.searchAlbumsIfCollectedFiltered()
     },
     /**
      * 收藏筛选生效时(已收藏/未收藏)，收藏状态变化会改变筛选结果，需要重新查询

@@ -71,6 +71,16 @@ public interface SqliteDatabaseInitMapper {
 
     int createJmChapterImage(@Param("tableName") String tableName);
 
+    /**
+     * JM收藏夹（文件夹）
+     */
+    int createJmFavorite(@Param("tableName") String tableName);
+
+    /**
+     * JM收藏夹-漫画关联表，同一漫画可属于多个收藏夹
+     */
+    int createJmFavoriteAlbum(@Param("tableName") String tableName);
+
 
     int createSendLikeRecord(@Param("tableName") String tableName);
 

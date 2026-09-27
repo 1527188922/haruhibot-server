@@ -91,10 +91,69 @@ export const deleteAlbums = (data) => request({
 
 /**
  * 收藏/取消收藏JM主记录
- * @param data {ids: [], collected: true|false}
+ * @param data {ids: [], collected: true|false, favoriteId?: 收藏夹id, favoriteName?: 收藏夹名称(不存在时自动新建)}
  */
 export const collectAlbums = (data) => request({
   url: baseUrl + '/jmcomic/manage/album/collect',
+  method: 'post',
+  data
+});
+
+/* ==================== 收藏夹 ==================== */
+
+/**
+ * 收藏夹列表，含每个收藏夹下的漫画数量
+ */
+export const listFavorites = () => request({
+  url: baseUrl + '/jmcomic/manage/favorite/list',
+  method: 'get'
+});
+
+/**
+ * 新建收藏夹
+ * @param data {name: 收藏夹名称}
+ */
+export const createFavorite = (data) => request({
+  url: baseUrl + '/jmcomic/manage/favorite/create',
+  method: 'post',
+  data
+});
+
+/**
+ * 重命名收藏夹（默认收藏夹不支持）
+ * @param data {id: 收藏夹id, name: 新名称}
+ */
+export const renameFavorite = (data) => request({
+  url: baseUrl + '/jmcomic/manage/favorite/rename',
+  method: 'post',
+  data
+});
+
+/**
+ * 删除收藏夹（默认收藏夹不支持）
+ * 被删收藏夹下的漫画若不再属于其他收藏夹，会自动回落到默认收藏夹
+ */
+export const deleteFavorite = (id) => request({
+  url: baseUrl + `/jmcomic/manage/favorite/delete/${id}`,
+  method: 'post'
+});
+
+/**
+ * 把漫画加入收藏夹，收藏夹不存在时按名称新建
+ * @param data {albumIds: [], favoriteId?: 收藏夹id, favoriteName?: 收藏夹名称}
+ */
+export const addAlbumsToFavorite = (data) => request({
+  url: baseUrl + '/jmcomic/manage/favorite/album/add',
+  method: 'post',
+  data
+});
+
+/**
+ * 把漫画移出收藏夹；不传 favoriteId 表示从所有收藏夹移出
+ * @param data {albumIds: [], favoriteId?: 收藏夹id}
+ */
+export const removeAlbumsFromFavorite = (data) => request({
+  url: baseUrl + '/jmcomic/manage/favorite/album/remove',
   method: 'post',
   data
 });

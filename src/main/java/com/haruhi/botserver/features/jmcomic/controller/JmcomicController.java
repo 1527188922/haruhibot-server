@@ -22,9 +22,14 @@ import com.haruhi.botserver.features.jmcomic.model.JmChapterImageManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageQueryReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterInfoResp;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteAlbumRemoveReq;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteAlbumReq;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteResp;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteSaveReq;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskSnapshot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -235,7 +240,9 @@ public class JmcomicController {
     }
 
     /**
-     * 收藏/取消收藏JM主记录
+     * 收藏/取消收藏JM主记录。
+     * 收藏时可指定收藏夹（favoriteId 或 favoriteName），都不传则进默认收藏夹；
+     * favoriteName 不存在时会直接新建该收藏夹。
      */
     @PostMapping("/manage/album/collect")
     public HttpResp collectAlbums(@RequestBody JmAlbumCollectReq request) {
@@ -245,6 +252,76 @@ public class JmcomicController {
         jmcomicSqliteService.collectAlbums(request);
         return HttpResp.success(Boolean.TRUE.equals(request.getCollected()) ? "收藏完成" : "取消收藏完成", null);
     }
+
+    /* ==================== 收藏夹 ==================== */
+
+    /**
+     * 收藏夹列表，附带每个收藏夹下的漫画数量
+     */
+    @GetMapping("/manage/favorite/list")
+    public HttpResp<List<JmFavoriteResp>> listFavorites() {
+        return HttpResp.success(jmcomicSqliteService.listFavorites());
+    }
+
+    /**
+     * 新建收藏夹
+     */
+    @PostMapping("/manage/favorite/create")
+    public HttpResp<JmFavoriteResp> createFavorite(@RequestBody JmFavoriteSaveReq request) {
+        if (request == null || StringUtils.isBlank(request.getName())) {
+            return HttpResp.fail("收藏夹名称不能为空", null);
+        }
+        return HttpResp.success("新建成功", jmcomicSqliteService.createFavorite(request.getName()));
+    }
+
+    /**
+     * 重命名收藏夹（默认收藏夹不支持）
+     */
+    @PostMapping("/manage/favorite/rename")
+    public HttpResp<JmFavoriteResp> renameFavorite(@RequestBody JmFavoriteSaveReq request) {
+        if (request == null || request.getId() == null) {
+            return HttpResp.fail("缺少收藏夹id", null);
+        }
+        if (StringUtils.isBlank(request.getName())) {
+            return HttpResp.fail("收藏夹名称不能为空", null);
+        }
+        return HttpResp.success("重命名成功", jmcomicSqliteService.renameFavorite(request.getId(), request.getName()));
+    }
+
+    /**
+     * 删除收藏夹（默认收藏夹不支持）。
+     * 被删除收藏夹下的漫画若不再属于其他收藏夹，会自动回落到默认收藏夹
+     */
+    @PostMapping("/manage/favorite/delete/{id}")
+    public HttpResp deleteFavorite(@PathVariable("id") Long id) {
+        jmcomicSqliteService.deleteFavorite(id);
+        return HttpResp.success("删除完成", null);
+    }
+
+    /**
+     * 把漫画加入收藏夹，收藏夹不存在时按名称新建
+     */
+    @PostMapping("/manage/favorite/album/add")
+    public HttpResp addAlbumsToFavorite(@RequestBody JmFavoriteAlbumReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getAlbumIds())) {
+            return HttpResp.fail("缺少JM ID", null);
+        }
+        jmcomicSqliteService.addAlbumsToFavorite(request);
+        return HttpResp.success("收藏完成", null);
+    }
+
+    /**
+     * 把漫画移出收藏夹；favoriteId 为空表示从所有收藏夹移出
+     */
+    @PostMapping("/manage/favorite/album/remove")
+    public HttpResp removeAlbumsFromFavorite(@RequestBody JmFavoriteAlbumRemoveReq request) {
+        if (request == null || CollectionUtils.isEmpty(request.getAlbumIds())) {
+            return HttpResp.fail("缺少JM ID", null);
+        }
+        jmcomicSqliteService.removeAlbumsFromFavorite(request);
+        return HttpResp.success("已移出收藏夹", null);
+    }
+
     @PostMapping("/manage/album/deleteAllFile")
     public HttpResp deleteAllFile(@RequestBody JmAlbumDeleteReq request) {
         jmcomicSqliteService.deleteAllFile(request);

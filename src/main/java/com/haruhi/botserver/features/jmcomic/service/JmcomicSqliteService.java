@@ -13,6 +13,9 @@ import com.haruhi.botserver.features.jmcomic.model.JmChapterImageManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageQueryReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterInfoResp;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteAlbumRemoveReq;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteAlbumReq;
+import com.haruhi.botserver.features.jmcomic.model.JmFavoriteResp;
 
 import java.util.Collection;
 import java.util.List;
@@ -51,6 +54,37 @@ public interface JmcomicSqliteService {
     void deleteAlbums(JmAlbumDeleteReq request);
 
     void collectAlbums(JmAlbumCollectReq request);
+
+    /**
+     * 收藏夹列表，附带每个收藏夹下的漫画数量。默认收藏夹排在最前
+     */
+    List<JmFavoriteResp> listFavorites();
+
+    /**
+     * 新建收藏夹。名称重复时抛 BusinessException；返回新建的收藏夹
+     */
+    JmFavoriteResp createFavorite(String name);
+
+    /**
+     * 重命名收藏夹。默认收藏夹不允许重命名
+     */
+    JmFavoriteResp renameFavorite(Long id, String name);
+
+    /**
+     * 删除收藏夹。默认收藏夹不允许删除；
+     * 被删除收藏夹下的漫画若不再属于任何收藏夹，会自动回落到默认收藏夹
+     */
+    void deleteFavorite(Long id);
+
+    /**
+     * 把漫画加入收藏夹，收藏夹不存在时按名称新建
+     */
+    void addAlbumsToFavorite(JmFavoriteAlbumReq request);
+
+    /**
+     * 把漫画移出收藏夹；favoriteId 为空表示从所有收藏夹移出
+     */
+    void removeAlbumsFromFavorite(JmFavoriteAlbumRemoveReq request);
 
     void deleteAllFile(JmAlbumDeleteReq request);
 

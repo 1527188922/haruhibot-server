@@ -24,4 +24,10 @@ public class JmAlbumManageResp extends JmAlbumSqlite {
     private List<JmChapterInfoResp> chapterList;
     private Long imageCount;
     private Long actualImageCount;
+    /**
+     * 该漫画所属的收藏夹id列表。
+     * 用于前端回显"已收藏到哪些收藏夹"，空列表表示未收藏到任何收藏夹。
+     * 与 collected 字段的关系：collected=true 等价于 favoriteIds 非空。
+     */
+    private List<Long> favoriteIds;
 }

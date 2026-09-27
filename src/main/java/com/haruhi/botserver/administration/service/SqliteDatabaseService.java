@@ -42,6 +42,12 @@ public class SqliteDatabaseService{
 
     private static final Map<String, Object> TABPE_LOCK_MAP = new ConcurrentHashMap<>();
 
+    /**
+     * 默认JM收藏夹名称。与 JmcomicSqliteServiceImpl.DEFAULT_FAVORITE_NAME 保持一致，
+     * 该收藏夹不允许删除或重命名，删除漫画时若不在其他收藏夹会自动回落到这里。
+     */
+    public static final String DEFAULT_JM_FAVORITE_NAME = "默认收藏夹";
+
     public static Object getLock(String tableName) {
         return TABPE_LOCK_MAP.computeIfAbsent(tableName, k -> new Object());
     }
@@ -129,6 +135,24 @@ public class SqliteDatabaseService{
                 StrFormatter.format("{}_album_chapter_sort_idx",DataBaseConst.T_JM_CHAPTER_IMAGE),
                 "album_id,chapter_id,image_sort",
                 false);
+
+        // JM收藏夹：同一漫画可属于多个收藏夹（多对多）
+        sqliteDatabaseInitMapper.createJmFavorite(DataBaseConst.T_JM_FAVORITE);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_JM_FAVORITE,
+                StrFormatter.format("{}_name_idx",DataBaseConst.T_JM_FAVORITE),
+                "name",
+                true);
+        sqliteDatabaseInitMapper.createJmFavoriteAlbum(DataBaseConst.T_JM_FAVORITE_ALBUM);
+        // 同一个收藏夹内不允许重复添加同一本漫画
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_JM_FAVORITE_ALBUM,
+                StrFormatter.format("{}_favorite_album_idx",DataBaseConst.T_JM_FAVORITE_ALBUM),
+                "favorite_id,album_id",
+                true);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_JM_FAVORITE_ALBUM,
+                StrFormatter.format("{}_album_idx",DataBaseConst.T_JM_FAVORITE_ALBUM),
+                "album_id",
+                false);
+        this.initDefaultJmFavorite();
 
         sqliteDatabaseInitMapper.createSendLikeRecord(DataBaseConst.T_SEND_LIKE_RECORD);
         sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_SEND_LIKE_RECORD,
@@ -284,6 +308,20 @@ public class SqliteDatabaseService{
             return 0;
         }
         return sqliteDatabaseInitMapper.addColumn(tableName,columnName,columnType,notNull,defaultValue);
+    }
+
+    /**
+     * 初始化默认收藏夹。
+     * name 上有唯一索引，用 INSERT OR IGNORE 保证幂等：已存在时不报错也不重复插入。
+     * 默认收藏夹不允许删除/重命名，具体约束在 JmcomicSqliteServiceImpl 里校验。
+     */
+    private void initDefaultJmFavorite() {
+        try {
+            jdbcTemplate.update("INSERT OR IGNORE INTO `" + DataBaseConst.T_JM_FAVORITE
+                    + "` (`name`, `sort_order`) VALUES (?, ?)", DEFAULT_JM_FAVORITE_NAME, 0);
+        } catch (Exception e) {
+            log.warn("初始化默认JM收藏夹失败: {}", e.getMessage());
+        }
     }
 
     public List<SqlExecuteResult> executeSql(String sql) {

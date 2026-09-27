@@ -32,6 +32,9 @@ public class DataBaseConst {
     public final static String T_PIXIV = "t_pixiv";
     public final static String T_JM_ALBUM = "t_jm_album";
     public final static String T_JM_CHAPTER_IMAGE = "t_jm_chapter_image";
+    // JM收藏夹（文件夹）与收藏夹-漫画关联表，同一漫画可属于多个收藏夹
+    public final static String T_JM_FAVORITE = "t_jm_favorite";
+    public final static String T_JM_FAVORITE_ALBUM = "t_jm_favorite_album";
     public final static String T_SEND_LIKE_RECORD = "t_send_like_record";
     public final static String T_DICTIONARY = "t_dictionary";
     public final static String T_GROUP_INFO = "t_group_info";

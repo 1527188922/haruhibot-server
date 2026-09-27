@@ -174,6 +174,23 @@
             `image_sort` INTEGER
         );
     </update>
+    <update id="createJmFavorite">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `name` TEXT NOT NULL,
+            `sort_order` INTEGER DEFAULT 0,
+            `create_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+            `modify_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
+    <update id="createJmFavoriteAlbum">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `favorite_id` INTEGER NOT NULL,
+            `album_id` INTEGER NOT NULL,
+            `create_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
     <update id="createSendLikeRecord">
         CREATE TABLE IF NOT EXISTS `${tableName}` (
             `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
