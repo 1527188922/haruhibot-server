@@ -124,6 +124,13 @@
                     <span class="jm-task-meta">用时 {{formatDuration(task.costMillis)}}</span>
                   </div>
                   <div v-if="task.message" class="jm-task-message" :title="task.message">{{task.message}}</div>
+                  <div v-if="isRetryable(task)" class="jm-task-message jm-task-retry-hint">
+                    {{retryHint(task)}}
+                  </div>
+                </div>
+                <div v-if="isRetryable(task)" class="jm-task-ops">
+                  <el-button type="primary" size="mini" plain icon="el-icon-refresh-right"
+                             :loading="isRetrying(task)" @click="retryTask(task)">重试</el-button>
                 </div>
               </div>
             </div>
@@ -135,7 +142,7 @@
 </template>
 
 <script>
-import { cancelJmTask, cancelQueuedJmTasks, listJmTasks } from "@/api/jmcomic";
+import { cancelJmTask, cancelQueuedJmTasks, listJmTasks, retryJmTask } from "@/api/jmcomic";
 
 // 任务主题与命令，与后端 JmTaskPushService 保持一致
 const JM_TASK_TOPIC = 'jm.task'
@@ -165,6 +172,8 @@ export default {
       counters: this.defCounters(),
       finishedCollapsed: false,
       cancellingMap: {},
+      // 正在重试的任务，key=taskId
+      retryingMap: {},
       tickTimer: null,
       fallbackTimer: null,
       nowTick: Date.now(),
@@ -382,6 +391,42 @@ export default {
       const minutes = Math.floor((totalSeconds % 3600) / 60)
       const seconds = totalSeconds % 60
       return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`
+    },
+    /**
+     * 失败的任务才能重试（后端会新建一个同JM同动作的任务）
+     */
+    isRetryable(task) {
+      return !!task && task.status === 'FAIL'
+    },
+    isRetrying(task) {
+      return !!(task && this.retryingMap[task.taskId])
+    },
+    /**
+     * 告诉用户重试会从哪里继续：下载任务从失败的那一话续传，其余动作重新执行一遍
+     */
+    retryHint(task) {
+      if (task && task.action === 'download' && task.chapterIndex) {
+        const total = task.chapterTotal || task.chapterIndex
+        return `重试将从第 ${task.chapterIndex}/${total} 话继续请求并下载图片`
+      }
+      return '重试将重新提交一次该操作'
+    },
+    retryTask(task) {
+      if (!this.isRetryable(task) || this.isRetrying(task)) {
+        return
+      }
+      this.$set(this.retryingMap, task.taskId, true)
+      retryJmTask(task.taskId).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message || '重试失败')
+        }
+        this.$message.success(message || '已重新提交任务')
+        this.loadTasks()
+      }).catch(() => {
+        this.$message.error('重试失败')
+      }).finally(() => {
+        this.$delete(this.retryingMap, task.taskId)
+      })
     },
     cancelTask(task) {
       this.$confirm(`确认取消排队中的任务「${this.taskDisplayName(task)} · ${task.actionName}」？`, '取消排队任务', {
@@ -621,6 +666,11 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 失败任务的重试提示：说明会从哪一话续传 */
+.jm-task-retry-hint {
+  color: #e6a23c;
 }
 
 .jm-task-ops {

@@ -422,4 +422,33 @@ class JmcomicFavoriteTest {
         assertEquals(0L, favoriteByName("乙夹").getAlbumCount());
         assertFalse(loadAlbum(1015L).getCollected());
     }
+
+    /**
+     * 收藏夹列表排序：默认收藏夹始终在最上方，其余按漫画数量降序
+     */
+    @Test
+    void listFavoritesKeepsDefaultFirstAndSortsByAlbumCount() {
+        insertAlbum(1016L, "album-p");
+        insertAlbum(1017L, "album-q");
+        // 默认收藏夹只有1本
+        JmAlbumCollectReq defaultReq = new JmAlbumCollectReq();
+        defaultReq.setIds(List.of(1016L));
+        defaultReq.setCollected(true);
+        service.collectAlbums(defaultReq);
+        // 甲有2本，乙一本都没有
+        service.createFavorite("甲");
+        service.createFavorite("乙");
+        JmFavoriteAlbumReq moreReq = new JmFavoriteAlbumReq();
+        moreReq.setAlbumIds(List.of(1016L, 1017L));
+        moreReq.setFavoriteId(favoriteByName("甲").getId());
+        service.addAlbumsToFavorite(moreReq);
+
+        List<JmFavoriteResp> favorites = service.listFavorites();
+
+        assertEquals(3, favorites.size());
+        assertEquals(DEFAULT_NAME, favorites.get(0).getName(), "默认收藏夹必须排最上方（哪怕数量更少）");
+        assertEquals("甲", favorites.get(1).getName(), "其余按漫画数量降序");
+        assertEquals("乙", favorites.get(2).getName());
+        assertEquals(2L, favorites.get(1).getAlbumCount());
+    }
 }

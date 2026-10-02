@@ -145,7 +145,7 @@
                      :visible-columns="albumVisibleColumns"
                      :actions="albumRowActions"
                      :action-loading="isAlbumOperation"
-                     :action-disabled="isAlbumOtherOperation"
+                     :action-disabled="albumActionDisabled"
                      empty-text="没有查询到JM主记录"
                      @action="handleAlbumRowAction"
                      @collect-toggle="toggleAlbumCollected"
@@ -162,8 +162,10 @@
       <jm-favorite-panel ref="favoritePanel"
                          :query="favoriteQuery"
                          :operation-loading="isAlbumOperation"
-                         :operation-disabled="isAlbumOtherOperation"
+                         :operation-disabled="albumActionDisabled"
+                         :task-active-count="taskActiveCount"
                          @action="handleAlbumRowAction"
+                         @open-tasks="taskPanelVisible = true"
                          @chapters="jumpToChapters"
                          @jump-album="jumpToAlbum"
                          @change-favorites="handleFavoriteChangeRequest"
@@ -252,15 +254,24 @@
               <el-tag size="mini" :type="row.existsLocal ? 'success' : 'info'">{{row.existsLocal ? '已入库' : '未入库'}}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center">
+          <el-table-column label="操作" width="200" align="center">
             <template slot-scope="{row}">
-              <el-tooltip :disabled="!row.existsLocal" content="本地已有该记录，无需重复添加" placement="top">
-                <span>
-                  <el-button type="primary" size="mini" plain icon="el-icon-plus"
-                             :loading="isOnlineAdding(row)" :disabled="isOnlineAddDisabled(row)"
-                             @click="addOnlineAlbum(row)">添加</el-button>
-                </span>
-              </el-tooltip>
+              <div class="jm-online-actions">
+                <el-tooltip :disabled="!row.existsLocal" content="本地已有该记录，无需重复添加" placement="top">
+                  <span>
+                    <el-button type="primary" size="mini" plain icon="el-icon-plus"
+                               :loading="isOnlineAdding(row)" :disabled="isOnlineAddDisabled(row)"
+                               @click="addOnlineAlbum(row)">添加</el-button>
+                  </span>
+                </el-tooltip>
+                <el-tooltip content="先入库、再下载漫画，添加与下载一步完成" placement="top">
+                  <span>
+                    <el-button type="warning" size="mini" plain icon="el-icon-download"
+                               :loading="isOnlineDownloading(row)" :disabled="isOnlineDownloadDisabled(row)"
+                               @click="addOnlineAlbumAndDownload(row)">入库并下载</el-button>
+                  </span>
+                </el-tooltip>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -288,9 +299,14 @@
                 <div v-if="row.category" class="jm-waterfall-meta" :title="row.category">{{row.category}}</div>
                 <div class="jm-waterfall-footer">
                   <span class="jm-waterfall-time">{{row.updateTime}}</span>
-                  <el-button type="primary" size="mini" plain icon="el-icon-plus"
-                             :loading="isOnlineAdding(row)" :disabled="isOnlineAddDisabled(row)"
-                             @click="addOnlineAlbum(row)">{{row.existsLocal ? '已入库' : '添加'}}</el-button>
+                  <span class="jm-online-wf-actions">
+                    <el-button type="primary" size="mini" plain icon="el-icon-plus"
+                               :loading="isOnlineAdding(row)" :disabled="isOnlineAddDisabled(row)"
+                               @click="addOnlineAlbum(row)">{{row.existsLocal ? '已入库' : '添加'}}</el-button>
+                    <el-button type="warning" size="mini" plain icon="el-icon-download"
+                               :loading="isOnlineDownloading(row)" :disabled="isOnlineDownloadDisabled(row)"
+                               @click="addOnlineAlbumAndDownload(row)">入库并下载</el-button>
+                  </span>
                 </div>
               </div>
             </div>
@@ -399,6 +415,11 @@ const ONLINE_VIEW_MODE_KEY = 'jmOnlineViewMode';
 const ALBUM_VIEW_MODE_KEY = 'jmAlbumViewMode';
 // 任务面板关闭时只做低频轮询，仅用于刷新徽标和行内状态
 const TASK_IDLE_POLL_MILLIS = 5000;
+/**
+ * 互斥的耗时操作：同一个本子同时只允许跑其中一个。
+ * 预览、收藏、更改收藏夹等不受它们影响，任何时候都可以点。
+ */
+const ALBUM_BUSY_ACTIONS = ['download', 'zip', 'pdf'];
 
 export default {
   name: 'JmcomicManage',
@@ -469,6 +490,8 @@ export default {
       onlineHistoryCollapsed: false,
       // 正在添加的搜索结果，key=jmId
       onlineAddingMap: {},
+      // 正在"入库并下载"的搜索结果，key=jmId
+      onlineDownloadingMap: {},
       // 在线搜索里添加过记录后，JM主记录列表需要重新查询
       albumListDirty: false,
       albumData: [],
@@ -552,8 +575,7 @@ export default {
     },
     albumViewMode(val) {
       setStore({ name: ALBUM_VIEW_MODE_KEY, content: val })
-      // 切到瀑布流后表格会卸载，选中态留着会让批量按钮作用在看不见的行上
-      this.albumSelection = []
+      // 勾选状态由列表组件持有，列表/瀑布流共用，切换展示方式时不再清空
     }
   },
   mounted() {
@@ -647,6 +669,18 @@ export default {
     },
     isAlbumOtherOperation(row, action) {
       return this.isAlbumOperating(row) && !this.isAlbumOperation(row, action)
+    },
+    /**
+     * 行操作按钮/收藏星标的禁用判定。
+     * 只有下载/ZIP/PDF 这三个耗时操作之间互斥（同一个本子不能同时跑两个），
+     * 预览、收藏、更改收藏夹、移出收藏夹都不受影响——以前用 isAlbumOtherOperation
+     * 会把它们一起禁用，导致下载中连预览和收藏都点不了。
+     */
+    albumActionDisabled(row, action) {
+      if (!ALBUM_BUSY_ACTIONS.includes(action)) {
+        return false
+      }
+      return this.isAlbumOtherOperation(row, action)
     },
     isAlbumTaskBusy(row) {
       return !!(row && this.taskMap[`${row.id}`])
@@ -776,9 +810,9 @@ export default {
       if (this.activeTab === 'online') {
         this.ensureOnlineHistory()
       }
-      // 收藏夹 tab 由 v-if 控制挂载，切进来时重新拉一次列表，保证数量是最新的
+      // 收藏夹 tab 由 v-if 控制挂载，面板挂载时会自己拉收藏夹列表，
+      // 这里不要再调 loadFavoriteOptions()，否则一次切tab会请求两次 /favorite/list
       if (this.activeTab === 'favorite') {
-        this.loadFavoriteOptions()
         this.refreshFavoritePanel()
       }
       // 在线搜索里添加过记录，切回主记录时再刷新，避免每次添加都白查一次
@@ -1014,6 +1048,43 @@ export default {
     isOnlineAddDisabled(row) {
       return !row || !!row.existsLocal || this.isOnlineAdding(row)
     },
+    isOnlineDownloading(row) {
+      return !!(row && this.onlineDownloadingMap[row.id])
+    },
+    /**
+     * "入库并下载"的禁用判定。
+     * 已经入库不影响使用（本地有记录但没下载过时正好用它补下载），
+     * 只有自己正在请求、或该JM已有任务在跑时才不可点
+     */
+    isOnlineDownloadDisabled(row) {
+      if (!row || this.isOnlineDownloading(row)) {
+        return true
+      }
+      return !!this.taskMap[`${row.id}`]
+    },
+    /**
+     * 添加入库并下载：/manage/album/download/{aid} 内部会先请求本子详情入库再下载，
+     * 一步即可完成"添加 + 下载"。下载是异步任务，提交成功后让主记录列表待刷新
+     */
+    addOnlineAlbumAndDownload(row) {
+      if (this.isOnlineDownloadDisabled(row)) {
+        return
+      }
+      this.$set(this.onlineDownloadingMap, row.id, true)
+      downloadAlbum(row.id).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message || '入库并下载失败')
+        }
+        this.$message.success(message || `JM${row.id} 已加入下载队列`)
+        this.albumListDirty = true
+        // 任务已提交，立即刷新任务快照，让角标与行内按钮状态跟上
+        this.pollJmTasks()
+      }).catch(error => {
+        this.handleRequestError(error)
+      }).finally(() => {
+        this.$delete(this.onlineDownloadingMap, row.id)
+      })
+    },
     /**
      * 快捷添加：复用已有的 /manage/album/request/{aid}，只入库不下载
      * 同一行添加中不允许重复点，添加成功后标记已入库并让主记录列表待刷新
@@ -1128,7 +1199,8 @@ export default {
      * 当前带有收藏筛选条件时，该行可能已经不满足条件，重新查询一次
      */
     toggleAlbumCollected(row) {
-      if (this.isAlbumOperating(row)) {
+      // 只挡住"收藏"自身的重复点击；本子正在下载/打包时依然可以收藏与取消收藏
+      if (this.isAlbumOperation(row, 'collect')) {
         return
       }
       if (!this.isAlbumCollected(row)) {
@@ -1529,12 +1601,9 @@ export default {
   }
 
   /**
-   * 任务队列徽标：避免角标盖住右侧按钮
+   * 任务队列徽标：避免角标盖住右侧按钮。
+   * 主记录 tab 与收藏夹 tab 都要用，定义见 styles/jm-shared.scss（全局）
    */
-  .jm-task-badge {
-    line-height: 1;
-    margin-right: 8px;
-  }
 
   /**
    * 以下类由 jmcomic/index.vue 与 jm-favorite-panel.vue 共用，定义已移到
@@ -1549,6 +1618,30 @@ export default {
     color: #606266;
     font-size: 13px;
     line-height: 28px;
+  }
+
+  /**
+   * 在线搜索结果的"添加 / 入库并下载"两个按钮：表格里并排居中，瀑布流里并排在右下角
+   */
+  .jm-online-actions {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+
+    .el-button {
+      margin-left: 0;
+    }
+  }
+
+  .jm-online-wf-actions {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: 6px;
+
+    .el-button {
+      margin-left: 0;
+    }
   }
 
   .jm-view-switch {

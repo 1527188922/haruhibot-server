@@ -129,10 +129,11 @@ export default {
     },
     filteredFavorites() {
       const kw = this.keywordTrimmed.toLowerCase()
-      if (!kw) {
-        return this.favorites
-      }
-      return this.favorites.filter(item => String(item.name || '').toLowerCase().includes(kw))
+      const list = kw
+        ? this.favorites.filter(item => String(item.name || '').toLowerCase().includes(kw))
+        : this.favorites
+      // 已勾选的排在最上方（sort 是稳定排序，同组内保持原顺序）
+      return [...list].sort((a, b) => Number(this.isSelected(b.id)) - Number(this.isSelected(a.id)))
     },
     // 名称与现有收藏夹都不相同（且非空）时，可以"新建"
     isCreateMode() {

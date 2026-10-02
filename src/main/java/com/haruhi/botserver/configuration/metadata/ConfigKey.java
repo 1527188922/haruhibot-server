@@ -151,6 +151,12 @@ public enum ConfigKey {
             "JM搜索结果返回条数上限，图片和合并消息共用；无效或小于等于0时使用12条", 80),
     JM_SEARCH_HISTORY_LIMIT(ConfigFile.JM, "jm.search.history.limit", ConfigType.INT, "20", true,
             "JM在线搜索历史保存条数，超出后自动删除最旧的记录；无效或小于等于0时不保存历史", 90),
+    JM_REQUEST_ALBUM_RETRY(ConfigFile.JM, "jm.request.album.retry", ConfigType.INT, "0", true,
+            "请求本子详情(/album)接口遇到网络超时（连接/读/写超时）时的最大重试次数，0=不重试", 100),
+    JM_REQUEST_SEARCH_RETRY(ConfigFile.JM, "jm.request.search.retry", ConfigType.INT, "0", true,
+            "JM搜索(/search)接口遇到网络超时（连接/读/写超时）时的最大重试次数，0=不重试", 110),
+    JM_REQUEST_CHAPTER_RETRY(ConfigFile.JM, "jm.request.chapter.retry", ConfigType.INT, "0", true,
+            "请求章节详情(/chapter)接口遇到网络超时（连接/读/写超时）时的最大重试次数，0=不重试", 120),
 
     // ============================ 站点地址 ============================
     // ThirdPartyURL 中的地址常量已迁移到这里，除 identimg（识图，见 searchimg.properties）外

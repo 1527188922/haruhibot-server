@@ -220,3 +220,13 @@ export const cancelQueuedJmTasks = () => request({
   url: baseUrl + '/jmcomic/manage/task/cancelQueued',
   method: 'post'
 });
+
+/**
+ * 重试失败的任务：新建一个同JM同动作的任务提交，
+ * 下载漫画会从失败的那一话开始续传
+ * @param taskId 失败任务的id，来自任务列表
+ */
+export const retryJmTask = (taskId) => request({
+  url: baseUrl + `/jmcomic/manage/task/retry/${taskId}`,
+  method: 'post'
+});

@@ -44,4 +44,19 @@ public enum JmTaskAction {
         }
         return OTHER;
     }
+
+    /**
+     * 按动作code解析（前端任务列表里回传的就是它）
+     */
+    public static JmTaskAction fromCode(String code) {
+        if (StringUtils.isBlank(code)) {
+            return OTHER;
+        }
+        for (JmTaskAction action : values()) {
+            if (action.code.equals(code)) {
+                return action;
+            }
+        }
+        return OTHER;
+    }
 }

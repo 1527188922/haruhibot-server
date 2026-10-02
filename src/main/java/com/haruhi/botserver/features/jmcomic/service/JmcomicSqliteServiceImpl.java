@@ -50,6 +50,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -440,7 +441,12 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
             resp.setAlbumCount(countMap.getOrDefault(favorite.getId(), 0L));
             resp.setIsDefault(isDefaultFavorite(favorite));
             return resp;
-        }).collect(Collectors.toList());
+        })
+                // 默认收藏夹始终排在最上方，其余按漫画数量降序（数量相同按id升序，保证顺序稳定）
+                .sorted(Comparator.comparing(JmFavoriteResp::getIsDefault, Comparator.reverseOrder())
+                        .thenComparing(JmFavoriteResp::getAlbumCount, Comparator.reverseOrder())
+                        .thenComparing(JmFavoriteResp::getId))
+                .collect(Collectors.toList());
     }
 
     @Override

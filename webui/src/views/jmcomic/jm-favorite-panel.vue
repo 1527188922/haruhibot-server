@@ -59,6 +59,9 @@
                    @click="removeSelectedFromFavorite">移出本收藏夹</el-button>
         <el-button type="primary" size="small" plain icon="el-icon-folder-opened" :disabled="selection.length === 0"
                    @click="changeSelectedFavorites">更改收藏夹</el-button>
+        <el-badge class="jm-task-badge" :value="taskActiveCount" :hidden="taskActiveCount === 0" type="warning">
+          <el-button type="primary" size="small" plain icon="el-icon-s-operation" @click="$emit('open-tasks')">任务队列</el-button>
+        </el-badge>
         <el-dropdown v-if="viewMode === 'list'" trigger="click" :hide-on-click="false">
           <el-button type="primary" size="small" plain icon="el-icon-setting">列设置</el-button>
           <el-dropdown-menu slot="dropdown" class="jm-column-dropdown">
@@ -140,6 +143,13 @@ export default {
     operationDisabled: {
       type: Function,
       default: null
+    },
+    /**
+     * 进行中+排队中的任务数，用于任务队列按钮的角标（与 JM主记录 tab 共用一个面板）
+     */
+    taskActiveCount: {
+      type: Number,
+      default: 0
     }
   },
   data() {

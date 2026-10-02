@@ -24,6 +24,7 @@ import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchResp;
 import com.haruhi.botserver.features.jmcomic.model.JmOnlineSearchHistory;
 import com.haruhi.botserver.features.jmcomic.model.JmSearchSortEnum;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskAction;
+import com.haruhi.botserver.features.jmcomic.model.JmTaskInfo;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskSnapshot;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskStatusEnum;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
@@ -98,6 +99,11 @@ public class JmcomicService {
     private static final int DEFAULT_SEARCH_PAGE = 1;
 
     /**
+     * JM接口网络超时重试的基础休眠时长（指数退避：1s、2s、4s...）
+     */
+    private static final long TIMEOUT_RETRY_SLEEP_MILLIS = 1000L;
+
+    /**
      * 内存中的JM任务队列，同时承担"同一个JM不允许重复提交"的占位职责。
      * 只记录运行中和排队中的任务，不持久化，进程重启即清空。
      */
@@ -112,6 +118,59 @@ public class JmcomicService {
 
     public String getJmApiDomain(){
         return Configs.getStr(ConfigKey.JM_API_DOMAIN, DEFAULT_API_DOMAIN);
+    }
+
+    /**
+     * 执行一次GET并读取响应体。
+     * <p>
+     * 抽出来是为了让 /album、/search、/chapter 共用同一段超时重试逻辑：
+     * 每次重试都重新建请求（不复用上一次已超时的连接），签名时间戳沿用第一次的，
+     * 这样重试拿到的响应依然能用同一个ts解密。
+     */
+    private String executeGet(String url, HttpHeaders headerParam, boolean utf8) {
+        HttpRequest httpRequest = HttpUtil.createGet(url)
+                .addHeaders(headerParam.toSingleValueMap())
+                .timeout(10000);
+        if (utf8) {
+            httpRequest.charset(StandardCharsets.UTF_8);
+        }
+        try (HttpResponse httpResponse = httpRequest.execute()) {
+            return httpResponse.body();
+        }
+    }
+
+    /**
+     * 按配置的最大重试次数执行一次JM接口请求。
+     * <p>
+     * 次数为0（默认）时不包装、直接执行一次；只有网络超时（连接超时/读超时/写超时）才重试，
+     * 其它异常（响应为空、解密失败等）原样抛出，不做无意义的重试。
+     *
+     * @param maxRetry 最大重试次数，来自 jm.properties，0=不重试
+     */
+    private <T> T withTimeoutRetry(int maxRetry, Callable<T> action) throws Exception {
+        if (maxRetry <= 0) {
+            return action.call();
+        }
+        // RetryUtil 的 maxAttempt 是"总尝试次数"，所以是重试次数+1
+        return RetryUtil.retry(maxRetry + 1, TIMEOUT_RETRY_SLEEP_MILLIS, true,
+                JmcomicService::isNetworkTimeout, null, action);
+    }
+
+    /**
+     * 异常链上是否存在网络超时。
+     * Hutool 会把 IOException 包成 HttpException，所以这里沿 cause 链找 SocketTimeoutException
+     * （连接超时、读超时、写超时都是它）
+     */
+    private static boolean isNetworkTimeout(Throwable throwable) {
+        Throwable current = throwable;
+        // 限制遍历深度，避免异常链异常时死循环
+        for (int depth = 0; current != null && depth < 10; depth++) {
+            if (current instanceof SocketTimeoutException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
 
@@ -353,17 +412,75 @@ public class JmcomicService {
         return taskQueue.cancelQueued();
     }
 
+    /**
+     * 重试已失败的任务。
+     * <p>
+     * "新建一个新任务"还是"复用原任务"？这里选择<b>新建</b>，原因：
+     * <ul>
+     *     <li>已结束的任务是队列里的历史记录（最近完成列表、成功/失败计数、任务id都被前端与推送引用），
+     *         把它改回排队/运行会破坏这些不变量，还会让"最近完成"里少一条、计数器对不上</li>
+     *     <li>该JM的占用在任务结束时已释放，重新执行需要重新占位；新任务id也让前端和推送能区分"哪一次执行"</li>
+     *     <li>保留失败记录更利于排查（重试成功后旧记录仍在）</li>
+     * </ul>
+     * 下载任务的重试会带上"从失败的那一话开始"的起始话序号（只影响重试，不影响页面上的"下载漫画"按钮）；
+     * 生成zip/pdf 的重试就是重新执行一次同样的动作
+     *
+     * @param taskId 失败任务的id，来自任务列表
+     * @return 提交结果，失败时 msg 里是原因
+     */
+    public BaseResp<String> retryTask(String taskId) {
+        JmTaskInfo task = taskQueue.findTask(taskId);
+        if (task == null) {
+            return BaseResp.fail("任务不存在或已过期（最近完成的任务只保留10分钟），无法重试");
+        }
+        if (!JmTaskStatusEnum.FAIL.name().equals(task.getStatus())) {
+            return BaseResp.fail("只有失败的任务支持重试");
+        }
+        JmTaskAction action = JmTaskAction.fromCode(task.getAction());
+        String aid = task.getAid();
+        if (StringUtils.isBlank(aid)) {
+            return BaseResp.fail("任务缺少JM ID，无法重试");
+        }
+        if (action == JmTaskAction.DOWNLOAD) {
+            // 失败时正在下载的那一话（进度上报里记录的就是它），没有记录时从头开始
+            int startChapter = task.getChapterIndex() == null ? 1 : Math.max(task.getChapterIndex(), 1);
+            return manageDownloadAlbum(aid, startChapter);
+        }
+        if (action == JmTaskAction.GENERATE_ZIP) {
+            return manageGenerateZip(aid);
+        }
+        if (action == JmTaskAction.GENERATE_PDF) {
+            return manageGeneratePdf(aid);
+        }
+        return BaseResp.fail("该类型任务不支持重试");
+    }
+
+    /**
+     * 下载漫画：从头开始（已经存在的图片会自动跳过）
+     */
     public BaseResp<String> manageDownloadAlbum(String aid) {
+        return manageDownloadAlbum(aid, 1);
+    }
+
+    /**
+     * 下载漫画
+     *
+     * @param startChapter 从第几话开始下载（从1开始）。跳过的章节不会再请求章节详情与图片；
+     *                     页面上的"下载漫画"按钮固定传1，只有"失败任务重试"会传失败的那一话
+     */
+    public BaseResp<String> manageDownloadAlbum(String aid, int startChapter) {
+        int fromChapter = Math.max(startChapter, 1);
         return executeWithJmLock(aid, JmTaskAction.DOWNLOAD, resolveAlbumName(aid), () -> {
             BaseResp<Album> albumResp = requestAlbum(aid);
             if (!albumResp.isSuccess()) {
                 return BaseResp.fail(albumResp.getMsg());
             }
-            BaseResp<String> downloadResp = downloadAlbumWithoutLock(albumResp.getData());
+            BaseResp<String> downloadResp = downloadAlbumWithoutLock(albumResp.getData(), fromChapter);
             if (!downloadResp.isSuccess()) {
                 return downloadResp;
             }
-            return BaseResp.success("下载漫画完成", downloadResp.getData());
+            return BaseResp.success(fromChapter > 1 ? "下载漫画完成（从第" + fromChapter + "话续传）" : "下载漫画完成",
+                    downloadResp.getData());
         });
     }
 
@@ -713,6 +830,17 @@ public class JmcomicService {
     }
 
     private BaseResp<String> downloadAlbumWithoutLock(Album album) throws Exception {
+        return downloadAlbumWithoutLock(album, 1);
+    }
+
+    /**
+     * 下载本子全部章节
+     *
+     * @param startChapter 从第几话开始（从1开始）：失败任务重试时传失败的那一话，
+     *                     前面的话直接跳过（不再请求章节详情、不再下载图片）；
+     *                     页面上的"下载漫画"传1，行为与之前完全一致
+     */
+    private BaseResp<String> downloadAlbumWithoutLock(Album album, int startChapter) throws Exception {
         String aid = String.valueOf(album.getId());
         if (CollectionUtils.isEmpty(album.getSeries())) {
             Series series = new Series();
@@ -722,7 +850,8 @@ public class JmcomicService {
             album.setSeries(Collections.singletonList(series));
         }
         String albumPath = FileUtil.getJmcomicDir() + File.separator + album.getAlbumFolderName();
-        log.info("开始下载：jm{} 共{}话", aid, album.getSeries().size());
+        int fromChapter = Math.max(startChapter, 1);
+        log.info("开始下载：jm{} 共{}话，从第{}话开始", aid, album.getSeries().size(), fromChapter);
         JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
         reportStage("下载漫画图片");
         int chapterTotal = album.getSeries().size();
@@ -734,6 +863,10 @@ public class JmcomicService {
             for (Series series : album.getSeries()) {
                 series.setTitle("第" + series.getSort() +"话");
                 chapterIndex++;
+                if (chapterIndex < fromChapter) {
+                    // 重试续传：失败话之前的章节已经在盘上了，不必再请求一次
+                    continue;
+                }
                 if (reporter != null) {
                     // 新的一话开始，先清掉上一话的图片进度，避免显示上一话的残留数据
                     reporter.chapter(chapterIndex, chapterTotal, series.getTitle());
@@ -753,7 +886,10 @@ public class JmcomicService {
                 }
             }
         }
-        String chapterPath = this.getChapterPath(albumPath, album.getSeries().getFirst());
+        // 校验本次下载起始的那一话确实落了图片，避免"全失败却报成功"；
+        // 正常下载起始话就是第1话，与原来的行为一致
+        int checkIndex = Math.min(fromChapter, album.getSeries().size()) - 1;
+        String chapterPath = this.getChapterPath(albumPath, album.getSeries().get(checkIndex));
         File chapterPathFile = new File(chapterPath);
         File[] files = null;
         if(!chapterPathFile.exists()
@@ -1048,41 +1184,38 @@ public class JmcomicService {
             urlParam.put("id", aid);
 
             String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
-            HttpRequest httpRequest = HttpUtil.createGet(s)
-                    .addHeaders(headerParam.toSingleValueMap())
-                    .timeout(10000);
-            try (HttpResponse httpResponse = httpRequest.execute()){
-                String body = httpResponse.body();
-                if (StringUtils.isBlank(body)) {
-                    log.error("请求/album响应空");
-                    return BaseResp.fail("请求/album响应空");
-                }
-                String encryptedData = null;
-                try {
-                    JSONObject jsonObject = JSONObject.parseObject(body);
-                    encryptedData = jsonObject.getString("data");
-                    if (StringUtils.isBlank(encryptedData)) {
-                        log.error("请求/album data字段为空");
-                        return BaseResp.fail("请求/album data字段为空");
-                    }
-                }catch (Exception e) {
-                    log.error(StrFormatter.format("解析响应结果异常 body:{}",body),e);
-                    return BaseResp.fail("解析响应结果异常："+e.getMessage());
-                }
-
-                String data = decryptData(ts, encryptedData);
-                Album album = JSONObject.parseObject(data, Album.class);
-
-                String albumFolderName = buildAlbumFolderName(album.getName(), aid);
-                album.setAlbumFolderName(albumFolderName);
-                jmcomicSqliteService.saveOrUpdateAlbum(album, data);
-                JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
-                if (reporter != null) {
-                    // 提交任务时本地可能还没有记录，拿到详情后补上展示名
-                    reporter.albumName(album.getName());
-                }
-                return BaseResp.success(album);
+            // 网络超时按 jm.request.album.retry 重试；ts 不变，重试拿到的响应仍能正常解密
+            String body = withTimeoutRetry(Configs.getInt(ConfigKey.JM_REQUEST_ALBUM_RETRY, 0),
+                    () -> executeGet(s, headerParam, false));
+            if (StringUtils.isBlank(body)) {
+                log.error("请求/album响应空");
+                return BaseResp.fail("请求/album响应空");
             }
+            String encryptedData = null;
+            try {
+                JSONObject jsonObject = JSONObject.parseObject(body);
+                encryptedData = jsonObject.getString("data");
+                if (StringUtils.isBlank(encryptedData)) {
+                    log.error("请求/album data字段为空");
+                    return BaseResp.fail("请求/album data字段为空");
+                }
+            } catch (Exception e) {
+                log.error(StrFormatter.format("解析响应结果异常 body:{}", body), e);
+                return BaseResp.fail("解析响应结果异常：" + e.getMessage());
+            }
+
+            String data = decryptData(ts, encryptedData);
+            Album album = JSONObject.parseObject(data, Album.class);
+
+            String albumFolderName = buildAlbumFolderName(album.getName(), aid);
+            album.setAlbumFolderName(albumFolderName);
+            jmcomicSqliteService.saveOrUpdateAlbum(album, data);
+            JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
+            if (reporter != null) {
+                // 提交任务时本地可能还没有记录，拿到详情后补上展示名
+                reporter.albumName(album.getName());
+            }
+            return BaseResp.success(album);
         } catch (Exception e) {
             log.error("请求/album异常",e);
             return BaseResp.fail("请求/album异常"+e.getMessage());
@@ -1117,15 +1250,12 @@ public class JmcomicService {
         urlParam.put("page", page < 1 ? DEFAULT_SEARCH_PAGE : page);
         urlParam.put("o", (sort == null ? JmSearchSortEnum.DEFAULT : sort).getSort());
         String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
-        HttpRequest httpRequest = HttpUtil.createGet(s)
-                .addHeaders(headerParam.toSingleValueMap())
-                .timeout(10000)
-                .charset(StandardCharsets.UTF_8);
-        try (HttpResponse httpResponse = httpRequest.execute()){
-            JSONObject jsonObject = JSONObject.parseObject(httpResponse.body());
-            String data = decryptData(ts, jsonObject.getString("data"));
-            return JSONObject.parseObject(data, SearchResp.class);
-        }
+        // 网络超时按 jm.request.search.retry 重试
+        String body = withTimeoutRetry(Configs.getInt(ConfigKey.JM_REQUEST_SEARCH_RETRY, 0),
+                () -> executeGet(s, headerParam, true));
+        JSONObject jsonObject = JSONObject.parseObject(body);
+        String data = decryptData(ts, jsonObject.getString("data"));
+        return JSONObject.parseObject(data, SearchResp.class);
     }
 
     /**
@@ -1277,15 +1407,12 @@ public class JmcomicService {
         urlParam.put("id", chapterId);
 
         String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
-        HttpRequest httpRequest = HttpUtil.createGet(s)
-                .addHeaders(headerParam.toSingleValueMap())
-                .timeout(10000);
-
-        try (HttpResponse httpResponse = httpRequest.execute()){
-            JSONObject jsonObject = JSONObject.parseObject(httpResponse.body());
-            String data = decryptData(ts, jsonObject.getString("data"));
-            return JSONObject.parseObject(data, Chapter.class);
-        }
+        // 网络超时按 jm.request.chapter.retry 重试；下载任务重试时也是从这里继续请求章节
+        String body = withTimeoutRetry(Configs.getInt(ConfigKey.JM_REQUEST_CHAPTER_RETRY, 0),
+                () -> executeGet(s, headerParam, false));
+        JSONObject jsonObject = JSONObject.parseObject(body);
+        String data = decryptData(ts, jsonObject.getString("data"));
+        return JSONObject.parseObject(data, Chapter.class);
     }
 
     public long getScrambleId(long chapterId){

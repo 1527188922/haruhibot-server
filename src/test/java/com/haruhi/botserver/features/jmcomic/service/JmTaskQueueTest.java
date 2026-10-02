@@ -292,6 +292,46 @@ class JmTaskQueueTest {
         assertEquals(JmTaskStatusEnum.SUCCESS, queue.statusOf(taskId));
     }
 
+    /**
+     * 失败的任务要能按taskId查出来：失败重试靠它拿动作、JM ID 以及失败时执行到哪一话
+     */
+    @Test
+    void findTaskReturnsFailedTaskWithFailedChapter() throws Exception {
+        JmTaskQueue queue = new JmTaskQueue();
+        CountDownLatch completed = new CountDownLatch(1);
+        queue.tryAcquire("400", JmTaskAction.DOWNLOAD.getActionName());
+        String taskId = queue.enqueue("400", JmTaskAction.DOWNLOAD, "album400", null, new JmTaskQueue.TaskBody() {
+            @Override
+            public JmTaskQueue.TaskResult run() {
+                JmTaskQueue.ProgressReporter reporter = JmTaskContext.current();
+                reporter.chapter(3, 8, "第3话");
+                reporter.chapterImages(20, 5);
+                return JmTaskQueue.TaskResult.fail("下载章节异常");
+            }
+
+            @Override
+            public void complete(JmTaskQueue.TaskResult result) {
+                completed.countDown();
+            }
+
+            @Override
+            public void onCancelled(String message) {
+            }
+        });
+
+        assertTrue(completed.await(5, TimeUnit.SECONDS));
+        JmTaskInfo info = queue.findTask(taskId);
+        assertNotNull(info);
+        assertEquals(JmTaskStatusEnum.FAIL.name(), info.getStatus());
+        assertEquals(JmTaskAction.DOWNLOAD.getCode(), info.getAction());
+        assertEquals("400", info.getAid());
+        assertEquals(3, info.getChapterIndex(), "重试要从失败的那一话继续");
+        assertEquals(8, info.getChapterTotal());
+        assertEquals("下载章节异常", info.getMessage());
+        assertNull(queue.findTask("not-exist"), "不存在的任务应返回null");
+        assertNull(queue.findTask(null), "空taskId应返回null");
+    }
+
     private JmTaskQueue.TaskBody recordingBody(String aid, List<String> order, CountDownLatch completed) {
         return new JmTaskQueue.TaskBody() {
             @Override

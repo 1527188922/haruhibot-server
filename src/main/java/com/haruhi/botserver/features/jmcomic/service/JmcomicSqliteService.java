@@ -56,7 +56,8 @@ public interface JmcomicSqliteService {
     void collectAlbums(JmAlbumCollectReq request);
 
     /**
-     * 收藏夹列表，附带每个收藏夹下的漫画数量。默认收藏夹排在最前
+     * 收藏夹列表，附带每个收藏夹下的漫画数量。
+     * 排序：默认收藏夹始终在最上方，其余按漫画数量降序
      */
     List<JmFavoriteResp> listFavorites();
 

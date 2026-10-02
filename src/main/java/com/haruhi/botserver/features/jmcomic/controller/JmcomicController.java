@@ -233,6 +233,21 @@ public class JmcomicController {
         return HttpResp.success(count > 0 ? "已取消" + count + "个排队任务" : "没有排队中的任务", null);
     }
 
+    /**
+     * 重试失败的任务。
+     * <p>
+     * 会新建一个同JM、同动作的新任务提交（原失败记录保留）：
+     * 下载漫画从失败的那一话开始续传，生成zip/pdf 则重新执行一次
+     */
+    @PostMapping("/manage/task/retry/{taskId}")
+    public HttpResp<String> retryTask(@PathVariable("taskId") String taskId) {
+        BaseResp<String> result = jmcomicService.retryTask(taskId);
+        if (!result.isSuccess()) {
+            return HttpResp.fail(result.getMsg(), null);
+        }
+        return HttpResp.success(result.getMsg(), result.getData());
+    }
+
     @PostMapping("/manage/album/deleteBatch")
     public HttpResp deleteAlbums(@RequestBody JmAlbumDeleteReq request) {
         jmcomicSqliteService.deleteAlbums(request);

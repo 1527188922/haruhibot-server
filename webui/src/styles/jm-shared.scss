@@ -280,3 +280,20 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* 任务队列按钮的角标：主记录 tab 与收藏夹 tab 共用，避免角标盖住相邻按钮 */
+.jm-task-badge {
+  line-height: 1;
+  margin-right: 8px;
+}
+
+/* 瀑布流卡片左上角的多选框：与列表视图表格里的勾选是同一份选中态 */
+.jm-waterfall-select {
+  background-color: rgba(255, 255, 255, .85);
+  border-radius: 3px;
+  left: 6px;
+  padding: 1px 4px;
+  position: absolute;
+  top: 6px;
+  z-index: 1;
+}

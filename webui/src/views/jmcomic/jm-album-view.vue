@@ -7,11 +7,23 @@
 
       行操作按钮由父组件通过 actions 传入（key/图标/文案/颜色），点击后 emit('action', key, row)，
       因此两个 tab 可以有不同的按钮，但渲染与布局完全一致。
+
+      勾选批量操作在列表与瀑布流两种展示方式下都可用：勾选状态保存在本组件（selectedRows），
+      表格里的复选框与瀑布流卡片左上角的复选框共用同一份状态，切换展示方式不会丢选中，
+      变化时 emit('selection-change', rows) 给父组件做批量操作。
     -->
     <el-table v-if="viewMode === 'list'" tooltip-effect="light" :data="rows" v-loading="loading" border stripe
               max-height="800" size="small" ref="albumTable" highlight-current-row
-              :row-class-name="rowClassName" @selection-change="handleSelectionChange">
-      <el-table-column v-if="isVisible('selection')" type="selection" width="50" align="center"></el-table-column>
+              :row-class-name="rowClassName">
+      <el-table-column v-if="isVisible('selection')" width="50" align="center">
+        <template slot="header">
+          <el-checkbox :value="allSelected" :indeterminate="selectionIndeterminate"
+                       @change="toggleSelectAll"></el-checkbox>
+        </template>
+        <template slot-scope="{row}">
+          <el-checkbox :value="isRowSelected(row)" @change="toggleRowSelected(row)"></el-checkbox>
+        </template>
+      </el-table-column>
       <el-table-column v-if="isVisible('action')" :fixed="!isMobileView" label="操作" :width="actionColumnWidth" align="center">
         <template slot-scope="{row}">
           <div class="jm-action-grid">
@@ -198,6 +210,9 @@
       <div v-for="row in rows" :key="`jm-wf-${row.id}`" class="jm-waterfall-card"
            :class="{'jm-waterfall-card-collected': isCollected(row)}">
         <div class="jm-waterfall-cover">
+          <!-- 瀑布流下也能勾选做批量操作，与列表视图共用同一份选中态 -->
+          <el-checkbox v-if="isVisible('selection')" class="jm-waterfall-select"
+                       :value="isRowSelected(row)" @change="toggleRowSelected(row)"></el-checkbox>
           <el-image v-if="albumCoverSrc(row)" :src="albumCoverSrc(row)" :preview-src-list="[albumCoverSrc(row)]"
                     fit="cover" referrerpolicy="no-referrer">
             <div slot="placeholder" class="jm-waterfall-placeholder"><i class="el-icon-loading"></i></div>
@@ -315,6 +330,12 @@ export default {
       default: '没有查询到数据'
     }
   },
+  data() {
+    return {
+      // 当前勾选的行：列表与瀑布流共用，切换展示方式不会丢
+      selectedRows: []
+    };
+  },
   computed: {
     rows() {
       // 每行展开一次派生字段，模板里直接用 authorList/tagsList/... ，避免在模板里解析JSON
@@ -326,6 +347,25 @@ export default {
     actionColumnWidth() {
       const lines = Math.ceil((this.actions.length || 1) / 2);
       return Math.max(96, lines * 32 + 12);
+    },
+    allSelected() {
+      return this.rows.length > 0 && this.selectedRows.length === this.rows.length;
+    },
+    selectionIndeterminate() {
+      return this.selectedRows.length > 0 && !this.allSelected;
+    }
+  },
+  watch: {
+    /**
+     * 数据变化（翻页/重新查询）后，把已经不在当前数据里的行从勾选态剔除，
+     * 避免批量操作作用在看不见的行上
+     */
+    rows() {
+      const exists = new Set(this.rows.map(row => row.id));
+      if (this.selectedRows.every(row => exists.has(row.id))) {
+        return;
+      }
+      this.setSelectedRows(this.selectedRows);
     }
   },
   methods: {
@@ -450,8 +490,29 @@ export default {
     isActionDisabled(row, key) {
       return this.actionDisabled ? !!this.actionDisabled(row, key) : false;
     },
-    handleSelectionChange(selection) {
-      this.$emit('selection-change', selection);
+    /* ==================== 勾选批量操作 ==================== */
+    isRowSelected(row) {
+      return !!row && this.selectedRows.some(item => item.id === row.id);
+    },
+    toggleRowSelected(row) {
+      if (!row) {
+        return;
+      }
+      this.setSelectedRows(this.isRowSelected(row)
+        ? this.selectedRows.filter(item => item.id !== row.id)
+        : [...this.selectedRows, row]);
+    },
+    toggleSelectAll(checked) {
+      this.setSelectedRows(checked ? [...this.rows] : []);
+    },
+    /**
+     * 统一出口：按当前 rows 的顺序与对象重新取一遍，保证父组件拿到的是最新数据，
+     * 不会因为翻页/刷新拿到上一批的旧对象
+     */
+    setSelectedRows(rows) {
+      const ids = new Set((rows || []).map(item => item.id));
+      this.selectedRows = this.rows.filter(row => ids.has(row.id));
+      this.$emit('selection-change', this.selectedRows);
     },
     /* ==================== 供父组件调用 ==================== */
     /**
@@ -465,9 +526,7 @@ export default {
       });
     },
     clearSelection() {
-      if (this.$refs.albumTable) {
-        this.$refs.albumTable.clearSelection();
-      }
+      this.setSelectedRows([]);
     }
   }
 };

@@ -200,6 +200,21 @@ public class JmTaskQueue {
     }
 
     /**
+     * 按taskId取任务快照：运行中、排队中、最近完成的都能取到；已被清理或不存在时返回null。
+     * 用于"失败任务重试"——重试需要知道原任务的动作、JM ID 以及失败时执行到哪一话
+     */
+    public JmTaskInfo findTask(String taskId) {
+        if (StringUtils.isBlank(taskId)) {
+            return null;
+        }
+        synchronized (lock) {
+            pruneLocked();
+            JmTask task = tasksById.get(taskId);
+            return task == null ? null : toInfo(task);
+        }
+    }
+
+    /**
      * 取消排队中的任务
      *
      * @return true 表示取消成功
