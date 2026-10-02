@@ -326,7 +326,7 @@
     <el-dialog title="删除JM主记录" :visible.sync="albumDeleteDialogVisible" width="420px"
                @closed="deleteAlbumDialogClosed">
       <div class="delete-tip">确认删除选中的 {{albumSelection.length}} 条JM主记录？</div>
-      <el-checkbox v-model="albumDeleteOptions.deleteData">删除DB数据</el-checkbox>
+      <el-checkbox v-model="albumDeleteOptions.deleteData">删除数据库记录</el-checkbox>
       <el-checkbox v-model="albumDeleteOptions.deletePdf">删除pdf文件</el-checkbox>
       <el-checkbox v-model="albumDeleteOptions.deleteZip">删除zip文件</el-checkbox>
       <el-checkbox v-model="albumDeleteOptions.deleteImages">删除图片</el-checkbox>
@@ -348,7 +348,7 @@
     </el-dialog>
     <el-dialog title="删除所有文件" :visible.sync="deleteAllFileDialogVisible" width="420px"
                @closed="deleteAllFileDialogClosed">
-      <div class="delete-tip">确认删除所有文件？</div>
+      <div class="delete-tip">确认删除所有文件？（仅删除文件，不删除数据库记录）</div>
       <el-checkbox v-model="deleteAllFileOptions.deletePdf">删除PDF文件</el-checkbox>
       <el-checkbox v-model="deleteAllFileOptions.deleteZip">删除ZIP文件</el-checkbox>
       <el-checkbox v-model="deleteAllFileOptions.deleteImages">删除图片文件</el-checkbox>
