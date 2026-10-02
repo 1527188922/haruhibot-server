@@ -242,11 +242,21 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     }
 
     /**
-     * 关联表里存的是 yyyyMMddHHmmss，这里转成便于前端直接展示的 yyyy-MM-dd HH:mm:ss
+     * 关联表的 create_time 兼容两种写法，都归一成可直接展示的 yyyy-MM-dd HH:mm:ss：
+     * <ul>
+     *     <li>数据库里该列是 DATETIME，实际存的是 yyyy-MM-dd HH:mm:ss（如 2026-09-27 23:21:40），原样返回</li>
+     *     <li>14位纯数字的 yyyyMMddHHmmss（20260927232140）才需要补分隔符</li>
+     * </ul>
+     * 不按长度判断就动手截取的话，会把已经是 yyyy-MM-dd HH:mm:ss 的值切坏。
+     * 包级可见是为了让单元测试能直接覆盖这两种格式。
      */
-    private String formatFavoriteAddTime(String value) {
+    String formatFavoriteAddTime(String value) {
         String text = StringUtils.trimToEmpty(value);
         if (text.length() < 14) {
+            return text;
+        }
+        // 前14位不是纯数字说明已经带分隔符（yyyy-MM-dd HH:mm:ss / yyyy-MM-ddTHH:mm:ss 等），直接用
+        if (!StringUtils.isNumeric(text.substring(0, 14))) {
             return text;
         }
         return text.substring(0, 4) + "-" + text.substring(4, 6) + "-" + text.substring(6, 8)

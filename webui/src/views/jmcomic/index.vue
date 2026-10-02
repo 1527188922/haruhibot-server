@@ -1634,13 +1634,24 @@ export default {
     }
   }
 
+  /**
+   * 在线搜索瀑布流底部的时间 +「添加 / 入库并下载」：
+   * 卡片很窄（column-width 176px），两个按钮放不下就在容器内换行。
+   * 注意这里必须是 flex: 0 1 auto（而不是 0 0 auto）：后者容器宽度恒等于按钮的
+   * max-content 宽度，比卡片内容区还宽时内部的 flex-wrap 根本不生效，按钮会直接
+   * 溢出到 padding 区（"已入库"比"添加"长，更容易触发）
+   */
   .jm-online-wf-actions {
     display: inline-flex;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
     gap: 6px;
+    max-width: 100%;
+    min-width: 0;
 
     .el-button {
       margin-left: 0;
+      padding: 5px 8px;
     }
   }
 

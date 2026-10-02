@@ -451,4 +451,21 @@ class JmcomicFavoriteTest {
         assertEquals("乙", favorites.get(2).getName());
         assertEquals(2L, favorites.get(1).getAlbumCount());
     }
+
+    /**
+     * 关联表 create_time 两种格式都要能正确展示：
+     * 库里存的 yyyy-MM-dd HH:mm:ss 必须原样返回（曾经被当成 yyyyMMddHHmmss 截坏），
+     * 14位纯数字的才补分隔符
+     */
+    @Test
+    void formatFavoriteAddTimeSupportsBothFormats() {
+        assertEquals("2026-09-27 23:21:40", service.formatFavoriteAddTime("2026-09-27 23:21:40"));
+        assertEquals("2026-09-27 23:21:40", service.formatFavoriteAddTime("20260927232140"));
+        assertEquals("2026-09-27T23:21:40", service.formatFavoriteAddTime("2026-09-27T23:21:40"));
+        assertEquals("2026-09-27 23:21:40.123", service.formatFavoriteAddTime("2026-09-27 23:21:40.123"),
+                "带毫秒的也不能被截断");
+        assertEquals("2026-09-27", service.formatFavoriteAddTime("2026-09-27"));
+        assertEquals("", service.formatFavoriteAddTime(null));
+        assertEquals("", service.formatFavoriteAddTime("  "));
+    }
 }

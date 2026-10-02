@@ -55,6 +55,10 @@ public class WebServletConfig implements WebSocketConfigurer, WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/**")
                 .addResourceLocations("file:"+ FileUtil.getAppDir() + "/")
+                // 打包部署时前端产物在 <程序目录>/webui 下（见 src/assembly/package.xml），
+                // 这里必须把该目录也作为静态目录：VueHistoryFilter 会把前端路由转发到 /index.html，
+                // 找不到 index.html 时刷新任意前端路由都会 404（No static resource index.html.）
+                .addResourceLocations("file:"+ FileUtil.getAppDir() + "/webui/")
                 .addResourceLocations("classpath:/webui/")
                 .setCachePeriod(0);
         log.info("映射本地路径：{}",FileUtil.getAppDir());

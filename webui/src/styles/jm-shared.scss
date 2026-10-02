@@ -113,11 +113,24 @@
   align-items: center;
   color: #909399;
   display: flex;
+  // 作者/标签/“+数字”放不下时换行，而不是顶出卡片内容区（卡片是 overflow:hidden，会被裁掉）
+  flex-wrap: wrap;
   font-size: 12px;
   gap: 6px;
   line-height: 18px;
   margin-top: 4px;
   min-width: 0;
+
+  /**
+   * flex 子项的 min-width 默认是 auto，标签再长也不会缩到内容宽度以下，
+   * 结果就是溢出到 padding 区。这里限宽 + 省略号，超长时截断显示
+   */
+  .el-tag {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .jm-waterfall-id {
@@ -134,6 +147,9 @@
 }
 
 .jm-waterfall-author {
+  // 作者名超长时收缩并用省略号收尾，避免把后面的元素挤出卡片
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -142,8 +158,17 @@
 .jm-waterfall-footer {
   align-items: center;
   display: flex;
+  // 时间和操作按钮放不下时换行，按钮不会被挤出卡片（超出部分会被卡片裁掉）
+  flex-wrap: wrap;
+  gap: 6px;
   justify-content: space-between;
   margin-top: 8px;
+
+  // 与按钮同行时，时间不要被压缩成一列竖排文字
+  .jm-waterfall-time {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 }
 
 .jm-waterfall-time {
