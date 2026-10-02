@@ -152,7 +152,7 @@ export default {
       loading: false,
       selection: [],
       page: { currentPage: 1, pageSize: 20, total: 0 },
-      viewMode: getStore({ name: FAVORITE_VIEW_MODE_KEY }) || 'list',
+      viewMode: getStore({ name: FAVORITE_VIEW_MODE_KEY }) || 'waterfall',
       // 列定义与 JM主记录 tab 共用（jm-album-columns.js），另外多两列收藏夹专属信息
       favoriteVisibleColumns: [...DEFAULT_FAVORITE_COLUMNS],
       favoriteColumnOptions: FAVORITE_COLUMN_OPTIONS,

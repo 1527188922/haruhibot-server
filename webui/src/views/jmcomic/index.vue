@@ -442,8 +442,8 @@ export default {
       // 收藏夹 tab 的查询条件：和 JM主记录一样由页面持有（查询块是父组件里的独立卡片），
       // 收藏夹面板只通过 query prop 读取，查询/重置按钮也在父组件这一侧
       favoriteQuery: { name: '', author: '' },
-      // JM主记录展示方式：list=表格(默认)，waterfall=瀑布流卡片
-      albumViewMode: getStore({ name: ALBUM_VIEW_MODE_KEY }) || 'list',
+      // JM主记录展示方式：list=表格，waterfall=瀑布流卡片(默认)
+      albumViewMode: getStore({ name: ALBUM_VIEW_MODE_KEY }) || 'waterfall',
       chapterQuery: { albumId: '', chapterId: '', chapterTitle: '', imageFile: '' },
       // JM在线搜索：分页由JM服务器完成，页码从1开始
       onlineQuery: { name: '', sort: 'mr', page: 1 },
@@ -455,8 +455,8 @@ export default {
       ],
       onlineLoading: false,
       onlineSearched: false,
-      // 搜索结果展示方式：list=表格(默认)，waterfall=瀑布流卡片
-      onlineViewMode: getStore({ name: ONLINE_VIEW_MODE_KEY }) || 'list',
+      // 搜索结果展示方式：list=表格，waterfall=瀑布流卡片(默认)
+      onlineViewMode: getStore({ name: ONLINE_VIEW_MODE_KEY }) || 'waterfall',
       onlineResult: this.defOnlineResult(),
       // 当前展示的是哪条历史快照，为空表示是实时搜索结果
       onlineSnapshotTime: null,
@@ -492,7 +492,7 @@ export default {
       albumPagination: {
         currentPage: 1,
         pageSizes: [5, 10, 30, 50, 100, 500],
-        pageSize: 5,
+        pageSize: 50,
         layout: 'total, sizes, prev, pager, next, jumper',
         background: true,
         total: 0
