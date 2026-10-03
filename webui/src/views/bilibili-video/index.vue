@@ -69,7 +69,7 @@
           <div v-loading="loading && list.length === 0" class="bili-body">
             <div v-if="list.length > 0" class="bili-grid">
               <bili-video-card v-for="row in list" :key="row.id" :row="row" :selected="isSelected(row.id)"
-                               @select="toggleSelect" @open-video="openVideo" @play="openPlayer"
+                               @select="toggleSelect" @play="openPlayer"
                                @download="downloadVideo" @retry="retryDownload" @refresh="refreshVideo"
                                @delete="deleteVideo"></bili-video-card>
             </div>
@@ -664,9 +664,9 @@ export default {
   }
 
   .bili-task-badge {
-    ::v-deep .el-badge__content {
-      top: 12px;
-    }
+    // 不要覆盖 element-ui 的 .el-badge__content 定位(top:0 + translateY(-50%))，
+    // 那样角标会落到按钮右上角的下方；默认就是压在按钮右上角上的
+    margin-right: 8px;
   }
 
   .bili-summary {

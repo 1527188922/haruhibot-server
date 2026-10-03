@@ -1,10 +1,11 @@
 <template>
   <!--
     bilibili视频卡片。
-    播放/下载/刷新/删除都通过事件交给父组件处理，卡片只负责展示与交互。
+    下载/刷新/删除都通过事件交给父组件处理，卡片只负责展示与交互。
+    封面不做点击跳转：点一下就跑掉太容易误触，要跳b站走bvid链接（或播放弹框里的"在B站打开"）。
   -->
   <div class="bili-card" :class="{'bili-card-downloaded': row.downloaded}">
-    <div class="bili-cover" @click="$emit('open-video', row)">
+    <div class="bili-cover">
       <img v-if="coverUrl" :src="coverUrl" referrerpolicy="no-referrer" alt="">
       <div v-else class="bili-cover-empty"><i class="el-icon-picture-outline"></i></div>
       <span v-if="row.duration" class="bili-cover-duration">{{durationText}}</span>
@@ -202,7 +203,6 @@ export default {
   width: 100%;
   padding-top: 56.25%;
   background-color: #f5f7fa;
-  cursor: pointer;
 
   img {
     position: absolute;
@@ -320,9 +320,16 @@ export default {
   }
 }
 
+/*
+  作者：只有头像和名字本身可点。
+  .bili-card-body 是纵向flex，默认 align-items:stretch 会让这一行撑满卡片宽度，
+  于是名字右边的空白也会响应点击；align-self:flex-start 让它收紧成内容宽度。
+*/
 .bili-owner {
   display: flex;
   align-items: center;
+  align-self: flex-start;
+  max-width: 100%;
   gap: 6px;
   margin-top: 6px;
   min-width: 0;
