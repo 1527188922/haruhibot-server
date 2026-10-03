@@ -295,6 +295,17 @@ const release = [{
     },
     children: []
 }, {
+    label: "BILIBILI视频",
+    path: '/bilibili-video',
+    component: 'views/bilibili-video/index',
+    icon: 'icon-caidan',
+    iconBgColor: randomColor(),
+    meta: {
+        // i18n: 'bilibili-video',
+        keepAlive: true
+    },
+    children: []
+}, {
     label: '系统管理',
     path: '/system',
     iconBgColor: randomColor(),

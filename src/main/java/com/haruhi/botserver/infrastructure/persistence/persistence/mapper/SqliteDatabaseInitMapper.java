@@ -105,4 +105,11 @@ public interface SqliteDatabaseInitMapper {
      * @return
      */
     int createBilibiliSubscribe(@Param("tableName") String tableName);
+
+    /**
+     * b站视频信息表
+     * @param tableName
+     * @return
+     */
+    int createBilibiliVideo(@Param("tableName") String tableName);
 }

@@ -211,6 +211,21 @@ public class SqliteDatabaseService{
                 StrFormatter.format("{}_uid_update_time_idx",DataBaseConst.T_BILIBILI_SUBSCRIBE),
                 "uid,update_time",
                 false);
+
+        // b站视频信息：bvid+cid 组合唯一，由 getVideoDetail 自动入库
+        sqliteDatabaseInitMapper.createBilibiliVideo(DataBaseConst.T_BILIBILI_VIDEO);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_BILIBILI_VIDEO,
+                StrFormatter.format("{}_bvid_cid_idx",DataBaseConst.T_BILIBILI_VIDEO),
+                "bvid,cid",
+                true);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_BILIBILI_VIDEO,
+                StrFormatter.format("{}_owner_mid_idx",DataBaseConst.T_BILIBILI_VIDEO),
+                "owner_mid",
+                false);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_BILIBILI_VIDEO,
+                StrFormatter.format("{}_pubdate_idx",DataBaseConst.T_BILIBILI_VIDEO),
+                "pubdate",
+                false);
     }
 
     private static final ConcurrentHashMap<String,Boolean> tableExistsCache = new ConcurrentHashMap<>();

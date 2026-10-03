@@ -15,6 +15,7 @@ import com.haruhi.botserver.features.bilibili.client.model.bilibili.LiveStatusIn
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.PlayerInfoResp;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.PlayUrlInfo;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.VideoDetail;
+import com.haruhi.botserver.features.bilibili.persistence.entity.BilibiliVideoSqlite;
 import com.haruhi.botserver.features.bilibili.support.BilibiliIdConverter;
 import com.haruhi.botserver.features.bilibili.support.BilibiliSidUtil;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
@@ -24,6 +25,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -78,9 +80,17 @@ public class BilibiliService {
     private volatile String wbiMixinKey;
     private volatile long wbiMixinKeyExpireAt;
 
+    /**
+     * 视频入库。直接 new BilibiliService() 的场景（如main方法）下为null
+     */
+    @Autowired(required = false)
+    private BilibiliVideoSqliteService bilibiliVideoSqliteService;
+
 
     /**
      * 获取视频详情
+     * <p>
+     * 每次调用都会把响应按 bv号+cid 保存到 t_bilibili_video（存在则更新，不存在则插入）
      * @param bvid
      * @return
      */
@@ -88,11 +98,34 @@ public class BilibiliService {
         HashMap<String, Object> param = new HashMap<String, Object>() {{
             put("bvid", bvid);
         }};
-        return sendGetRequest("https://api.bilibili.com/x/web-interface/wbi/view/detail", param,  new TypeReference<BilibiliBaseResp<VideoDetail>>(){});
+        BilibiliBaseResp<VideoDetail> resp = sendGetRequest("https://api.bilibili.com/x/web-interface/wbi/view/detail", param, new TypeReference<BilibiliBaseResp<VideoDetail>>(){});
+        saveVideoDetail(bvid, resp);
+        return resp;
     }
+
+    /**
+     * 视频详情入库，入库失败不影响接口返回
+     */
+    private void saveVideoDetail(String bvid, BilibiliBaseResp<VideoDetail> resp){
+        if (Objects.isNull(bilibiliVideoSqliteService) || Objects.isNull(resp) || !resp.isSuccess() || Objects.isNull(resp.getData())) {
+            return;
+        }
+        try {
+            BilibiliVideoSqlite saved = bilibiliVideoSqliteService.saveOrUpdateByVideoDetail(resp.getData(), resp.getRaw());
+            if (Objects.isNull(saved)) {
+                // 响应成功但没有视频信息或缺少bv/cid时不会入库，只记录日志不抛异常
+                DbLog.warn(BusinessModuleEnum.BILIBILI,"b站视频详情响应缺少视频信息，未入库 bvid:{} resp:{}", bvid, resp.getRaw());
+            }
+        } catch (Exception e) {
+            DbLog.error(BusinessModuleEnum.BILIBILI,"b站视频详情入库异常 bvid:{}",bvid,e);
+        }
+    }
+
     /**
      * 获取视频下载链接
      * bvid avid 2传1即可
+     * <p>
+     * 调用后会把响应原始json更新到 t_bilibili_video.play_url_raw（记录不存在时不处理）
      * @param bvid
      * @param avid
      * @param cid
@@ -114,7 +147,23 @@ public class BilibiliService {
             put("voice_balance", 1);
 //            put("fnval", 1024);
         }};
-        return sendGetRequest("https://api.bilibili.com/x/player/wbi/playurl", param, new TypeReference<BilibiliBaseResp<PlayUrlInfo>>(){});
+        BilibiliBaseResp<PlayUrlInfo> resp = sendGetRequest("https://api.bilibili.com/x/player/wbi/playurl", param, new TypeReference<BilibiliBaseResp<PlayUrlInfo>>(){});
+        updatePlayUrlRaw(bvid, cid, resp);
+        return resp;
+    }
+
+    /**
+     * 保存下载链接接口的响应原始json
+     */
+    private void updatePlayUrlRaw(String bvid, Long cid, BilibiliBaseResp<PlayUrlInfo> resp){
+        if (Objects.isNull(bilibiliVideoSqliteService) || Objects.isNull(resp) || StringUtils.isBlank(resp.getRaw())) {
+            return;
+        }
+        try {
+            bilibiliVideoSqliteService.updatePlayUrlRaw(bvid, cid, resp.getRaw());
+        } catch (Exception e) {
+            DbLog.error(BusinessModuleEnum.BILIBILI,"b站视频下载链接入库异常 bvid:{} cid:{}",bvid,cid,e);
+        }
     }
 
 
@@ -443,8 +492,12 @@ public class BilibiliService {
 //            BilibiliBaseResp<BilibiliTickResp> bilibiliTickRespBilibiliBaseResp = bilibiliService.genTicket(null);
 //            System.out.println(bilibiliTickRespBilibiliBaseResp.getRaw());
 //            System.out.println(BilibiliSidUtil.generate());
-            Map<Long, LiveStatusInfo> liveStatusInfoByUids = bilibiliService.getLiveStatusInfoByUids(List.of(63231L, 416376577L));
-            System.out.println(liveStatusInfoByUids);
+//            Map<Long, LiveStatusInfo> liveStatusInfoByUids = bilibiliService.getLiveStatusInfoByUids(List.of(63231L, 416376577L));
+//            System.out.println(liveStatusInfoByUids);
+
+
+            BilibiliBaseResp<VideoDetail> videoDetail = bilibiliService.getVideoDetail("BV1ZsaB6HE2U");
+            System.out.println(videoDetail.getRaw());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

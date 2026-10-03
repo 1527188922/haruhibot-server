@@ -44,6 +44,8 @@ public class DataBaseConst {
     public final static String T_SYSTEM_LOG = "t_system_log";
     // 订阅推送表（如b站直播开播推送）
     public final static String T_BILIBILI_SUBSCRIBE = "t_bilibili_subscribe";
+    // b站视频信息表（调用 getVideoDetail 时按 bv+cid 入库）
+    public final static String T_BILIBILI_VIDEO = "t_bilibili_video";
 
     public final static String SQLITE_SYS_T_SQLITE_SCHEMA = "sqlite_schema";
     public final static String SQLITE_SYS_T_SQLITE_SEQUENCE = "sqlite_sequence";

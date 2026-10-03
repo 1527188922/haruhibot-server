@@ -309,6 +309,28 @@
             `update_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
     </update>
+    <update id="createBilibiliVideo">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `bvid` TEXT NOT NULL,
+            `avid` INTEGER,
+            `cid` INTEGER NOT NULL,
+            `title` TEXT,
+            `tag` TEXT,
+            `desc` TEXT,
+            `pic` TEXT,
+            `duration` INTEGER,
+            `owner_mid` INTEGER,
+            `owner_name` TEXT,
+            `owner_face` TEXT,
+            `video_detail_raw` TEXT,
+            `play_url_raw` TEXT,
+            `pubdate` INTEGER,
+            `ctime` INTEGER,
+            `create_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+            `update_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
     <select id="pragmaTableInfo" resultType="com.haruhi.botserver.infrastructure.persistence.persistence.entity.TableInfoSqlite">
         PRAGMA table_info(${tableName})
     </select>
