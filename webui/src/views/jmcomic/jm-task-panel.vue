@@ -10,11 +10,11 @@
           <el-tag v-if="counters.cancelled" size="mini" type="warning">已取消 {{counters.cancelled}}</el-tag>
         </span>
         <span class="jm-task-toolbar-ops">
-          <el-tag size="mini" effect="plain" :type="wsConnected ? 'success' : 'info'">
-            {{wsConnected ? '实时推送' : '未连接 · 轮询兜底'}}
-          </el-tag>
-          <el-switch v-model="autoRefresh" class="jm-task-switch" size="mini" active-text="自动更新"></el-switch>
-          <el-button type="text" size="mini" :loading="loading" @click="loadTasks()">刷新</el-button>
+<!--          <el-tag size="mini" effect="plain" :type="wsConnected ? 'success' : 'info'">-->
+<!--            {{wsConnected ? '实时推送' : '未连接 · 轮询兜底'}}-->
+<!--          </el-tag>-->
+<!--          <el-switch v-model="autoRefresh" class="jm-task-switch" size="mini" active-text="自动更新"></el-switch>-->
+<!--          <el-button type="text" size="mini" :loading="loading" @click="loadTasks()">刷新</el-button>-->
           <el-button type="text" size="mini" :disabled="counters.queued === 0" @click="cancelAllQueued">取消全部排队</el-button>
         </span>
       </div>
