@@ -5,13 +5,33 @@ const timeout = 60 * 1000;
 
 /**
  * bilibili视频分页列表
- * @param data {bvid,title,ownerMid,ownerName,tag,currentPage,pageSize}
+ * @param data {bvid,title,ownerMid,ownerName,tag,tagExact,currentPage,pageSize}
  */
 export const search = (data) => request({
   url: baseUrl + '/bilibili/video/search',
   method: 'post',
   timeout,
   data
+});
+
+/**
+ * 所有视频作者（附带视频数），左侧"按作者"分组列表
+ */
+export const authors = () => request({
+  url: baseUrl + '/bilibili/video/authors',
+  method: 'post',
+  timeout,
+  data: {}
+});
+
+/**
+ * 所有标签（附带视频数），左侧"按标签"分组列表
+ */
+export const tags = () => request({
+  url: baseUrl + '/bilibili/video/tags',
+  method: 'post',
+  timeout,
+  data: {}
 });
 
 /**
@@ -37,7 +57,8 @@ export const refresh = (data) => request({
 });
 
 /**
- * 下载视频到服务器本地（异步，返回值只是"已开始下载"）
+ * 下载视频到服务器本地（异步，同一个bvid+cid只会有一个任务）
+ * 进度通过WebSocket主题 bilibili.video.download 推送
  * @param data {id}
  */
 export const download = (data) => request({
@@ -48,14 +69,13 @@ export const download = (data) => request({
 });
 
 /**
- * 查询下载状态，key为视频记录id
- * @param data {ids: []} 不传ids时返回全部
+ * 下载任务快照，WebSocket未连通时轮询兜底
  */
-export const downloadStatus = (data) => request({
-  url: baseUrl + '/bilibili/video/download/status',
+export const downloadTasks = () => request({
+  url: baseUrl + '/bilibili/video/download/tasks',
   method: 'post',
   timeout,
-  data
+  data: {}
 });
 
 /**

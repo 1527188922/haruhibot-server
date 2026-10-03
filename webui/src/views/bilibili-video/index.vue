@@ -13,14 +13,14 @@
             <el-input v-model.trim="queryFormObj.title" class="form-input" clearable maxlength="50"
                       @keyup.enter.native="search"></el-input>
           </el-form-item>
-          <el-form-item label="作者" prop="ownerName">
-            <el-input v-model.trim="queryFormObj.ownerName" class="form-input" clearable maxlength="50"
-                      @keyup.enter.native="search"></el-input>
-          </el-form-item>
-          <el-form-item label="标签" prop="tag">
-            <el-input v-model.trim="queryFormObj.tag" class="form-input" clearable maxlength="30"
-                      @keyup.enter.native="search"></el-input>
-          </el-form-item>
+<!--          <el-form-item label="作者" prop="ownerName">-->
+<!--            <el-input v-model.trim="queryFormObj.ownerName" class="form-input" clearable maxlength="50"-->
+<!--                      @keyup.enter.native="search"></el-input>-->
+<!--          </el-form-item>-->
+<!--          <el-form-item label="标签" prop="tag">-->
+<!--            <el-input v-model.trim="queryFormObj.tag" class="form-input" clearable maxlength="30"-->
+<!--                      @keyup.enter.native="search"></el-input>-->
+<!--          </el-form-item>-->
         </el-form>
       </el-row>
       <el-row class="query-form-option-buts">
@@ -29,7 +29,7 @@
       </el-row>
     </basic-container>
 
-    <!-- 添加视频 + 展示方式 -->
+    <!-- 添加视频 + 工具栏 -->
     <basic-container>
       <div class="bili-toolbar">
         <div class="bili-add">
@@ -40,130 +40,103 @@
                      :loading="adding" @click="addVideo">添加视频</el-button>
         </div>
         <div class="bili-view-mode">
-          <span class="bili-mode-label">分组方式：</span>
-          <el-radio-group v-model="groupBy" size="mini">
-            <el-radio-button label="none">不分组</el-radio-button>
-            <el-radio-button label="owner">按作者</el-radio-button>
-            <el-radio-button label="tag">按标签</el-radio-button>
-          </el-radio-group>
-          <el-button type="danger" size="mini" plain icon="el-icon-delete"
+          <el-badge :value="runningTaskCount" :hidden="runningTaskCount === 0" type="warning"
+                    class="bili-task-badge">
+            <el-button size="small" plain icon="el-icon-s-operation"
+                       @click="openDownloadPanel">下载任务</el-button>
+          </el-badge>
+          <el-button type="danger" size="small" plain icon="el-icon-delete"
                      :disabled="selectedIds.length === 0"
                      @click="deleteSelected">删除选中{{selectedIds.length ? `(${selectedIds.length})` : ''}}</el-button>
-          <el-button size="mini" plain icon="el-icon-refresh" :loading="loading" @click="search">刷新</el-button>
+          <el-button size="small" plain icon="el-icon-refresh" :loading="loading" @click="search">刷新</el-button>
         </div>
       </div>
       <div class="bili-summary">
-        共 {{total}} 个视频，已加载 {{list.length}} 个<span v-if="groupBy !== 'none'">，共 {{groupedList.length}} 组</span>
+        共 {{allTotal}} 个视频，已加载 {{list.length}} 个
+        <template v-if="activeGroup.key !== ALL_KEY">，当前分组：{{activeGroupName}}（{{total}} 个）</template>
       </div>
     </basic-container>
 
-    <!-- 视频卡片 -->
+    <!-- 左侧分组列表 + 右侧视频卡片 -->
     <basic-container>
-      <div v-loading="loading && list.length === 0" class="bili-body">
-        <template v-if="groupedList.length > 0">
-          <div v-for="group in groupedList" :key="group.key" class="bili-group">
-            <div v-if="groupBy !== 'none'" class="bili-group-header">
-              <img v-if="group.face" class="bili-group-avatar" :src="group.face" referrerpolicy="no-referrer">
-              <i v-else-if="groupBy === 'owner'" class="el-icon-user-solid bili-group-avatar bili-group-avatar-icon"></i>
-              <i v-else class="el-icon-price-tag bili-group-avatar bili-group-avatar-icon"></i>
-              <span class="bili-group-title" :title="group.title">{{group.title}}</span>
-              <span class="bili-group-count">{{group.cards.length}}</span>
-              <el-button v-if="groupBy === 'owner' && group.mid" type="text" size="mini"
-                         @click="openSpaceUrl(group.mid)">b站主页</el-button>
+      <div class="bili-layout">
+        <div class="bili-side">
+          <bili-group-panel :mode.sync="groupMode" :authors="authors" :tags="tags" :total="allTotal"
+                            :active-key="activeGroup.key" :loading="groupLoading"
+                            @select="selectGroup" @refresh="loadGroups"></bili-group-panel>
+        </div>
+        <div class="bili-main">
+          <div v-loading="loading && list.length === 0" class="bili-body">
+            <div v-if="list.length > 0" class="bili-grid">
+              <bili-video-card v-for="row in list" :key="row.id" :row="row" :selected="isSelected(row.id)"
+                               @select="toggleSelect" @open-video="openVideo" @play="openPlayer"
+                               @download="downloadVideo" @refresh="refreshVideo"
+                               @delete="deleteVideo"></bili-video-card>
             </div>
-            <div class="bili-grid">
-              <div v-for="row in group.cards" :key="`${group.key}-${row.id}`" class="bili-card"
-                   :class="{'bili-card-downloaded': row.downloaded}">
-                <div class="bili-cover" @click="openVideo(row)">
-                  <img v-if="coverUrl(row)" :src="coverUrl(row)" referrerpolicy="no-referrer" alt="">
-                  <div v-else class="bili-cover-empty"><i class="el-icon-picture-outline"></i></div>
-                  <span v-if="row.duration" class="bili-cover-duration">{{durationText(row.duration)}}</span>
-                  <span class="bili-cover-flag" :class="row.downloaded ? 'is-downloaded' : 'is-undownloaded'">
-                    {{row.downloaded ? '已下载' : (row.downloading ? '下载中' : '未下载')}}
-                  </span>
-                </div>
-                <div class="bili-card-body">
-                  <div class="bili-title" :title="row.title">{{row.title}}</div>
-                  <div class="bili-meta-line">
-                    <a class="bili-bvid"  target="_blank" rel="noopener noreferrer"
-                       @click.stop>{{row.bvid}}</a>
-<!--                    <span class="bili-cid" :title="`cid：${row.cid}，av号：${row.avid || ''}`">cid:{{row.cid}}</span>-->
-                    <el-checkbox class="bili-card-select" :value="isSelected(row.id)"
-                                 @change="toggleSelect(row.id)"></el-checkbox>
-                  </div>
-                  <div class="bili-owner" :title="`点击进入b站个人主页(uid: ${row.ownerMid})`"
-                       @click="openSpace(row)">
-                    <img v-if="row.ownerFace" class="bili-owner-face" :src="row.ownerFace"
-                         referrerpolicy="no-referrer" alt="">
-                    <i v-else class="el-icon-user-solid bili-owner-face bili-owner-face-icon"></i>
-                    <span class="bili-owner-name">{{row.ownerName || '未知作者'}}</span>
-                  </div>
-                  <div class="bili-tags">
-                    <el-tag v-for="tag in visibleTags(row)" :key="tag" size="mini" type="success"
-                            :title="tag">{{tag}}</el-tag>
-                    <el-popover v-if="tagList(row).length > MAX_TAG_DISPLAY" placement="top" trigger="click"
-                                width="280">
-                      <div class="bili-tag-popover">
-                        <el-tag v-for="tag in tagList(row)" :key="tag" size="mini" type="success">{{tag}}</el-tag>
-                      </div>
-                      <el-button slot="reference" type="text" size="mini">
-                        +{{tagList(row).length - MAX_TAG_DISPLAY}}
-                      </el-button>
-                    </el-popover>
-                    <span v-if="tagList(row).length === 0" class="bili-empty-text">无标签</span>
-                  </div>
-                  <div class="bili-times">
-                    <div title="视频发布时间(pubdate)">发布：{{formatTs(row.pubdate)}}</div>
-                  </div>
-                  <div class="bili-actions">
-                    <el-tooltip content="视频下载到服务器本地" placement="top">
-                      <el-button v-if="!row.downloaded" type="primary" size="mini" plain icon="el-icon-download"
-                                 :loading="row.downloading" @click="downloadVideo(row)">下载视频</el-button>
-                    </el-tooltip>
-                    <el-button size="mini" plain icon="el-icon-refresh" @click="refreshVideo(row)">刷新</el-button>
-                    <el-button size="mini" type="danger" plain icon="el-icon-delete" @click="deleteVideo(row)">删除</el-button>
-                  </div>
-                  <div class="bili-file">
-                    <template v-if="row.downloaded">
-                      文件：{{row.videoFileName}}
-                    </template>
-                    <template v-else>
-                       &nbsp;
-                    </template>
-                  </div>
-                  <div v-if="row.downloadState === 'fail' && row.downloadMessage" class="bili-download-error"
-                       :title="row.downloadMessage">下载失败：{{row.downloadMessage}}</div>
-                </div>
-              </div>
+            <el-empty v-else-if="!loading" description="该分组下暂无视频，可粘贴b站链接添加"></el-empty>
+            <div ref="loadMoreTrigger" class="bili-load-more">
+              <span v-if="loading && list.length > 0"><i class="el-icon-loading"></i> 加载中...</span>
+              <span v-else-if="hasMore && list.length > 0">向下滑动加载更多</span>
+              <span v-else-if="list.length > 0">没有更多了</span>
             </div>
           </div>
-        </template>
-        <el-empty v-else-if="!loading" description="暂无视频数据，可粘贴b站链接添加"></el-empty>
-        <div ref="loadMoreTrigger" class="bili-load-more">
-          <span v-if="loading && list.length > 0"><i class="el-icon-loading"></i> 加载中...</span>
-          <span v-else-if="hasMore && list.length > 0">向下滑动加载更多</span>
-          <span v-else-if="list.length > 0">没有更多了</span>
         </div>
       </div>
     </basic-container>
+
+    <!-- 服务器本地视频播放，不新开浏览器tab -->
+    <el-dialog :title="player.title || '视频播放'" :visible.sync="playerVisible" width="70%" top="6vh"
+               append-to-body custom-class="bili-player-dialog" @closed="closePlayer">
+      <video v-if="player.src" class="bili-player" :src="player.src" controls autoplay
+             controlslist="nodownload"></video>
+      <div class="bili-player-meta">
+        <span>{{player.fileName}}</span>
+        <span v-if="player.bvid" class="bili-player-meta-link"
+              @click="openVideo(player)">{{player.bvid}}</span>
+      </div>
+    </el-dialog>
+
+    <bili-download-panel :visible.sync="downloadPanelVisible" :snapshot="downloadSnapshot"
+                         :loading="downloadLoading" :ws-connected="wsConnected"
+                         @refresh="refreshDownloadTasks"></bili-download-panel>
   </div>
 </template>
 
 <script>
-import {search as searchApi, add as addApi, refresh as refreshApi, download as downloadApi,
-  downloadStatus as downloadStatusApi, deleteBatch} from '@/api/bilibili-video';
+import {
+  search as searchApi,
+  authors as authorsApi,
+  tags as tagsApi,
+  add as addApi,
+  refresh as refreshApi,
+  download as downloadApi,
+  downloadTasks as downloadTasksApi,
+  deleteBatch
+} from '@/api/bilibili-video';
+import BiliGroupPanel from './bili-group-panel.vue';
+import BiliVideoCard from './bili-video-card.vue';
+import BiliDownloadPanel from './bili-download-panel.vue';
 
 const PAGE_SIZE = 20;
-// 卡片上最多直接展示几个标签，剩下的收进popover
-const MAX_TAG_DISPLAY = 3;
-// 下载进度轮询间隔
-const POLL_INTERVAL = 2000;
+// 左侧"全部视频"这一项的分组key，与 bili-group-panel 内部保持一致
+const ALL_KEY = 'all';
+// 下载任务主题与命令，与后端 BilibiliVideoDownloadPushService 保持一致
+const DOWNLOAD_TOPIC = 'bilibili.video.download';
+const DOWNLOAD_SNAPSHOT_TYPE = 'bilibili.video.download.snapshot';
+const DOWNLOAD_LIST_COMMAND = 'bilibili.video.download.list';
+// WebSocket未连通时的轮询兜底间隔
+const FALLBACK_POLL_MILLIS = 3000;
 
 export default {
   name: 'BilibiliVideo',
+  components: {
+    BiliGroupPanel,
+    BiliVideoCard,
+    BiliDownloadPanel
+  },
   data() {
     return {
-      MAX_TAG_DISPLAY,
+      ALL_KEY,
       queryFormObj: {
         bvid: '',
         title: '',
@@ -172,61 +145,70 @@ export default {
       },
       addText: '',
       adding: false,
-      groupBy: 'none',
+      // 左侧分组的浏览方式：owner-按作者 / tag-按标签
+      groupMode: 'owner',
+      // 当前选中的分组，key=all 表示全部视频
+      activeGroup: {key: ALL_KEY},
+      authors: [],
+      tags: [],
+      groupLoading: false,
       list: [],
+      // 当前查询条件下的总数（选中分组时是该分组的数量）
       total: 0,
+      // 全部视频总数，左侧"全部视频"用
+      allTotal: 0,
       currentPage: 1,
       hasMore: false,
       loading: false,
       selectedIds: [],
-      pollTimer: null,
+      player: {title: '', src: null, fileName: '', bvid: ''},
+      playerVisible: false,
+      downloadPanelVisible: false,
+      downloadSnapshot: null,
+      downloadLoading: false,
+      wsConnected: false,
       observer: null,
       scrollParent: null,
-      scrollHandler: null
+      scrollHandler: null,
+      fallbackTimer: null,
+      snapshotOff: null,
+      statusOff: null,
+      pushBound: false
     }
   },
   computed: {
-    /**
-     * 按作者/标签分组。一个视频有多个标签时会出现在多个分组里
-     */
-    groupedList() {
-      if (this.groupBy === 'none') {
-        return this.list.length === 0 ? [] : [{key: 'all', title: '全部视频', cards: this.list}]
+    activeGroupKey() {
+      return this.activeGroup.key
+    },
+    activeGroupName() {
+      if (this.activeGroup.key === ALL_KEY) {
+        return '全部视频'
       }
-      const groups = new Map()
-      const push = (key, meta, row) => {
-        if (!groups.has(key)) {
-          groups.set(key, Object.assign({key, cards: []}, meta))
-        }
-        groups.get(key).cards.push(row)
-      }
-      this.list.forEach(row => {
-        if (this.groupBy === 'owner') {
-          const key = `owner-${row.ownerMid || 0}`
-          push(key, {title: row.ownerName || '未知作者', face: row.ownerFace, mid: row.ownerMid}, row)
-        } else {
-          const tags = this.tagList(row)
-          if (tags.length === 0) {
-            push('tag-__none__', {title: '无标签'}, row)
-            return
-          }
-          tags.forEach(tag => push(`tag-${tag}`, {title: tag}, row))
-        }
-      })
-      return Array.from(groups.values()).sort((a, b) => {
-        if (b.cards.length !== a.cards.length) {
-          return b.cards.length - a.cards.length
-        }
-        return String(a.title).localeCompare(String(b.title))
-      })
+      return this.activeGroup.ownerName || this.activeGroup.tag || ''
+    },
+    runningTaskCount() {
+      return (this.downloadSnapshot && this.downloadSnapshot.counters
+        && this.downloadSnapshot.counters.running) || 0
+    }
+  },
+  watch: {
+    groupMode() {
+      // 切换浏览方式后回到"全部视频"，避免留下上一种分组方式的过滤条件
+      this.activeGroup = {key: ALL_KEY}
+      this.search()
+    },
+    // 列表数据变化后重新挂载哨兵，保证首屏不足一屏时也能继续加载
+    'list.length'() {
+      this.$nextTick(() => this.setupObserver())
     }
   },
   mounted() {
+    this.loadGroups()
     this.search()
     this.$nextTick(() => this.setupObserver())
+    this.bindDownloadPush()
   },
   activated() {
-    // 页面被keep-alive缓存，重新进入时恢复滚动监听
     this.$nextTick(() => this.setupObserver())
   },
   deactivated() {
@@ -234,9 +216,31 @@ export default {
   },
   beforeDestroy() {
     this.destroyObserver()
-    this.stopPoll()
+    this.unbindDownloadPush()
+    this.clearFallbackTimer()
   },
   methods: {
+    /* ==================== 分组列表 ==================== */
+    loadGroups() {
+      this.groupLoading = true
+      Promise.all([authorsApi(), tagsApi()]).then(([authorResp, tagResp]) => {
+        if (authorResp.data.code === 200) {
+          this.authors = authorResp.data.data || []
+        }
+        if (tagResp.data.code === 200) {
+          this.tags = tagResp.data.data || []
+        }
+      }).catch(e => {
+        this.$message.error(e.message)
+      }).finally(() => {
+        this.groupLoading = false
+      })
+    },
+    selectGroup(group) {
+      this.activeGroup = group
+      this.search()
+    },
+
     /* ==================== 查询 ==================== */
     search() {
       this.currentPage = 1
@@ -247,14 +251,28 @@ export default {
     },
     resetQueryForm() {
       this.$refs.queryForm.resetFields()
+      this.activeGroup = {key: ALL_KEY}
       this.search()
+    },
+    buildQuery() {
+      const query = Object.assign({}, this.queryFormObj)
+      if (this.activeGroup.key !== ALL_KEY) {
+        if (this.activeGroup.ownerMid) {
+          query.ownerMid = this.activeGroup.ownerMid
+        }
+        if (this.activeGroup.tag) {
+          // 精确匹配左侧选中的标签，"财经"不能命中"财经商业"
+          query.tagExact = this.activeGroup.tag
+        }
+      }
+      return query
     },
     loadPage() {
       if (this.loading || !this.hasMore) {
         return
       }
       this.loading = true
-      searchApi(Object.assign({}, this.queryFormObj, {
+      searchApi(Object.assign(this.buildQuery(), {
         currentPage: this.currentPage,
         pageSize: PAGE_SIZE
       })).then(({data: {code, message, data}}) => {
@@ -265,12 +283,15 @@ export default {
         }
         const records = (data && data.records) || []
         this.total = Number((data && data.total) || 0)
+        if (this.activeGroup.key === ALL_KEY) {
+          this.allTotal = this.total
+        }
         const merged = this.list.concat(records.map(row => Object.assign({}, row)))
         this.list = merged
         this.currentPage += 1
         this.hasMore = records.length > 0 && merged.length < this.total
         // 新加载的数据可能带着进行中的下载
-        this.syncDownloadState(merged)
+        this.syncFallbackPoll()
       }).catch(e => {
         this.$message.error(e.message)
         this.hasMore = false
@@ -291,6 +312,7 @@ export default {
         }
         this.addText = ''
         this.$message.success(message || '添加成功')
+        this.loadGroups()
         this.search()
       }).catch(e => {
         this.$message.error(e.message)
@@ -307,7 +329,7 @@ export default {
         type: 'warning'
       }).then(() => {
         return downloadApi({id: row.id})
-      }).then(({data: {code, message}}) => {
+      }).then(({data: {code, message, data}}) => {
         if (code !== 200) {
           return this.$message.error(message)
         }
@@ -315,65 +337,149 @@ export default {
         this.$set(row, 'downloading', true)
         this.$set(row, 'downloadState', 'running')
         this.$set(row, 'downloadMessage', null)
-        this.startPoll()
+        this.$set(row, 'downloadPercent', 0)
+        if (data) {
+          this.applyTasks([data])
+        }
+        this.refreshDownloadTasks()
       }).catch(e => {
         if (e !== 'cancel' && e && e.message) {
           this.$message.error(e.message)
         }
       })
     },
-    startPoll() {
-      if (this.pollTimer) {
-        return
-      }
-      this.pollTimer = setInterval(() => this.pollDownloadStatus(), POLL_INTERVAL)
-      this.pollDownloadStatus()
-    },
-    stopPoll() {
-      if (this.pollTimer) {
-        clearInterval(this.pollTimer)
-        this.pollTimer = null
-      }
-    },
-    pollDownloadStatus() {
-      downloadStatusApi({}).then(({data: {code, data}}) => {
-        if (code !== 200 || !data) {
-          return
-        }
-        this.applyDownloadStates(data)
-        const hasRunning = Object.keys(data).some(key => data[key] && data[key].state === 'running')
-        if (!hasRunning) {
-          this.stopPoll()
-        }
-      }).catch(() => {
-        this.stopPoll()
-      })
+    openDownloadPanel() {
+      this.downloadPanelVisible = true
+      this.refreshDownloadTasks()
     },
     /**
-     * 列表里存在正在下载的视频时开始轮询进度（首次加载/翻页时调用）
+     * 拉取一次下载任务快照：WebSocket连通时走总线命令，否则回退HTTP
      */
-    syncDownloadState(rows) {
-      if (rows.some(row => row.downloading)) {
-        this.startPoll()
+    refreshDownloadTasks() {
+      this.downloadLoading = true
+      if (this.$ws.isOpen()) {
+        this.$ws.send(DOWNLOAD_LIST_COMMAND).then(message => {
+          if (message && message.data) {
+            this.applyDownloadSnapshot(message.data)
+          }
+        }).catch(() => {
+          // 忽略：推送会补上最新状态
+        }).finally(() => {
+          this.downloadLoading = false
+        })
+        return
+      }
+      downloadTasksApi().then(({data: {code, data}}) => {
+        if (code === 200 && data) {
+          this.applyDownloadSnapshot(data)
+        }
+      }).catch(() => {
+        // 忽略：轮询失败不刷屏
+      }).finally(() => {
+        this.downloadLoading = false
+      })
+    },
+    bindDownloadPush() {
+      if (this.pushBound) {
+        return
+      }
+      this.pushBound = true
+      this.snapshotOff = this.$ws.on(DOWNLOAD_SNAPSHOT_TYPE, this.applyDownloadSnapshot)
+      this.statusOff = this.$ws.onStatus(this.handleWsStatus)
+      this.$ws.subscribe(DOWNLOAD_TOPIC)
+    },
+    unbindDownloadPush() {
+      if (!this.pushBound) {
+        return
+      }
+      this.pushBound = false
+      if (this.snapshotOff) {
+        this.snapshotOff()
+        this.snapshotOff = null
+      }
+      if (this.statusOff) {
+        this.statusOff()
+        this.statusOff = null
+      }
+      this.$ws.unsubscribe(DOWNLOAD_TOPIC)
+    },
+    handleWsStatus(status) {
+      this.wsConnected = status === 'open'
+      this.syncFallbackPoll()
+    },
+    /**
+     * WebSocket未连通且存在进行中的下载时，用HTTP轮询兜底
+     */
+    syncFallbackPoll() {
+      this.clearFallbackTimer()
+      if (this.wsConnected || this.runningTaskCount === 0 || document.hidden) {
+        return
+      }
+      this.fallbackTimer = setInterval(() => this.refreshDownloadTasks(), FALLBACK_POLL_MILLIS)
+    },
+    clearFallbackTimer() {
+      if (this.fallbackTimer) {
+        clearInterval(this.fallbackTimer)
+        this.fallbackTimer = null
       }
     },
-    applyDownloadStates(states) {
+    applyDownloadSnapshot(snapshot) {
+      if (!snapshot) {
+        return
+      }
+      this.downloadSnapshot = snapshot
+      this.applyTasks([].concat(snapshot.runningList || [], snapshot.finishedList || []))
+      this.syncFallbackPoll()
+    },
+    /**
+     * 把下载任务进度同步到卡片上（按 bvid+cid 匹配）
+     */
+    applyTasks(tasks) {
+      if (!tasks || tasks.length === 0) {
+        return
+      }
+      const taskMap = {}
+      tasks.forEach(task => {
+        if (task && task.bvid && task.cid !== undefined && task.cid !== null) {
+          taskMap[`${task.bvid}_${task.cid}`] = task
+        }
+      })
       this.list.forEach(row => {
-        const state = states[row.id]
-        // 后台没有该记录的状态，说明不是本次会话发起的下载，保持接口返回值
-        if (!state) {
+        const task = taskMap[`${row.bvid}_${row.cid}`]
+        if (!task) {
           return
         }
-        this.$set(row, 'downloading', state.state === 'running')
-        this.$set(row, 'downloadState', state.state)
-        this.$set(row, 'downloadMessage', state.message)
-        if (state.state === 'success') {
+        this.$set(row, 'downloading', task.status === 'running')
+        this.$set(row, 'downloadState', task.status)
+        this.$set(row, 'downloadMessage', task.message)
+        this.$set(row, 'downloadPercent', task.percent)
+        this.$set(row, 'downloadSpeed', task.speed)
+        this.$set(row, 'downloadedBytes', task.downloadedBytes)
+        if (task.status === 'success') {
           this.$set(row, 'downloaded', true)
         }
       })
     },
 
-    /* ==================== 刷新 ==================== */
+    /* ==================== 播放 ==================== */
+    openPlayer(row) {
+      this.player = {
+        title: row.title || row.bvid,
+        src: row.videoPath || `/video/bilibili/${row.videoFileName}`,
+        fileName: row.videoFileName,
+        bvid: row.bvid
+      }
+      this.playerVisible = true
+    },
+    closePlayer() {
+      // 清掉src，关掉弹窗时停止播放
+      this.player = {title: '', src: null, fileName: '', bvid: ''}
+    },
+    openVideo(row) {
+      window.open(`https://www.bilibili.com/video/${row.bvid}`, '_blank')
+    },
+
+    /* ==================== 刷新 / 删除 ==================== */
     refreshVideo(row) {
       refreshApi({id: row.id}).then(({data: {code, message, data}}) => {
         if (code !== 200) {
@@ -388,8 +494,6 @@ export default {
         this.$message.error(e.message)
       })
     },
-
-    /* ==================== 删除 ==================== */
     deleteVideo(row) {
       this.deleteRows([row.id], `确认删除视频【${row.title || row.bvid}】的记录？本地已下载的视频文件不会被删除`)
     },
@@ -411,6 +515,7 @@ export default {
           return this.$message.error(message)
         }
         this.$message.success(message || '删除完成')
+        this.loadGroups()
         this.search()
       }).catch(e => {
         if (e !== 'cancel' && e && e.message) {
@@ -423,61 +528,13 @@ export default {
     isSelected(id) {
       return this.selectedIds.indexOf(id) >= 0
     },
-    toggleSelect(id) {
-      const index = this.selectedIds.indexOf(id)
+    toggleSelect(row) {
+      const index = this.selectedIds.indexOf(row.id)
       if (index >= 0) {
         this.selectedIds.splice(index, 1)
       } else {
-        this.selectedIds.push(id)
+        this.selectedIds.push(row.id)
       }
-    },
-
-    /* ==================== 展示 ==================== */
-    videoUrl(row) {
-      return `https://www.bilibili.com/video/${row.bvid}`
-    },
-    spaceUrl(uid) {
-      return uid ? `https://space.bilibili.com/${uid}` : null
-    },
-    openVideo(row) {
-      window.open(this.videoUrl(row), '_blank')
-    },
-    openSpace(row) {
-      this.openSpaceUrl(row.ownerMid)
-    },
-    openSpaceUrl(uid) {
-      const url = this.spaceUrl(uid)
-      if (url) {
-        window.open(url, '_blank')
-      }
-    },
-    coverUrl(row) {
-      // b站图片是http的，https页面下会被浏览器拦截，统一换成https
-      return row.pic ? String(row.pic).replace(/^http:/, 'https:') : null
-    },
-    tagList(row) {
-      if (!row.tag) {
-        return []
-      }
-      return String(row.tag).split(/[,，]/).map(tag => tag.trim()).filter(tag => tag)
-    },
-    visibleTags(row) {
-      return this.tagList(row).slice(0, MAX_TAG_DISPLAY)
-    },
-    formatTs(timestamp) {
-      if (!timestamp) {
-        return '-'
-      }
-      const value = String(timestamp).length === 10 ? Number(timestamp) * 1000 : Number(timestamp)
-      return this.$dayjs(value).format('YYYY-MM-DD HH:mm:ss')
-    },
-    durationText(seconds) {
-      const total = Math.max(0, Math.floor(Number(seconds) || 0))
-      const hour = Math.floor(total / 3600)
-      const minute = Math.floor((total % 3600) / 60)
-      const second = total % 60
-      const pad = value => String(value).padStart(2, '0')
-      return hour > 0 ? `${hour}:${pad(minute)}:${pad(second)}` : `${pad(minute)}:${pad(second)}`
     },
 
     /* ==================== 下滑翻页 ==================== */
@@ -537,12 +594,6 @@ export default {
       }
       return window
     }
-  },
-  watch: {
-    // 列表数据变化后重新挂载哨兵，保证首屏不足一屏时也能继续加载
-    'list.length'() {
-      this.$nextTick(() => this.setupObserver())
-    }
   }
 }
 </script>
@@ -556,298 +607,117 @@ export default {
     justify-content: space-between;
     gap: 10px;
   }
+
   .bili-add {
     display: flex;
     align-items: center;
     gap: 8px;
+
     .bili-add-input {
       width: 360px;
       max-width: 100%;
     }
   }
+
   .bili-view-mode {
     display: flex;
     align-items: center;
     gap: 8px;
-    .bili-mode-label {
-      font-size: 12px;
-      color: #606266;
-    }
+
     .el-button + .el-button {
       margin-left: 0;
     }
   }
+
+  .bili-task-badge {
+    ::v-deep .el-badge__content {
+      top: 12px;
+    }
+  }
+
   .bili-summary {
     margin-top: 8px;
     font-size: 12px;
     color: #909399;
   }
+
+  /* 左侧分组 + 右侧卡片 */
+  .bili-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .bili-side {
+    flex: 0 0 190px;
+    width: 190px;
+    min-width: 0;
+    border-right: 1px solid #ebeef5;
+    padding-right: 12px;
+  }
+
+  .bili-main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   .bili-body {
     min-height: 120px;
   }
-  .bili-group {
-    &:not(:first-child) {
-      margin-top: 14px;
-    }
-  }
-  .bili-group-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px solid #ebeef5;
-    margin-bottom: 10px;
-    .bili-group-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      flex: none;
-      object-fit: cover;
-      background-color: #f5f7fa;
-    }
-    .bili-group-avatar-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #c0c4cc;
-      font-size: 16px;
-    }
-    .bili-group-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #303133;
-      max-width: 320px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .bili-group-count {
-      font-size: 12px;
-      color: #909399;
-      background-color: #f4f4f5;
-      border-radius: 8px;
-      padding: 0 8px;
-      line-height: 18px;
-    }
-  }
+
   .bili-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     gap: 12px;
   }
-  .bili-card {
-    display: flex;
-    flex-direction: column;
-    background-color: #fff;
-    border: 1px solid #ebeef5;
-    border-radius: 6px;
-    overflow: hidden;
-    transition: box-shadow .2s;
-    &:hover {
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);
-    }
-  }
-  .bili-card-downloaded {
-    border-color: #b3e19d;
-  }
-  .bili-cover {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%;
-    background-color: #f5f7fa;
-    cursor: pointer;
-    img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .bili-cover-empty {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #c0c4cc;
-      font-size: 22px;
-    }
-    .bili-cover-duration {
-      position: absolute;
-      right: 6px;
-      bottom: 6px;
-      padding: 0 4px;
-      font-size: 11px;
-      line-height: 16px;
-      color: #fff;
-      background-color: rgba(0, 0, 0, .6);
-      border-radius: 3px;
-    }
-    .bili-cover-flag {
-      position: absolute;
-      left: 6px;
-      top: 6px;
-      padding: 0 5px;
-      font-size: 11px;
-      line-height: 16px;
-      border-radius: 3px;
-      color: #fff;
-      &.is-downloaded {
-        background-color: rgba(103, 194, 58, .9);
-      }
-      &.is-undownloaded {
-        background-color: rgba(144, 147, 153, .85);
-      }
-    }
-  }
-  .bili-card-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding: 8px;
-  }
-  .bili-title {
-    font-size: 13px;
-    line-height: 18px;
-    color: #303133;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-    word-break: break-all;
-    min-height: 36px;
-  }
-  .bili-meta-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 4px;
-    min-width: 0;
-    .bili-bvid {
-      color: #409eff;
-      font-size: 12px;
-      flex: none;
-      cursor: pointer;
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-    .bili-cid {
-      font-size: 12px;
-      color: #c0c4cc;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      flex: 1;
-      min-width: 0;
-    }
-    .bili-card-select {
-      flex: none;
-      margin-right: 0;
-    }
-  }
-  .bili-owner {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 6px;
-    min-width: 0;
-    cursor: pointer;
-    .bili-owner-face {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      flex: none;
-      object-fit: cover;
-      background-color: #f5f7fa;
-    }
-    .bili-owner-face-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #c0c4cc;
-      font-size: 12px;
-    }
-    .bili-owner-name {
-      font-size: 12px;
-      color: #606266;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      &:hover {
-        color: #409eff;
-      }
-    }
-  }
-  .bili-tags {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 6px;
-    .el-tag {
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .bili-empty-text {
-      font-size: 12px;
-      color: #c0c4cc;
-    }
-  }
-  .bili-times {
-    margin-top: 6px;
-    font-size: 12px;
-    line-height: 18px;
-    color: #909399;
-  }
-  .bili-actions {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: auto;
-    padding-top: 8px;
-    .el-button {
-      margin: 0;
-      padding: 5px 7px;
-    }
-    .bili-downloaded-tag {
-      line-height: 22px;
-    }
-  }
-  .bili-file {
-    margin-top: 6px;
-    font-size: 11px;
-    color: #c0c4cc;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .bili-download-error {
-    margin-top: 4px;
-    font-size: 12px;
-    color: #f56c6c;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+
   .bili-load-more {
     text-align: center;
     padding: 12px 0;
     font-size: 12px;
     color: #909399;
   }
-  .bili-tag-popover {
+
+  .bili-player {
+    width: 100%;
+    max-height: 70vh;
+    background-color: #000;
+    display: block;
+  }
+
+  .bili-player-meta {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #909399;
+
+    .bili-player-meta-link {
+      color: #409eff;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  /* 移动端：左侧分组收成顶部横向条 */
+  @media screen and (max-width: 768px) {
+    .bili-layout {
+      display: block;
+    }
+
+    .bili-side {
+      flex: none;
+      width: 100%;
+      border-right: none;
+      padding-right: 0;
+      margin-bottom: 8px;
+    }
   }
 }
 </style>

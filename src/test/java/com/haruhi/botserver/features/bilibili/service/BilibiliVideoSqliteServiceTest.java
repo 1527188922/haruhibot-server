@@ -7,6 +7,9 @@ import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.VideoDetail;
+import com.haruhi.botserver.features.bilibili.model.BilibiliVideoAuthorResp;
+import com.haruhi.botserver.features.bilibili.model.BilibiliVideoQueryReq;
+import com.haruhi.botserver.features.bilibili.model.BilibiliVideoTagResp;
 import com.haruhi.botserver.features.bilibili.persistence.entity.BilibiliVideoSqlite;
 import com.haruhi.botserver.features.bilibili.persistence.mapper.BilibiliVideoSqliteMapper;
 import org.apache.ibatis.datasource.unpooled.UnpooledDataSource;
@@ -167,6 +170,113 @@ class BilibiliVideoSqliteServiceTest {
     void ignoreDetailWithoutView() {
         assertNull(service.saveOrUpdateByVideoDetail(new VideoDetail(), "{\"code\":-404}"));
         assertTrue(service.list().isEmpty());
+    }
+
+    /**
+     * 左侧标签分组列表：逗号分隔的标签要拆开分别计数，按数量倒序
+     */
+    @Test
+    void listTagsCountsEachTag() {
+        saveRow("BV1", 1L, 100L, "作者A", "万物研究所,财经,银行");
+        saveRow("BV2", 2L, 100L, "作者A", "财经,科普");
+        saveRow("BV3", 3L, 200L, "作者B", null);
+
+        List<BilibiliVideoTagResp> tags = service.listTags();
+        assertEquals(List.of("财经", "万物研究所", "科普", "银行"),
+                tags.stream().map(BilibiliVideoTagResp::getTag).toList());
+        assertEquals(2L, tags.getFirst().getVideoCount());
+        assertEquals(1L, tags.get(1).getVideoCount());
+    }
+
+    /**
+     * 左侧作者分组列表：同一个mid的多条视频合并计数
+     */
+    @Test
+    void listAuthorsCountsVideos() {
+        saveRow("BV1", 1L, 100L, "作者A", null);
+        saveRow("BV2", 2L, 100L, "作者A", null);
+        saveRow("BV3", 3L, 200L, "作者B", null);
+
+        List<BilibiliVideoAuthorResp> authors = service.listAuthors();
+        assertEquals(2, authors.size());
+        assertEquals(100L, authors.getFirst().getOwnerMid());
+        assertEquals("作者A", authors.getFirst().getOwnerName());
+        assertEquals(2L, authors.getFirst().getVideoCount());
+        assertEquals(1L, authors.get(1).getVideoCount());
+    }
+
+    /**
+     * 左侧标签点击后的精确过滤："财经"不能命中"财经商业"
+     */
+    @Test
+    void searchByTagExactMatchesWholeTag() throws Exception {
+        saveRow("BV1", 1L, 100L, "作者A", "财经,银行");
+        saveRow("BV2", 2L, 100L, "作者A", "财经商业");
+
+        BilibiliVideoService videoService = new BilibiliVideoService();
+        inject(videoService, "bilibiliVideoSqliteService", service);
+        inject(videoService, "bilibiliVideoDownloadService", new BilibiliVideoDownloadService());
+
+        BilibiliVideoQueryReq req = new BilibiliVideoQueryReq();
+        req.setTagExact("财经");
+        assertEquals(1L, videoService.search(req).getTotal());
+        assertEquals("BV1", videoService.search(req).getRecords().getFirst().getBvid());
+
+        req.setTagExact("财经商业");
+        assertEquals(1L, videoService.search(req).getTotal());
+        assertEquals("BV2", videoService.search(req).getRecords().getFirst().getBvid());
+
+        req.setTagExact("财");
+        assertEquals(0L, videoService.search(req).getTotal());
+    }
+
+    /**
+     * 左侧作者分组点击后按 ownerMid 过滤
+     */
+    @Test
+    void searchByOwnerMid() throws Exception {
+        saveRow("BV1", 1L, 100L, "作者A", null);
+        saveRow("BV2", 2L, 200L, "作者B", null);
+
+        BilibiliVideoService videoService = new BilibiliVideoService();
+        inject(videoService, "bilibiliVideoSqliteService", service);
+        inject(videoService, "bilibiliVideoDownloadService", new BilibiliVideoDownloadService());
+
+        BilibiliVideoQueryReq req = new BilibiliVideoQueryReq();
+        req.setOwnerMid(200L);
+        assertEquals(1L, videoService.search(req).getTotal());
+        assertEquals("BV2", videoService.search(req).getRecords().getFirst().getBvid());
+    }
+
+    /**
+     * 直接落库一条视频（左侧分组统计只需要这几个字段）
+     */
+    private void saveRow(String bvid, long cid, Long ownerMid, String ownerName, String tags) {
+        BilibiliVideoSqlite entity = new BilibiliVideoSqlite();
+        entity.setBvid(bvid);
+        entity.setCid(cid);
+        entity.setOwnerMid(ownerMid);
+        entity.setOwnerName(ownerName);
+        entity.setOwnerFace("https://i2.hdslb.com/bfs/face/" + ownerMid + ".jpg");
+        entity.setTitle("标题-" + bvid);
+        entity.setTag(tags);
+        entity.setPubdate(1790852544L + cid);
+        service.save(entity);
+    }
+
+    private static void inject(Object target, String fieldName, Object value) throws Exception {
+        Class<?> type = target.getClass();
+        while (type != null) {
+            try {
+                Field field = type.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException e) {
+                type = type.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException(fieldName);
     }
 
     /**

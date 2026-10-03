@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.VideoDetail;
+import com.haruhi.botserver.features.bilibili.model.BilibiliVideoAuthorResp;
+import com.haruhi.botserver.features.bilibili.model.BilibiliVideoTagResp;
 import com.haruhi.botserver.features.bilibili.persistence.entity.BilibiliVideoSqlite;
 import com.haruhi.botserver.features.bilibili.persistence.mapper.BilibiliVideoSqliteMapper;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
@@ -13,8 +15,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -102,6 +107,42 @@ public class BilibiliVideoSqliteServiceImpl extends ServiceImpl<BilibiliVideoSql
                 .eq(BilibiliVideoSqlite::getCid, cid)
                 .set(BilibiliVideoSqlite::getPlayUrlRaw, raw)
                 .set(BilibiliVideoSqlite::getUpdateTime, now()));
+    }
+
+    @Override
+    public List<BilibiliVideoAuthorResp> listAuthors() {
+        return baseMapper.listAuthors();
+    }
+
+    @Override
+    public List<BilibiliVideoTagResp> listTags() {
+        List<String> rawTags = baseMapper.listAllTags();
+        if (CollectionUtils.isEmpty(rawTags)) {
+            return Collections.emptyList();
+        }
+        // 标签是逗号分隔保存的，这里拆开统计每个标签的视频数
+        Map<String, Long> counter = new HashMap<>();
+        for (String rawTag : rawTags) {
+            if (StringUtils.isBlank(rawTag)) {
+                continue;
+            }
+            for (String tag : rawTag.split("[,，]")) {
+                String trimmed = tag.trim();
+                if (StringUtils.isNotBlank(trimmed)) {
+                    counter.merge(trimmed, 1L, Long::sum);
+                }
+            }
+        }
+        return counter.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed()
+                        .thenComparing(Map.Entry.comparingByKey()))
+                .map(entry -> {
+                    BilibiliVideoTagResp resp = new BilibiliVideoTagResp();
+                    resp.setTag(entry.getKey());
+                    resp.setVideoCount(entry.getValue());
+                    return resp;
+                })
+                .toList();
     }
 
     /**

@@ -4,6 +4,7 @@ import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
 
 import cn.hutool.http.*;
+import cn.hutool.core.io.StreamProgress;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
@@ -634,11 +635,18 @@ public class BilibiliService {
     }
 
     public void downloadVideo(String url, File file,int timeout){
+        downloadVideo(url, file, timeout, null);
+    }
+
+    /**
+     * 下载视频，progress 不为空时回调下载进度（hutool 会带上content-length与已下载字节数）
+     */
+    public void downloadVideo(String url, File file, int timeout, StreamProgress progress){
         HttpRequest httpRequest = HttpUtil.createGet(url, true)
                 .addHeaders(getHeaders(false))
                 .timeout(timeout);
         try (HttpResponse response = httpRequest.execute()){
-            response.writeBody(file, null);
+            response.writeBody(file, progress);
         }
     }
 
