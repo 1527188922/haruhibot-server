@@ -47,10 +47,10 @@
       </div>
 
       <!-- 下载不展示进度条，只展示状态 -->
-      <div v-if="row.downloading" class="bili-downloading">
-        <i class="el-icon-loading"></i>
-        <span>正在下载到服务器…</span>
-      </div>
+<!--      <div v-if="row.downloading" class="bili-downloading">-->
+<!--        <i class="el-icon-loading"></i>-->
+<!--        <span>正在下载到服务器…</span>-->
+<!--      </div>-->
 
       <div class="bili-actions">
         <el-tooltip content="视频下载到服务器本地" placement="top">
