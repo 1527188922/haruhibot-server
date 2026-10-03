@@ -60,14 +60,4 @@ public class BilibiliVideoResp {
      * 下载失败原因
      */
     private String downloadMessage;
-
-    /**
-     * 下载进度百分比，总大小未知时为null
-     */
-    private Integer downloadPercent;
-
-    /**
-     * 下载速度(字节/秒)
-     */
-    private Long downloadSpeed;
 }

@@ -45,12 +45,10 @@
         <div title="视频创建时间，即上传到b站的时间(ctime)">创建：{{formatTs(row.ctime)}}</div>
       </div>
 
-      <div v-if="row.downloading" class="bili-progress">
-        <el-progress :percentage="Number(row.downloadPercent) || 0" :stroke-width="6" :show-text="false"></el-progress>
-        <span class="bili-progress-text">
-          {{row.downloadPercent === null || row.downloadPercent === undefined ? '下载中' : row.downloadPercent + '%'}}
-          · {{formatSize(row.downloadedBytes)}}<template v-if="row.downloadSpeed"> · {{formatSpeed(row.downloadSpeed)}}</template>
-        </span>
+      <!-- 下载不展示进度条，只展示状态 -->
+      <div v-if="row.downloading" class="bili-downloading">
+        <i class="el-icon-loading"></i>
+        <span>正在下载到服务器…</span>
       </div>
 
       <div class="bili-actions">
@@ -69,17 +67,18 @@
       <div class="bili-file" :class="{'bili-file-playable': row.downloaded}"
            :title="row.downloaded ? `点击播放服务器上的视频：${row.videoFileName}` : `服务器本地文件：${row.videoFileName}（未下载）`"
            @click="onFileClick">
-        <template v-if="row.downloaded">
-          <i :class="row.downloaded ? 'el-icon-video-play' : 'el-icon-document'"></i>
-          {{row.videoFileName}}
-        </template>
-        <template v-eles>
-          &nbsp;
-        </template>
+        <i :class="row.downloaded ? 'el-icon-video-play' : 'el-icon-document'"></i>
+        <span class="bili-file-name">{{row.videoFileName}}</span>
       </div>
 
-      <div v-if="row.downloadState === 'fail' && row.downloadMessage" class="bili-download-error"
-           :title="row.downloadMessage">下载失败：{{row.downloadMessage}}</div>
+      <div v-if="failed" class="bili-download-error">
+        <div class="bili-download-error-text" :title="row.downloadMessage">
+          <i class="el-icon-warning-outline"></i>
+          下载失败：{{row.downloadMessage}}
+        </div>
+        <el-button type="text" size="mini" icon="el-icon-refresh-right"
+                   @click="$emit('retry', row)">重试</el-button>
+      </div>
     </div>
   </div>
 </template>
@@ -126,13 +125,22 @@ export default {
       if (this.row.downloaded) {
         return '已下载'
       }
-      return this.row.downloading ? '下载中' : '未下载'
+      if (this.row.downloading) {
+        return '下载中'
+      }
+      return this.failed ? '下载失败' : '未下载'
     },
     flagClass() {
       if (this.row.downloaded) {
         return 'is-downloaded'
       }
-      return this.row.downloading ? 'is-downloading' : 'is-undownloaded'
+      if (this.row.downloading) {
+        return 'is-downloading'
+      }
+      return this.failed ? 'is-failed' : 'is-undownloaded'
+    },
+    failed() {
+      return this.row.downloadState === 'fail' && !!this.row.downloadMessage
     },
     durationText() {
       return this.formatDuration(this.row.duration)
@@ -165,23 +173,6 @@ export default {
       const second = total % 60
       const pad = value => String(value).padStart(2, '0')
       return hour > 0 ? `${hour}:${pad(minute)}:${pad(second)}` : `${pad(minute)}:${pad(second)}`
-    },
-    formatSize(bytes) {
-      const size = Number(bytes) || 0
-      if (size <= 0) {
-        return '0B'
-      }
-      const units = ['B', 'KB', 'MB', 'GB']
-      let index = 0
-      let value = size
-      while (value >= 1024 && index < units.length - 1) {
-        value = value / 1024
-        index += 1
-      }
-      return `${value.toFixed(index === 0 ? 0 : 1)}${units[index]}`
-    },
-    formatSpeed(bytesPerSecond) {
-      return `${this.formatSize(bytesPerSecond)}/s`
     }
   }
 }
@@ -264,6 +255,10 @@ export default {
 
     &.is-downloading {
       background-color: rgba(64, 158, 255, .9);
+    }
+
+    &.is-failed {
+      background-color: rgba(245, 108, 108, .9);
     }
 
     &.is-undownloaded {
@@ -390,15 +385,14 @@ export default {
   color: #909399;
 }
 
-.bili-progress {
+/* 下载中：没有进度条，只给一个状态行 */
+.bili-downloading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin-top: 6px;
-
-  .bili-progress-text {
-    display: block;
-    margin-top: 2px;
-    font-size: 11px;
-    color: #909399;
-  }
+  font-size: 11px;
+  color: #409eff;
 }
 
 .bili-actions {
@@ -426,9 +420,14 @@ export default {
   margin-top: 6px;
   font-size: 11px;
   color: #c0c4cc;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+  .bili-file-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .bili-file-playable {
@@ -440,13 +439,29 @@ export default {
   }
 }
 
+/* 下载失败：失败原因 + 重试，与JM任务抽屉里的失败任务保持一致 */
 .bili-download-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin-top: 4px;
   font-size: 12px;
   color: #f56c6c;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+  .bili-download-error-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .el-button {
+    flex: none;
+    margin: 0;
+    padding: 0 2px;
+    color: #f56c6c;
+  }
 }
 
 .bili-tag-popover {

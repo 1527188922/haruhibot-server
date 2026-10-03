@@ -115,7 +115,8 @@ public class BilibiliVideoController {
     /**
      * 下载视频到本地。
      * <p>
-     * 异步执行，同一个 bvid+cid 只会有一个任务；进度通过WebSocket主题
+     * 异步执行，同一个 bvid+cid 只会有一个任务；失败后重新调用本接口即为重试。
+     * 任务状态（下载中/已完成/失败原因）通过WebSocket主题
      * {@link com.haruhi.botserver.features.bilibili.service.BilibiliVideoDownloadPushService#TOPIC} 实时推送
      */
     @PostMapping("/download")

@@ -5,7 +5,6 @@ import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.configuration.service.ConfigHub;
 import com.haruhi.botserver.infrastructure.cache.SqlCacheStore;
 
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.io.LineHandler;
 import cn.hutool.core.io.file.Tailer;
 import cn.hutool.core.text.StrFormatter;
@@ -56,7 +55,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -215,8 +213,7 @@ public class SystemController {
             return;
         }
 
-        try (InputStream in = Files.newInputStream(file.toPath());
-             ServletOutputStream outputStream = response.getOutputStream()){
+        try (ServletOutputStream outputStream = response.getOutputStream()) {
             response.setCharacterEncoding("UTF-8");
             response.setHeader("content-Type", "*");
             response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));
@@ -224,7 +221,8 @@ public class SystemController {
             response.setHeader("overwrite-response-data", "true");
             response.setContentType("application/octet-stream;charset=UTF-8");
             response.setContentLength((int) file.length());
-            IoUtil.copy(in, outputStream);
+            // 分片读写：客户端挂起/取消下载时不会一直占着这个文件（否则文件管理器里删不掉）
+            FileUtil.copyToStream(file, 0, file.length(), outputStream);
         } catch (Exception e) {
             log.error("下载文件异常",e);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

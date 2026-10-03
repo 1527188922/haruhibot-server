@@ -1,8 +1,9 @@
 <template>
   <!--
     下载任务抽屉。
-    进度由父组件订阅WebSocket主题后通过 snapshot 传入（父组件同一份快照还要更新卡片上的进度条），
-    这里只负责展示与手动刷新。
+    任务状态由父组件订阅WebSocket主题后通过 snapshot 传入（父组件同一份快照还要更新卡片上的状态），
+    这里只负责展示、以及失败任务的重试。
+    下载过程不统计总字节数/已下载字节数，所以这里没有进度条，只有状态。
   -->
   <el-drawer :title="drawerTitle" :visible.sync="visibleProxy" :size="drawerSize"
              :direction="drawerDirection" custom-class="bili-download-drawer">
@@ -26,11 +27,11 @@
           <div class="bili-download-section-title">
             下载中
             <el-tag size="mini" type="primary">{{runningList.length}}</el-tag>
-            <span class="bili-download-hint">同一个视频只会有一个下载任务</span>
+            <span class="bili-download-hint">只推送状态，不展示下载进度</span>
           </div>
           <div v-if="runningList.length === 0" class="bili-download-empty">没有正在下载的视频</div>
           <div v-else class="bili-download-list">
-            <div v-for="task in runningList" :key="task.taskId" class="bili-download-card">
+            <div v-for="task in runningList" :key="task.taskId" class="bili-download-card bili-download-card-running">
               <div class="bili-download-cover">
                 <img v-if="coverUrl(task)" :src="coverUrl(task)" referrerpolicy="no-referrer" alt="">
                 <div v-else class="bili-download-cover-fallback">{{task.bvid}}</div>
@@ -43,18 +44,9 @@
                 <div class="bili-download-meta">
                   <span>{{task.bvid}}</span>
                   <span>cid:{{task.cid}}</span>
-                  <span v-if="task.fileName" :title="task.fileName">{{task.fileName}}</span>
+                  <span>已运行 {{formatDuration(elapsedMillis(task))}}</span>
                 </div>
-                <div class="bili-download-progress">
-                  <el-progress class="bili-download-bar"
-                               :percentage="Number(task.percent) || 0"
-                               :stroke-width="6" :show-text="false" color="#409eff"></el-progress>
-                  <span class="bili-download-count">
-                    {{task.percent === null || task.percent === undefined ? '下载中' : task.percent + '%'}}
-                    · {{formatSize(task.downloadedBytes)}}<template v-if="task.totalBytes"> / {{formatSize(task.totalBytes)}}</template>
-                    <template v-if="task.speed"> · {{formatSize(task.speed)}}/s</template>
-                  </span>
-                </div>
+                <div v-if="task.fileName" class="bili-download-file" :title="task.fileName">{{task.fileName}}</div>
               </div>
             </div>
           </div>
@@ -71,7 +63,8 @@
           <template v-if="!finishedCollapsed">
             <div v-if="finishedList.length === 0" class="bili-download-empty">本次运行还没有完成的下载</div>
             <div v-else class="bili-download-list">
-              <div v-for="task in finishedList" :key="task.taskId" class="bili-download-card">
+              <div v-for="task in finishedList" :key="task.taskId"
+                   class="bili-download-card bili-download-card-finished">
                 <div class="bili-download-cover">
                   <img v-if="coverUrl(task)" :src="coverUrl(task)" referrerpolicy="no-referrer" alt="">
                   <div v-else class="bili-download-cover-fallback">{{task.bvid}}</div>
@@ -86,10 +79,16 @@
                   <div class="bili-download-meta">
                     <span>{{task.bvid}}</span>
                     <span>cid:{{task.cid}}</span>
-                    <span v-if="task.status === 'success'">用时 {{formatDuration(task.costMillis)}}</span>
-                    <span v-if="task.status === 'success' && task.totalBytes">大小 {{formatSize(task.totalBytes)}}</span>
+                    <span>用时 {{formatDuration(task.costMillis)}}</span>
                   </div>
-                  <div v-if="task.message" class="bili-download-message" :title="task.message">{{task.message}}</div>
+                  <div v-if="task.message" class="bili-download-message" :title="task.message">
+                    <i class="el-icon-warning-outline"></i>
+                    {{task.message}}
+                  </div>
+                </div>
+                <div v-if="isRetryable(task)" class="bili-download-ops">
+                  <el-button type="primary" size="mini" plain icon="el-icon-refresh-right"
+                             :loading="isRetrying(task)" @click="retryTask(task)">重试</el-button>
                 </div>
               </div>
             </div>
@@ -101,6 +100,8 @@
 </template>
 
 <script>
+import { download as downloadApi } from '@/api/bilibili-video';
+
 export default {
   name: 'BiliDownloadPanel',
   props: {
@@ -123,7 +124,11 @@ export default {
   },
   data() {
     return {
-      finishedCollapsed: false
+      finishedCollapsed: false,
+      // 正在重试的任务，key=taskId
+      retryingMap: {},
+      tickTimer: null,
+      nowTick: Date.now()
     }
   },
   computed: {
@@ -155,23 +160,47 @@ export default {
       return this.isMobileView ? '92%' : '620px'
     }
   },
+  watch: {
+    visible(value) {
+      // 抽屉收起后不再走表，避免无意义的定时器常驻
+      if (value) {
+        this.startTick()
+      } else {
+        this.stopTick()
+      }
+    }
+  },
+  beforeDestroy() {
+    this.stopTick()
+  },
   methods: {
+    /**
+     * "已运行"是本地走表的，不依赖推送
+     */
+    startTick() {
+      this.stopTick()
+      this.nowTick = Date.now()
+      this.tickTimer = setInterval(() => {
+        this.nowTick = Date.now()
+      }, 1000)
+    },
+    stopTick() {
+      if (this.tickTimer) {
+        clearInterval(this.tickTimer)
+        this.tickTimer = null
+      }
+    },
+    elapsedMillis(task) {
+      if (!task || !task.startTime) {
+        return task && task.costMillis ? task.costMillis : 0
+      }
+      if (task.endTime) {
+        return task.endTime - task.startTime
+      }
+      return Math.max(this.nowTick - task.startTime, 0)
+    },
     coverUrl(task) {
       return task.coverUrl ? String(task.coverUrl).replace(/^http:/, 'https:') : null
-    },
-    formatSize(bytes) {
-      const size = Number(bytes) || 0
-      if (size <= 0) {
-        return '0B'
-      }
-      const units = ['B', 'KB', 'MB', 'GB']
-      let index = 0
-      let value = size
-      while (value >= 1024 && index < units.length - 1) {
-        value = value / 1024
-        index += 1
-      }
-      return `${value.toFixed(index === 0 ? 0 : 1)}${units[index]}`
     },
     formatDuration(millis) {
       const total = Math.max(0, Math.floor((Number(millis) || 0) / 1000))
@@ -180,6 +209,36 @@ export default {
       const second = total % 60
       const pad = value => String(value).padStart(2, '0')
       return hour > 0 ? `${hour}:${pad(minute)}:${pad(second)}` : `${pad(minute)}:${pad(second)}`
+    },
+    /**
+     * 失败的任务才能重试（后端会重新提交同一个视频的下载任务）
+     */
+    isRetryable(task) {
+      return !!task && task.status === 'fail'
+    },
+    isRetrying(task) {
+      return !!(task && this.retryingMap[task.taskId])
+    },
+    retryTask(task) {
+      if (!this.isRetryable(task) || this.isRetrying(task)) {
+        return
+      }
+      if (!task.videoId) {
+        return this.$message.error('该任务没有关联的视频记录，无法重试')
+      }
+      this.$set(this.retryingMap, task.taskId, true)
+      // 重试就是重新调用下载接口，失败任务会被新的进行中任务替换
+      downloadApi({id: task.videoId}).then(({data: {code, message}}) => {
+        if (code !== 200) {
+          return this.$message.error(message || '重试失败')
+        }
+        this.$message.success(message || '已重新提交下载')
+        this.$emit('refresh')
+      }).catch(e => {
+        this.$message.error((e && e.message) || '重试失败')
+      }).finally(() => {
+        this.$delete(this.retryingMap, task.taskId)
+      })
     }
   }
 }
@@ -256,11 +315,17 @@ export default {
 
 .bili-download-card {
   display: flex;
+  align-items: center;
   gap: 8px;
   padding: 8px;
   border: 1px solid #ebeef5;
+  border-left: 3px solid #dcdfe6;
   border-radius: 6px;
   background-color: #fff;
+}
+
+.bili-download-card-running {
+  border-left-color: #409eff;
 }
 
 .bili-download-cover {
@@ -331,21 +396,32 @@ export default {
   }
 }
 
-.bili-download-progress {
-  margin-top: 6px;
-
-  .bili-download-count {
-    display: block;
-    margin-top: 2px;
-    font-size: 11px;
-    color: #909399;
-  }
+/* 下载中任务的文件名，单独一行，过长省略 */
+.bili-download-file {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #c0c4cc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* 失败原因：整行可换行展示，便于排错 */
 .bili-download-message {
   margin-top: 4px;
   font-size: 12px;
   color: #f56c6c;
+  overflow-wrap: anywhere;
   word-break: break-all;
+
+  i {
+    margin-right: 2px;
+  }
+}
+
+.bili-download-ops {
+  display: flex;
+  align-items: center;
+  flex: none;
 }
 </style>

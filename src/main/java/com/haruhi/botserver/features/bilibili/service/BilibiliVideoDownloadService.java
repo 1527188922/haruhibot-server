@@ -1,6 +1,5 @@
 package com.haruhi.botserver.features.bilibili.service;
 
-import cn.hutool.core.io.StreamProgress;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.BilibiliBaseResp;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.PlayUrlInfo;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoDownloadSnapshot;
@@ -28,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * b站视频下载任务
  * <p>
- * 与JM任务队列一样只在内存中：任务进度、状态不持久化，重启即清空；
+ * 与JM任务队列一样只在内存中：任务状态不持久化，重启即清空；
  * "是否已下载"始终以本地磁盘上的文件为准。
  * <p>
  * 同一个 bvid+cid 只允许有一个正在下载的任务（任务id就是 bvid_cid）。
@@ -165,31 +164,12 @@ public class BilibiliVideoDownloadService {
                 log.warn("删除残留的下载临时文件失败 {}", downloading.getAbsolutePath());
             }
             log.info("webui开始下载b站视频 bvid:{} cid:{} -> {}", entity.getBvid(), entity.getCid(), target.getAbsolutePath());
-            bilibiliService.downloadVideo(url, downloading, -1, new StreamProgress() {
-                @Override
-                public void start() {
-                    // 开始下载，无需额外处理
-                }
-
-                @Override
-                public void progress(long total, long progressSize) {
-                    updateProgress(task, total, progressSize, start);
-                }
-
-                @Override
-                public void finish() {
-                    // 结束由外层统一处理（重命名成功后才是成功）
-                }
-            });
+            // 不关心下载进度：不统计总字节数/已下载字节数，只按状态推送
+            bilibiliService.downloadVideo(url, downloading, -1);
             if (!downloading.renameTo(target)) {
                 throw new BusinessException("视频文件重命名失败：" + target.getAbsolutePath());
             }
-            long length = target.length();
             synchronized (task) {
-                task.setTotalBytes(length);
-                task.setDownloadedBytes(length);
-                task.setPercent(100);
-                task.setSpeed(null);
                 task.setStatus(BilibiliVideoDownloadTask.STATUS_SUCCESS);
                 task.setStatusName(STATUS_NAME_SUCCESS);
                 task.setEndTime(System.currentTimeMillis());
@@ -204,7 +184,6 @@ public class BilibiliVideoDownloadService {
                 task.setStatusName(STATUS_NAME_FAIL);
                 task.setEndTime(System.currentTimeMillis());
                 task.setCostMillis(task.getEndTime() - start);
-                task.setSpeed(null);
                 task.setMessage(StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getSimpleName()));
             }
             notifyChange();
@@ -213,24 +192,6 @@ public class BilibiliVideoDownloadService {
                 log.warn("删除下载失败的临时文件失败 {}", downloading.getAbsolutePath());
             }
         }
-    }
-
-    private void updateProgress(BilibiliVideoDownloadTask task, long total, long progressSize, long start) {
-        synchronized (task) {
-            if (!task.isRunning()) {
-                return;
-            }
-            task.setTotalBytes(total);
-            task.setDownloadedBytes(progressSize);
-            if (total > 0) {
-                task.setPercent((int) Math.min(100, progressSize * 100 / total));
-            }
-            long elapsed = System.currentTimeMillis() - start;
-            if (elapsed > 0 && progressSize > 0) {
-                task.setSpeed(progressSize * 1000 / elapsed);
-            }
-        }
-        notifyChange();
     }
 
     /**
@@ -299,10 +260,6 @@ public class BilibiliVideoDownloadService {
             copy.setFileName(task.getFileName());
             copy.setStatus(task.getStatus());
             copy.setStatusName(task.getStatusName());
-            copy.setTotalBytes(task.getTotalBytes());
-            copy.setDownloadedBytes(task.getDownloadedBytes());
-            copy.setPercent(task.getPercent());
-            copy.setSpeed(task.getSpeed());
             copy.setStartTime(task.getStartTime());
             copy.setEndTime(task.getEndTime());
             copy.setCostMillis(task.getCostMillis());

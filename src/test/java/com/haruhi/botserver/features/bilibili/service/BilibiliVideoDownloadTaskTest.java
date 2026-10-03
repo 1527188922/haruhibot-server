@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>
  * 用可控制的假 {@link BilibiliService} 替代真实网络请求，覆盖：
  * 同一个 bvid+cid 只能有一个进行中的任务、已下载不允许重复下载、
- * 进度回写、失败清理临时文件。
+ * 状态回写（成功/失败原因）、失败清理临时文件。
  */
 class BilibiliVideoDownloadTaskTest {
 
@@ -113,7 +113,8 @@ class BilibiliVideoDownloadTaskTest {
         fakeBilibiliService.gate.countDown();
         BilibiliVideoDownloadTask finished = awaitFinished();
         assertEquals(BilibiliVideoDownloadTask.STATUS_SUCCESS, finished.getStatus());
-        assertEquals(100, finished.getPercent());
+        assertNull(finished.getMessage(), "下载成功不应有失败原因");
+        assertNotNull(finished.getCostMillis());
         assertTrue(targetFile.exists(), "下载完成后本地应有正式文件");
         assertNull(downloadService.runningTask(BVID, cid), "任务结束后不应再有进行中的任务");
     }
@@ -243,10 +244,12 @@ class BilibiliVideoDownloadTaskTest {
             } catch (Exception e) {
                 throw new BusinessException("写测试文件失败：" + e.getMessage());
             }
-            progress.start();
-            progress.progress(2048, 1024);
-            progress.progress(2048, 2048);
-            progress.finish();
+            if (progress != null) {
+                // 下载不再上报进度，这里只是保证接口仍可被调用
+                progress.start();
+                progress.progress(2048, 2048);
+                progress.finish();
+            }
         }
     }
 }

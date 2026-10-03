@@ -4,6 +4,8 @@ import lombok.Data;
 
 /**
  * b站视频下载任务（内存快照，仅用于管理端展示，不持久化）
+ * <p>
+ * 只关心任务状态与失败原因：下载过程不统计总字节数/已下载字节数，前端也不展示进度条。
  */
 @Data
 public class BilibiliVideoDownloadTask {
@@ -46,23 +48,6 @@ public class BilibiliVideoDownloadTask {
     private String status;
 
     private String statusName;
-
-    /**
-     * 文件总大小(字节)，服务端未返回content-length时为0
-     */
-    private long totalBytes;
-
-    private long downloadedBytes;
-
-    /**
-     * 下载百分比，总大小未知时为null
-     */
-    private Integer percent;
-
-    /**
-     * 实时速度(字节/秒)
-     */
-    private Long speed;
 
     private Long startTime;
 

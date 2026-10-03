@@ -11,16 +11,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * b站视频下载任务的实时推送
+ * b站视频下载任务的状态推送。
  * <p>
- * 与JM任务推送同一套机制：下载线程只置脏标记，由单个调度线程按固定频率节流推送，
- * 快照内容没有变化时不重复发送；没有订阅者时零开销。
+ * 事件驱动：任务状态一变（开始下载/下载完成/下载失败）就推一次，空闲时没有任何线程在跑。
+ * 下载线程本身不直接做WS广播（序列化+写连接是慢操作），只把通知丢给一个单线程执行器；
+ * 用 {@link #pending} 合并同一瞬间的多次变更，避免一次状态变化推多帧。
+ * <p>
+ * JM任务推送用的是"定时线程+脏标记"，那是因为它下载过程中进度一直在变、需要按频率节流；
+ * b站下载已经没有进度了，一次任务最多只有"开始/结束"两次状态变化，再挂个定时线程纯属浪费。
  */
 @Slf4j
 @Component
@@ -39,16 +42,17 @@ public class BilibiliVideoDownloadPushService implements WebuiWsTopicProvider {
      */
     public static final String COMMAND_LIST = "bilibili.video.download.list";
 
-    private static final long TICK_MILLIS = 300;
-
     private final BilibiliVideoDownloadService downloadService;
     private final WebuiWsSessionRegistry sessionRegistry;
-    private final AtomicBoolean dirty = new AtomicBoolean(false);
+    /**
+     * 是否已有一次推送在排队，用于合并连续变更
+     */
+    private final AtomicBoolean pending = new AtomicBoolean(false);
     /**
      * 上次推送的快照签名，用于去重
      */
     private volatile String lastSignature;
-    private ScheduledExecutorService ticker;
+    private ExecutorService pushExecutor;
 
     public BilibiliVideoDownloadPushService(BilibiliVideoDownloadService downloadService,
                                             WebuiWsSessionRegistry sessionRegistry) {
@@ -58,13 +62,12 @@ public class BilibiliVideoDownloadPushService implements WebuiWsTopicProvider {
 
     @PostConstruct
     public void start() {
-        downloadService.setChangeNotifier(() -> dirty.set(true));
-        ticker = Executors.newSingleThreadScheduledExecutor(r -> {
+        pushExecutor = Executors.newSingleThreadExecutor(r -> {
             Thread thread = new Thread(r, "bili-video-download-push");
             thread.setDaemon(true);
             return thread;
         });
-        ticker.scheduleWithFixedDelay(this::tick, TICK_MILLIS, TICK_MILLIS, TimeUnit.MILLISECONDS);
+        downloadService.setChangeNotifier(this::onTaskChanged);
     }
 
     @PreDestroy
@@ -74,16 +77,35 @@ public class BilibiliVideoDownloadPushService implements WebuiWsTopicProvider {
         } catch (Exception e) {
             log.warn("注销b站视频下载任务变化通知失败:{}", e.getMessage());
         }
-        if (ticker != null) {
-            ticker.shutdownNow();
+        if (pushExecutor != null) {
+            pushExecutor.shutdownNow();
         }
     }
 
-    private void tick() {
+    /**
+     * 任务状态变更回调：只负责排队，具体推送在推送线程里做
+     */
+    private void onTaskChanged() {
+        ExecutorService executor = this.pushExecutor;
+        if (executor == null) {
+            return;
+        }
+        // 已经排了一次就不用再排：这次推送读到的必然是最新快照
+        if (!pending.compareAndSet(false, true)) {
+            return;
+        }
         try {
-            if (!dirty.compareAndSet(true, false)) {
-                return;
-            }
+            executor.execute(this::push);
+        } catch (Exception e) {
+            pending.set(false);
+            log.warn("提交b站视频下载任务推送失败:{}", e.getMessage());
+        }
+    }
+
+    private void push() {
+        // 先复位再取快照：这期间发生的新变更会重新排队，不会丢
+        pending.set(false);
+        try {
             if (sessionRegistry.subscriberCount(TOPIC) == 0) {
                 return;
             }
@@ -107,39 +129,33 @@ public class BilibiliVideoDownloadPushService implements WebuiWsTopicProvider {
     @Override
     public WebuiWsMessage initialMessage() {
         BilibiliVideoDownloadSnapshot snapshot = downloadService.snapshot();
-        // 首帧后同步签名，避免紧接着的tick把同一份快照再推一次
+        // 首帧后同步签名，避免紧接着的变更推送把同一份快照再推一次
         lastSignature = signature(snapshot);
         return WebuiWsMessage.of(MESSAGE_TYPE_SNAPSHOT, snapshot);
     }
 
     /**
-     * 快照签名。下载中的任务带上进度（进度变化要推送），
-     * 已完成的任务只保留状态与结果，避免同一份结果反复推送
+     * 快照签名。只关心状态与失败原因：下载过程没有进度，状态不变就不重复推送
      */
     static String signature(BilibiliVideoDownloadSnapshot snapshot) {
         if (snapshot == null) {
             return "";
         }
         StringBuilder builder = new StringBuilder(256);
-        appendTasks(builder, snapshot.getRunningList(), true);
-        appendTasks(builder, snapshot.getFinishedList(), false);
+        appendTasks(builder, snapshot.getRunningList());
+        appendTasks(builder, snapshot.getFinishedList());
         return builder.toString();
     }
 
-    private static void appendTasks(StringBuilder builder, List<BilibiliVideoDownloadTask> tasks, boolean withProgress) {
+    private static void appendTasks(StringBuilder builder, List<BilibiliVideoDownloadTask> tasks) {
         builder.append('#');
         if (tasks == null) {
             return;
         }
         for (BilibiliVideoDownloadTask task : tasks) {
             builder.append(task.getTaskId()).append(':')
-                    .append(task.getStatus()).append(':');
-            if (withProgress) {
-                builder.append(task.getDownloadedBytes()).append('/').append(task.getTotalBytes()).append(':')
-                        .append(task.getPercent()).append(':')
-                        .append(task.getSpeed()).append(':');
-            }
-            builder.append(task.getMessage()).append(';');
+                    .append(task.getStatus()).append(':')
+                    .append(task.getMessage()).append(';');
         }
     }
 }

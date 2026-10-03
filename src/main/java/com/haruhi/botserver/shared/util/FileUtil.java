@@ -10,6 +10,8 @@ import org.mozilla.universalchardet.UniversalDetector;
 import org.sqlite.SQLiteConfig;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.sql.SQLException;
@@ -53,6 +55,11 @@ public class FileUtil {
 
     public static final String FILE_NAME_LOG = "haruhibot.log";
 
+    /**
+     * {@link #copyToStream} 每次读进内存的分片大小
+     */
+    private static final int STREAM_BUFFER_SIZE = 512 * 1024;
+
 
     public static String getRestartScript() {
         if (SystemUtils.IS_OS_WINDOWS) {
@@ -75,6 +82,45 @@ public class FileUtil {
     public static void deleteFile(File file){
         if(file.exists()){
             file.delete();
+        }
+    }
+
+    /**
+     * 分片把文件的某一段写到输出流。
+     * <p>
+     * 关键点：每读满一个分片就先关闭文件、再写输出流。这样客户端不继续读数据时
+     * （视频暂停、播放器缓冲够了不再拉流、下载被挂起），阻塞的只是写流，
+     * 源文件不会被一直占着——否则Windows上会表现为"java进程占用了该文件，删不掉"，
+     * 而Tomcat的写阻塞没有超时，能一直拖到连接断开。
+     *
+     * @param file         源文件
+     * @param offset       起始偏移
+     * @param length       要写的字节数
+     * @param outputStream 目标输出流
+     */
+    public static void copyToStream(File file, long offset, long length, OutputStream outputStream) throws IOException {
+        if (length <= 0) {
+            return;
+        }
+        byte[] buffer = new byte[STREAM_BUFFER_SIZE];
+        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+        long end = offset + length - 1;
+        long position = offset;
+        while (position <= end) {
+            int want = (int) Math.min(buffer.length, end - position + 1);
+            byteBuffer.clear();
+            byteBuffer.limit(want);
+            try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
+                long readOffset = position;
+                while (byteBuffer.hasRemaining()) {
+                    if (channel.read(byteBuffer, readOffset + byteBuffer.position()) < 0) {
+                        throw new IOException("读取文件提前结束：" + file.getAbsolutePath());
+                    }
+                }
+            }
+            outputStream.write(buffer, 0, want);
+            outputStream.flush();
+            position += want;
         }
     }
     public static File[] getFileList(String path){

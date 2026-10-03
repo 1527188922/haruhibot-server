@@ -70,7 +70,7 @@
             <div v-if="list.length > 0" class="bili-grid">
               <bili-video-card v-for="row in list" :key="row.id" :row="row" :selected="isSelected(row.id)"
                                @select="toggleSelect" @open-video="openVideo" @play="openPlayer"
-                               @download="downloadVideo" @refresh="refreshVideo"
+                               @download="downloadVideo" @retry="retryDownload" @refresh="refreshVideo"
                                @delete="deleteVideo"></bili-video-card>
             </div>
             <el-empty v-else-if="!loading" description="该分组下暂无视频，可粘贴b站链接添加"></el-empty>
@@ -84,15 +84,30 @@
       </div>
     </basic-container>
 
-    <!-- 服务器本地视频播放，不新开浏览器tab -->
-    <el-dialog :title="player.title || '视频播放'" :visible.sync="playerVisible" width="70%" top="6vh"
-               append-to-body custom-class="bili-player-dialog" @closed="closePlayer">
-      <video v-if="player.src" class="bili-player" :src="player.src" controls autoplay
-             controlslist="nodownload"></video>
+    <!-- 服务器本地视频播放，不新开浏览器tab；窄屏/手机端直接满屏，让视频尽量宽 -->
+    <el-dialog :title="player.title || '视频播放'" :visible.sync="playerVisible" width="860px" top="6vh"
+               :fullscreen="isMobileView"
+               append-to-body custom-class="bili-player-dialog"
+               :dialog-drag-enabled="!isMobileView" :close-on-click-modal="false"
+               @closed="closePlayer">
+      <div class="bili-player-stage">
+        <video v-if="player.src && !playerError" class="bili-player" :src="player.src"
+               controls autoplay playsinline preload="metadata" controlslist="nodownload"
+               @error="playerError = true"></video>
+        <div v-else class="bili-player-empty">
+          <i class="el-icon-warning-outline"></i>
+          <span>{{player.src ? '视频加载失败，服务器本地文件可能已被删除' : '没有可播放的视频'}}</span>
+        </div>
+      </div>
       <div class="bili-player-meta">
-        <span>{{player.fileName}}</span>
-        <span v-if="player.bvid" class="bili-player-meta-link"
-              @click="openVideo(player)">{{player.bvid}}</span>
+        <div class="bili-player-file" :title="player.fileName">
+          <i class="el-icon-document"></i>
+          <span class="bili-player-file-name">{{player.fileName || '-'}}</span>
+        </div>
+        <div class="bili-player-ops">
+          <el-button v-if="player.bvid" type="text" size="mini" icon="el-icon-link"
+                     @click="openVideo(player)">在B站打开</el-button>
+        </div>
       </div>
     </el-dialog>
 
@@ -163,6 +178,8 @@ export default {
       selectedIds: [],
       player: {title: '', src: null, fileName: '', bvid: ''},
       playerVisible: false,
+      // 视频标签加载失败（本地文件已被删除等）
+      playerError: false,
       downloadPanelVisible: false,
       downloadSnapshot: null,
       downloadLoading: false,
@@ -328,8 +345,21 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        return downloadApi({id: row.id})
-      }).then(({data: {code, message, data}}) => {
+        this.submitDownload(row)
+      }).catch(() => {
+      })
+    },
+    /**
+     * 下载失败后的重试：不再二次确认，直接重新提交同一个视频的下载任务
+     */
+    retryDownload(row) {
+      this.submitDownload(row)
+    },
+    /**
+     * 提交下载任务。下载过程不展示进度，只按WebSocket推送的状态更新卡片
+     */
+    submitDownload(row) {
+      downloadApi({id: row.id}).then(({data: {code, message, data}}) => {
         if (code !== 200) {
           return this.$message.error(message)
         }
@@ -337,13 +367,12 @@ export default {
         this.$set(row, 'downloading', true)
         this.$set(row, 'downloadState', 'running')
         this.$set(row, 'downloadMessage', null)
-        this.$set(row, 'downloadPercent', 0)
         if (data) {
           this.applyTasks([data])
         }
         this.refreshDownloadTasks()
       }).catch(e => {
-        if (e !== 'cancel' && e && e.message) {
+        if (e && e.message) {
           this.$message.error(e.message)
         }
       })
@@ -452,17 +481,18 @@ export default {
         this.$set(row, 'downloading', task.status === 'running')
         this.$set(row, 'downloadState', task.status)
         this.$set(row, 'downloadMessage', task.message)
-        this.$set(row, 'downloadPercent', task.percent)
-        this.$set(row, 'downloadSpeed', task.speed)
-        this.$set(row, 'downloadedBytes', task.downloadedBytes)
         if (task.status === 'success') {
           this.$set(row, 'downloaded', true)
+        } else if (task.status === 'fail') {
+          // 失败的下载会删掉临时文件，本地并没有这个视频
+          this.$set(row, 'downloaded', false)
         }
       })
     },
 
     /* ==================== 播放 ==================== */
     openPlayer(row) {
+      this.playerError = false
       this.player = {
         title: row.title || row.bvid,
         src: row.videoPath || `/video/bilibili/${row.videoFileName}`,
@@ -474,6 +504,7 @@ export default {
     closePlayer() {
       // 清掉src，关掉弹窗时停止播放
       this.player = {title: '', src: null, fileName: '', bvid: ''}
+      this.playerError = false
     },
     openVideo(row) {
       window.open(`https://www.bilibili.com/video/${row.bvid}`, '_blank')
@@ -611,7 +642,9 @@ export default {
   .bili-add {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
+    min-width: 0;
 
     .bili-add-input {
       width: 360px;
@@ -622,6 +655,7 @@ export default {
   .bili-view-mode {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
 
     .el-button + .el-button {
@@ -679,32 +713,6 @@ export default {
     color: #909399;
   }
 
-  .bili-player {
-    width: 100%;
-    max-height: 70vh;
-    background-color: #000;
-    display: block;
-  }
-
-  .bili-player-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 8px;
-    font-size: 12px;
-    color: #909399;
-
-    .bili-player-meta-link {
-      color: #409eff;
-      cursor: pointer;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
-
   /* 移动端：左侧分组收成顶部横向条 */
   @media screen and (max-width: 768px) {
     .bili-layout {
@@ -718,6 +726,244 @@ export default {
       padding-right: 0;
       margin-bottom: 8px;
     }
+
+    /*
+      添加视频：输入框写死了 360px，加上按钮在手机上会顶出屏幕，
+      这里改成上下两行、各自占满一行，工具栏与操作按钮也允许换行。
+    */
+    .bili-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .bili-add {
+      align-items: stretch;
+
+      .bili-add-input {
+        flex: 1 1 100%;
+        width: 100%;
+      }
+
+      .el-button {
+        flex: 1 1 100%;
+        width: 100%;
+      }
+    }
+
+    .bili-view-mode {
+      justify-content: flex-start;
+    }
+  }
+}
+</style>
+
+<!--
+  视频播放弹窗的样式。
+
+  弹窗带 append-to-body，运行时会被挪到 body 下，既不再是 #BilibiliVideo 的后代，
+  而 custom-class(bili-player-dialog) 挂在 el-dialog 上、拿不到组件的 scoped 属性，
+  所以这一块必须用非 scoped 的全局样式，否则规则会静默失效
+  （表现为视频按原始尺寸撑满弹窗、四周一圈默认留白，非常难看）。
+-->
+<style lang="scss">
+.bili-player-dialog.el-dialog {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .24);
+
+  .el-dialog__header {
+    padding: 12px 44px 12px 16px;
+    border-bottom: 1px solid #ebeef5;
+  }
+
+  .el-dialog__title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #303133;
+    // 标题可能很长，最多占两行
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  .el-dialog__headerbtn {
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+  }
+
+  // 视频区自己撑满，不要 element-ui 默认的 30px 20px 内边距
+  .el-dialog__body {
+    padding: 0;
+  }
+}
+
+.bili-player-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+  min-height: 120px;
+}
+
+.bili-player {
+  width: 100%;
+  max-height: 68vh;
+  display: block;
+  background-color: #000;
+  outline: none;
+}
+
+.bili-player-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 220px;
+  background-color: #1f1f1f;
+  color: #909399;
+  font-size: 13px;
+  text-align: center;
+  padding: 0 16px;
+  box-sizing: border-box;
+
+  i {
+    font-size: 26px;
+    color: #606266;
+  }
+}
+
+.bili-player-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-top: 1px solid #ebeef5;
+  background-color: #fafafa;
+  font-size: 12px;
+  color: #909399;
+}
+
+.bili-player-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+
+  .bili-player-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.bili-player-ops {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  white-space: nowrap;
+
+  .el-button {
+    margin: 0;
+    padding: 0 4px;
+    white-space: nowrap;
+  }
+}
+
+/*
+  满屏形态：窄屏/手机端（isMobileView 打开 el-dialog 的 fullscreen）用整个视口播放，
+  视频在剩余空间里居中铺满，底部信息条固定在下面。
+
+  这里用 position:fixed 铺满视口，而不是只靠 element-ui 的 .is-fullscreen（height:100%）：
+  el-dialog__wrapper 在移动端带 20px 的 padding-bottom（见 styles/media.scss），
+  只写 100% 的话底部会露出一条缝。宽度也要 !important，否则会被 media.scss 的
+  "窄屏弹窗 98%/92vw" 规则压回去。
+*/
+.bili-player-dialog.el-dialog.is-fullscreen {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .el-dialog__header {
+    flex: 0 0 auto;
+  }
+
+  // 视频区自己撑满，不要 element-ui 默认的 30px 20px 内边距和限高
+  .el-dialog__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .bili-player-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  // 视频元素铺满舞台，画面比例由浏览器自己加黑边保持
+  .bili-player {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+  }
+
+  .bili-player-empty {
+    height: auto;
+    flex: 1 1 auto;
+  }
+
+  .bili-player-meta {
+    flex: 0 0 auto;
+  }
+}
+
+/*
+  窄屏/手机：标题压到一行，把纵向空间留给视频；
+  文件名与"在B站打开"仍排一行，文件名过长就省略，按钮不换行。
+*/
+@media screen and (max-width: 768px) {
+  .bili-player-dialog.el-dialog {
+    .el-dialog__header {
+      padding: 10px 40px 10px 12px;
+    }
+
+    .el-dialog__title {
+      font-size: 13px;
+      -webkit-line-clamp: 1;
+    }
+
+    .el-dialog__headerbtn {
+      top: 10px;
+      right: 8px;
+    }
+  }
+
+  .bili-player-meta {
+    gap: 8px;
+    padding: 8px 12px;
   }
 }
 </style>

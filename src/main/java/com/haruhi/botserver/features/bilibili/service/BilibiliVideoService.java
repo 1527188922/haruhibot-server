@@ -144,7 +144,7 @@ public class BilibiliVideoService {
 
     /**
      * 开始下载视频：同一个 bvid+cid 只会有一个进行中的任务，
-     * 进度由 {@link BilibiliVideoDownloadPushService} 通过WebSocket推送
+     * 任务状态由 {@link BilibiliVideoDownloadPushService} 通过WebSocket推送
      */
     public BilibiliVideoDownloadTask startDownload(Long id) {
         BilibiliVideoSqlite entity = bilibiliVideoSqliteService.getById(id);
@@ -180,8 +180,6 @@ public class BilibiliVideoService {
             resp.setDownloading(task.isRunning());
             resp.setDownloadState(task.getStatus());
             resp.setDownloadMessage(task.getMessage());
-            resp.setDownloadPercent(task.getPercent());
-            resp.setDownloadSpeed(task.getSpeed());
         }
         return resp;
     }
