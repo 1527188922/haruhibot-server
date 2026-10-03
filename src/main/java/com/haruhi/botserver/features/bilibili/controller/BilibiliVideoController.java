@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoAddReq;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoAuthorResp;
+import com.haruhi.botserver.features.bilibili.model.BilibiliVideoDeleteReq;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoDownloadSnapshot;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoDownloadTask;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoIdReq;
@@ -143,16 +144,23 @@ public class BilibiliVideoController {
     }
 
     /**
-     * 批量删除记录（本地已下载的视频文件保留）
+     * 批量删除。
+     * <p>
+     * 请求体里的 deleteData / deleteFile 是两个独立的勾选项，勾了哪个删哪个：
+     * 只勾"删除数据库记录"时本地视频文件会保留（与以前的行为一致）
      */
     @PostMapping("/deleteBatch")
-    public HttpResp deleteBatch(@RequestBody BilibiliVideoIdReq request) {
+    public HttpResp deleteBatch(@RequestBody BilibiliVideoDeleteReq request) {
         if (Objects.isNull(request) || CollectionUtils.isEmpty(request.getIds())) {
             return HttpResp.fail("请选择要删除的视频", null);
         }
+        if (!Boolean.TRUE.equals(request.getDeleteData()) && !Boolean.TRUE.equals(request.getDeleteFile())) {
+            return HttpResp.fail("请至少勾选一项要删除的内容", null);
+        }
         try {
-            int count = bilibiliVideoService.deleteBatch(request.getIds());
-            return HttpResp.success("已删除" + count + "条视频记录", null);
+            return HttpResp.success(bilibiliVideoService.deleteBatch(request), null);
+        } catch (BusinessException e) {
+            return HttpResp.fail(e.getMessage(), null);
         } catch (Exception e) {
             log.error("[webui][/bilibili/video]删除视频异常：{}", JSONObject.toJSONString(request), e);
             return HttpResp.fail("删除异常：" + e.getMessage(), null);

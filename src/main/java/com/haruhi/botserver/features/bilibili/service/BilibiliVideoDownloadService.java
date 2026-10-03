@@ -88,6 +88,30 @@ public class BilibiliVideoDownloadService {
     }
 
     /**
+     * 删除本地视频文件（含下载中断残留的临时文件）
+     *
+     * @return 正式视频文件是否确实被删除（文件本来就不存在、或删除失败时返回false）
+     */
+    public boolean deleteVideoFile(BilibiliVideoSqlite entity) {
+        if (Objects.isNull(entity)) {
+            return false;
+        }
+        File target = videoFile(entity);
+        File downloading = new File(target.getAbsolutePath() + "." + DOWNLOADING_SUFFIX);
+        if (downloading.exists() && !downloading.delete()) {
+            log.warn("删除下载临时文件失败 {}", downloading.getAbsolutePath());
+        }
+        if (!target.exists()) {
+            return false;
+        }
+        if (target.delete()) {
+            return true;
+        }
+        log.warn("删除视频文件失败（可能正在被占用）{}", target.getAbsolutePath());
+        return false;
+    }
+
+    /**
      * 某条视频当前正在下载的任务，没有则返回null
      */
     public BilibiliVideoDownloadTask runningTask(String bvid, Long cid) {

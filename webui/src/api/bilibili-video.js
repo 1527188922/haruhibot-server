@@ -79,8 +79,9 @@ export const downloadTasks = () => request({
 });
 
 /**
- * 批量删除视频记录（本地已下载的视频文件保留）
- * @param data {ids: []}
+ * 批量删除视频
+ * @param data {ids: [], deleteData: 是否删除数据库记录, deleteFile: 是否删除本地视频文件}
+ *             两个勾选项互相独立，勾了哪个删哪个
  */
 export const deleteBatch = (data) => request({
   url: baseUrl + '/bilibili/video/deleteBatch',

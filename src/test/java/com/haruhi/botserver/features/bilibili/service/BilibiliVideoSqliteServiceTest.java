@@ -8,10 +8,12 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.VideoDetail;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoAuthorResp;
+import com.haruhi.botserver.features.bilibili.model.BilibiliVideoDeleteReq;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoQueryReq;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoTagResp;
 import com.haruhi.botserver.features.bilibili.persistence.entity.BilibiliVideoSqlite;
 import com.haruhi.botserver.features.bilibili.persistence.mapper.BilibiliVideoSqliteMapper;
+import com.haruhi.botserver.shared.util.FileUtil;
 import org.apache.ibatis.datasource.unpooled.UnpooledDataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.SqlSession;
@@ -20,7 +22,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -246,6 +250,63 @@ class BilibiliVideoSqliteServiceTest {
         req.setOwnerMid(200L);
         assertEquals(1L, videoService.search(req).getTotal());
         assertEquals("BV2", videoService.search(req).getRecords().getFirst().getBvid());
+    }
+
+    /**
+     * 批量删除：删数据库记录 / 删视频文件是两个独立勾选项，勾了哪个删哪个
+     */
+    @Test
+    void deleteBatchByOptions() throws Exception {
+        // 用不会和真实视频重名的 bvid/cid，避免动到开发机上的文件
+        saveRow("BVDELTEST1", 999001L, 100L, "作者A", null);
+        saveRow("BVDELTEST2", 999002L, 100L, "作者A", null);
+
+        BilibiliVideoService videoService = new BilibiliVideoService();
+        inject(videoService, "bilibiliVideoSqliteService", service);
+        BilibiliVideoDownloadService downloadService = new BilibiliVideoDownloadService();
+        inject(videoService, "bilibiliVideoDownloadService", downloadService);
+
+        BilibiliVideoSqlite first = service.getByBvidAndCid("BVDELTEST1", 999001L);
+        BilibiliVideoSqlite second = service.getByBvidAndCid("BVDELTEST2", 999002L);
+        File firstFile = downloadService.videoFile(first);
+        File secondFile = downloadService.videoFile(second);
+        FileUtil.mkdirs(firstFile.getParent());
+        Files.write(firstFile.toPath(), new byte[]{1, 2, 3});
+        Files.write(secondFile.toPath(), new byte[]{1, 2, 3});
+        try {
+            // 只删文件：文件没了，记录还在
+            String onlyFile = videoService.deleteBatch(deleteReq(List.of(first.getId()), false, true));
+            assertTrue(onlyFile.contains("1个视频文件"), onlyFile);
+            assertFalse(firstFile.exists(), "勾了删除视频文件就应该把文件删掉");
+            assertNotNull(service.getById(first.getId()), "没勾删除数据库记录时记录要保留");
+
+            // 只删记录：记录没了，文件还在
+            String onlyData = videoService.deleteBatch(deleteReq(List.of(second.getId()), true, false));
+            assertTrue(onlyData.contains("1条视频记录"), onlyData);
+            assertNull(service.getById(second.getId()), "勾了删除数据库记录就应该删掉记录");
+            assertTrue(secondFile.exists(), "没勾删除视频文件时文件要保留");
+        } finally {
+            Files.deleteIfExists(firstFile.toPath());
+            Files.deleteIfExists(secondFile.toPath());
+        }
+
+        // 两个都勾：记录和文件一起删
+        saveRow("BVDELTEST3", 999003L, 100L, "作者A", null);
+        BilibiliVideoSqlite third = service.getByBvidAndCid("BVDELTEST3", 999003L);
+        File thirdFile = downloadService.videoFile(third);
+        Files.write(thirdFile.toPath(), new byte[]{1, 2, 3});
+        String both = videoService.deleteBatch(deleteReq(List.of(third.getId()), true, true));
+        assertTrue(both.contains("1条视频记录") && both.contains("1个视频文件"), both);
+        assertNull(service.getById(third.getId()));
+        assertFalse(thirdFile.exists());
+    }
+
+    private BilibiliVideoDeleteReq deleteReq(List<Long> ids, boolean deleteData, boolean deleteFile) {
+        BilibiliVideoDeleteReq req = new BilibiliVideoDeleteReq();
+        req.setIds(ids);
+        req.setDeleteData(deleteData);
+        req.setDeleteFile(deleteFile);
+        return req;
     }
 
     /**

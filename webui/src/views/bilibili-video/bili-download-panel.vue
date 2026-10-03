@@ -27,7 +27,7 @@
           <div class="bili-download-section-title">
             下载中
             <el-tag size="mini" type="primary">{{runningList.length}}</el-tag>
-            <span class="bili-download-hint">只推送状态，不展示下载进度</span>
+<!--            <span class="bili-download-hint">只推送状态，不展示下载进度</span>-->
           </div>
           <div v-if="runningList.length === 0" class="bili-download-empty">没有正在下载的视频</div>
           <div v-else class="bili-download-list">

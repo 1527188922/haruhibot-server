@@ -111,6 +111,24 @@
       </div>
     </el-dialog>
 
+    <!-- 删除：两个勾选项互相独立，勾了哪个删哪个 -->
+    <el-dialog :title="deleteDialogTitle" :visible.sync="deleteDialogVisible" width="420px"
+               @closed="deleteDialogClosed">
+      <div class="bili-delete-tip">{{deleteTip}}</div>
+      <div class="bili-delete-options">
+        <el-checkbox v-model="deleteOptions.deleteData">删除数据库记录</el-checkbox>
+        <el-checkbox v-model="deleteOptions.deleteFile">删除视频文件</el-checkbox>
+      </div>
+<!--      <div class="bili-delete-hint">-->
+<!--        两个勾选项互相独立；只删记录时本地视频文件会保留，视频文件删除后无法恢复。-->
+<!--      </div>-->
+      <span slot="footer">
+        <el-button size="small" @click="deleteDialogVisible = false">取消</el-button>
+        <el-button type="danger" size="small" :loading="deleteLoading" :disabled="deleteDisabled"
+                   @click="submitDelete">确定</el-button>
+      </span>
+    </el-dialog>
+
     <bili-download-panel :visible.sync="downloadPanelVisible" :snapshot="downloadSnapshot"
                          :loading="downloadLoading" :ws-connected="wsConnected"
                          @refresh="refreshDownloadTasks"></bili-download-panel>
@@ -176,6 +194,11 @@ export default {
       hasMore: false,
       loading: false,
       selectedIds: [],
+      // 删除弹框：待删除的行 + 两个勾选项
+      deleteDialogVisible: false,
+      deleteRows: [],
+      deleteOptions: {deleteData: true, deleteFile: false},
+      deleteLoading: false,
       player: {title: '', src: null, fileName: '', bvid: ''},
       playerVisible: false,
       // 视频标签加载失败（本地文件已被删除等）
@@ -206,6 +229,20 @@ export default {
     runningTaskCount() {
       return (this.downloadSnapshot && this.downloadSnapshot.counters
         && this.downloadSnapshot.counters.running) || 0
+    },
+    deleteDialogTitle() {
+      return this.deleteRows.length > 1 ? '删除选中视频' : '删除视频'
+    },
+    deleteTip() {
+      if (this.deleteRows.length === 1) {
+        const row = this.deleteRows[0]
+        return `确认删除视频【${row.title || row.bvid}】？`
+      }
+      return `确认删除选中的 ${this.deleteRows.length} 个视频？`
+    },
+    // 一项都没勾时不允许提交
+    deleteDisabled() {
+      return !this.deleteOptions.deleteData && !this.deleteOptions.deleteFile
     }
   },
   watch: {
@@ -532,32 +569,53 @@ export default {
       })
     },
     deleteVideo(row) {
-      this.deleteRows([row.id], `确认删除视频【${row.title || row.bvid}】的记录？本地已下载的视频文件不会被删除`)
+      this.openDeleteDialog([row])
     },
     deleteSelected() {
       if (this.selectedIds.length === 0) {
         return
       }
-      this.deleteRows(this.selectedIds, `确认删除选中的 ${this.selectedIds.length} 条视频记录？本地已下载的视频文件不会被删除`)
+      // 勾选状态会被 search() 清掉，这里先把要删的行取出来
+      this.openDeleteDialog(this.list.filter(row => this.selectedIds.indexOf(row.id) >= 0))
     },
-    deleteRows(ids, text) {
-      this.$confirm(text, '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        return deleteBatch({ids})
+    /**
+     * 打开删除弹框：删哪些内容由弹框里的两个勾选项决定
+     */
+    openDeleteDialog(rows) {
+      if (!rows || rows.length === 0) {
+        return
+      }
+      this.deleteRows = rows
+      this.deleteDialogVisible = true
+    },
+    /**
+     * 弹框关闭后复位，避免上次的勾选带到下一次
+     */
+    deleteDialogClosed() {
+      this.deleteRows = []
+      this.deleteOptions = {deleteData: true, deleteFile: false}
+    },
+    submitDelete() {
+      if (this.deleteDisabled) {
+        return this.$message.warning('请至少勾选一项要删除的内容')
+      }
+      this.deleteLoading = true
+      deleteBatch({
+        ids: this.deleteRows.map(row => row.id),
+        deleteData: this.deleteOptions.deleteData,
+        deleteFile: this.deleteOptions.deleteFile
       }).then(({data: {code, message}}) => {
         if (code !== 200) {
           return this.$message.error(message)
         }
+        this.deleteDialogVisible = false
         this.$message.success(message || '删除完成')
         this.loadGroups()
         this.search()
       }).catch(e => {
-        if (e !== 'cancel' && e && e.message) {
-          this.$message.error(e.message)
-        }
+        this.$message.error((e && e.message) || '删除失败')
+      }).finally(() => {
+        this.deleteLoading = false
       })
     },
 
@@ -680,6 +738,33 @@ export default {
     font-size: 12px;
     color: #909399;
   }
+
+  /* 删除弹框 */
+  .bili-delete-tip {
+    font-size: 13px;
+    line-height: 20px;
+    color: #303133;
+    word-break: break-all;
+  }
+
+  .bili-delete-options {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 12px;
+
+    .el-checkbox {
+      margin-right: 0;
+    }
+  }
+
+  //.bili-delete-hint {
+  //  margin-top: 10px;
+  //  font-size: 12px;
+  //  line-height: 18px;
+  //  color: #909399;
+  //}
 
   /* 左侧分组 + 右侧卡片 */
   .bili-layout {

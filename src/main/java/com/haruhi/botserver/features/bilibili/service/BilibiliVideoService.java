@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.BilibiliBaseResp;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.VideoDetail;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoAuthorResp;
+import com.haruhi.botserver.features.bilibili.model.BilibiliVideoDeleteReq;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoDownloadSnapshot;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoDownloadTask;
 import com.haruhi.botserver.features.bilibili.model.BilibiliVideoQueryReq;
@@ -15,7 +16,6 @@ import com.haruhi.botserver.features.bilibili.persistence.entity.BilibiliVideoSq
 import com.haruhi.botserver.shared.error.BusinessException;
 import com.haruhi.botserver.shared.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,18 +128,61 @@ public class BilibiliVideoService {
     }
 
     /**
-     * 批量删除记录（只删数据库记录，本地已下载的视频文件保留）
+     * 批量删除视频：按请求里的勾选项删数据库记录 / 本地视频文件，两个勾选项互相独立。
+     *
+     * @return 给前端展示的删除结果描述
      */
-    public int deleteBatch(List<Long> ids) {
-        if (CollectionUtils.isEmpty(ids)) {
-            return 0;
+    public String deleteBatch(BilibiliVideoDeleteReq request) {
+        List<Long> ids = request.getIds().stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            throw new BusinessException("请选择要删除的视频");
         }
-        List<Long> distinctIds = ids.stream().filter(Objects::nonNull).distinct().toList();
-        if (distinctIds.isEmpty()) {
-            return 0;
+        boolean deleteData = Boolean.TRUE.equals(request.getDeleteData());
+        boolean deleteFile = Boolean.TRUE.equals(request.getDeleteFile());
+        List<BilibiliVideoSqlite> videos = bilibiliVideoSqliteService.listByIds(ids);
+
+        int deletedFiles = 0;
+        int failedFiles = 0;
+        if (deleteFile) {
+            // 下载中的视频不能删文件：下载线程最后还是会把临时文件改名成正式文件，删了也白删
+            List<String> running = videos.stream()
+                    .filter(video -> Objects.nonNull(
+                            bilibiliVideoDownloadService.runningTask(video.getBvid(), video.getCid())))
+                    .map(BilibiliVideoSqlite::getBvid)
+                    .toList();
+            if (!running.isEmpty()) {
+                throw new BusinessException("以下视频正在下载中，请等下载结束后再删除：" + String.join("、", running));
+            }
+            for (BilibiliVideoSqlite video : videos) {
+                boolean existed = bilibiliVideoDownloadService.videoFile(video).exists();
+                if (bilibiliVideoDownloadService.deleteVideoFile(video)) {
+                    deletedFiles++;
+                } else if (existed) {
+                    failedFiles++;
+                }
+            }
         }
-        bilibiliVideoSqliteService.removeByIds(distinctIds);
-        return distinctIds.size();
+
+        int deletedRecords = 0;
+        if (deleteData) {
+            bilibiliVideoSqliteService.removeByIds(ids);
+            deletedRecords = ids.size();
+        }
+
+        StringBuilder message = new StringBuilder();
+        if (deleteData) {
+            message.append("已删除").append(deletedRecords).append("条视频记录");
+        }
+        if (deleteFile) {
+            if (message.length() > 0) {
+                message.append("，");
+            }
+            message.append("已删除").append(deletedFiles).append("个视频文件");
+            if (failedFiles > 0) {
+                message.append("，").append(failedFiles).append("个文件删除失败（可能正在被播放或占用）");
+            }
+        }
+        return message.toString();
     }
 
     /**
