@@ -16,7 +16,7 @@
 
       <div class="bili-meta-line">
         <a class="bili-bvid" :href="videoUrl" target="_blank" rel="noopener noreferrer">{{row.bvid}}</a>
-        <span class="bili-cid" :title="`cid：${row.cid}，av号：${row.avid || ''}`">cid:{{row.cid}}</span>
+<!--        <span class="bili-cid" :title="`cid：${row.cid}，av号：${row.avid || ''}`">cid:{{row.cid}}</span>-->
         <el-checkbox class="bili-card-select" :value="selected"
                      @change="$emit('select', row)"></el-checkbox>
       </div>
@@ -57,9 +57,9 @@
         <el-tooltip content="视频下载到服务器本地" placement="top">
           <el-button v-if="!row.downloaded" type="primary" size="mini" plain icon="el-icon-download"
                      :loading="row.downloading" @click="$emit('download', row)">下载视频</el-button>
-          <el-tag v-else type="success" size="mini" effect="plain" class="bili-downloaded-tag">
-            <i class="el-icon-check"></i> 已下载
-          </el-tag>
+<!--          <el-tag v-else type="success" size="mini" effect="plain" class="bili-downloaded-tag">-->
+<!--            <i class="el-icon-check"></i> 已下载-->
+<!--          </el-tag>-->
         </el-tooltip>
         <el-button size="mini" plain icon="el-icon-refresh" @click="$emit('refresh', row)">刷新</el-button>
         <el-button size="mini" type="danger" plain icon="el-icon-delete" @click="$emit('delete', row)">删除</el-button>
@@ -69,8 +69,13 @@
       <div class="bili-file" :class="{'bili-file-playable': row.downloaded}"
            :title="row.downloaded ? `点击播放服务器上的视频：${row.videoFileName}` : `服务器本地文件：${row.videoFileName}（未下载）`"
            @click="onFileClick">
-        <i :class="row.downloaded ? 'el-icon-video-play' : 'el-icon-document'"></i>
-        {{row.videoFileName}}
+        <template v-if="row.downloaded">
+          <i :class="row.downloaded ? 'el-icon-video-play' : 'el-icon-document'"></i>
+          {{row.videoFileName}}
+        </template>
+        <template v-eles>
+          &nbsp;
+        </template>
       </div>
 
       <div v-if="row.downloadState === 'fail' && row.downloadMessage" class="bili-download-error"
@@ -143,7 +148,7 @@ export default {
       if (this.row.downloaded) {
         this.$emit('play', this.row)
       } else {
-        this.$message.info('该视频还没有下载到服务器')
+        // this.$message.info('该视频还没有下载到服务器')
       }
     },
     formatTs(timestamp) {

@@ -14,10 +14,10 @@
           <el-tag v-if="counters.fail" size="mini" type="danger">失败 {{counters.fail}}</el-tag>
         </span>
         <span class="bili-download-ops">
-          <el-tag size="mini" effect="plain" :type="wsConnected ? 'success' : 'info'">
-            {{wsConnected ? '实时推送' : '未连接 · 轮询兜底'}}
-          </el-tag>
-          <el-button type="text" size="mini" :loading="loading" @click="$emit('refresh')">刷新</el-button>
+<!--          <el-tag size="mini" effect="plain" :type="wsConnected ? 'success' : 'info'">-->
+<!--            {{wsConnected ? '实时推送' : '未连接 · 轮询兜底'}}-->
+<!--          </el-tag>-->
+<!--          <el-button type="text" size="mini" :loading="loading" @click="$emit('refresh')">刷新</el-button>-->
         </span>
       </div>
 
