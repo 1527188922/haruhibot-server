@@ -19,6 +19,7 @@ class JmTaskSnapshotJsonTest {
         running.setAid("452699");
         running.setAlbumName("本子名");
         running.setCoverUrl("https://example.com/cover.jpg");
+        running.setServerCoverUrl("http://127.0.0.1:8090/jmcomic/album-452699/452699.jpg");
         running.setAction(JmTaskAction.DOWNLOAD.getCode());
         running.setActionName(JmTaskAction.DOWNLOAD.getActionName());
         running.setStatus(JmTaskStatusEnum.RUNNING.name());
@@ -47,6 +48,7 @@ class JmTaskSnapshotJsonTest {
 
         for (String field : List.of("\"parallel\"", "\"runningList\"", "\"queuedList\"", "\"finishedList\"",
                 "\"counters\"", "\"pollIntervalMillis\"", "\"taskId\"", "\"aid\"", "\"albumName\"", "\"coverUrl\"",
+                "\"serverCoverUrl\"",
                 "\"action\"", "\"actionName\"", "\"status\"", "\"statusName\"", "\"cancellable\"", "\"queuePosition\"",
                 "\"enqueueTime\"", "\"startTime\"", "\"endTime\"", "\"waitMillis\"", "\"costMillis\"", "\"message\"",
                 "\"stage\"", "\"chapterIndex\"", "\"chapterTotal\"", "\"chapterTitle\"", "\"imageTotal\"",

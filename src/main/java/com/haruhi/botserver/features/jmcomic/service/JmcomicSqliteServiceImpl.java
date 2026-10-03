@@ -348,6 +348,18 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
     }
 
     @Override
+    public String findServerCoverUrl(Long id) {
+        if (id == null) {
+            return null;
+        }
+        JmAlbumSqlite album = jmAlbumSqliteMapper.selectOne(new LambdaQueryWrapper<JmAlbumSqlite>()
+                .select(JmAlbumSqlite::getId, JmAlbumSqlite::getAlbumFolderName)
+                .eq(JmAlbumSqlite::getId, id));
+        // 本地封面图还没下载时返回null，由前端回退到JM远程封面
+        return buildServerCoverUrl(album);
+    }
+
+    @Override
     public IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request) {
         if (request == null) {
             request = new JmChapterImageQueryReq();

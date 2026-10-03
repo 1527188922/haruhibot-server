@@ -33,7 +33,7 @@
           <div v-else class="jm-task-list">
             <div v-for="task in runningList" :key="task.taskId" class="jm-task-card">
               <div class="jm-task-cover">
-                <el-image v-if="task.coverUrl" class="jm-task-cover-img" :src="task.coverUrl" fit="cover">
+                <el-image v-if="taskCoverSrc(task)" class="jm-task-cover-img" :src="taskCoverSrc(task)" fit="cover">
                   <div slot="error" class="jm-task-cover-fallback">JM{{task.aid}}</div>
                 </el-image>
                 <div v-else class="jm-task-cover-fallback">JM{{task.aid}}</div>
@@ -78,7 +78,7 @@
           <div v-else class="jm-task-list">
             <div v-for="task in queuedList" :key="task.taskId" class="jm-task-card">
               <div class="jm-task-cover">
-                <el-image v-if="task.coverUrl" class="jm-task-cover-img" :src="task.coverUrl" fit="cover">
+                <el-image v-if="taskCoverSrc(task)" class="jm-task-cover-img" :src="taskCoverSrc(task)" fit="cover">
                   <div slot="error" class="jm-task-cover-fallback">JM{{task.aid}}</div>
                 </el-image>
                 <div v-else class="jm-task-cover-fallback">JM{{task.aid}}</div>
@@ -113,6 +113,12 @@
             <div v-if="finishedList.length === 0" class="jm-task-empty">本次运行还没有完成的任务</div>
             <div v-else class="jm-task-list">
               <div v-for="task in finishedList" :key="task.taskId" class="jm-task-card jm-task-card-finished">
+                <div class="jm-task-cover">
+                  <el-image v-if="taskCoverSrc(task)" class="jm-task-cover-img" :src="taskCoverSrc(task)" fit="cover">
+                    <div slot="error" class="jm-task-cover-fallback">JM{{task.aid}}</div>
+                  </el-image>
+                  <div v-else class="jm-task-cover-fallback">JM{{task.aid}}</div>
+                </div>
                 <div class="jm-task-main">
                   <div class="jm-task-line">
                     <span class="jm-task-name" :title="taskDisplayName(task)">{{taskDisplayName(task)}}</span>
@@ -337,6 +343,15 @@ export default {
     },
     taskDisplayName(task) {
       return task && task.albumName ? task.albumName : `JM${task.aid}`
+    },
+    /**
+     * 任务封面：优先本地服务器封面(serverCoverUrl)，该字段不存在时回退到JM远程封面(coverUrl)
+     */
+    taskCoverSrc(task) {
+      if (!task) {
+        return ''
+      }
+      return this.$localUrl(task.serverCoverUrl) || task.coverUrl || ''
     },
     statusTagType(task) {
       const map = { QUEUED: 'info', RUNNING: 'primary', SUCCESS: 'success', FAIL: 'danger', CANCELLED: 'warning' }

@@ -370,7 +370,28 @@ public class JmcomicService {
      * 内存中的JM任务快照(运行中/排队中/最近完成)
      */
     public JmTaskSnapshot listTasks() {
-        return taskQueue.snapshot(isJmOperationParallel());
+        JmTaskSnapshot snapshot = taskQueue.snapshot(isJmOperationParallel());
+        // 本地封面图已下载的任务补上本地封面地址，前端优先展示它
+        fillServerCoverUrl(snapshot.getRunningList());
+        fillServerCoverUrl(snapshot.getQueuedList());
+        fillServerCoverUrl(snapshot.getFinishedList());
+        return snapshot;
+    }
+
+    /**
+     * 任务封面优先展示本地已下载的封面图。
+     * 本子未入库或本地封面文件不存在时该字段保持null，由前端回退到JM远程封面
+     */
+    private void fillServerCoverUrl(List<JmTaskInfo> tasks) {
+        if (CollectionUtils.isEmpty(tasks)) {
+            return;
+        }
+        for (JmTaskInfo task : tasks) {
+            Long jmId = parseJmId(task.getAid());
+            if (jmId != null) {
+                task.setServerCoverUrl(jmcomicSqliteService.findServerCoverUrl(jmId));
+            }
+        }
     }
 
     /**

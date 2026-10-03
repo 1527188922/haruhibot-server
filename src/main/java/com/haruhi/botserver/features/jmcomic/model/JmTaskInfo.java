@@ -5,7 +5,7 @@ import lombok.Data;
 /**
  * JM任务的内存快照，仅用于管理端展示
  * <p>
- * 所有字段都来自内存中的队列/运行记录，不涉及数据库
+ * 除 serverCoverUrl 取自本地已下载的封面文件外，其余字段都来自内存中的队列/运行记录，不涉及数据库
  */
 @Data
 public class JmTaskInfo {
@@ -23,6 +23,11 @@ public class JmTaskInfo {
      * JM远程封面地址
      */
     private String coverUrl;
+    /**
+     * 本地服务器封面图url，本地封面文件(jmcomic/{文件夹}/{jmId}.jpg)不存在时为null，
+     * 前端在该字段为空时回退展示 {@link #coverUrl}
+     */
+    private String serverCoverUrl;
     /**
      * 动作code，见 {@link JmTaskAction#getCode()}
      */

@@ -49,6 +49,12 @@ public interface JmcomicSqliteService {
      */
     String findAlbumName(Long id);
 
+    /**
+     * 查询本地已下载的封面图url，仅用于任务面板展示。
+     * 本子未入库或本地封面文件(jmcomic/{文件夹}/{jmId}.jpg)不存在时返回null，由调用方回退到JM远程封面
+     */
+    String findServerCoverUrl(Long id);
+
     IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request);
 
     void deleteAlbums(JmAlbumDeleteReq request);

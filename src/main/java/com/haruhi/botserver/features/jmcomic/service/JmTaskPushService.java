@@ -150,7 +150,8 @@ public class JmTaskPushService implements WebuiWsTopicProvider {
                     .append(task.getChapterIndex()).append('/').append(task.getChapterTotal()).append(':')
                     .append(task.getImageDownloaded()).append('/').append(task.getImageTotal()).append(':')
                     .append(task.getQueuePosition()).append(':')
-                    .append(task.getMessage()).append(';');
+                    .append(task.getMessage()).append(':')
+                    .append(task.getServerCoverUrl()).append(';');
         }
     }
 }
