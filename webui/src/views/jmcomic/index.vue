@@ -120,10 +120,10 @@
         <el-badge class="jm-task-badge" :value="taskActiveCount" :hidden="taskActiveCount === 0" type="warning">
           <el-button type="primary" size="small" plain icon="el-icon-s-operation" @click="taskPanelVisible = true">任务队列</el-button>
         </el-badge>
-        <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="albumDeleteDisabled" @click="openAlbumDelete">批量删除</el-button>
         <el-button type="warning" size="small" plain icon="el-icon-star-on" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'collect'" @click="openFavoritePickerForSelection">批量收藏</el-button>
         <el-button type="info" size="small" plain icon="el-icon-star-off" :disabled="albumDeleteDisabled || !!albumCollectLoading" :loading="albumCollectLoading === 'uncollect'" @click="collectSelectedAlbums(false)">取消收藏</el-button>
-        <el-button type="danger" size="small" plain icon="el-icon-delete" @click="openAllFileDelete">删除全部</el-button>
+        <el-button type="danger" size="small" plain icon="el-icon-delete" :disabled="albumDeleteDisabled" @click="openAlbumDelete">批量删除</el-button>
+        <el-button type="danger" size="small" title="仅删除文件，不删除数据库记录" plain icon="el-icon-delete" @click="openAllFileDelete">删除全部</el-button>
         <el-dropdown v-if="albumViewMode === 'list'" trigger="click" :hide-on-click="false">
           <el-button type="primary" size="small" plain icon="el-icon-setting">列设置</el-button>
           <el-dropdown-menu slot="dropdown" class="jm-column-dropdown">
@@ -348,7 +348,7 @@
     </el-dialog>
     <el-dialog title="删除所有文件" :visible.sync="deleteAllFileDialogVisible" width="420px"
                @closed="deleteAllFileDialogClosed">
-      <div class="delete-tip">确认删除所有文件？（仅删除文件，不删除数据库记录）</div>
+      <div class="delete-tip">确认删除所有文件？（仅删除下方被勾选的文件，不删除数据库记录）</div>
       <el-checkbox v-model="deleteAllFileOptions.deletePdf">删除PDF文件</el-checkbox>
       <el-checkbox v-model="deleteAllFileOptions.deleteZip">删除ZIP文件</el-checkbox>
       <el-checkbox v-model="deleteAllFileOptions.deleteImages">删除图片文件</el-checkbox>
