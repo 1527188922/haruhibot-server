@@ -461,7 +461,12 @@ export default {
       this.syncFallbackPoll()
     },
     /**
-     * 把下载任务进度同步到卡片上（按 bvid+cid 匹配）
+     * 把下载任务状态同步到卡片上（按 bvid+cid 匹配）
+     * <p>
+     * 注意：任务列表是后端内存里的历史记录（已完成任务最多留20条），它并不知道文件后来
+     * 有没有被删掉。所以只有"这一行这次确实在下载中、任务刚刚结束"时才用任务状态去改
+     * 卡片的已下载标记；其余情况一律以列表接口返回的 downloaded（磁盘真实情况）为准——
+     * 否则删过文件的视频会被几十秒前那条历史成功任务重新标成"已下载"。
      */
     applyTasks(tasks) {
       if (!tasks || tasks.length === 0) {
@@ -478,14 +483,15 @@ export default {
         if (!task) {
           return
         }
+        // 覆盖状态之前先记下：这一行是不是正处在"这次下载"中
+        // （downloading 是前端自己标的；downloadState=running 来自接口，说明后端确实有在跑的任务）
+        const justFinished = (!!row.downloading || row.downloadState === 'running') && task.status !== 'running'
         this.$set(row, 'downloading', task.status === 'running')
         this.$set(row, 'downloadState', task.status)
         this.$set(row, 'downloadMessage', task.message)
-        if (task.status === 'success') {
-          this.$set(row, 'downloaded', true)
-        } else if (task.status === 'fail') {
-          // 失败的下载会删掉临时文件，本地并没有这个视频
-          this.$set(row, 'downloaded', false)
+        if (justFinished) {
+          // 失败时临时文件已经被删掉，成功时文件刚落盘
+          this.$set(row, 'downloaded', task.status === 'success')
         }
       })
     },

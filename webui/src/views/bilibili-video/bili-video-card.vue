@@ -141,7 +141,8 @@ export default {
       return this.failed ? 'is-failed' : 'is-undownloaded'
     },
     failed() {
-      return this.row.downloadState === 'fail' && !!this.row.downloadMessage
+      // 文件确实在本地时，历史失败记录（任务列表是内存里的）不该再显示成失败
+      return !this.row.downloaded && this.row.downloadState === 'fail' && !!this.row.downloadMessage
     },
     durationText() {
       return this.formatDuration(this.row.duration)
