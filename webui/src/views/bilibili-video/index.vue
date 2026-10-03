@@ -48,7 +48,7 @@
           <el-button type="danger" size="small" plain icon="el-icon-delete"
                      :disabled="selectedIds.length === 0"
                      @click="deleteSelected">删除选中{{selectedIds.length ? `(${selectedIds.length})` : ''}}</el-button>
-          <el-button size="small" plain icon="el-icon-refresh" :loading="loading" @click="search">刷新</el-button>
+<!--          <el-button size="small" plain icon="el-icon-refresh" :loading="loading" @click="search">刷新</el-button>-->
         </div>
       </div>
       <div class="bili-summary">
