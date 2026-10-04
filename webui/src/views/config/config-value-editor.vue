@@ -212,9 +212,8 @@ export default {
 
   .value-checks,
   .value-radios {
-    // 触控行高：选项多时仍可换行，每个选项保持 40px 可点区域
-    line-height: 40px;
-
+    // 触控高度交给子项的 min-height，组容器自己不放行高：
+    // 行高会被子项继承，撑大它们内部的行盒（见下面 el-switch 的说明）
     ::v-deep .el-checkbox,
     ::v-deep .el-radio {
       min-height: 40px;
@@ -222,9 +221,22 @@ export default {
     }
   }
 
-  ::v-deep .el-switch {
+  /**
+   * 开关只放大触控区域（min-height），不要再给 .el-switch 设 line-height。
+   *
+   * .el-switch__label 的高度被 element 固定为 20px，里面那层
+   * <span aria-hidden="true">开启/关闭</span> 是它的行内内容：
+   * 一旦 label 继承到 40px 行高，行盒就比 20px 的 label 框高，
+   * 文字会被顶到 label 框下面（按 CSS 规范计入 strut 的 Gecko/WebKit 上必现，
+   * Blink 在 label 里没有文本节点时会漏算 strut，所以只有部分浏览器看得出来）。
+   * 这里再把 label 行高钉回它的固定高度，外层以后无论怎么改行高都不会再顶偏。
+   */
+  .config-value-editor ::v-deep .el-switch {
     min-height: 40px;
-    line-height: 40px;
+
+    .el-switch__label {
+      line-height: 20px;
+    }
   }
 }
 </style>

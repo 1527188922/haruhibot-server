@@ -594,31 +594,40 @@ export default {
 /**
  * 手机端：左侧文件列表改为覆盖式抽屉（默认收起，由工具栏"配置文件"按钮唤出），
  * 配置项表格换成卡片列表（见 template 里的 mobile-record-list）。
- * 抽屉用 absolute 定位脱离文档流，收起时不影响主区宽度；再靠 transform 滑出，
+ * 抽屉脱离文档流，收起时不影响主区宽度；再靠 transform 滑出，
  * visibility 一起过渡，避免收起后里面还能被键盘 Tab 到。
  */
 @media screen and (max-width: 767.98px) {
   .config-manage {
-    position: relative;
     display: block;
     padding: 8px 4px;
     min-height: 0;
   }
 
+  /**
+   * 抽屉和遮罩都相对**视口**定位，不能相对 .config-manage：
+   * 页面滚动容器是 #avue-view，配置项很少时 .config-manage 只有内容那么高，
+   * absolute + bottom:0 会让抽屉跟着 main 一起变矮、停在半屏中间（遮罩也盖不满）。
+   * fixed 后无论内容多高，抽屉始终占满整屏；层级放在 app 自己的移动端侧边栏
+   * （.avue-sidebar 1024 / 它的遮罩 1023）之下，菜单打开时仍能盖在抽屉上面。
+   */
   .config-manage__aside {
-    position: absolute;
+    position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
-    z-index: 12;
+    z-index: 1021;
     width: 84vw;
     max-width: 300px;
     margin-right: 0;
+    border-radius: 0;
     overflow-y: auto;
     visibility: hidden;
     transform: translateX(-105%);
     transition: transform .2s ease, visibility .2s;
     box-shadow: 2px 0 12px rgba(0, 0, 0, .25);
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .config-manage__aside--open {
@@ -627,12 +636,12 @@ export default {
   }
 
   .config-manage__mask {
-    position: absolute;
+    position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    z-index: 11;
+    z-index: 1020;
     background: rgba(0, 0, 0, .35);
   }
 

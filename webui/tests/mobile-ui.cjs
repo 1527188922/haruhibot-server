@@ -18,8 +18,15 @@ function component(file) {
   const dependencies = imports.map(name => 'const '+name+' = window.__deps['+JSON.stringify(name)+'] || '+(/^[A-Z]/.test(name)?'{render:h=>h("div")}':'(()=>null)')+';').join('\n');
   const compiled = compiler.compile(parsed.template.content);
   assert.deepEqual(compiled.errors, [], file);
-  return { code:dependencies+'\n'+code, render:compiled.render, staticRenderFns:compiled.staticRenderFns,
-    styles:parsed.styles.map(s=>s.lang==='scss'?sass.compileString(s.content,{logger:sass.Logger.silent}).css:s.content).join('\n') };
+  /**
+   * fixture 直接用 vue-template-compiler 在浏览器里渲染，没有 vue-loader 那一步，
+   * scoped 样式里的 ::v-deep 不会被展开成带作用域属性的选择器；原样注入会被浏览器
+   * 当成非法选择器整条丢掉，组件的深度选择器规则就等于没测（配置管理页开关行高把
+   * 标签文字顶出 label 的问题就是这么漏掉的）。这里退化成后代选择器，规则前面本来
+   * 就写了组件根类名（如 .config-value-editor），作用范围与真实构建基本一致。
+   */
+  const styles = parsed.styles.map(s => (s.lang === 'scss' ? sass.compileString(s.content, {logger: sass.Logger.silent}).css : s.content).replace(/::v-deep\s*/g, ' ')).join('\n');
+  return { code:dependencies+'\n'+code, render:compiled.render, staticRenderFns:compiled.staticRenderFns, styles };
 }
 (async()=>{
   const browser = await chromium.launch({channel:process.env.BROWSER_CHANNEL || 'chrome',headless:true});
@@ -258,6 +265,59 @@ function component(file) {
     const selectBox=await page.locator('.mobile-record').nth(1).locator('.el-select').boundingBox();
     assert.ok(cardBox && selectBox && selectBox.width>=cardBox.width-30,
       'config select fills card: '+(selectBox&&selectBox.width)+'/'+(cardBox&&cardBox.width));
+
+    /**
+     * 开关：手机端只放大触控区域，不能把行高传给 .el-switch__label。
+     * label 高度被 element 固定为 20px，行高一超过它，里面的"开启/关闭"文字
+     * 就会被顶到 label 框下面（按规范计入 strut 的浏览器上必现）。
+     */
+    const switchGeometry=await page.locator('.mobile-record').first().locator('.el-switch').evaluate(sw=>{
+      const label=sw.querySelector('.el-switch__label--left');
+      const text=label.querySelector('span');
+      const labelBox=label.getBoundingClientRect(), textBox=text.getBoundingClientRect(), swBox=sw.getBoundingClientRect();
+      return {switchHeight:Math.round(swBox.height),labelHeight:Math.round(labelBox.height),
+        labelLineHeight:parseFloat(getComputedStyle(label).lineHeight),
+        textOverflowBelowLabel:Math.round((textBox.bottom-labelBox.bottom)*10)/10};
+    });
+    assert.equal(switchGeometry.switchHeight,40,'config switch keeps 40px touch height');
+    assert.ok(switchGeometry.labelLineHeight<=switchGeometry.labelHeight,
+      'switch label line-height must not exceed its fixed height: '+JSON.stringify(switchGeometry));
+    assert.ok(switchGeometry.textOverflowBelowLabel<=0.5,
+      'switch label text stays inside its label: '+JSON.stringify(switchGeometry));
+
+    /**
+     * 抽屉锚在视口上：配置项少、.config-manage 只有内容那么高时，抽屉和遮罩也必须占满整屏，
+     * 不能跟着 main 一起变矮停在半屏。
+     * 这里套一层 #main(position:relative) + #scroller(overflow-y:auto)，模拟真实的
+     * .avue-main / #avue-view —— 少了这层定位祖先，absolute 和 fixed 在 fixture 里看不出区别。
+     */
+    const shortConfigFile={fileName:'short.properties',displayName:'短配置',path:'/s',exists:true,count:1,hotCount:0,
+      remark:'只有一个配置项',items:[configFileB.items[0]]};
+    await page.setViewportSize({width:390,height:844});
+    await page.evaluate(file=>{
+      viewport.width=390;
+      if(window.fixtureVm)window.fixtureVm.$destroy();
+      document.getElementById('fixture').innerHTML='<div id="main" style="position:relative;height:520px;overflow:hidden">'+
+        '<div id="scroller" style="height:100%;overflow-y:auto"><div id="mount"></div></div></div>';
+      const copy={...__deps.ConfigPage};
+      for(const hook of ['created','mounted','activated','deactivated','beforeDestroy'])delete copy[hook];
+      const original=copy.data;
+      copy.data=function(){return {...(original?original.call(this):{}),files:[file]}};
+      window.fixtureVm=new Vue(copy).$mount('#mount');
+      fixtureVm.applyFile(file);
+    },shortConfigFile);
+    await page.waitForTimeout(80);
+    assert.ok(await page.evaluate(()=>document.querySelector('.config-manage').getBoundingClientRect().height<520),
+      'short config page stays shorter than its container');
+    await page.locator('.main-toolbar__file-btn').click();
+    await page.waitForTimeout(300);
+    const drawerBox=await page.locator('.config-manage__aside--open').boundingBox();
+    const maskBox=await page.locator('.config-manage__mask').boundingBox();
+    assert.ok(drawerBox && drawerBox.y<=1 && drawerBox.height>=843,
+      'config drawer covers viewport height with short content: '+JSON.stringify(drawerBox));
+    assert.ok(maskBox && maskBox.y<=1 && maskBox.height>=843,
+      'config drawer mask covers viewport with short content: '+JSON.stringify(maskBox));
+    assert.equal(await page.locator('.file-list li').count(),1,'short config file list rendered in drawer');
 
     // 文件原始内容弹窗在手机端整屏（custom-class + is-fullscreen 的样式覆盖）
     await page.setViewportSize({width:320,height:844});
