@@ -2,8 +2,7 @@
  * 移动端适配公共 mixin
  *
  * 全站混入（见 main.js），为所有组件提供统一的移动端标记与基础响应式数据：
- * - isMobileView：当前是否处于移动端形态。断点取自 Vuex 的 screen（admin.js 按 992px 划分），
- *   即 screen<=1 表示窗口宽度 < 992px，需要走移动端布局规则。
+ * - isMobileView：手机布局（<768px）；isCompactView：紧凑导航（<992px）。
  * - screenWidth / screenHeight：视口尺寸，仅在跨越断点或尺寸变化时更新，供需要像素计算
  *   （如漫画预览的缩放基准宽度）的组件使用。
  *
@@ -11,6 +10,7 @@
  */
 import { mapGetters } from 'vuex'
 import admin from '@/util/admin'
+import { viewportMode, paginationForViewport } from '@/util/mobile-layout'
 
 export default {
   /**
@@ -34,11 +34,17 @@ export default {
   },
   computed: {
     ...mapGetters(['screen', 'screenWidth', 'screenHeight']),
+    isCompactView() {
+      return viewportMode(this.screenWidth || admin.getWindowWidth()).compact
+    },
     isMobileView() {
-      return this.screen <= 1
+      return viewportMode(this.screenWidth || admin.getWindowWidth()).phone
     }
   },
   methods: {
+    responsivePagination(options) {
+      return paginationForViewport(options, this.isMobileView)
+    },
     /**
      * 按当前窗口宽度计算视口宽度，与 admin.getScreen 使用同一套取值方式，
      * 避免 document.body.clientWidth 在滚动条/1px 边框下的偏差。

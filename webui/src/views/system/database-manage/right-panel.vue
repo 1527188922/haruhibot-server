@@ -283,7 +283,7 @@ export default {
    * 移动端：显示资源树开关，放大按钮触控区域，隐藏鼠标拖拽条。
    * 结果面板占位高度改由样式控制，避免拖动条失效后出现极端高度。
    */
-  @media screen and (max-width: 768px) {
+  @media screen and (max-width: 767.98px) {
     ::v-deep .el-aside {
       width: 40px !important;
       padding: 2px;

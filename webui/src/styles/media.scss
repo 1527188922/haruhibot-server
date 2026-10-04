@@ -6,7 +6,7 @@
  *   >= 992   中屏（screen=2）
  *   >= 768   小屏/平板（screen=1）
  *   <  768   超小屏/手机（screen=0）
- * 992~768 之间保留侧边栏常驻形态；< 768 起进入"手机形态"：表单单列、表格横向滚动、抽屉全宽。
+ * 768~991 之间使用紧凑导航；< 768 起进入"手机形态"：表单单列、表格横向滚动、抽屉全宽。
  *
  * 两个必须注意的优先级问题（否则规则静默失效）：
  * 1. el-dialog / el-drawer 的宽高是通过内联 :style 绑定的（element-ui dialog 的 style 计算属性
@@ -15,8 +15,8 @@
  *    权重高于同形态的全局选择器；因此下面涉及 scoped 同名类的覆盖统一加 !important。
  */
 
-/* ===================== < 992px：小屏/平板，保留侧边栏常驻 ===================== */
-@media screen and (max-width: 992px) {
+/* ===================== < 992px：小屏/平板，覆盖式导航 ===================== */
+@media screen and (max-width: 991.98px) {
   .avue-sidebar {
     position: fixed;
     top: 0;
@@ -33,8 +33,20 @@
       width: $sidebar_width;
     }
     .avue-main {
-      margin-left: $sidebar_width;
+      margin-left: 0;
     }
+  }
+
+  // 侧边栏遮罩：点击空白处收起抽屉（位于顶栏之下、侧边栏之下）
+  .avue-sidebar-mask {
+    position: fixed;
+    top: $top_height;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1023;
+    background: rgba(0, 0, 0, .45);
+    -webkit-tap-highlight-color: transparent;
   }
 
   // ele的自适应
@@ -91,7 +103,7 @@
 }
 
 /* ===================== < 768px：手机形态 ===================== */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767.98px) {
   /* ---------- 布局与安全区 ---------- */
   .avue-contail,
   .avue-main {
@@ -139,17 +151,7 @@
     padding-left: 56px;
   }
 
-  // 侧边栏遮罩：点击空白处收起抽屉（位于顶栏之下、侧边栏之下）
-  .avue-sidebar-mask {
-    position: fixed;
-    top: $top_height;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 1023;
-    background: rgba(0, 0, 0, .45);
-    -webkit-tap-highlight-color: transparent;
-  }
+
 
   .basic-container {
     padding: 8px 4px;
@@ -159,11 +161,11 @@
     }
   }
 
-  // 页面级横向滚动容器：表格等超宽内容在自己的区域内横向滚动，不撑破整页
+  // 页面保持视口宽度；宽表格在 Element 的 body-wrapper 内横向滚动
   .page-table-scroll {
     width: 100%;
     min-width: 0;
-    overflow-x: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     // 与 .avue-view 重复一份，避免出现横向滚动条时底部被安全区遮挡
     padding-bottom: constant(safe-area-inset-bottom);
@@ -201,25 +203,8 @@
       margin-right: 0;
     }
 
-    // 各页 label-width 写死 60~100px，手机统一收窄，给输入框留出空间
-    .el-form-item__label {
-      width: 72px !important;
-      padding-right: 6px;
-      box-sizing: border-box;
-      text-align: right;
-    }
   }
 
-  .el-form.el-form--label-left,
-  .el-form.el-form--label-right {
-    .el-form-item__label {
-      float: none;
-      display: block;
-      width: 100% !important;
-      text-align: left;
-      padding: 0 0 4px;
-    }
-  }
 
   // el-input 自身已是 width:100%，这里只处理自身写死宽度的组件
   .el-form .el-input-number,
@@ -280,6 +265,7 @@
     .el-dialog__body {
       padding: 12px 16px;
       max-height: calc(92vh - 150px);
+      max-height: calc(92dvh - 150px);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
@@ -452,11 +438,11 @@
     }
   }
 
-  /* ---------- 表格：强制横向滚动，禁止列被等比压缩到不可读 ---------- */
+  /* ---------- 表格：保留列宽，滚动限制在表格内部 ---------- */
   .el-table {
-    // el-table 内部按整表宽度计算布局，给一个最小宽度即可在外层触发横向滚动，
-    // 而不是把十几列等比压扁（各页面 min-width 之和普遍在 1000px 以上）
-    min-width: calc(#{$mobile_table_min_width} + 2px) !important;
+    // Keep the outer table within its container; Element scrolls wide columns internally.
+    width: 100%;
+    min-width: 0;
     font-size: 13px;
 
     .el-table__body-wrapper,

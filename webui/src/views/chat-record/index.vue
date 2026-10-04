@@ -2,7 +2,7 @@
   <div id="ChatRecord">
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+        <query-form :model="queryFormObj" inline ref="queryForm" size="small">
           <el-form-item prop="messageType">
             <el-select placeholder="消息类型" v-model="queryFormObj.messageType" class="form-input" @change="handleMessageTypeChange">
               <el-option v-for="(value,key) in typeMap" :key="key" :value="key" :label="value">
@@ -43,7 +43,7 @@
           </el-form-item>
 
           <el-form-item prop="datetimerange">
-            <el-date-picker
+            <el-date-picker popper-class="responsive-date-range"
                 class="form-date-picker"
                 v-model="queryFormObj.datetimerange"
                 type="datetimerange"
@@ -57,7 +57,7 @@
             </el-date-picker>
           </el-form-item>
 
-        </el-form>
+        </query-form>
       </el-row>
       <el-row class="query-form-option-buts">
         <el-button type="primary" size="small" @click="search" plain
@@ -70,7 +70,18 @@
 
 
     <basic-container>
-      <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
+      <mobile-record-list v-if="isMobileView" :rows="tableData" :loading="tableLoading"
+          title-field="nickname" fallback-field="userId" avatar-field="userAvatarUrl"
+          :fields="[{label:'发送时间',prop:'time'},{label:'发送人',prop:'userId'},{label:isQueryGroup ? '群名称' : '对话人',prop:isQueryGroup ? 'groupName' : 'targetId'}]"
+          :detail-fields="[{label:'群号',prop:'groupId'},{label:'群内昵称',prop:'card'},{label:'机器人',prop:'selfId'},{label:'消息类型',format:row=>typeMap[row.messageType]}]">
+        <template #summary="{row}"><div class="mobile-record-text">{{row.content}}</div></template>
+        <template #actions="{row}">
+          <el-button size="small" @click="view(row)">查看消息</el-button>
+          <el-button size="small" @click="positioningContext(row)">定位到聊天</el-button>
+          <el-button size="small" @click="showRaw(row)">原始报文</el-button>
+        </template>
+      </mobile-record-list>
+      <el-table v-show="!isMobileView" tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row >
         <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
@@ -124,7 +135,7 @@
         </el-table-column>
       </el-table>
       <div class="pagination-box">
-        <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
+        <el-pagination v-bind="responsivePagination(pagination)" @size-change="sizeChange" @current-change="currentChange" />
       </div>
     </basic-container>
     <chat-view ref="chatView"></chat-view>
@@ -357,7 +368,8 @@ export default {
 <style lang="scss" scoped>
 #ChatRecord{
   .form-date-picker{
-    width: calc(180px * 2 + 70px + 12px);
+    width: 372px;
+    max-width: 100%;
   }
 }
 </style>

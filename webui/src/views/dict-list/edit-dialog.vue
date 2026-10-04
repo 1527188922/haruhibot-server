@@ -2,7 +2,7 @@
   <div id="DictEditDialog">
     <el-dialog :visible.sync="visible" :title="title" width="450px" @closed="dialogClosed" :dialog-drag-enabled="!isMobileView"
                :close-on-click-modal="false">
-      <el-form :model="formData" label-position="right" ref="editForm" label-width="50px">
+      <el-form :model="formData" :label-position="isMobileView ? 'top' : 'right'" ref="editForm" label-width="50px">
         <el-form-item label="key" prop="key" :rules="[{required: true, message:'请输入key',trigger: 'blur'}]">
           <el-input v-model.trim="formData.key" maxlength="255"></el-input>
         </el-form-item>

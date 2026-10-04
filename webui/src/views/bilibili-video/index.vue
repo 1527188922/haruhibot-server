@@ -3,7 +3,7 @@
     <!-- 查询条件 -->
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" inline ref="queryForm" size="small"
+        <query-form :model="queryFormObj" inline ref="queryForm" size="small"
                  @submit.native.prevent>
           <el-form-item prop="bvid">
             <el-input v-model.trim="queryFormObj.bvid" class="form-input" clearable maxlength="30"
@@ -21,7 +21,7 @@
 <!--            <el-input v-model.trim="queryFormObj.tag" class="form-input" clearable maxlength="30"-->
 <!--                      @keyup.enter.native="search"></el-input>-->
 <!--          </el-form-item>-->
-        </el-form>
+        </query-form>
       </el-row>
       <el-row class="query-form-option-buts">
         <el-button type="primary" size="small" plain icon="el-icon-search" @click="search">查询</el-button>
@@ -805,7 +805,7 @@ export default {
   }
 
   /* 移动端：左侧分组收成顶部横向条 */
-  @media screen and (max-width: 768px) {
+  @media screen and (max-width: 767.98px) {
     .bili-layout {
       display: block;
     }
@@ -1035,7 +1035,7 @@ export default {
   窄屏/手机：标题压到一行，把纵向空间留给视频；
   文件名与"在B站打开"仍排一行，文件名过长就省略，按钮不换行。
 */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767.98px) {
   .bili-player-dialog.el-dialog {
     .el-dialog__header {
       padding: 10px 40px 10px 12px;

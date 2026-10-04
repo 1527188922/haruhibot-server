@@ -99,6 +99,7 @@
                        :page-size="page.pageSize"
                        :total="page.total"
                        :layout="paginationLayout"
+                       :pager-count="isMobileView ? 5 : 7"
                        @current-change="currentChange" />
       </div>
     </div>
@@ -179,7 +180,7 @@ export default {
   computed: {
     // 手机上分页按钮过多会换行，去掉 jumper
     paginationLayout() {
-      return this.isMobileView ? 'total, prev, pager, next' : 'total, prev, pager, next, jumper'
+      return this.isMobileView ? 'prev, pager, next' : 'total, prev, pager, next, jumper'
     },
     activeFavorite() {
       return this.favorites.find(item => item.id === this.activeFavoriteId) || null
@@ -560,7 +561,7 @@ export default {
 /**
  * 移动端：左侧竖列收成顶部横向子 tab，先把纵向空间还给内容
  */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767.98px) {
   .jm-favorite {
     display: block;
   }

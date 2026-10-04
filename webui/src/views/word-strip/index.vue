@@ -2,7 +2,7 @@
   <div id="WordStrip">
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+        <query-form :model="queryFormObj" inline ref="queryForm" size="small">
           <el-form-item prop="keyWord">
             <el-input placeholder="关键字" v-model="queryFormObj.keyWord" class="form-input" maxlength="500" clearable></el-input>
           </el-form-item>
@@ -21,7 +21,7 @@
             <number-input v-model.trim="queryFormObj.selfId" class="form-input" clearable
                           placeholder="机器人QQ号"></number-input>
           </el-form-item>
-        </el-form>
+        </query-form>
       </el-row>
       <el-row class="query-form-option-buts">
         <el-button type="primary" size="small" @click="search" plain
@@ -79,7 +79,7 @@
         </el-table-column>
       </el-table>
       <div class="pagination-box">
-        <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
+        <el-pagination v-bind="responsivePagination(pagination)" @size-change="sizeChange" @current-change="currentChange" />
       </div>
     </basic-container>
     <chat-view ref="chatView"></chat-view>

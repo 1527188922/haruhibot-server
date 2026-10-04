@@ -20,7 +20,8 @@ function getWindowHeight() {
     if (typeof window === 'undefined') {
         return 0
     }
-    return window.innerHeight
+    return (window.visualViewport && window.visualViewport.height)
+        || window.innerHeight
         || (document.documentElement && document.documentElement.clientHeight)
         || 0
 }

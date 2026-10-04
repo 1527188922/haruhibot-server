@@ -2,7 +2,7 @@
   <div id="SystemLogList">
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+        <query-form :model="queryFormObj" inline ref="queryForm" size="small">
           <el-form-item prop="level">
             <el-select v-model="queryFormObj.level" class="form-input" clearable placeholder="日志级别">
               <el-option v-for="item in levelList" :key="item" :value="item" :label="item"></el-option>
@@ -34,7 +34,7 @@
             <el-input placeholder="用户名" v-model="queryFormObj.userName" class="form-input" maxlength="100" clearable></el-input>
           </el-form-item>
           <el-form-item prop="datetimerange">
-            <el-date-picker
+            <el-date-picker popper-class="responsive-date-range"
                 class="form-date-picker"
                 v-model="queryFormObj.datetimerange"
                 type="datetimerange"
@@ -47,7 +47,7 @@
                 align="right">
             </el-date-picker>
           </el-form-item>
-        </el-form>
+        </query-form>
       </el-row>
       <el-row class="query-form-option-buts">
         <el-button type="primary" size="small" @click="search" plain icon="el-icon-search">查询</el-button>
@@ -56,7 +56,18 @@
     </basic-container>
 
     <basic-container>
-      <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
+      <mobile-record-list v-if="isMobileView" :rows="tableData" :loading="tableLoading"
+          title-field="businessModule" fallback-field="level"
+          :fields="[{label:'记录时间',prop:'createTime'},{label:'用户',prop:'userName'}]"
+          :detail-fields="[{label:'TraceId',prop:'traceId'},{label:'请求',format:formatRequest},{label:'客户端IP',prop:'clientIp'},{label:'线程',prop:'threadName'},{label:'记录器',prop:'loggerName'},{label:'类方法',format:formatClassMethod},{label:'处理器',format:formatHandler}]">
+        <template #header="{row}"><el-tag :type="levelTagType(row.level)">{{row.level}}</el-tag></template>
+        <template #summary="{row}"><div class="log-message-cell">{{row.message}}</div></template>
+        <template #actions="{row}">
+          <el-button size="small" @click="showDetail('日志内容', row.message)">完整日志</el-button>
+          <el-button v-if="row.throwable" size="small" @click="showDetail('异常堆栈', row.throwable)">异常堆栈</el-button>
+        </template>
+      </mobile-record-list>
+      <el-table v-show="!isMobileView" tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row>
         <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{ scope.$index + 1 }}</template>
@@ -102,7 +113,7 @@
         </el-table-column>
       </el-table>
       <div class="pagination-box">
-        <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
+        <el-pagination v-bind="responsivePagination(pagination)" @size-change="sizeChange" @current-change="currentChange" />
       </div>
     </basic-container>
   </div>
@@ -293,7 +304,8 @@ export default {
 <style lang="scss" scoped>
 #SystemLogList {
   .form-date-picker {
-    width: calc(180px * 2 + 80px + 12px);
+    width: 372px;
+    max-width: 100%;
   }
 
   .enum-code {

@@ -20,7 +20,7 @@
               </span>
             </span>
           </div>
-          <el-tree ref="tree" :data="fileNodes" :props="props" :load="loadNode" node-key="absolutePath" lazy
+          <el-tree :indent="isMobileView ? 12 : 18" ref="tree" :data="fileNodes" :props="props" :load="loadNode" node-key="absolutePath" lazy
               highlight-current @node-click="handleNodeClick"  :filter-node-method="filterNode"
                    v-contextmenu-longpress
                    @node-contextmenu="nodeContextmenu">
@@ -31,6 +31,7 @@
                  <span class="file-attribute" v-if="showChildCount(data)">{{ data.childCount | childCountFormatter }}</span>
                </span>
               <span class="node-operation-btns">
+                <el-button v-if="isMobileView" type="text" @click.stop="nodeContextmenu($event,data,node)">更多</el-button>
 <!--                <el-button type="text" size="mini" @click.stop="preview(data)" v-if="data.showPreview">编辑</el-button>-->
 <!--                <el-button type="text" size="mini" @click.stop="downloadFile(data)" v-if="!data.isDirectory">下载</el-button>-->
 <!--                <el-button type="text" class="success-text-btn" size="mini"-->
@@ -246,6 +247,16 @@ export default {
 </script>
 <style lang="scss" scoped>
 #SystemFile{
+  @media screen and (max-width: 767.98px) {
+    .alignment { min-width: 0; }
+    .alignment > span:first-child { flex: 1; min-width: 0; overflow: hidden; }
+    .node-operation-btns { flex: none; white-space: nowrap; margin-left: 8px; }
+    .node-operation-btns .el-button { min-height: 40px; }
+    .file-name { float: none !important; max-width: 100%; }
+    .app-dir { overflow-wrap: anywhere; }
+    ::v-deep .el-tree-node__content { height: auto; min-height: 40px; }
+  }
+
   .app-dir{
     font-weight: bold;
     font-size: 14px;

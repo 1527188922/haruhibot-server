@@ -5,7 +5,7 @@
         BOT WebSocket服务
       </div>
     </template>
-    <el-form :model="botWsInfo" label-width="85px">
+    <el-form :label-position="isMobileView ? 'top' : 'right'" :model="botWsInfo" label-width="85px">
       <el-form-item label="状态"  class="info-form-item">
         <el-tag  effect="dark" size="mini" :type="botWsInfo.running ? 'success' : 'danger'">{{botWsInfo.running ? '运行中' : '已停止'}}</el-tag>
       </el-form-item>

@@ -75,7 +75,7 @@ a{
     box-sizing: border-box;
 }
 
-// 页面级横向滚动容器（手机端表格超宽时在本区域内横向滚动）
+// 页面内容容器保持视口宽度；宽表格使用自身的滚动区域
 // 桌面端不产生滚动条；具体移动端规则见 media.scss
 .page-table-scroll {
     width: 100%;
@@ -221,6 +221,7 @@ a{
 @import "./login.scss";
 //适配
 @import './media.scss';
+@import './mobile-controls.scss';
 //JM漫画模块跨组件共享样式(瀑布流卡片、封面、标签列表等)
 @import './jm-shared.scss';
 //滚动条样式

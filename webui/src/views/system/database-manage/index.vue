@@ -131,7 +131,7 @@ export default {
    * 移动端：资源树改为覆盖式抽屉，SQL 编辑区获得全部宽度。
    * 拖拽条依赖 mousedown，移动端无意义直接隐藏。
    */
-  @media screen and (max-width: 768px) {
+  @media screen and (max-width: 767.98px) {
     .db-manage-container {
       position: relative;
 

@@ -3,7 +3,7 @@
     <basic-container>
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
         <el-tab-pane label="JM主记录" name="album">
-          <el-form :model="albumQuery" inline ref="albumQueryForm" size="small">
+          <query-form :model="albumQuery" inline ref="albumQueryForm" size="small">
             <el-form-item prop="id">
               <number-input placeholder="JM ID" v-model.trim="albumQuery.id" class="form-input" clearable @keyup.enter.native="searchAlbumsFirst"></number-input>
             </el-form-item>
@@ -22,7 +22,7 @@
                 <el-option label="未收藏" :value="false"></el-option>
               </el-select>
             </el-form-item>
-          </el-form>
+          </query-form>
           <el-row class="query-form-option-buts">
             <el-button type="primary" size="small" plain icon="el-icon-search" @click="searchAlbumsFirst">查询</el-button>
             <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetAlbumQuery">重置</el-button>
@@ -35,21 +35,21 @@
           两块 basic-container 承载（与 JM主记录 tab 同处一级）。
         -->
         <el-tab-pane label="收藏夹" name="favorite">
-          <el-form :model="favoriteQuery" inline size="small">
+          <query-form :model="favoriteQuery" inline size="small">
             <el-form-item prop="name">
               <el-input placeholder="名称" v-model="favoriteQuery.name" class="form-input" clearable @keyup.enter.native="searchFavoriteFirst"></el-input>
             </el-form-item>
             <el-form-item prop="author">
               <el-input placeholder="作者" v-model="favoriteQuery.author" class="form-input" clearable @keyup.enter.native="searchFavoriteFirst"></el-input>
             </el-form-item>
-          </el-form>
+          </query-form>
           <el-row class="query-form-option-buts">
             <el-button type="primary" size="small" plain icon="el-icon-search" @click="searchFavoriteFirst">查询</el-button>
             <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetFavoriteQuery">重置</el-button>
           </el-row>
         </el-tab-pane>
         <el-tab-pane label="JM章节信息" name="chapter">
-          <el-form :model="chapterQuery" inline ref="chapterQueryForm" size="small">
+          <query-form :model="chapterQuery" inline ref="chapterQueryForm" size="small">
             <el-form-item prop="albumId">
               <number-input placeholder="JM ID" v-model.trim="chapterQuery.albumId" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></number-input>
             </el-form-item>
@@ -62,14 +62,14 @@
             <el-form-item prop="imageFile">
               <el-input placeholder="图片文件" v-model="chapterQuery.imageFile" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></el-input>
             </el-form-item>
-          </el-form>
+          </query-form>
           <el-row class="query-form-option-buts">
             <el-button type="primary" size="small" plain icon="el-icon-search" @click="searchChaptersFirst">查询</el-button>
             <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetChapterQuery">重置</el-button>
           </el-row>
         </el-tab-pane>
         <el-tab-pane label="JM在线搜索" name="online">
-          <el-form :model="onlineQuery" inline ref="onlineQueryForm" size="small" @submit.native.prevent>
+          <query-form :model="onlineQuery" inline ref="onlineQueryForm" size="small" @submit.native.prevent>
             <el-form-item prop="name">
               <el-input v-model.trim="onlineQuery.name" class="form-input" clearable placeholder="漫画名称，JM只取前8个字符" @keyup.enter.native="searchOnlineFirst"></el-input>
             </el-form-item>
@@ -78,7 +78,7 @@
                 <el-option v-for="item in onlineSortOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
               </el-select>
             </el-form-item>
-          </el-form>
+          </query-form>
           <el-row class="query-form-option-buts">
             <el-button type="primary" size="small" plain icon="el-icon-search" :loading="onlineLoading" @click="searchOnlineFirst">搜索</el-button>
             <el-button type="primary" size="small" plain icon="el-icon-refresh-right" @click="resetOnlineQuery">重置</el-button>
@@ -154,7 +154,7 @@
                      @jump-album="jumpToAlbum"></jm-album-view>
 
       <div class="pagination-box">
-        <el-pagination v-bind="albumPagination" @size-change="albumSizeChange" @current-change="albumCurrentChange" />
+        <el-pagination v-bind="responsivePagination(albumPagination)" @size-change="albumSizeChange" @current-change="albumCurrentChange" />
       </div>
     </basic-container>
     <!-- 收藏夹 tab：收藏夹列表 + 漫画列表/瀑布流同处一块 -->
@@ -208,7 +208,7 @@
         <el-table-column label="章节添加时间" prop="formattedChapterAddTime" min-width="150" align="center"></el-table-column>
       </el-table>
       <div class="pagination-box">
-        <el-pagination v-bind="chapterPagination" @size-change="chapterSizeChange" @current-change="chapterCurrentChange" />
+        <el-pagination v-bind="responsivePagination(chapterPagination)" @size-change="chapterSizeChange" @current-change="chapterCurrentChange" />
       </div>
     </basic-container>
 
@@ -317,7 +317,8 @@
                          :current-page="onlineResult.page"
                          :page-size="onlineResult.pageSize"
                          :total="onlineResult.total"
-                         layout="total, prev, pager, next, jumper"
+                         :layout="isMobileView ? 'prev, pager, next' : 'total, prev, pager, next, jumper'"
+                         :pager-count="isMobileView ? 5 : 7"
                          @current-change="onlineCurrentChange" />
         </div>
       </template>

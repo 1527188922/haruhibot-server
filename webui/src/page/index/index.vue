@@ -1,5 +1,6 @@
 <template>
   <div class="avue-contail"
+       :style="isMobileView && screenHeight ? {height: screenHeight + 'px'} : null"
        :class="{'avue--collapse':isCollapse,}">
     <screenshot v-if="setting.screenshot"></screenshot>
 <!--    <setting></setting>-->
@@ -24,7 +25,7 @@
           <search class="avue-view"
                   v-show="isSearch"></search>
         </transition>
-        <!-- 主体视图层：外层统一负责横向滚动，移动端表格不会撑破页面 -->
+        <!-- 主体视图层：保持视口宽度，表格内部独立横向滚动 -->
         <div style="flex:auto;overflow-y:auto;overflow-x:hidden;"
              id="avue-view"
              v-show="!isSearch">
@@ -78,7 +79,7 @@ export default {
     return {
       //搜索控制
       isSearch: false,
-      // 是否已完成首屏初始化：避免初始化过程中 isMobileView 由 false 变 true 时误关侧边栏
+      // 是否已完成首屏初始化：避免初始化过程中 isCompactView 由 false 变 true 时误关侧边栏
       screenReady: false
     };
   },
@@ -88,6 +89,7 @@ export default {
   beforeDestroy () {
     window.removeEventListener('resize', this.handleWindowResize);
     window.removeEventListener('orientationchange', this.handleWindowResize);
+    if (window.visualViewport) window.visualViewport.removeEventListener('resize', this.handleWindowResize);
   },
   computed: {
     ...mapGetters(["isHorizontal", "setting", "isRefresh", "isCollapse", "menu"]),
@@ -99,7 +101,7 @@ export default {
     },
     // 移动端侧边栏以抽屉形式展开时，显示遮罩以便点击空白处收起
     mobileSidebarOpen () {
-      return this.isMobileView && this.isCollapse && this.validSidebar
+      return this.isCompactView && this.isCollapse && this.validSidebar
     }
   },
   watch: {
@@ -108,7 +110,7 @@ export default {
      * 两者共用同一份状态。若在桌面折叠过侧边栏再把窗口缩到手机宽度，
      * 进页面就会莫名其妙弹出抽屉和遮罩。进入移动端形态时统一复位为收起。
      */
-    isMobileView (value) {
+    isCompactView (value) {
       if (!this.screenReady) {
         return
       }
@@ -124,6 +126,7 @@ export default {
       this.commitScreen(true);
       window.addEventListener('resize', this.handleWindowResize);
       window.addEventListener('orientationchange', this.handleWindowResize);
+      if (window.visualViewport) window.visualViewport.addEventListener('resize', this.handleWindowResize);
       // 首屏渲染完成后再开启跨断点复位逻辑
       this.$nextTick(() => {
         this.screenReady = true;
@@ -134,15 +137,17 @@ export default {
     },
     commitScreen (force) {
       const width = admin.getWindowWidth();
+      const height = admin.getWindowHeight();
       if (!force
         && width === this.screenWidth
+        && height === this.screenHeight
         && admin.getScreen() === this.screen) {
         return;
       }
       this.$store.commit("SET_SCREEN", {
         screen: admin.getScreen(),
         width,
-        height: admin.getWindowHeight()
+        height
       });
     },
     // 收起移动端侧边栏抽屉

@@ -256,7 +256,7 @@ export default {
 /**
  * 移动端：左侧竖列收成顶部横向条，先把纵向空间还给卡片
  */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767.98px) {
   .bili-group-list {
     display: flex;
     flex-wrap: nowrap;

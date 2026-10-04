@@ -469,7 +469,7 @@ export default {
     padding-left: 16px;
   }
 
-  // 移动端样式统一放在下方 @media (max-width: 768px) 里，纯 CSS 生效，
+  // 移动端样式统一放在下方 @media (max-width: 767.98px) 里，纯 CSS 生效，
   // 不依赖 JS 的 isMobileView 状态
 }
 
@@ -522,7 +522,7 @@ export default {
  * 抽屉相关的宽高、裁剪与 Tab 覆盖统一放在 styles/media.scss 的移动端段落，
  * 避免同一批规则两处维护、以及 scoped 编译对外部 custom-class 的处理差异。
  */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 767.98px) {
   .jm-preview {
     // 左右各留 2px，让图片尽量铺满又不至于紧贴屏幕边缘
     padding: 0 2px 4px;

@@ -22,7 +22,7 @@
                          sortable="custom"/>
       </el-table>
       <div class="pagination-box">
-        <el-pagination small v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
+        <el-pagination small v-bind="responsivePagination(pagination)" @size-change="sizeChange" @current-change="currentChange" />
       </div>
     </el-dialog>
   </div>

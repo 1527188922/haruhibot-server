@@ -4,7 +4,7 @@
       <el-alert v-if="jobInfo" class="job-alert" :type="jobAlert.type" :title="jobAlert.title"
                 :description="jobAlert.description" :closable="false" show-icon></el-alert>
       <el-row>
-        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+        <query-form :model="queryFormObj" inline ref="queryForm" size="small">
           <el-form-item prop="uid">
             <number-input v-model.trim="queryFormObj.uid" class="form-input" maxlength="20" clearable
                           placeholder="b站主播uid"></number-input>
@@ -25,7 +25,7 @@
                          :value="item.value"></el-option>
             </el-select>
           </el-form-item>
-        </el-form>
+        </query-form>
       </el-row>
       <el-row class="query-form-option-buts">
         <el-button type="primary" size="small" @click="search" plain
@@ -42,7 +42,62 @@
                    :disabled="deleteBatchDisabled"
                    icon="el-icon-delete">删除</el-button>
       </div>
-      <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
+      <mobile-record-list v-if="isMobileView" :rows="tableData" :loading="tableLoading"
+          row-key="id" title-field="uname" fallback-field="uid" avatar-field="face"
+          :fields="[{label:'UID',prop:'uid'},{label:'机器人',prop:'selfId'},{label:'直播状态',format:row=>row.living ? '直播中 ' + liveDurationText(row) : '未开播'}]"
+          :detail-fields="[{label:'直播间',prop:'roomId'},{label:'更新时间',prop:'updateTime'},{label:'创建时间',prop:'createTime'}]">
+        <template #header="{row}">
+          <el-checkbox :value="multipleSelection.indexOf(row) !== -1"
+                       @change="checked => $refs.dataTable.toggleRowSelection(row, checked)">选择</el-checkbox>
+        </template>
+        <template #summary="{row}">
+          <div class="mobile-subscription-switches">
+            <el-switch :value="row.enableStatus" :active-value="1" :inactive-value="0" active-text="启用"
+                       :disabled="row.switchLoading" @change="v => changeSwitch(row, 'enableStatus', v)" />
+            <el-switch :value="row.offNotify" :active-value="1" :inactive-value="0" active-text="下播推送"
+                       :disabled="row.switchLoading" @change="v => changeSwitch(row, 'offNotify', v)" />
+          </div>
+        </template>
+        <template #details="{row}">
+          <p>推送群</p>
+            <div class="target-line">
+              <template v-if="row.groupInfos && row.groupInfos.length">
+                <el-tag v-for="t in row.groupInfos" :key="'g'+t.id" class="target-chip"
+                        size="small" :type="t.found ? 'success' : 'danger'"
+                        :title="targetTitle(t,'群')" closable
+                        @close="removeTarget(row,'group',t)">
+                  <span v-if="isAtAll(row,t.id)" class="at-all-badge">@全体</span>
+                  <img class="target-avatar" :src="t.avatarUrl" referrerpolicy="no-referrer">{{ t.name || t.id }}
+                </el-tag>
+              </template>
+              <span v-else class="target-empty">未配置</span>
+              <el-button type="text" size="mini" icon="el-icon-plus"
+                         @click="manageTarget(row,'group')">添加</el-button>
+            </div>
+
+<p>推送好友</p>
+            <div class="target-line">
+              <template v-if="row.friendInfos && row.friendInfos.length">
+                <el-tag v-for="t in row.friendInfos" :key="'f'+t.id" class="target-chip"
+                        size="small" :type="t.found ? 'success' : 'danger'"
+                        :title="targetTitle(t,'好友')" closable
+                        @close="removeTarget(row,'friend',t)">
+                  <img class="target-avatar" :src="t.avatarUrl" referrerpolicy="no-referrer">{{ t.name || t.id }}
+                </el-tag>
+              </template>
+              <span v-else class="target-empty">未配置</span>
+              <el-button type="text" size="mini" icon="el-icon-plus"
+                         @click="manageTarget(row,'friend')">添加</el-button>
+            </div>
+
+        </template>
+        <template #actions="{row}">
+          <el-button size="small" @click="edit(row)">修改订阅</el-button>
+          <a :href="spaceUrl(row.uid)" target="_blank" rel="noopener noreferrer">主播主页</a>
+          <a v-if="row.roomId" :href="liveUrl(row.roomId)" target="_blank" rel="noopener noreferrer">直播间</a>
+        </template>
+      </mobile-record-list>
+      <el-table v-show="!isMobileView" tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row
                 @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" align="center"></el-table-column>
@@ -414,6 +469,9 @@ export default {
 </script>
 <style lang="scss" scoped>
 #BilibiliSubscribe{
+  .mobile-subscription-switches { display: flex; flex-wrap: wrap; gap: 12px; padding: 8px 0; }
+  .mobile-record-actions a { line-height: 40px; color: #409eff; }
+  .mobile-record .target-chip { max-width: 100%; height: auto; white-space: normal; overflow-wrap: anywhere; }
   .job-alert{
     margin-bottom: 10px;
   }

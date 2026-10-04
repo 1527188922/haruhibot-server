@@ -3,7 +3,7 @@
     <basic-container>
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
         <el-tab-pane label="群列表" name="group">
-          <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+          <query-form :model="queryFormObj" inline ref="queryForm" size="small">
             <el-form-item prop="selfId">
               <number-input v-model.trim="queryFormObj.selfId" class="form-input" maxlength="20" clearable
                             placeholder="机器人QQ"></number-input>
@@ -14,7 +14,7 @@
             <el-form-item prop="groupName">
               <el-input placeholder="群名" v-model="queryFormObj.groupName" class="form-input" maxlength="60" clearable></el-input>
             </el-form-item>
-          </el-form>
+          </query-form>
           <el-row class="query-form-option-buts">
             <el-button type="primary" size="small" @click="search" plain
                        icon="el-icon-search">查询</el-button>
@@ -23,7 +23,7 @@
           </el-row>
         </el-tab-pane>
         <el-tab-pane label="群成员" name="member">
-          <el-form :model="memberQueryFormObj" inline ref="memberQueryForm" size="small">
+          <query-form :model="memberQueryFormObj" inline ref="memberQueryForm" size="small">
             <el-form-item prop="groupId">
 <!--              <number-input v-model.trim="memberQueryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>-->
               <group-select v-model="memberQueryFormObj.groupId" width="180px" placeholder="输入群号或群名" :limit="-1"/>
@@ -44,7 +44,7 @@
               <number-input v-model.trim="memberQueryFormObj.selfId" class="form-input" maxlength="20" clearable
                             placeholder="机器人QQ"></number-input>
             </el-form-item>
-          </el-form>
+          </query-form>
           <el-row class="query-form-option-buts">
             <el-button type="primary" size="small" @click="searchMember" plain
                        icon="el-icon-search">查询</el-button>
@@ -61,7 +61,17 @@
         <el-button @click="refreshCache" type="primary" size="small" plain
                    icon="el-icon-refresh" :loading="refreshLoading">刷新群聊</el-button>
       </div>
-      <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
+      <mobile-record-list v-if="isMobileView" :rows="tableData" :loading="tableLoading"
+          title-field="groupName" fallback-field="groupId" avatar-field="groupAvatarUrl"
+          :fields="[{label:'群号',prop:'groupId'},{label:'机器人',prop:'selfId'},{label:'群员数量',prop:'memberCount'}]"
+          :detail-fields="[{label:'最大群员数',prop:'maxMemberCount'},{label:'群等级',prop:'groupLevel'},{label:'建群时间',prop:'groupCreateTime'},{label:'全员禁言',prop:'groupAllShut'},{label:'群备注',prop:'groupRemark'},{label:'群公告',prop:'groupMemo'}]">
+        <template #actions="{row}">
+          <el-button size="small" @click="showMemberList(row)">查看群员</el-button>
+          <el-button size="small" @click="showUserList(row)">发言人列表</el-button>
+          <el-button size="small" :loading="isMemberRefreshing(row)" @click="refreshGroupMember(row)">刷新成员</el-button>
+        </template>
+      </mobile-record-list>
+      <el-table v-show="!isMobileView" tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row >
         <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
@@ -96,14 +106,20 @@
         <el-table-column label="GroupMemo" prop="groupMemo" min-width="100" align="center" show-tooltip-when-overflow/>
       </el-table>
       <div class="pagination-box">
-        <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
+        <el-pagination v-bind="responsivePagination(pagination)" @size-change="sizeChange" @current-change="currentChange" />
       </div>
     </basic-container>
 
     <basic-container v-if="activeTab === 'member'">
       <div class="data-table-option-buts">
       </div>
-      <el-table tooltip-effect="light" :data="memberTableData" v-loading="memberTableLoading" border
+      <mobile-record-list v-if="isMobileView" :rows="memberTableData" :loading="memberTableLoading"
+          title-field="nickname" fallback-field="userId" avatar-field="userAvatarUrl"
+          :fields="[{label:'QQ',prop:'userId'},{label:'群内昵称',prop:'card'},{label:'身份',format:row=>formatRole(row.role)}]"
+          :detail-fields="[{label:'所属群',prop:'groupName'},{label:'群号',prop:'groupId'},{label:'机器人',prop:'selfId'},{label:'等级',prop:'level'},{label:'入群时间',prop:'formattedJoinTime'},{label:'最近发言',prop:'formattedLastSentTime'}]">
+        <template #header="{row}"><el-tag :type="row.leftFlag === 1 ? 'danger' : 'success'">{{row.leftFlag === 1 ? '已离群' : '在群'}}</el-tag></template>
+      </mobile-record-list>
+      <el-table v-show="!isMobileView" tooltip-effect="light" :data="memberTableData" v-loading="memberTableLoading" border
                 stripe max-height="800" size="small" ref="memberDataTable" highlight-current-row >
         <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
@@ -153,7 +169,7 @@
         </el-table-column>
       </el-table>
       <div class="pagination-box">
-        <el-pagination v-bind="memberPagination" @size-change="memberSizeChange" @current-change="memberCurrentChange" />
+        <el-pagination v-bind="responsivePagination(memberPagination)" @size-change="memberSizeChange" @current-change="memberCurrentChange" />
       </div>
     </basic-container>
     <refresh-result-dialog ref="refreshResultDialog"/>

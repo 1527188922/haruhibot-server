@@ -2,7 +2,7 @@
   <div id="FriendList">
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+        <query-form :model="queryFormObj" inline ref="queryForm" size="small">
 
           <el-form-item prop="userId">
             <number-input v-model.trim="queryFormObj.userId" placeholder="好友QQ" class="form-input" maxlength="20" clearable></number-input>
@@ -19,7 +19,7 @@
             <number-input v-model.trim="queryFormObj.selfId" class="form-input" maxlength="20" clearable
                           placeholder="机器人QQ"></number-input>
           </el-form-item>
-        </el-form>
+        </query-form>
       </el-row>
       <el-row class="query-form-option-buts">
         <el-button type="primary" size="small" @click="search" plain
@@ -36,7 +36,11 @@
 <!--        <el-button @click="refreshCache" type="primary" size="small" plain-->
 <!--                   icon="el-icon-refresh" :loading="refreshLoading">刷新</el-button>-->
       </div>
-      <el-table tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
+      <mobile-record-list v-if="isMobileView" :rows="tableData" :loading="tableLoading"
+          title-field="nickname" fallback-field="userId" avatar-field="userAvatarUrl"
+          :fields="[{label:'QQ',prop:'userId'},{label:'备注',prop:'remark'},{label:'机器人',prop:'selfId'}]"
+          :detail-fields="[{label:'性别',format:row=>sexMap[row.sex]},{label:'生日',format:row=>[row.birthdayYear,row.birthdayMonth,row.birthdayDay].join('-')},{label:'年龄',prop:'age'},{label:'等级',prop:'level'},{label:'邮箱',prop:'email'},{label:'电话',prop:'phoneNum'}]" />
+      <el-table v-show="!isMobileView" tooltip-effect="light" :data="tableData" v-loading="tableLoading" border
                 stripe max-height="800" size="small" ref="dataTable" highlight-current-row >
         <el-table-column :fixed="!isMobileView" label="序号" width="45" align="center">
           <template slot-scope="scope">{{scope.$index+1}}</template>
@@ -70,7 +74,7 @@
         </el-table-column>
       </el-table>
       <div class="pagination-box">
-        <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
+        <el-pagination v-bind="responsivePagination(pagination)" @size-change="sizeChange" @current-change="currentChange" />
       </div>
     </basic-container>
   </div>

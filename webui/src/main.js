@@ -17,6 +17,8 @@ import basicBlock from './components/basic-block/main'
 import basicContainer from './components/basic-container/main'
 import crudCommon from '@/mixins/crud.js'
 import mobileMixin from '@/mixins/mobile.js'
+import QueryForm from '@/components/query-form.vue'
+import MobileRecordList from '@/components/mobile-record-list.vue'
 import dayjs from 'dayjs'
 import website from '@/config/website'
 import './util/directives'
@@ -41,6 +43,8 @@ Vue.use(AVUE, {
 //注册全局容器
 Vue.component('basicContainer', basicContainer)
 Vue.component('basicBlock', basicBlock)
+Vue.component('query-form', QueryForm)
+Vue.component('mobile-record-list', MobileRecordList)
 //全站混入移动端标记(isMobileView/screenWidth)，供各页面做移动端条件渲染
 Vue.mixin(mobileMixin)
 

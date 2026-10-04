@@ -43,7 +43,7 @@
           </template>
           <template v-else>
             <div class="update-result">
-              <el-form :model="item" label-width="80px">
+              <el-form :label-position="isMobileView ? 'top' : 'right'" :model="item" label-width="80px">
                 <el-form-item label="影响行数：" v-if="item.data || item.data === 0">
                   {{item.data}}
                 </el-form-item>

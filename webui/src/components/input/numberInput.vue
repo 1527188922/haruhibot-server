@@ -1,6 +1,7 @@
 <template>
   <el-input
     :maxlength="maxlength"
+    :inputmode="type === 'integer' ? 'numeric' : 'decimal'"
     v-bind="$attrs"
     :value="value"
     @input="_input"

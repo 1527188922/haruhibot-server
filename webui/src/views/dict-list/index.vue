@@ -2,7 +2,7 @@
   <div id="DictList">
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+        <query-form :model="queryFormObj" inline ref="queryForm" size="small">
           <el-form-item prop="key">
             <el-input placeholder="key" v-model="queryFormObj.key" class="form-input" maxlength="255" clearable
                       @keyup.enter.native="search"></el-input>
@@ -15,7 +15,7 @@
             <el-input placeholder="备注" v-model="queryFormObj.remark" class="form-input" maxlength="500" clearable
                       @keyup.enter.native="search"></el-input>
           </el-form-item>
-        </el-form>
+        </query-form>
       </el-row>
       <el-row class="query-form-option-buts">
         <el-button type="primary" size="small" @click="search" plain
@@ -56,7 +56,7 @@
         <el-table-column label="创建时间" prop="createTime" min-width="140" align="center" show-tooltip-when-overflow/>
       </el-table>
       <div class="pagination-box">
-        <el-pagination v-bind="pagination" @size-change="sizeChange" @current-change="currentChange" />
+        <el-pagination v-bind="responsivePagination(pagination)" @size-change="sizeChange" @current-change="currentChange" />
       </div>
     </basic-container>
     <edit-dialog ref="editDialog"></edit-dialog>
