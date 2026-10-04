@@ -2,20 +2,20 @@
   <div id="FriendList">
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" label-width="70px" inline ref="queryForm" size="small">
+        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
 
-          <el-form-item label="好友QQ" prop="userId">
+          <el-form-item prop="userId">
             <number-input v-model.trim="queryFormObj.userId" placeholder="好友QQ" class="form-input" maxlength="20" clearable></number-input>
           </el-form-item>
-          <el-form-item label="好友昵称" prop="nickname">
+          <el-form-item prop="nickname">
             <el-input v-model.trim="queryFormObj.nickname" placeholder="好友昵称" class="form-input" maxlength="20" clearable></el-input>
           </el-form-item>
-          <el-form-item label="性别" prop="sex">
-            <el-select v-model="queryFormObj.sex" class="form-input" clearable>
+          <el-form-item prop="sex">
+            <el-select placeholder="性别" v-model="queryFormObj.sex" class="form-input" clearable>
               <el-option v-for="(v,k) in sexMap" :key="k" :value="k" :label="v"></el-option>
             </el-select>
           </el-form-item>
-          <el-form-item label="机器人" prop="selfId">
+          <el-form-item prop="selfId">
             <number-input v-model.trim="queryFormObj.selfId" class="form-input" maxlength="20" clearable
                           placeholder="机器人QQ"></number-input>
           </el-form-item>

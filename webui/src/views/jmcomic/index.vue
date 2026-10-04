@@ -3,21 +3,21 @@
     <basic-container>
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
         <el-tab-pane label="JM主记录" name="album">
-          <el-form :model="albumQuery" label-width="70px" inline ref="albumQueryForm" size="small">
-            <el-form-item label="JM ID" prop="id">
-              <number-input v-model.trim="albumQuery.id" class="form-input" clearable @keyup.enter.native="searchAlbumsFirst"></number-input>
+          <el-form :model="albumQuery" inline ref="albumQueryForm" size="small">
+            <el-form-item prop="id">
+              <number-input placeholder="JM ID" v-model.trim="albumQuery.id" class="form-input" clearable @keyup.enter.native="searchAlbumsFirst"></number-input>
             </el-form-item>
-            <el-form-item label="名称" prop="name">
-              <el-input v-model="albumQuery.name" class="form-input" clearable @keyup.enter.native="searchAlbumsFirst"></el-input>
+            <el-form-item prop="name">
+              <el-input placeholder="名称" v-model="albumQuery.name" class="form-input" clearable @keyup.enter.native="searchAlbumsFirst"></el-input>
             </el-form-item>
-            <el-form-item label="作者" prop="author">
-              <jm-author-select ref="authorSelect" v-model="albumQuery.author" class="form-input" @keyup.enter.native="searchAlbumsFirst"></jm-author-select>
+            <el-form-item prop="author">
+              <jm-author-select placeholder="作者" ref="authorSelect" v-model="albumQuery.author" class="form-input" @keyup.enter.native="searchAlbumsFirst"></jm-author-select>
             </el-form-item>
-            <el-form-item label="标签" prop="tags">
-              <jm-tag-select ref="tagSelect" v-model="albumQuery.tags" class="form-input" @keyup.enter.native="searchAlbumsFirst"></jm-tag-select>
+            <el-form-item prop="tags">
+              <jm-tag-select placeholder="标签" ref="tagSelect" v-model="albumQuery.tags" class="form-input" @keyup.enter.native="searchAlbumsFirst"></jm-tag-select>
             </el-form-item>
-            <el-form-item label="收藏" prop="collected">
-              <el-select v-model="albumQuery.collected" class="form-input" clearable placeholder="全部">
+            <el-form-item prop="collected">
+              <el-select v-model="albumQuery.collected" class="form-input" clearable placeholder="收藏">
                 <el-option label="已收藏" :value="true"></el-option>
                 <el-option label="未收藏" :value="false"></el-option>
               </el-select>
@@ -35,12 +35,12 @@
           两块 basic-container 承载（与 JM主记录 tab 同处一级）。
         -->
         <el-tab-pane label="收藏夹" name="favorite">
-          <el-form :model="favoriteQuery" label-width="70px" inline size="small">
-            <el-form-item label="名称" prop="name">
-              <el-input v-model="favoriteQuery.name" class="form-input" clearable @keyup.enter.native="searchFavoriteFirst"></el-input>
+          <el-form :model="favoriteQuery" inline size="small">
+            <el-form-item prop="name">
+              <el-input placeholder="名称" v-model="favoriteQuery.name" class="form-input" clearable @keyup.enter.native="searchFavoriteFirst"></el-input>
             </el-form-item>
-            <el-form-item label="作者" prop="author">
-              <el-input v-model="favoriteQuery.author" class="form-input" clearable @keyup.enter.native="searchFavoriteFirst"></el-input>
+            <el-form-item prop="author">
+              <el-input placeholder="作者" v-model="favoriteQuery.author" class="form-input" clearable @keyup.enter.native="searchFavoriteFirst"></el-input>
             </el-form-item>
           </el-form>
           <el-row class="query-form-option-buts">
@@ -49,18 +49,18 @@
           </el-row>
         </el-tab-pane>
         <el-tab-pane label="JM章节信息" name="chapter">
-          <el-form :model="chapterQuery" label-width="80px" inline ref="chapterQueryForm" size="small">
-            <el-form-item label="JM ID" prop="albumId">
-              <number-input v-model.trim="chapterQuery.albumId" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></number-input>
+          <el-form :model="chapterQuery" inline ref="chapterQueryForm" size="small">
+            <el-form-item prop="albumId">
+              <number-input placeholder="JM ID" v-model.trim="chapterQuery.albumId" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></number-input>
             </el-form-item>
-            <el-form-item label="章节ID" prop="chapterId">
-              <number-input v-model.trim="chapterQuery.chapterId" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></number-input>
+            <el-form-item prop="chapterId">
+              <number-input placeholder="章节ID" v-model.trim="chapterQuery.chapterId" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></number-input>
             </el-form-item>
-            <el-form-item label="章节标题" prop="chapterTitle">
-              <el-input v-model="chapterQuery.chapterTitle" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></el-input>
+            <el-form-item prop="chapterTitle">
+              <el-input placeholder="章节标题" v-model="chapterQuery.chapterTitle" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></el-input>
             </el-form-item>
-            <el-form-item label="图片文件" prop="imageFile">
-              <el-input v-model="chapterQuery.imageFile" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></el-input>
+            <el-form-item prop="imageFile">
+              <el-input placeholder="图片文件" v-model="chapterQuery.imageFile" class="form-input" clearable @keyup.enter.native="searchChaptersFirst"></el-input>
             </el-form-item>
           </el-form>
           <el-row class="query-form-option-buts">
@@ -69,12 +69,12 @@
           </el-row>
         </el-tab-pane>
         <el-tab-pane label="JM在线搜索" name="online">
-          <el-form :model="onlineQuery" label-width="70px" inline ref="onlineQueryForm" size="small" @submit.native.prevent>
-            <el-form-item label="关键字" prop="name">
+          <el-form :model="onlineQuery" inline ref="onlineQueryForm" size="small" @submit.native.prevent>
+            <el-form-item prop="name">
               <el-input v-model.trim="onlineQuery.name" class="form-input" clearable placeholder="漫画名称，JM只取前8个字符" @keyup.enter.native="searchOnlineFirst"></el-input>
             </el-form-item>
-            <el-form-item label="排序" prop="sort">
-              <el-select v-model="onlineQuery.sort" class="form-input" @change="handleOnlineSortChange">
+            <el-form-item prop="sort">
+              <el-select placeholder="排序" v-model="onlineQuery.sort" class="form-input" @change="handleOnlineSortChange">
                 <el-option v-for="item in onlineSortOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
               </el-select>
             </el-form-item>

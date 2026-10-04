@@ -3,14 +3,14 @@
     <!-- 查询条件 -->
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" label-width="70px" inline ref="queryForm" size="small"
+        <el-form :model="queryFormObj" inline ref="queryForm" size="small"
                  @submit.native.prevent>
-          <el-form-item label="bv号" prop="bvid">
+          <el-form-item prop="bvid">
             <el-input v-model.trim="queryFormObj.bvid" class="form-input" clearable maxlength="30"
                       placeholder="bv号" @keyup.enter.native="search"></el-input>
           </el-form-item>
-          <el-form-item label="标题" prop="title">
-            <el-input v-model.trim="queryFormObj.title" class="form-input" clearable maxlength="50"
+          <el-form-item prop="title">
+            <el-input placeholder="标题" v-model.trim="queryFormObj.title" class="form-input" clearable maxlength="50"
                       @keyup.enter.native="search"></el-input>
           </el-form-item>
 <!--          <el-form-item label="作者" prop="ownerName">-->

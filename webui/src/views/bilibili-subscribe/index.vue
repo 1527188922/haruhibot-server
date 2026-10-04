@@ -4,23 +4,23 @@
       <el-alert v-if="jobInfo" class="job-alert" :type="jobAlert.type" :title="jobAlert.title"
                 :description="jobAlert.description" :closable="false" show-icon></el-alert>
       <el-row>
-        <el-form :model="queryFormObj" label-width="80px" inline ref="queryForm" size="small">
-          <el-form-item label="主播UID" prop="uid">
+        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+          <el-form-item prop="uid">
             <number-input v-model.trim="queryFormObj.uid" class="form-input" maxlength="20" clearable
                           placeholder="b站主播uid"></number-input>
           </el-form-item>
-          <el-form-item label="主播昵称" prop="uname">
-            <el-input v-model="queryFormObj.uname" class="form-input" maxlength="50" clearable
+          <el-form-item prop="uname">
+            <el-input placeholder="主播昵称" v-model="queryFormObj.uname" class="form-input" maxlength="50" clearable
                       @keyup.enter.native="search"></el-input>
           </el-form-item>
-          <el-form-item label="是否启用" prop="enableStatus">
-            <el-select v-model="queryFormObj.enableStatus" class="form-input" clearable placeholder="全部">
+          <el-form-item prop="enableStatus">
+            <el-select v-model="queryFormObj.enableStatus" class="form-input" clearable placeholder="是否启用">
               <el-option v-for="item in statusOptions" :key="item.value" :label="item.label"
                          :value="item.value"></el-option>
             </el-select>
           </el-form-item>
-          <el-form-item label="下播推送" prop="offNotify">
-            <el-select v-model="queryFormObj.offNotify" class="form-input" clearable placeholder="全部">
+          <el-form-item prop="offNotify">
+            <el-select v-model="queryFormObj.offNotify" class="form-input" clearable placeholder="下播推送">
               <el-option v-for="item in statusOptions" :key="item.value" :label="item.label"
                          :value="item.value"></el-option>
             </el-select>

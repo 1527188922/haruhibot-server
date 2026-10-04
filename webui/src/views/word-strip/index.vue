@@ -2,22 +2,22 @@
   <div id="WordStrip">
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" label-width="70px" inline ref="queryForm" size="small">
-          <el-form-item label="关键字" prop="keyWord">
-            <el-input v-model="queryFormObj.keyWord" class="form-input" maxlength="500" clearable></el-input>
+        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+          <el-form-item prop="keyWord">
+            <el-input placeholder="关键字" v-model="queryFormObj.keyWord" class="form-input" maxlength="500" clearable></el-input>
           </el-form-item>
-          <el-form-item label="回复内容" prop="answer">
-            <el-input v-model="queryFormObj.answer" class="form-input" maxlength="500" clearable></el-input>
+          <el-form-item prop="answer">
+            <el-input placeholder="回复内容" v-model="queryFormObj.answer" class="form-input" maxlength="500" clearable></el-input>
           </el-form-item>
-          <el-form-item label="QQ号" prop="userId">
+          <el-form-item prop="userId">
             <number-input v-model.trim="queryFormObj.userId" class="form-input" clearable
                           placeholder="创建人QQ号"></number-input>
           </el-form-item>
-          <el-form-item label="群号" prop="groupId">
+          <el-form-item prop="groupId">
 <!--            <number-input v-model.trim="queryFormObj.groupId" class="form-input" clearable></number-input>-->
             <group-select v-model="queryFormObj.groupId" width="180px" placeholder="输入群号或群名" :limit="-1"/>
           </el-form-item>
-          <el-form-item label="机器人" prop="selfId">
+          <el-form-item prop="selfId">
             <number-input v-model.trim="queryFormObj.selfId" class="form-input" clearable
                           placeholder="机器人QQ号"></number-input>
           </el-form-item>

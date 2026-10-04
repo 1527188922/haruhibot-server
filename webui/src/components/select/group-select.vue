@@ -7,7 +7,7 @@
              :clearable="clearable"
              :size="size"
              :placeholder="placeholder"
-             :popper-class="popperClass"
+             :popper-class="['group-select-popper', popperClass].filter(Boolean).join(' ')"
              @change="handleChange"
              @visible-change="handleVisibleChange">
     <!-- 同一个群号可能对应多条群信息(不同机器人/群改名)，所以key不能只用群号 -->
@@ -342,6 +342,7 @@ export default {
 </script>
 <style lang="scss" scoped>
 .group-select{
+  max-width: 100%;
   ::v-deep .el-input{
     width: 100%;
   }
@@ -354,13 +355,22 @@ export default {
  * 样式与bilibili推送目标选择器(bili-target-select-popper)保持一致
  */
 .group-select-popper{
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
   .el-select-dropdown__item{
     padding-right: 40px !important; // 给选中时的对勾留位置
     padding-left: 10px !important;
+    height: auto;
+    min-height: 34px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .option-item{
     display: flex;
     align-items: center;
+    min-width: 0;
   }
   .target-avatar{
     display: block;
@@ -376,8 +386,9 @@ export default {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    float: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 20px;
   }
 }
 </style>

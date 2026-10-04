@@ -2,38 +2,38 @@
   <div id="SystemLogList">
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" label-width="80px" inline ref="queryForm" size="small">
-          <el-form-item label="日志级别" prop="level">
-            <el-select v-model="queryFormObj.level" class="form-input" clearable placeholder="全部">
+        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+          <el-form-item prop="level">
+            <el-select v-model="queryFormObj.level" class="form-input" clearable placeholder="日志级别">
               <el-option v-for="item in levelList" :key="item" :value="item" :label="item"></el-option>
             </el-select>
           </el-form-item>
-          <el-form-item label="业务模块" prop="businessModule">
-            <el-select v-model="queryFormObj.businessModule" class="form-input" clearable filterable placeholder="全部">
+          <el-form-item prop="businessModule">
+            <el-select v-model="queryFormObj.businessModule" class="form-input" clearable filterable placeholder="业务模块">
               <el-option v-for="item in businessModuleList" :key="item.code" :value="item.name" :label="item.name">
                 <span>{{ item.name }}（{{ item.code }}）</span>
               </el-option>
             </el-select>
           </el-form-item>
-          <el-form-item label="TraceId" prop="traceId">
-            <el-input v-model="queryFormObj.traceId" class="form-input" maxlength="100" clearable></el-input>
+          <el-form-item prop="traceId">
+            <el-input placeholder="TraceId" v-model="queryFormObj.traceId" class="form-input" maxlength="100" clearable></el-input>
           </el-form-item>
-          <el-form-item label="日志内容" prop="message">
-            <el-input v-model="queryFormObj.message" class="form-input" maxlength="500" clearable></el-input>
+          <el-form-item prop="message">
+            <el-input placeholder="日志内容" v-model="queryFormObj.message" class="form-input" maxlength="500" clearable></el-input>
           </el-form-item>
-          <el-form-item label="异常内容" prop="throwable">
-            <el-input v-model="queryFormObj.throwable" class="form-input" maxlength="500" clearable></el-input>
+          <el-form-item prop="throwable">
+            <el-input placeholder="异常内容" v-model="queryFormObj.throwable" class="form-input" maxlength="500" clearable></el-input>
           </el-form-item>
-          <el-form-item label="记录器" prop="loggerName">
-            <el-input v-model="queryFormObj.loggerName" class="form-input" maxlength="200" clearable></el-input>
+          <el-form-item prop="loggerName">
+            <el-input placeholder="记录器" v-model="queryFormObj.loggerName" class="form-input" maxlength="200" clearable></el-input>
           </el-form-item>
-          <el-form-item label="请求地址" prop="requestUri">
-            <el-input v-model="queryFormObj.requestUri" class="form-input" maxlength="500" clearable></el-input>
+          <el-form-item prop="requestUri">
+            <el-input placeholder="请求地址" v-model="queryFormObj.requestUri" class="form-input" maxlength="500" clearable></el-input>
           </el-form-item>
-          <el-form-item label="用户名" prop="userName">
-            <el-input v-model="queryFormObj.userName" class="form-input" maxlength="100" clearable></el-input>
+          <el-form-item prop="userName">
+            <el-input placeholder="用户名" v-model="queryFormObj.userName" class="form-input" maxlength="100" clearable></el-input>
           </el-form-item>
-          <el-form-item label="记录时间" prop="datetimerange">
+          <el-form-item prop="datetimerange">
             <el-date-picker
                 class="form-date-picker"
                 v-model="queryFormObj.datetimerange"
@@ -42,8 +42,8 @@
                 :default-time="['00:00:00', '23:59:59']"
                 :picker-options="pickerOptions"
                 range-separator="-"
-                start-placeholder="开始时间"
-                end-placeholder="结束时间"
+                start-placeholder="记录开始时间"
+                end-placeholder="记录结束时间"
                 align="right">
             </el-date-picker>
           </el-form-item>

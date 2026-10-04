@@ -3,16 +3,16 @@
     <basic-container>
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
         <el-tab-pane label="群列表" name="group">
-          <el-form :model="queryFormObj" label-width="60px" inline ref="queryForm" size="small">
-            <el-form-item label="机器人" prop="selfId">
+          <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+            <el-form-item prop="selfId">
               <number-input v-model.trim="queryFormObj.selfId" class="form-input" maxlength="20" clearable
                             placeholder="机器人QQ"></number-input>
             </el-form-item>
-            <el-form-item label="群号" prop="groupId">
-              <number-input v-model.trim="queryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>
+            <el-form-item prop="groupId">
+              <number-input placeholder="群号" v-model.trim="queryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>
             </el-form-item>
-            <el-form-item label="群名" prop="groupName">
-              <el-input v-model="queryFormObj.groupName" class="form-input" maxlength="60" clearable></el-input>
+            <el-form-item prop="groupName">
+              <el-input placeholder="群名" v-model="queryFormObj.groupName" class="form-input" maxlength="60" clearable></el-input>
             </el-form-item>
           </el-form>
           <el-row class="query-form-option-buts">
@@ -23,24 +23,24 @@
           </el-row>
         </el-tab-pane>
         <el-tab-pane label="群成员" name="member">
-          <el-form :model="memberQueryFormObj" label-width="60px" inline ref="memberQueryForm" size="small">
-            <el-form-item label="群号" prop="groupId">
+          <el-form :model="memberQueryFormObj" inline ref="memberQueryForm" size="small">
+            <el-form-item prop="groupId">
 <!--              <number-input v-model.trim="memberQueryFormObj.groupId" class="form-input" maxlength="20" clearable></number-input>-->
               <group-select v-model="memberQueryFormObj.groupId" width="180px" placeholder="输入群号或群名" :limit="-1"/>
             </el-form-item>
-            <el-form-item label="QQ" prop="userId">
-              <number-input v-model.trim="memberQueryFormObj.userId" class="form-input" maxlength="20" clearable></number-input>
+            <el-form-item prop="userId">
+              <number-input placeholder="QQ" v-model.trim="memberQueryFormObj.userId" class="form-input" maxlength="20" clearable></number-input>
             </el-form-item>
-            <el-form-item label="昵称" prop="nickname">
-              <el-input v-model="memberQueryFormObj.nickname" class="form-input" maxlength="60" clearable></el-input>
+            <el-form-item prop="nickname">
+              <el-input placeholder="昵称" v-model="memberQueryFormObj.nickname" class="form-input" maxlength="60" clearable></el-input>
             </el-form-item>
-            <el-form-item label="状态" prop="leftFlag">
-              <el-select v-model="memberQueryFormObj.leftFlag" class="form-input" clearable placeholder="全部">
+            <el-form-item prop="leftFlag">
+              <el-select v-model="memberQueryFormObj.leftFlag" class="form-input" clearable placeholder="状态">
                 <el-option label="在群" :value="0"></el-option>
                 <el-option label="已离群" :value="1"></el-option>
               </el-select>
             </el-form-item>
-            <el-form-item label="机器人" prop="selfId">
+            <el-form-item prop="selfId">
               <number-input v-model.trim="memberQueryFormObj.selfId" class="form-input" maxlength="20" clearable
                             placeholder="机器人QQ"></number-input>
             </el-form-item>

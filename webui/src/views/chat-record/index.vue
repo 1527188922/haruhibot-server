@@ -2,19 +2,19 @@
   <div id="ChatRecord">
     <basic-container>
       <el-row>
-        <el-form :model="queryFormObj" label-width="70px" inline ref="queryForm" size="small">
-          <el-form-item label="消息类型" prop="messageType">
-            <el-select v-model="queryFormObj.messageType" class="form-input" @change="handleMessageTypeChange">
+        <el-form :model="queryFormObj" inline ref="queryForm" size="small">
+          <el-form-item prop="messageType">
+            <el-select placeholder="消息类型" v-model="queryFormObj.messageType" class="form-input" @change="handleMessageTypeChange">
               <el-option v-for="(value,key) in typeMap" :key="key" :value="key" :label="value">
 <!--                <span :class="key === 'private' ? 'danger-text' : ''">{{ value }}</span>-->
                 <span>{{ value }}</span>
               </el-option>
             </el-select>
           </el-form-item>
-          <el-form-item label="群号" prop="groupId" v-show="isQueryGroup">
+          <el-form-item prop="groupId" v-show="isQueryGroup">
             <group-select v-model="queryFormObj.groupId" width="180px" placeholder="输入群号或群名" :limit="-1"/>
           </el-form-item>
-          <el-form-item label="机器人" prop="selfId">
+          <el-form-item prop="selfId">
             <el-autocomplete class="form-input" v-model="queryFormObj.selfId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'selfIds')}"
                              clearable
                              popper-class="adaptive-width-autocomplete-popper"
@@ -22,7 +22,7 @@
                              :maxlength="30">
             </el-autocomplete>
           </el-form-item>
-          <el-form-item label="发送人" prop="userId" v-show="isQueryGroup">
+          <el-form-item prop="userId" v-show="isQueryGroup">
             <el-autocomplete class="form-input" v-model="queryFormObj.userId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'userIds')}"
                              clearable
                              popper-class="adaptive-width-autocomplete-popper"
@@ -30,7 +30,7 @@
                              :maxlength="30">
             </el-autocomplete>
           </el-form-item>
-          <el-form-item label="对话人" prop="targetId" v-show="!isQueryGroup">
+          <el-form-item prop="targetId" v-show="!isQueryGroup">
             <el-autocomplete class="form-input" v-model="queryFormObj.targetId"  :fetch-suggestions="(v,cb) =>{fetchUsers(v,cb,'userIds')}"
                              clearable
                              popper-class="adaptive-width-autocomplete-popper"
@@ -38,11 +38,11 @@
                              :maxlength="30">
             </el-autocomplete>
           </el-form-item>
-          <el-form-item label="消息内容" prop="content">
-            <el-input v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
+          <el-form-item prop="content">
+            <el-input placeholder="消息内容" v-model="queryFormObj.content" class="form-input" maxlength="1000" clearable></el-input>
           </el-form-item>
 
-          <el-form-item label="发送时间" prop="datetimerange">
+          <el-form-item prop="datetimerange">
             <el-date-picker
                 class="form-date-picker"
                 v-model="queryFormObj.datetimerange"
@@ -51,8 +51,8 @@
                 :default-time="['00:00:00', '23:59:59']"
                 :picker-options="pickerOptions"
                 range-separator="-"
-                start-placeholder="开始时间"
-                end-placeholder="结束时间"
+                start-placeholder="发送开始时间"
+                end-placeholder="发送结束时间"
                 align="right">
             </el-date-picker>
           </el-form-item>
