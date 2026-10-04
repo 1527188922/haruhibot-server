@@ -54,6 +54,9 @@ function component(file) {
         window.fixtureVm=new Vue(copy).$mount('#mount');
       };
     },read('src/util/mobile-layout.js'));
+    await page.evaluate(helper=>{
+      Function(helper.replace(/export /g,'')+';Object.assign(window.__deps,{controlOf,controlTypeOf,isMultiControl,splitList,listValue,optionsOf,decorateItem})')();
+    },read('src/util/config-item.js'));
     async function load(file,name) {
       const data=component(file);
       if (data.styles.trim()) await page.addStyleTag({content:data.styles});
@@ -176,7 +179,97 @@ function component(file) {
       const empty=await page.locator('.el-select-dropdown:visible .el-select-dropdown__empty').evaluate(e=>{const s=getComputedStyle(e);return {left:parseFloat(s.paddingLeft),right:parseFloat(s.paddingRight),width:e.parentElement.getBoundingClientRect().width}});
       assert.ok(empty.left>=20 && empty.right>=20 && empty.width>=160,'empty select has breathing room: '+JSON.stringify(empty));
     }
-    assert.deepEqual(errors,[],'browser runtime errors');
+    assert.deepEqual(errors,[],'browser runtime errors before config page');
     console.log('Selection, date popup, form labels, long group options, option centering and empty-state spacing passed');
+
+    // ---------- 配置管理：手机端文件列表抽屉 + 配置项卡片 ----------
+    await load('src/views/config/config-value-editor.vue','ConfigValueEditor');
+    await load('src/views/config/index.vue','ConfigPage');
+    const configFileA={
+      fileName:'application.properties',displayName:'主配置',path:'D:/config/application.properties',
+      exists:true,count:3,hotCount:1,remark:'主配置说明',
+      items:[
+        {key:'bot.enable',displayName:'启用机器人',type:'BOOL',control:{type:'SWITCH',multiple:false,allowCustom:false,options:[]},value:'true',hot:true,configured:true,source:'FILE',remark:'关闭后bot不再响应消息',defaultValue:'true'},
+        {key:'bot.mode',displayName:'运行模式',type:'STRING',control:{type:'SELECT',multiple:false,allowCustom:false,options:[{value:'0',label:'自动'},{value:'1',label:'强制'}]},value:'0',hot:false,configured:false,source:'DEFAULT',remark:'模式说明',defaultValue:'0'},
+        {key:'druid.filters',displayName:'过滤器',type:'LIST',control:{type:'SELECT',multiple:true,allowCustom:true,options:[]},value:'stat,wall',hot:true,configured:true,source:'FILE',remark:'多个值用逗号分隔',defaultValue:''}
+      ]
+    };
+    const configFileB={
+      fileName:'jm.properties',displayName:'JM配置',path:'D:/config/jm.properties',
+      exists:true,count:2,hotCount:0,remark:'JM配置说明',
+      items:[
+        {key:'jm.enable',displayName:'启用JM',type:'BOOL',control:{type:'SWITCH',multiple:false,allowCustom:false,options:[]},value:'true',hot:true,configured:true,source:'FILE',remark:'JM开关',defaultValue:'true'},
+        {key:'jm.mode',displayName:'下载模式',type:'STRING',control:{type:'SELECT',multiple:false,allowCustom:false,options:[{value:'0',label:'自动'},{value:'1',label:'手动'}]},value:'0',hot:false,configured:true,source:'FILE',remark:'下载模式说明',defaultValue:'0'}
+      ]
+    };
+    const configFiles=[configFileA,configFileB];
+    const mountConfig=async({width,fileIndex=0})=>{
+      await page.setViewportSize({width,height:844});
+      await page.evaluate(({width,files,fileIndex})=>{
+        viewport.width=width;
+        mountFixture(__deps.ConfigPage,{files});
+        fixtureVm.applyFile(files[fileIndex]);
+      },{width,files:configFiles,fileIndex});
+      await page.waitForTimeout(60);
+    };
+    for(const width of [320,375,390,430,768,992]) {
+      await mountConfig({width});
+      // 手机端表格换成卡片，平板/桌面端仍用表格
+      assert.equal(await page.locator('.mobile-record:visible').count(),width<768?3:0,'config cards at '+width);
+      assert.equal(await page.locator('.el-table:visible').count(),width<768?0:1,'config table at '+width);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'config page overflow at '+width);
+      // 抽屉只在手机端由按钮唤出，桌面端文件列表常驻
+      assert.equal(await page.locator('.main-toolbar__file-btn').count(),width<768?1:0,'config drawer button at '+width);
+      assert.equal(await page.locator('.config-manage__aside:visible').count(),width<768?0:1,'config aside at '+width);
+    }
+    console.log('ConfigPage: widths 320/375/390/430/768/992 passed');
+
+    // 手机端抽屉开关、选文件后自动收起
+    await mountConfig({width:390});
+    assert.equal(await page.locator('.config-manage__aside--open').count(),0,'config drawer starts closed');
+    await page.locator('.main-toolbar__file-btn').click();
+    await page.waitForTimeout(300);
+    assert.equal(await page.locator('.config-manage__aside--open:visible').count(),1,'config drawer opens');
+    await page.locator('.config-manage__mask').click({position:{x:378,y:60}});
+    await page.waitForTimeout(300);
+    assert.equal(await page.locator('.config-manage__aside--open').count(),0,'config mask closes drawer');
+    await page.locator('.main-toolbar__file-btn').click();
+    await page.waitForTimeout(300);
+    await page.locator('.file-list li').nth(1).click();
+    await page.waitForTimeout(300);
+    assert.equal(await page.evaluate(()=>fixtureVm.current.fileName),configFileB.fileName,'config drawer switches file');
+    assert.equal(await page.locator('.config-manage__aside--open').count(),0,'config drawer closes after picking a file');
+    assert.equal(await page.locator('.mobile-record:visible').count(),2,'config cards follow selected file');
+
+    // 编辑控件写回编辑值、标记未保存（卡片高亮 + 保存按钮解锁）
+    assert.equal(await page.locator('.mobile-record').first().locator('.mobile-record-header .el-tag').count(),1,'config status tag before edit');
+    assert.equal(await page.getByRole('button',{name:'保存',exact:true}).first().isDisabled(),true,'config save disabled before edit');
+    await page.locator('.mobile-record').first().locator('.el-switch').click();
+    await page.waitForTimeout(60);
+    assert.equal(await page.evaluate(()=>fixtureVm.current.items[0].dirty),true,'config edit marks dirty');
+    assert.equal(await page.evaluate(()=>fixtureVm.current.items[0].editValue),'false','config edit writes value');
+    assert.equal(await page.locator('.mobile-record.config-item--dirty').count(),1,'config dirty card highlighted');
+    assert.equal(await page.locator('.mobile-record').first().locator('.mobile-record-header .el-tag').count(),2,'config unsaved tag after edit');
+    assert.equal(await page.getByRole('button',{name:'保存',exact:true}).first().isDisabled(),false,'config save enabled when dirty');
+
+    // 卡片里的控件铺满卡片宽度（表格形态靠单元格撑开，卡片形态必须自己铺满）
+    await mountConfig({width:320,fileIndex:1});
+    const cardBox=await page.locator('.mobile-record').nth(1).boundingBox();
+    const selectBox=await page.locator('.mobile-record').nth(1).locator('.el-select').boundingBox();
+    assert.ok(cardBox && selectBox && selectBox.width>=cardBox.width-30,
+      'config select fills card: '+(selectBox&&selectBox.width)+'/'+(cardBox&&cardBox.width));
+
+    // 文件原始内容弹窗在手机端整屏（custom-class + is-fullscreen 的样式覆盖）
+    await page.setViewportSize({width:320,height:844});
+    await page.evaluate(()=>{
+      viewport.width=320;
+      mountFixture({template:'<el-dialog :visible="true" custom-class="config-file-dialog" :fullscreen="isMobileView"><pre class="file-preview">bot.enable=true</pre></el-dialog>'});
+    });
+    await page.waitForTimeout(80);
+    const dialogBox=await page.locator('.config-file-dialog').boundingBox();
+    assert.ok(dialogBox && dialogBox.width>=320 && dialogBox.height>=800,
+      'config file dialog is fullscreen on phone: '+JSON.stringify(dialogBox));
+    assert.deepEqual(errors,[],'browser runtime errors');
+    console.log('ConfigPage: drawer, card controls, dirty state and fullscreen file dialog passed');
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1});

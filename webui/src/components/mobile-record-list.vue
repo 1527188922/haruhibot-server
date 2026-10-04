@@ -1,7 +1,8 @@
 <template>
   <div class="mobile-record-list" v-loading="loading" :aria-busy="String(loading)">
     <p v-if="!loading && !rows.length" class="mobile-record-empty">暂无数据</p>
-    <article v-for="(row, index) in rows" :key="rowKey ? row[rowKey] : index" class="mobile-record">
+    <article v-for="(row, index) in rows" :key="rowKey ? row[rowKey] : index" class="mobile-record"
+             :class="rowClass ? rowClass(row) : ''">
       <header class="mobile-record-header">
         <img v-if="avatarField && row[avatarField]" :src="row[avatarField]" alt="" referrerpolicy="no-referrer">
         <strong>{{ row[titleField] || row[fallbackField] || '详情' }}</strong>
@@ -39,7 +40,9 @@ export default {
     fallbackField: String,
     avatarField: String,
     fields: { type: Array, default: () => [] },
-    detailFields: { type: Array, default: () => [] }
+    detailFields: { type: Array, default: () => [] },
+    // 按行补充卡片类名（如配置管理的"未保存"高亮），与 el-table 的 row-class-name 同义
+    rowClass: { type: Function, default: null }
   },
   methods: {
     fieldValue(row, field) {

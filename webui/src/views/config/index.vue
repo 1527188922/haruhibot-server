@@ -1,12 +1,18 @@
 <template>
   <div class="config-manage">
+    <!-- 移动端：文件列表以抽屉形式覆盖在配置项之上 -->
+    <div v-if="mobileAsideOpen" class="config-manage__mask" @click="closeMobileAside"></div>
+
     <!-- 左侧：配置文件分组 -->
-    <div class="config-manage__aside">
+    <div class="config-manage__aside" :class="{'config-manage__aside--open': mobileAsideOpen}">
       <div class="aside-title">
         <span>配置文件</span>
-        <el-tooltip content="重新加载全部配置文件" placement="top">
-          <i class="el-icon-refresh" :class="{'is-loading': allLoading}" @click="reloadAll"></i>
-        </el-tooltip>
+        <span class="aside-title__ops">
+          <el-tooltip content="重新加载全部配置文件" placement="top">
+            <i class="el-icon-refresh" :class="{'is-loading': allLoading}" @click="reloadAll"></i>
+          </el-tooltip>
+          <i v-if="isMobileView" class="el-icon-close" @click="closeMobileAside"></i>
+        </span>
       </div>
       <ul class="file-list">
         <li v-for="file in files"
@@ -34,6 +40,9 @@
       <basic-container>
         <div class="main-toolbar">
           <div class="main-toolbar__title">
+            <!-- 移动端文件列表收进抽屉，这里给出入口 -->
+            <el-button v-if="isMobileView" class="main-toolbar__file-btn" size="small" plain
+                       icon="el-icon-folder-opened" @click="toggleMobileAside">配置文件</el-button>
             <span class="name">{{ current.displayName }}</span>
             <span class="file">{{ current.fileName }}</span>
             <el-tag v-if="!current.exists" size="mini" type="warning" effect="plain">文件不存在（保存后自动创建）</el-tag>
@@ -51,7 +60,31 @@
 
         <div class="file-remark">{{ current.remark }}</div>
 
-        <el-table :data="current.items" v-loading="tableLoading" size="small" border stripe
+        <!-- 移动端：配置项用卡片展示，控件铺满卡片宽度，长说明折叠进"更多详情" -->
+        <mobile-record-list v-if="isMobileView" :rows="current.items" :loading="tableLoading"
+                            row-key="key" title-field="displayName" fallback-field="key"
+                            :row-class="dirtyRowClass"
+                            :fields="[{label:'说明', prop:'remark'}]"
+                            :detail-fields="[{label:'来源', format:itemSourceText},{label:'默认值', format:itemDefaultText}]">
+          <template #header="{row}">
+            <el-tag v-if="row.dirty" size="mini" type="danger" effect="plain">未保存</el-tag>
+            <el-tag size="mini" :type="row.hot ? 'success' : 'warning'" effect="plain">
+              {{ row.hot ? '即时生效' : '需重启' }}
+            </el-tag>
+          </template>
+          <template #summary="{row}">
+            <div class="config-item-key">{{ row.key }}</div>
+            <config-value-editor :row="row" :value="row.editValue"
+                                 @change="onValueChange(row, $event)"></config-value-editor>
+          </template>
+          <template #actions="{row}">
+            <el-button size="small" type="primary" plain :disabled="!row.dirty" @click="saveOne(row)">保存</el-button>
+            <el-button v-if="row.hot" size="small" plain @click="refreshOne(row)">刷新</el-button>
+            <el-button size="small" plain class="danger-text" @click="resetOne(row)">重置</el-button>
+          </template>
+        </mobile-record-list>
+
+        <el-table v-show="!isMobileView" :data="current.items" v-loading="tableLoading" size="small" border stripe
                   :row-class-name="rowClass" max-height="720">
           <el-table-column label="配置项" min-width="220">
             <template slot-scope="{row}">
@@ -62,117 +95,8 @@
 
           <el-table-column label="值" min-width="300">
             <template slot-scope="{row}">
-              <!-- 开关 -->
-              <el-switch v-if="controlType(row) === 'SWITCH'"
-                         v-model="row.editValue"
-                         active-value="true"
-                         inactive-value="false"
-                         active-text="开启"
-                         inactive-text="关闭"
-                         @change="markDirty(row)">
-              </el-switch>
-
-              <!-- 下拉：单选 -->
-              <el-select v-else-if="controlType(row) === 'SELECT' && !isMulti(row)"
-                         v-model="row.editValue"
-                         size="small"
-                         class="value-input"
-                         clearable
-                         default-first-option
-                         :filterable="control(row).allowCustom"
-                         :allow-create="control(row).allowCustom"
-                         :placeholder="control(row).allowCustom ? '选择或直接输入' : '请选择'"
-                         @change="markDirty(row)">
-                <el-option v-for="opt in options(row)"
-                           :key="opt.value"
-                           :label="opt.label"
-                           :value="opt.value">
-                </el-option>
-              </el-select>
-
-              <!-- 下拉：多选（允许自定义值时相当于标签输入框，回车创建） -->
-              <el-select v-else-if="controlType(row) === 'SELECT'"
-                         v-model="row.editList"
-                         size="small"
-                         class="value-input"
-                         multiple
-                         default-first-option
-                         :filterable="control(row).allowCustom"
-                         :allow-create="control(row).allowCustom"
-                         :placeholder="control(row).allowCustom ? '选择或输入后回车' : '请选择'"
-                         @change="syncList(row)">
-                <el-option v-for="opt in options(row)"
-                           :key="opt.value"
-                           :label="opt.label"
-                           :value="opt.value">
-                </el-option>
-              </el-select>
-
-              <!-- 复选组（多个值，逗号拼接） -->
-              <el-checkbox-group v-else-if="controlType(row) === 'CHECKBOX' && isMulti(row)"
-                                 v-model="row.editList"
-                                 class="value-checks"
-                                 @change="syncList(row)">
-                <el-checkbox v-for="opt in options(row)"
-                             :key="opt.value"
-                             :label="opt.value">{{ opt.label }}</el-checkbox>
-              </el-checkbox-group>
-
-              <!-- 单个复选框 -->
-              <el-checkbox v-else-if="controlType(row) === 'CHECKBOX'"
-                           :value="row.editValue === 'true'"
-                           @change="v => setScalarValue(row, v ? 'true' : 'false')">
-                {{ row.editValue === 'true' ? '开启' : '关闭' }}
-              </el-checkbox>
-
-              <!-- 单选框组：必须用 v-model，:value + @change 拿不到点击后的值 -->
-              <el-radio-group v-else-if="controlType(row) === 'RADIO'"
-                              v-model="row.editValue"
-                              class="value-radios"
-                              @change="markDirty(row)">
-                <el-radio v-for="opt in options(row)"
-                          :key="opt.value"
-                          :label="opt.value">{{ opt.label }}</el-radio>
-              </el-radio-group>
-
-              <!-- 输入框：按值类型细分 -->
-              <el-input v-else-if="row.type === 'INT'"
-                        v-model.trim="row.editValue"
-                        size="small"
-                        class="value-input value-input--number"
-                        @input="markDirty(row)">
-                <template slot="append">整数</template>
-              </el-input>
-
-              <!-- 敏感信息 -->
-              <el-input v-else-if="row.type === 'SECRET'"
-                        v-model="row.editValue"
-                        size="small"
-                        show-password
-                        class="value-input"
-                        :placeholder="row.hasValue ? ('已设置 ' + row.maskedValue) : '未设置'"
-                        @input="markDirty(row)">
-              </el-input>
-
-              <!-- 列表 / JSON：多行文本 -->
-              <el-input v-else-if="row.type === 'LIST' || row.type === 'JSON'"
-                        v-model="row.editValue"
-                        size="small"
-                        type="textarea"
-                        :autosize="{minRows:1, maxRows: row.type === 'JSON' ? 6 : 3}"
-                        class="value-input"
-                        :placeholder="row.type === 'JSON' ? 'JSON 文本' : '多个值用逗号分隔'"
-                        @input="markDirty(row)">
-              </el-input>
-
-              <!-- 字符串 -->
-              <el-input v-else
-                        v-model="row.editValue"
-                        size="small"
-                        class="value-input"
-                        clearable
-                        @input="markDirty(row)">
-              </el-input>
+              <config-value-editor :row="row" :value="row.editValue"
+                                   @change="onValueChange(row, $event)"></config-value-editor>
             </template>
           </el-table-column>
 
@@ -207,7 +131,9 @@
     </div>
 
     <!-- 查看文件原始内容 -->
-    <el-dialog :visible.sync="fileDialog.visible" :title="fileDialog.title" width="760px" :dialog-drag-enabled="!isMobileView">
+    <el-dialog :visible.sync="fileDialog.visible" :title="fileDialog.title" width="760px"
+               custom-class="config-file-dialog" :fullscreen="isMobileView"
+               :dialog-drag-enabled="!isMobileView">
       <pre class="file-preview">{{ fileDialog.content }}</pre>
       <span slot="footer">
         <el-button @click="fileDialog.visible = false">关闭</el-button>
@@ -227,9 +153,12 @@ import {
   refreshFile as refreshFileApi,
   refreshAll as refreshAllApi
 } from '@/api/config';
+import ConfigValueEditor from './config-value-editor';
+import {decorateItem} from '@/util/config-item';
 
 export default {
   name: 'ConfigManage',
+  components: {ConfigValueEditor},
   data() {
     return {
       files: [],
@@ -238,6 +167,8 @@ export default {
       saveLoading: false,
       fileRefreshLoading: false,
       allLoading: false,
+      // 移动端文件列表抽屉；桌面端恒为 false（文件列表常驻左侧）
+      mobileAsideOpen: false,
       fileDialog: {
         visible: false,
         title: '',
@@ -274,11 +205,22 @@ export default {
         this.tableLoading = false
       })
     },
+
+    // ==================== 文件切换 ====================
+    /** 移动端文件列表抽屉开关（桌面端文件列表常驻，按钮不渲染） */
+    toggleMobileAside() {
+      this.mobileAsideOpen = !this.mobileAsideOpen
+    },
+    closeMobileAside() {
+      this.mobileAsideOpen = false
+    },
     selectFile(file, force) {
       if (!file) {
         return
       }
       if (!force && this.current && this.current.fileName === file.fileName) {
+        // 移动端重复点当前文件，收起点开的抽屉即可
+        this.closeMobileAside()
         return
       }
       if (this.dirtyCount && !force) {
@@ -296,26 +238,15 @@ export default {
     },
     applyFile(file) {
       // 拷贝一份，编辑时不污染原始数据，便于"放弃修改"
-      const items = (file.items || []).map(e => this.decorate(e))
+      const items = (file.items || []).map(decorateItem)
       this.current = Object.assign({}, file, {items})
+      // 选完文件自动收起抽屉，移动端才有"选完即见内容"的连贯感
+      this.closeMobileAside()
     },
-    decorate(item) {
-      const value = item.value === null || item.value === undefined ? '' : item.value
-      const row = Object.assign({}, item, {
-        // SECRET 类型后端不下发明文，用空串开始编辑
-        editValue: value,
-        // 多值控件（多选下拉 / 复选组）绑定用的数组模型，保存时再拼成逗号分隔的字符串
-        editList: [],
-        dirty: false,
-        originValue: value
-      })
-      if (this.isMulti(row)) {
-        // 归一化后再比较，避免 "a, b" 和 "a,b" 这种差异被当成改动
-        row.editList = this.listValue(row)
-        row.editValue = row.editList.join(',')
-        row.originValue = row.editValue
-      }
-      return row
+    /** 控件里的值变了：写回编辑值并重新判断是否有未保存修改 */
+    onValueChange(row, value) {
+      row.editValue = value
+      this.markDirty(row)
     },
     markDirty(row) {
       row.dirty = row.editValue !== row.originValue
@@ -323,58 +254,18 @@ export default {
     rowClass({row}) {
       return row.dirty ? 'config-row--dirty' : ''
     },
-
-    // ==================== 控件 ====================
-    /**
-     * 控件元数据（后端 ConfigItem.control）：
-     * 控件类型与值类型解耦，同一个值类型可以配不同控件
-     */
-    control(row) {
-      return row.control || {type: 'INPUT', multiple: false, allowCustom: false, options: []}
+    /** 移动端卡片：未保存的配置项整卡高亮，与表格的 config-row--dirty 对齐 */
+    dirtyRowClass(row) {
+      return row.dirty ? 'config-item--dirty' : ''
     },
-    controlType(row) {
-      return this.control(row).type
+    itemSourceText(row) {
+      return row.source === 'FILE' ? '来自' + this.current.fileName : '默认值'
     },
-    /** 是否多值控件（多选下拉 / 复选组） */
-    isMulti(row) {
-      const control = this.control(row)
-      return (control.type === 'SELECT' || control.type === 'CHECKBOX') && control.multiple === true
-    },
-    /**
-     * 候选项：把"当前值/原值里有、候选项里却没有"的值也补进去，
-     * 否则已配置的值显示不出来，一保存还会被丢掉（例如 druid filters 里多配了一项）；
-     * 原值也补是为了取消勾选之后还能再勾回来
-     */
-    options(row) {
-      const declared = this.control(row).options || []
-      const known = declared.map(e => e.value)
-      const values = this.listValue(row).concat(this.originList(row))
-      const extra = values
-        .filter((e, i) => !known.includes(e) && values.indexOf(e) === i)
-        .map(e => ({value: e, label: e}))
-      return declared.concat(extra)
-    },
-    /** 多值控件的模型：逗号/空白分隔的字符串 <-> 数组 */
-    listValue(row) {
-      return this.splitList(row.editValue)
-    },
-    /** 原值的数组模型（用于候选项补全） */
-    originList(row) {
-      return this.splitList(row.originValue)
-    },
-    splitList(value) {
-      const text = value === null || value === undefined ? '' : String(value)
-      return text === '' ? [] : text.split(/[,，\s]+/).filter(e => e !== '')
-    },
-    /** 多值控件 v-model 写回数组后，同步成保存用的逗号分隔字符串 */
-    syncList(row) {
-      row.editValue = (row.editList || []).join(',')
-      this.markDirty(row)
-    },
-    /** 单值控件（单个复选框）写回字符串值 */
-    setScalarValue(row, value) {
-      row.editValue = value
-      this.markDirty(row)
+    itemDefaultText(row) {
+      if (!row.configured || row.type === 'SECRET') {
+        return '—'
+      }
+      return row.defaultValue === '' ? '（空）' : row.defaultValue
     },
 
     // ==================== 保存 ====================
@@ -517,6 +408,12 @@ export default {
   }
 }
 
+// 移动端卡片：未保存的配置项整卡高亮（卡片由 mobile-record-list 渲染，需穿透 scoped）
+.config-manage ::v-deep .mobile-record.config-item--dirty {
+  border-color: #f0c78a;
+  background: #fdf6ec;
+}
+
 .aside-title {
   display: flex;
   align-items: center;
@@ -526,6 +423,12 @@ export default {
   font-weight: 600;
   color: #303133;
   border-bottom: 1px solid #ebeef5;
+
+  &__ops {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
   i {
     cursor: pointer;
@@ -632,31 +535,12 @@ export default {
   line-height: 18px;
 }
 
-.value-input {
-  max-width: 460px;
-}
-
-.value-input--number {
-  max-width: 180px;
-}
-
-// 复选组 / 单选框组：换行排列，收掉 element 默认的 30px 间距
-.value-checks,
-.value-radios {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  line-height: 32px;
-
-  ::v-deep .el-checkbox,
-  ::v-deep .el-radio {
-    margin-right: 12px;
-  }
-
-  ::v-deep .el-checkbox + .el-checkbox,
-  ::v-deep .el-radio + .el-radio {
-    margin-left: 0;
-  }
+// 移动端卡片里的配置key（表格里由独立列展示）
+.config-item-key {
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: #a8abb2;
+  word-break: break-all;
 }
 
 .item-name {
@@ -705,5 +589,143 @@ export default {
   line-height: 18px;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/**
+ * 手机端：左侧文件列表改为覆盖式抽屉（默认收起，由工具栏"配置文件"按钮唤出），
+ * 配置项表格换成卡片列表（见 template 里的 mobile-record-list）。
+ * 抽屉用 absolute 定位脱离文档流，收起时不影响主区宽度；再靠 transform 滑出，
+ * visibility 一起过渡，避免收起后里面还能被键盘 Tab 到。
+ */
+@media screen and (max-width: 767.98px) {
+  .config-manage {
+    position: relative;
+    display: block;
+    padding: 8px 4px;
+    min-height: 0;
+  }
+
+  .config-manage__aside {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 12;
+    width: 84vw;
+    max-width: 300px;
+    margin-right: 0;
+    overflow-y: auto;
+    visibility: hidden;
+    transform: translateX(-105%);
+    transition: transform .2s ease, visibility .2s;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, .25);
+  }
+
+  .config-manage__aside--open {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .config-manage__mask {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 11;
+    background: rgba(0, 0, 0, .35);
+  }
+
+  // 文件列表项加大点击区域，方便手指点选
+  .file-list li {
+    min-height: 48px;
+  }
+
+  // 抽屉标题栏的刷新/关闭是纯图标，靠 padding 把热区撑到 ~36px，再用负 margin 抵消布局影响
+  .aside-title i {
+    font-size: 18px;
+    padding: 10px 6px;
+    margin: -10px 0;
+  }
+
+  .main-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .main-toolbar__title {
+    flex-wrap: wrap;
+    row-gap: 6px;
+
+    .name,
+    .file {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .main-toolbar__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .el-button {
+      flex: 1 1 auto;
+      min-height: 40px;
+      margin-left: 0;
+    }
+  }
+
+  .file-preview {
+    max-height: 50vh;
+  }
+}
+</style>
+
+<style lang="scss">
+/**
+ * 查看文件弹窗（el-dialog 的 custom-class 挂在非根元素上，scoped 样式选不中，
+ * 所以这段不能加 scoped）。手机端用 fullscreen 整屏阅读长配置。
+ *
+ * 这里 position:fixed 铺满视口，而不是只靠 element 的 .is-fullscreen(height:100%)：
+ * el-dialog__wrapper 在移动端带 20px 的 padding-bottom（见 styles/media.scss），
+ * 只写 100% 底部会露出一条缝；宽度也要 !important，否则会被 media.scss 的
+ * "窄屏弹窗 92vw" 规则压回去。
+ */
+.config-file-dialog.el-dialog.is-fullscreen {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .el-dialog__header {
+    flex: 0 0 auto;
+  }
+
+  .el-dialog__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    padding: 8px 10px;
+    overflow: hidden;
+  }
+
+  // 内容区自己滚动，高度锁在弹窗剩余空间内
+  .file-preview {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+  }
 }
 </style>
