@@ -216,7 +216,7 @@ public class SystemController {
         try (ServletOutputStream outputStream = response.getOutputStream()) {
             response.setCharacterEncoding("UTF-8");
             response.setHeader("content-Type", "*");
-            response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));
+            response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), StandardCharsets.UTF_8));
             response.setHeader("access-control-expose-headers", "*");
             response.setHeader("overwrite-response-data", "true");
             response.setContentType("application/octet-stream;charset=UTF-8");
@@ -339,7 +339,7 @@ public class SystemController {
             }else{
                 sqliteDatabaseService.executeAndExport(sql, fileOutputStream);
             }
-            response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(filename, "UTF-8"));
+            response.setHeader("content-disposition", "attachment;filename=" + URLEncoder.encode(filename, StandardCharsets.UTF_8));
             return HttpResp.success(file.getAbsolutePath());
         }catch (BusinessException e){
             return HttpResp.fail(e.getErrorMsg(),null);

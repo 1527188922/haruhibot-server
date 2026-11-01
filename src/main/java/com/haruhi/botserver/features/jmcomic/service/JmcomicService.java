@@ -1522,10 +1522,19 @@ public class JmcomicService {
     public static void main(String[] args) {
 //        test1();
 //        test2();
-        test4();
-
+//        test4();
+        test5();
     }
 
+    public static void test5(){
+        JmcomicService jmcomicService = new JmcomicService();
+        try {
+            UserProfile userProfile = jmcomicService.login("1527188922", "***");
+            System.out.println(userProfile);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static void test1(){
         // 手动注册所有可用的 ImageIO 插件
