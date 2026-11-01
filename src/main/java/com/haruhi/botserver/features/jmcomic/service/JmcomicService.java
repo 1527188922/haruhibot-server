@@ -30,6 +30,7 @@ import com.haruhi.botserver.features.jmcomic.model.JmTaskInfo;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskSnapshot;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskStatusEnum;
 import com.haruhi.botserver.features.jmcomic.util.JmImageCipherUtil;
+import com.haruhi.botserver.features.jmcomic.util.JmLineCatalog;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
@@ -75,6 +76,7 @@ import java.io.*;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -87,21 +89,36 @@ import java.util.stream.Stream;
 @Slf4j
 public class JmcomicService {
 
-    public static final String DEFAULT_API_DOMAIN = "www.cdnbea.net";
+    /**
+     * 默认接口线路（{@code jm.api_domain} 的默认值）。
+     * <p>
+     * 真源在 {@link JmLineCatalog}（线路清单，含测速用的候选线路），这里只是给老代码一个稳定的常量名。
+     */
+    public static final String DEFAULT_API_DOMAIN = JmLineCatalog.DEFAULT_API_HOST;
     private static final String APP_TOKEN_SECRET = "18comicAPP";
     private static final String APP_TOKEN_SECRET_2 = "18comicAPPContent";
     private static final String APP_DATA_SECRET = "185Hcomic3PAPP7R";
     private static final String APP_VERSION = "2.0.13";
-    public static final String IMAGE_DOMAIN = "cdn-msp2.jmapiproxy2.cc";
+
+    /** 默认图片线路（{@code jm.image_domain} 的默认值），真源同样是 {@link JmLineCatalog}。 */
+    public static final String IMAGE_DOMAIN = JmLineCatalog.DEFAULT_IMAGE_HOST;
     public static final String COVER_DOMAIN = "cdn-msp3.18comic.vip";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
     public static final String JM_DEFAULT_PASSWORD = "1234";
 
     /**
-     * 有损WebP质量，对应Android端的 q85，实测体积与官方下载包基本一致
+     * 有损WebP质量，对应Android工程 ImageCodec.LOSSY_WEBP_QUALITY = 85
+     * （实测与站点原始图/官方下载包体积同一量级，颜色几乎无差）
      */
     private static final float JM_WEBP_LOSSY_QUALITY = 0.85f;
+
+    /**
+     * 无损WebP质量，对应Android工程 ImageCodec.QUALITY_LOSSLESS = 100。
+     * <p>
+     * 无损模式下这个值只影响压缩努力程度（像素都不变），但默认的 0.75 与安卓不一致，所以显式对齐。
+     */
+    private static final float JM_WEBP_LOSSLESS_QUALITY = 1.0f;
 
     /**
      * JM /search 接口每页固定返回80条
@@ -128,7 +145,18 @@ public class JmcomicService {
     private JmOnlineSearchHistoryStore jmOnlineSearchHistoryStore;
 
     public String getJmApiDomain(){
-        return Configs.getStr(ConfigKey.JM_API_DOMAIN, DEFAULT_API_DOMAIN);
+        String domain = JmLineCatalog.normalizeHost(Configs.getStr(ConfigKey.JM_API_DOMAIN, DEFAULT_API_DOMAIN));
+        return StringUtils.isBlank(domain) ? DEFAULT_API_DOMAIN : domain;
+    }
+
+    /**
+     * 图片域名（章节图片与封面 CDN），来自 {@code jm.image_domain}。
+     * <p>
+     * 留空/非法值时回落到默认线路，避免拼出 {@code https:///media/...} 这种不可用地址。
+     */
+    public static String getJmImageDomain() {
+        String domain = JmLineCatalog.normalizeHost(Configs.getStr(ConfigKey.JM_IMAGE_DOMAIN, IMAGE_DOMAIN));
+        return StringUtils.isBlank(domain) ? IMAGE_DOMAIN : domain;
     }
 
     /**
@@ -589,33 +617,45 @@ public class JmcomicService {
             parameters.setEncryptionMethod(EncryptionMethod.AES);
             parameters.setIncludeRootFolder(false);
             zip.setCharset(StandardCharsets.UTF_8);
-            // 图片可能新老混杂（旧明文、新加密），逐个按解密流写入zip，避免生成临时明文目录
-            addAlbumFilesToZip(zip, file, "", parameters);
+            addChapterImagesToZip(zip, file, parameters);
         }
         log.info("打包完成：{} cost:{}", zipFile.getAbsolutePath(),(System.currentTimeMillis() - l));
         return BaseResp.success(oldFileDeleted ? "旧zip文件已删除，重新生成完成" : "zip生成完成", zipFile);
     }
 
     /**
-     * 递归把本子目录下的文件写入zip，zip内保留相对目录层级。
-     * 每个文件都通过 {@link JmImageCipherUtil#newDecryptingStream} 读取，
-     * 加密图片解密后写入、明文图片原样写入
+     * 把本子目录下的章节图片写入 zip，包内路径是 {@code 第N话/00001.webp}（不套本子目录）。
+     *
+     * <p>规则对齐 Android 工程 {@code core/codec/ArchiveWriter.kt}：
+     * <ul>
+     *     <li>只打包**章节目录里的图片**——本子目录下的封面图、遗留的临时文件都不会混进包里；</li>
+     *     <li>章节按 {@code 第N话} 序号升序、图片按去扩展名后的数字升序，解压出来就是阅读顺序；</li>
+     *     <li>{@code includeRootFolder=false}、文件名 UTF-8、设了密码用 AES；</li>
+     *     <li>本地图片可能是明文或加密文件，统一通过
+     *         {@link JmImageCipherUtil#newDecryptingStream} 解密后流进去。</li>
+     * </ul>
+     *
+     * <p>这里**不再重编码**图片：压缩开关在下载落盘时已经生效（见 {@code saveImg}），
+     * 打包阶段再按 q85 压一遍只会多一次画质损失、把体积重新撑大。
      */
-    private void addAlbumFilesToZip(ZipFile zip, File dir, String parentPath, ZipParameters parameters) throws Exception {
-        File[] files = FileUtil.getFileList(dir);
-        if (files != null) {
-            for (File file : files) {
-                parameters.setFileNameInZip(parentPath.isEmpty() ? file.getName() : parentPath + "/" + file.getName());
-                try (InputStream in = new BufferedInputStream(JmImageCipherUtil.newDecryptingStream(file))) {
+    private void addChapterImagesToZip(ZipFile zip, File albumDir, ZipParameters parameters) throws Exception {
+        File[] chapterFiles = FileUtil.getDirectoryList(albumDir);
+        if (chapterFiles == null || chapterFiles.length == 0) {
+            return;
+        }
+        for (File chapterDir : sortFolders(Arrays.asList(chapterFiles))) {
+            File[] imageFiles = FileUtil.getFileList(chapterDir.getAbsolutePath());
+            if (imageFiles == null || imageFiles.length == 0) {
+                continue;
+            }
+            for (File image : sortFiles(Arrays.asList(imageFiles))) {
+                if (!isImageFile(image)) {
+                    continue;
+                }
+                parameters.setFileNameInZip(chapterDir.getName() + "/" + image.getName());
+                try (InputStream in = new BufferedInputStream(JmImageCipherUtil.newDecryptingStream(image))) {
                     zip.addStream(in, parameters);
                 }
-            }
-        }
-        File[] childDirs = FileUtil.getDirectoryList(dir);
-        if (childDirs != null) {
-            for (File childDir : childDirs) {
-                addAlbumFilesToZip(zip, childDir,
-                        parentPath.isEmpty() ? childDir.getName() : parentPath + "/" + childDir.getName(), parameters);
             }
         }
     }
@@ -864,7 +904,8 @@ public class JmcomicService {
         try {
             boolean result = RetryUtil.retry(maxAttempt, 100, false,
                     //属于这几个异常表示需要重试
-                    e -> (e instanceof HttpException) && (e.getCause() instanceof SocketTimeoutException),
+                    e -> ((e instanceof HttpException) && (e.getCause() instanceof java.net.SocketTimeoutException))
+                            || (e instanceof cn.hutool.core.io.IORuntimeException) && (e.getCause() instanceof java.net.SocketTimeoutException),
                     _result -> !_result,
                     () -> {
                         HttpRequest httpRequest = HttpRequest.get(imgUrl)
@@ -1135,20 +1176,71 @@ public class JmcomicService {
         return blockNum;
     }
 
-    private void saveImg(int blockNum,byte[] bytes,File file) throws Exception {
-        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes)) {
-            BufferedImage srcImg = ImageIO.read(byteArrayInputStream);
-            BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
-            saveImage(dstImg, file);
+    /**
+     * 把下载到的图片落盘。
+     *
+     * <p>是否需要重编码完全按解扰结果决定（对齐 Android 工程
+     * {@code core/codec/ArchiveWriter.kt} 的 {@code reencode} 判定与
+     * {@code docs/android-app-plan.md} 的 A6 决议）：
+     * <ul>
+     *   <li><b>blockNum == 0</b>（未加扰章节 / 非 webp 的原图）：站点字节原样落盘，**不重新编码**。
+     *       站点的图本来就是压好的（官方页面常见几十 KB），decode→q85 重编码只会把它撑大
+     *       （对同一张图实测 +9%～+25%，jpg 还会被硬转成 WebP 却留着原扩展名）。</li>
+     *   <li><b>blockNum &gt; 0</b>：必须解码 → 解扰 → 按 {@code jm.image.compress.enabled}
+     *       编码（有损 q85 / 无损 q100）。这是唯一能拿到可显示图片的办法。</li>
+     * </ul>
+     */
+    private void saveImg(int blockNum, byte[] bytes, File file) throws Exception {
+        if (blockNum <= 0) {
+            saveOriginalBytes(bytes, file);
+            return;
+        }
+        BufferedImage srcImg = ImageIO.read(new ByteArrayInputStream(bytes));
+        if (srcImg == null) {
+            throw new IOException("无法解码JM图片：内容不是可识别的图片格式");
+        }
+        saveImage(stitchImg(srcImg, blockNum), file);
+    }
+
+    private void saveImg(int blockNum, File tmpImgFile, File file) throws Exception {
+        if (blockNum <= 0) {
+            saveOriginalFile(tmpImgFile, file);
+            return;
+        }
+        try (InputStream fileInputStream = Files.newInputStream(tmpImgFile.toPath())) {
+            BufferedImage srcImg = ImageIO.read(fileInputStream);
+            if (srcImg == null) {
+                throw new IOException("无法解码JM图片：" + tmpImgFile.getAbsolutePath());
+            }
+            saveImage(stitchImg(srcImg, blockNum), file);
         }
     }
 
-    private void saveImg(int blockNum,File tmpImgFile,File file) throws Exception {
-        try (InputStream fileInputStream = Files.newInputStream(tmpImgFile.toPath())){
-            BufferedImage srcImg = ImageIO.read(fileInputStream);
-            BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
-            saveImage(dstImg, file);
+    /**
+     * 未解扰的图片按站点原始字节落盘，只做（可选的）本地加密，不碰像素。
+     */
+    private void saveOriginalFile(File source, File target) throws IOException {
+        if (JmImageCipherUtil.isEnabled()) {
+            JmImageCipherUtil.encryptFile(source, target);
+            return;
         }
+        Files.copy(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    /**
+     * 未解扰的图片按站点原始字节落盘（字节版，见 {@link #saveOriginalFile(File, File)}）。
+     */
+    private void saveOriginalBytes(byte[] bytes, File target) throws IOException {
+        if (JmImageCipherUtil.isEnabled()) {
+            try (OutputStream outputStream = JmImageCipherUtil.newEncryptingStream(target)) {
+                outputStream.write(bytes);
+            } catch (IOException e) {
+                Files.deleteIfExists(target.toPath());
+                throw e;
+            }
+            return;
+        }
+        Files.write(target.toPath(), bytes);
     }
 
     private void saveImage(BufferedImage image, File file) throws IOException {
@@ -1164,8 +1256,11 @@ public class JmcomicService {
     }
 
     /**
-     * 解扰后的图片写入WebP。
-     * 压缩开关只影响新下载的图片：true=有损q85（体积接近官方包），false=无损（像素不变、体积约9倍）
+     * 解扰后的图片写入WebP，编码参数对齐 Android 工程
+     * {@code core/codec/ImageCodec.kt}：有损 {@code LOSSY_WEBP_QUALITY = 85}、
+     * 无损 {@code QUALITY_LOSSLESS = 100}（libwebp 的 quality 参数，0～100）。
+     * <p>
+     * 压缩开关只影响新下载的图片：true=有损q85（体积与站点原始图同一量级），false=无损（像素不变、体积大）。
      */
     private void writeWebp(BufferedImage image, OutputStream outputStream) throws IOException {
         boolean compress = Configs.getBool(ConfigKey.JM_IMAGE_COMPRESS_ENABLED, true);
@@ -1178,6 +1273,8 @@ public class JmcomicService {
                 writeParam.setCompressionQuality(JM_WEBP_LOSSY_QUALITY);
             } else {
                 writeParam.setCompressionType(CompressionType.Lossless);
+                // 与 ImageCodec.QUALITY_LOSSLESS 一致：默认的 0.75 只是"压缩努力程度"，显式写 100 才对齐安卓
+                writeParam.setCompressionQuality(JM_WEBP_LOSSLESS_QUALITY);
             }
             writer.write(null, new IIOImage(image, null, null), writeParam);
         } finally {
@@ -1561,10 +1658,10 @@ public class JmcomicService {
     }
 
     public static String buildCoverUrl(Long jmId, String domain) {
-        return "https://" + StrUtil.blankToDefault(domain, IMAGE_DOMAIN) + "/media/albums/"+ jmId +".jpg";
+        return "https://" + StrUtil.blankToDefault(domain, getJmImageDomain()) + "/media/albums/"+ jmId +".jpg";
     }
     public static String buildImgUrl(Long chapterId,String filename) {
-        return "https://" + IMAGE_DOMAIN + "/media/photos/"+ chapterId +"/"+ filename;
+        return "https://" + getJmImageDomain() + "/media/photos/"+ chapterId +"/"+ filename;
     }
 
     private HttpHeaders headerParam(long ts){

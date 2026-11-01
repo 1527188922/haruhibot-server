@@ -26,6 +26,20 @@ export function isMultiControl(row) {
   return (control.type === 'SELECT' || control.type === 'CHECKBOX') && control.multiple === true
 }
 
+/**
+ * 测速类型（后端 `control.probe`）：`JM_API`（接口线路）/ `JM_IMAGE`（图片线路）。
+ * 空串表示这个配置项不支持测速（大多数配置项都是）。
+ */
+export function probeKindOf(row) {
+  const probe = controlOf(row).probe
+  return probe === null || probe === undefined ? '' : String(probe)
+}
+
+/** 是否支持测速：只有"下拉单选 + 显式声明了 probe"的配置项才有测速按钮 */
+export function supportsProbe(row) {
+  return probeKindOf(row) !== '' && controlTypeOf(row) === 'SELECT' && !isMultiControl(row)
+}
+
 /** 多值控件的模型：逗号/空白分隔的字符串 <-> 数组 */
 export function splitList(value) {
   const text = value === null || value === undefined ? '' : String(value)

@@ -7,8 +7,12 @@ import 'crypto-js/pad-nopadding'
  * JM图片本地加密文件的浏览器端解密工具。
  *
  * 文件格式与后端 JmImageCipherUtil 保持一致：
- * 0-3 magic "JMEN"；4 version=1；5 flags(bit0=整图加密)；6-7 保留；
- * 8-11 prefixLen(int32 大端，仅部分加密时有效)；12-15 nonce(4字节)。
+ * 0-3 magic "JMEN"；4 version=1；5 flags(bit0=整图加密，bit1=只加密前 prefixLen 字节，
+ * 其余明文)；6-7 保留；8-11 prefixLen(int32 大端，仅部分加密时有效)；12-15 nonce(4字节)。
+ *
+ * **历史文件**：首版写"部分加密"时把剩余字节也加密了（头里没有 bit1），
+ * 这类文件整段都是密文，必须整体解密——否则只解前 32KB、其余密文被当明文解码，
+ * 表现就是"前 32KB 正常、其他像素全乱"。所以"没有 bit1 且不是整图加密"一律按整段密文处理。
  *
  * AES-CTR 计数器为完整16字节大端自增，前4字节是 nonce，其余为0。
  * 局域网 http 页面拿不到 crypto.subtle（非安全上下文），因此优先用 WebCrypto，
@@ -18,6 +22,7 @@ import 'crypto-js/pad-nopadding'
 const MAGIC = [0x4a, 0x4d, 0x45, 0x4e] // "JMEN"
 const HEADER_LENGTH = 16
 const FLAG_FULL = 1
+const FLAG_TAIL_PLAINTEXT = 2
 const KEY_TEXT = 'HaruhiJmImgKey01'
 const KEY_WORD_ARRAY = CryptoJS.enc.Utf8.parse(KEY_TEXT)
 const KEY_BYTES = new Uint8Array(KEY_TEXT.length)
@@ -142,6 +147,7 @@ function parseHeader(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   return {
     full: (bytes[5] & FLAG_FULL) !== 0,
+    tailPlaintext: (bytes[5] & FLAG_TAIL_PLAINTEXT) !== 0,
     prefixLength: view.getUint32(8, false),
     nonce: bytes.slice(12, 16)
   }
@@ -171,15 +177,20 @@ async function fetchAndDecrypt(url) {
   }
   const header = parseHeader(bytes)
   const prefixLength = Math.max(header.prefixLength, 0)
-  const cipherEnd = header.full
-    ? bytes.length
-    : Math.min(bytes.length, HEADER_LENGTH + prefixLength)
+  // 密文范围：
+  // - 整图加密 → 整个数据区；
+  // - 带 bit1 的部分加密 → 只有前缀；
+  // - 历史文件（部分加密的头 + 整段密文）→ 整个数据区，否则后半段会被当成明文渲染成乱码
+  const partial = !header.full && header.tailPlaintext
+  const cipherEnd = partial
+    ? Math.min(bytes.length, HEADER_LENGTH + prefixLength)
+    : bytes.length
   let plainPrefix = new Uint8Array(0)
   if (cipherEnd > HEADER_LENGTH) {
     plainPrefix = await ctrCrypt(bytes.subarray(HEADER_LENGTH, cipherEnd), header.nonce)
   }
   const parts = [plainPrefix]
-  if (!header.full && cipherEnd < bytes.length) {
+  if (partial && cipherEnd < bytes.length) {
     // 部分加密：前缀之外保持明文
     parts.push(bytes.subarray(cipherEnd))
   }

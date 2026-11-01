@@ -10,6 +10,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -81,6 +82,22 @@ class ControlMetaTest {
         assertTrue(ControlMeta.select("  ").getOptions().isEmpty());
         // 显示名为空时回落到值
         assertEquals("x", ControlMeta.select("x:").getOptions().get(0).getLabel());
+    }
+
+    @Test
+    void 下拉可以挂后端测速能力() {
+        ControlMeta withProbe = ControlMeta.selectWithProbe("JM_API", "host1:线路 1,host2:线路 2");
+        assertEquals(ControlType.SELECT, withProbe.getType());
+        assertFalse(withProbe.isMultiple(), "线路是单选");
+        assertTrue(withProbe.isAllowCustom(), "清单外的历史域名也要能保留");
+        assertEquals("JM_API", withProbe.getProbe());
+        assertEquals(2, withProbe.getOptions().size());
+
+        // 普通下拉没有测速能力
+        assertNull(ControlMeta.select("a:A").getProbe());
+        assertNull(ControlMeta.of(ConfigType.STRING).getProbe());
+        // 空串按"没有"处理，前端据此不渲染测速按钮
+        assertNull(ControlMeta.selectWithProbe("  ", "a:A").getProbe());
     }
 
     @Test

@@ -31,7 +31,7 @@ import java.util.Arrays;
  * <pre>
  * 0-3   magic "JMEN"
  * 4     version = 1
- * 5     flags，bit0=1 表示整图加密
+ * 5     flags，bit0=整图加密，bit1=只有前 prefixLen 字节被加密（其余明文）
  * 6-7   保留
  * 8-11  prefixLen，int32 大端，仅"部分加密"模式有效
  * 12-15 nonce，随机4字节，作为 AES-CTR 计数器的高4字节，低12字节固定为0
@@ -40,6 +40,12 @@ import java.util.Arrays;
  * 保证与前端 webui/src/util/jm-image-crypto.js 的实现一致。
  * <p>
  * 加解密只取决于文件头，与当前配置无关，因此切换配置后历史明文/密文文件都能正常读取。
+ * <p>
+ * <b>关于 bit1 与历史文件</b>：首版实现"部分加密"时，把前缀之后的字节也送进了
+ * CipherOutputStream，导致整份文件都是密文、头部却仍写着"部分加密"；读取方只解前 N 字节，
+ * 剩余密文被当成明文解码，表现为「前 32KB 正常、其余像素全乱」。现在写入方按格式只加密前缀、
+ * 其余直写明文，并用 bit1 标记这种（正确）格式；<b>没有 bit1 的老文件按"整段密文"解密</b>，
+ * 这样已经下载过的图片无需重新下载也能正常显示。
  */
 public final class JmImageCipherUtil {
 
@@ -47,6 +53,13 @@ public final class JmImageCipherUtil {
     private static final byte VERSION = 1;
     private static final int HEADER_LENGTH = 16;
     private static final int FLAG_FULL = 1;
+    /**
+     * 只有前 prefixLen 字节被加密，剩余字节是明文。
+     * <p>
+     * 首版没有这一位，而当时写出的"部分加密"文件其实整段都加密了；读取方据此区分
+     * "正确的前缀加密"与"历史遗留的整段密文"（见类注释）。
+     */
+    private static final int FLAG_TAIL_PLAINTEXT = 2;
     private static final int DEFAULT_PREFIX_KB = 32;
 
     /**
@@ -151,9 +164,12 @@ public final class JmImageCipherUtil {
             }
             byte flags = header[5];
             boolean fullEncrypted = (flags & FLAG_FULL) != 0;
+            boolean tailPlaintext = (flags & FLAG_TAIL_PLAINTEXT) != 0;
             int prefixLength = readInt(header, 8);
             byte[] nonce = Arrays.copyOfRange(header, 12, 16);
-            if (fullEncrypted) {
+            if (fullEncrypted || !tailPlaintext) {
+                // 整图加密；或者历史遗留的"部分加密"文件——那种文件其实整段都是密文，
+                // 必须整体解密才能还原（新文件带 FLAG_TAIL_PLAINTEXT，不会走到这里）
                 return new CipherInputStream(in, newCipher(Cipher.DECRYPT_MODE, nonce));
             }
             if (prefixLength < 0) {
@@ -216,14 +232,20 @@ public final class JmImageCipherUtil {
 
     /**
      * 部分加密输出流：先缓存前 prefixBytes 字节，凑满后再写文件头并把这段密文写出去，
-     * 之后的字节保持明文直写
+     * 之后的字节**保持明文直写**。
+     * <p>
+     * 剩余字节必须直写明文、不能再经过 cipher：文件头声明的是"只加密前 N 字节"，
+     * 读取方也只解这 N 字节。首版把剩余字节也送进 CipherOutputStream，结果整份文件都是密文，
+     * 前端只解前 32KB、其余密文被当成明文解码，就是「前 32KB 正常、其他像素全乱」的根因。
      */
     private static final class PrefixEncryptingOutputStream extends OutputStream {
         private final FileOutputStream out;
         private final byte[] nonce;
         private final int prefixBytes;
         private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        private CipherOutputStream cipherOut;
+        private final byte[] singleByte = new byte[1];
+        /** 头部 + 密文前缀是否已写出；写出后剩余字节转明文直写 */
+        private boolean prefixWritten;
         private boolean closed;
 
         private PrefixEncryptingOutputStream(FileOutputStream out, byte[] nonce, int prefixBytes) {
@@ -234,48 +256,56 @@ public final class JmImageCipherUtil {
 
         @Override
         public void write(int b) throws IOException {
-            if (cipherOut != null) {
-                cipherOut.write(b);
-                return;
-            }
-            buffer.write(b);
-            if (buffer.size() >= prefixBytes) {
-                flushPrefix();
-            }
+            singleByte[0] = (byte) b;
+            write(singleByte, 0, 1);
         }
 
         @Override
         public void write(byte[] b, int off, int len) throws IOException {
-            if (cipherOut != null) {
-                cipherOut.write(b, off, len);
+            if (len <= 0) {
+                return;
+            }
+            if (prefixWritten) {
+                // 前缀之后的字节是明文
+                out.write(b, off, len);
                 return;
             }
             int take = Math.min(prefixBytes - buffer.size(), len);
             buffer.write(b, off, take);
             if (buffer.size() >= prefixBytes) {
-                flushPrefix();
+                writePrefix();
             }
             int remain = len - take;
             if (remain > 0) {
-                cipherOut.write(b, off + take, remain);
+                // 本次写入跨过了前缀边界：剩下的字节同样是明文
+                out.write(b, off + take, remain);
             }
         }
 
-        private void flushPrefix() throws IOException {
+        /**
+         * 写出文件头 + 加密后的前缀，并切换到"明文直写"模式
+         */
+        private void writePrefix() throws IOException {
             byte[] plainPrefix = buffer.toByteArray();
-            out.write(buildHeader((byte) 0, plainPrefix.length, nonce));
-            cipherOut = new CipherOutputStream(out, newCipher(Cipher.ENCRYPT_MODE, nonce));
-            cipherOut.write(plainPrefix);
+            Cipher cipher = newCipher(Cipher.ENCRYPT_MODE, nonce);
+            byte[] cipherPrefix;
+            try {
+                // AES-CTR 是流模式：doFinal 的长度与明文一致，不会补 padding
+                cipherPrefix = cipher.doFinal(plainPrefix);
+            } catch (GeneralSecurityException e) {
+                throw new IOException("加密JM图片失败", e);
+            }
+            out.write(buildHeader((byte) FLAG_TAIL_PLAINTEXT, plainPrefix.length, nonce));
+            if (cipherPrefix != null && cipherPrefix.length > 0) {
+                out.write(cipherPrefix);
+            }
             buffer.reset();
+            prefixWritten = true;
         }
 
         @Override
         public void flush() throws IOException {
-            if (cipherOut != null) {
-                cipherOut.flush();
-            } else {
-                out.flush();
-            }
+            out.flush();
         }
 
         @Override
@@ -285,11 +315,12 @@ public final class JmImageCipherUtil {
             }
             closed = true;
             try {
-                if (cipherOut == null) {
-                    // 文件不足 prefixBytes（或空文件）：按实际长度整段加密
-                    flushPrefix();
+                if (!prefixWritten) {
+                    // 文件不足 prefixBytes（或空文件）：整段都当"前缀"加密，
+                    // 头里的 prefixLen 记实际长度，读取方解完这段正好是文件结尾
+                    writePrefix();
                 }
-                cipherOut.close();
+                out.close();
             } catch (IOException e) {
                 closeQuietly(out);
                 throw e;

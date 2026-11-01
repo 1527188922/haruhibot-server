@@ -6,8 +6,10 @@ import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.shared.model.BaseResp;
 import com.haruhi.botserver.features.jmcomic.client.model.Album;
 import com.haruhi.botserver.features.jmcomic.client.model.Chapter;
+import com.haruhi.botserver.features.jmcomic.service.JmLineProbeService;
 import com.haruhi.botserver.features.jmcomic.service.JmcomicService;
 import com.haruhi.botserver.features.jmcomic.service.JmcomicSqliteService;
+import com.haruhi.botserver.features.jmcomic.util.JmLineCatalog;
 import com.haruhi.botserver.shared.model.HttpResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumCollectReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumDeleteReq;
@@ -15,6 +17,7 @@ import com.haruhi.botserver.features.jmcomic.model.JmAlbumManageResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchResp;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumQueryReq;
+import com.haruhi.botserver.features.jmcomic.model.JmLineProbeReq;
 import com.haruhi.botserver.features.jmcomic.model.JmOnlineSearchHistory;
 import com.haruhi.botserver.features.jmcomic.model.JmOnlineSearchHistoryDeleteReq;
 import com.haruhi.botserver.features.jmcomic.model.JmChapterImageDeleteReq;
@@ -56,6 +59,9 @@ public class JmcomicController {
 
     @Autowired
     private JmcomicSqliteService jmcomicSqliteService;
+
+    @Autowired
+    private JmLineProbeService jmLineProbeService;
 
     /**
     @IgnoreAuthentication
@@ -382,6 +388,24 @@ public class JmcomicController {
     public HttpResp deleteChapterImages(@RequestBody JmChapterImageDeleteReq request) {
         jmcomicSqliteService.deleteChapterImages(request);
         return HttpResp.success("删除完成", null);
+    }
+
+    /* ==================== 线路测速 ==================== */
+
+    /**
+     * JM 线路测速（配置管理页的「测速」按钮）。
+     * <p>
+     * 逐条探测候选的接口线路 / 图片线路，返回首字节（接口）或整张探针图（图片）的耗时与档位。
+     * 候选清单来自 {@link com.haruhi.botserver.features.jmcomic.util.JmLineCatalog}，
+     * 额外传入的域名（用户手填、清单里没有的）也会一起测。
+     */
+    @PostMapping("/line/probe")
+    public HttpResp<List<JmLineProbeService.JmLineProbeResult>> probeLines(@RequestBody JmLineProbeReq request) {
+        JmLineCatalog.Kind kind = JmLineCatalog.Kind.fromCode(request == null ? null : request.getKind());
+        if (kind == null) {
+            return HttpResp.fail("不支持的测速类型：" + (request == null ? "" : request.getKind()), null);
+        }
+        return HttpResp.success(jmLineProbeService.probe(kind, request.getHosts()));
     }
 
     private String jsonBody(HttpResp resp) {

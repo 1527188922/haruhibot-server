@@ -29,6 +29,9 @@ import java.util.List;
  * X(..., ConfigType.BOOL, "false", true, "说明", 10, ControlMeta.checkbox())
  * // 单选框组（从候选项里选一个）
  * X(..., ConfigType.STRING, "0", true, "说明", 10, ControlMeta.radio("0:自动,1:强制"))
+ * // 下拉单选 + 后端测速（JM 线路一类的域名配置）
+ * X(..., ConfigType.STRING, "v", true, "说明", 10,
+ *         ControlMeta.selectWithProbe("JM_API", "host:显示名,host2:显示名2"))
  * </pre>
  */
 @Getter
@@ -42,12 +45,24 @@ public final class ControlMeta {
     private final boolean allowCustom;
     /** 候选项，不会为null */
     private final List<Option> options;
+    /**
+     * 测速类型；null 表示该配置项不支持测速。
+     * <p>
+     * 取值由业务侧解释（JM 线路用 {@code JM_API} / {@code JM_IMAGE}），前端只把它原样
+     * 回传给测速接口，所以 {@code configuration} 包不依赖具体业务。
+     */
+    private final String probe;
 
     private ControlMeta(ControlType type, boolean multiple, boolean allowCustom, List<Option> options) {
+        this(type, multiple, allowCustom, options, null);
+    }
+
+    private ControlMeta(ControlType type, boolean multiple, boolean allowCustom, List<Option> options, String probe) {
         this.type = type;
         this.multiple = multiple;
         this.allowCustom = allowCustom;
         this.options = options == null ? Collections.emptyList() : Collections.unmodifiableList(options);
+        this.probe = probe == null || probe.isBlank() ? null : probe.trim();
     }
 
     // ==================== 默认控件 ====================
@@ -92,6 +107,19 @@ public final class ControlMeta {
      */
     public static ControlMeta selectCustom(boolean multiple, String options) {
         return select(multiple, true, options);
+    }
+
+    /**
+     * 下拉单选（可自定义值）+ 后端测速按钮。
+     * <p>
+     * 「配置管理」页会为这类配置项渲染一颗「测速」按钮，点了之后由后端逐条探测候选线路，
+     * 在候选项上标出耗时/超时。测速类型只是原样回传给业务接口的字符串。
+     *
+     * @param probe   测速类型（如 {@code JM_API} / {@code JM_IMAGE}）
+     * @param options 候选项（{@code "值:显示名,值:显示名"}）
+     */
+    public static ControlMeta selectWithProbe(String probe, String options) {
+        return new ControlMeta(ControlType.SELECT, false, true, parse(options), probe);
     }
 
     private static ControlMeta select(boolean multiple, boolean allowCustom, String options) {

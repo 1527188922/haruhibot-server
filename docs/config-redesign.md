@@ -87,6 +87,7 @@
 | `options` | 候选项 `[{value,label}]`，声明时写成 `"值:显示名,值:显示名"`（冒号可省略，省略时显示名=值） |
 | `multiple` | 是否多选（`SELECT` / `CHECKBOX`） |
 | `allowCustom` | 是否允许自定义值（下拉可输入候选项之外的值） |
+| `probe` | 测速类型（`JM_API` / `JM_IMAGE`）：非空时前端在单选下拉旁渲染「测速」按钮，点了由后端逐条探测候选线路 |
 
 不声明时的默认控件：`BOOL → SWITCH`，`LIST → SELECT`（多选 + 允许自定义值，即标签输入框），
 其余（`STRING / INT / SECRET / JSON`）→ `INPUT`（前端再按值类型细分数字框、密码框、多行文本）。
@@ -98,6 +99,7 @@
 | 单选 | `ControlMeta.select("a:A,b:B")` |
 | 多选 | `ControlMeta.selectMultiple("a:A,b:B")` |
 | 可自定义值 | `ControlMeta.selectCustom(true/false, "a:A")`（候选可以为空，纯标签输入框） |
+| 单选 + 后端测速 | `ControlMeta.selectWithProbe("JM_API", "host:显示名")`（JM 线路类配置，见 `JmLineCatalog`） |
 
 声明示例（`ConfigKey` 里追加一个参数即可）：
 
@@ -113,6 +115,9 @@ DATABASE_DRUID_FILTERS(..., ConfigType.STRING, "stat", false, "druid过滤器…
         ControlMeta.checkboxGroup("stat,wall,log4j,slf4j")),
 // 单个复选框（BOOL）
 X(..., ConfigType.BOOL, "false", true, "说明", 10, ControlMeta.checkbox()),
+// JM 线路（接口 / 图片域名）：下拉 + 测速按钮
+JM_API_DOMAIN(..., JmLineCatalog.DEFAULT_API_HOST, true, "JM API域名…", 60,
+        ControlMeta.selectWithProbe(JmLineCatalog.Kind.API.code(), JmLineCatalog.apiControlOptions())),
 ```
 
 前端的取值转换：多值控件（多选下拉、复选组）在页面上是数组模型，保存时用逗号拼成一个字符串写入
@@ -133,7 +138,7 @@ X(..., ConfigType.BOOL, "false", true, "说明", 10, ControlMeta.checkbox()),
 | `searchimg.properties` | 识图 | `searchimg.saucenao.baseurl`、`searchimg.saucenao.apikey` |
 | `bilibili.properties` | B站 | cookie、上传/下载时长限制 |
 | `ai.properties` | AI | 千问key、DeepSeek key/baseurl/timeout |
-| `jm.properties` | JM漫画 | 解压密码、线程数、并发、名称长度、API域名、搜索结果 |
+| `jm.properties` | JM漫画 | 解压密码、线程数、并发、名称长度、**API域名/图片域名（下拉 + 测速，见 `JmLineCatalog`）**、搜索结果、图片加密与压缩 |
 | `url.properties` | 站点地址 | 第三方站点与接口地址（含原 `ThirdPartyURL` 常量迁移过来的项） |
 | `database.properties` | 数据库 | **数据源唯一真源**：jdbc url、驱动、druid 参数（**需重启**，会覆盖 yml 里的 `spring.datasource`） |
 | `chat_record.properties` | 聊天记录 | `db.chat_extend.raw_compress` |
@@ -365,7 +370,7 @@ save(key, value)
 
 | 测试类 | 覆盖内容 |
 |---|---|
-| `ControlMetaTest`（5 项） | **值类型与控件类型解耦**：默认控件映射（BOOL→开关、LIST→多选下拉、其余→输入框）、同一值类型配不同控件、下拉的单选/多选/可自定义值三种模式、`"值:显示名"` 候选项解析、现有配置项声明了预期控件（日志级别下拉、下载模式单选组、druid过滤器复选组、superusers 多选+自定义） |
+| `ControlMetaTest`（6 项） | **值类型与控件类型解耦**：默认控件映射（BOOL→开关、LIST→多选下拉、其余→输入框）、同一值类型配不同控件、下拉的单选/多选/可自定义值三种模式、`"值:显示名"` 候选项解析、**下拉挂后端测速能力（`selectWithProbe`）**、现有配置项声明了预期控件（日志级别下拉、下载模式单选组、druid过滤器复选组、superusers 多选+自定义、JM 线路下拉+测速） |
 | `ConfigsTest`（36 项） | 声明默认值回落、未声明key无法反查、properties 保存并落盘、写文件保留注释与顺序、新增 key 追加、多行值转义往返、注释/未声明 key 被忽略、类型校验、**yml 拍平进快照**、**yml 原地改值保留注释与缩进**、**yml 插入/删除键**、**带点key反复保存不新增行**、**历史点分重复行的清理与改写**、**坏文件自动去重**、**重置写回默认值且不新增行**、**日志级别在同一份 yml 且无歧义**、**文件级刷新能发现外部改动且二次刷新回报"文件没变"**、**只改注释时回报文件变了但配置值没变**、key 级刷新、重置、程序写入、标量引号规则、加载顺序、数据源配置读取、文件归属校验 |
 | `ConfigSpringIntegrationTest`（21 项） | **完整应用上下文启动成功**、properties 与 yml 同时被 `Configs` 与 Spring Environment 读到、**数据源以 database.properties 为准（真实取一条连接）**、`ConfigApplier` 订阅者已注册并被通知、**playwright 浏览器下载模式热更新（真实断言缓存被清空）**、**job.properties 的 enable/cron 热更新（真实断言 Quartz 触发器注册/取消/重新排期）**、**文件里缺少该 key 时保存后同样能热更新**、**直接用编辑器改文件也会被自动感知并热更新**、**手工改文件后点刷新会报出变化的配置项**、**改动已被自动重载后点刷新会说明原因（"已是最新…自动重载"）而不是含糊的"无变化"**、接口分组数据完整、**配置项下发控件元数据**、保存 properties / yml 后落盘并保留注释、**缺少的 yml key 写成嵌套结构而不是点分行**、**重置接口写回默认值而不是删行**、**日志级别没有歧义且能保存**、**静态资源地址只注册一个实现**、所有配置文件都有可编辑项、读取文件原文 |
 | `BotTest`（3 项） | 上传文件并发/排队行为（配置读取已改为 `Configs`） |

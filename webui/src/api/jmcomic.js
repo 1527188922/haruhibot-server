@@ -230,3 +230,19 @@ export const retryJmTask = (taskId) => request({
   url: baseUrl + `/jmcomic/manage/task/retry/${taskId}`,
   method: 'post'
 });
+
+/**
+ * JM线路测速（配置管理页 api/图片 域名下拉旁的「测速」按钮）
+ *
+ * 逐条探测候选线路：接口线路量首字节、图片线路量整张探针图收完。
+ * 后端会并发探测，最慢的线路有 12 秒上限，所以这里给 60 秒。
+ *
+ * @param data {kind: 'JM_API'|'JM_IMAGE', hosts?: [额外要测的域名]}
+ */
+export const probeJmLines = (data) => request({
+  url: baseUrl + '/jmcomic/line/probe',
+  method: 'post',
+  timeout: 60 * 1000,
+  data
+});
+

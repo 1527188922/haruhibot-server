@@ -1,6 +1,7 @@
 package com.haruhi.botserver.configuration.metadata;
 
 import com.haruhi.botserver.configuration.service.Configs;
+import com.haruhi.botserver.features.jmcomic.util.JmLineCatalog;
 
 import lombok.Getter;
 
@@ -143,8 +144,12 @@ public enum ConfigKey {
             "JM漫画操作是否允许不同JM ID并发执行，true表示开启并发执行", 40),
     JM_ALBUM_NAME_MAX_LENGTH(ConfigFile.JM, "jm.album.name_max_length", ConfigType.INT, "150", true,
             "jm本子文件夹名称的最大长度（bytes.length而非字符个数，不含_JM{id}后缀），本子名会作为文件夹名使用，需小于255", 50),
-    JM_API_DOMAIN(ConfigFile.JM, "jm.api_domain", ConfigType.STRING, "www.cdnbea.net", true,
-            "JM API域名", 60),
+    JM_API_DOMAIN(ConfigFile.JM, "jm.api_domain", ConfigType.STRING, JmLineCatalog.DEFAULT_API_HOST, true,
+            "JM API域名（本子详情/搜索/章节清单走的线路）。候选项来自 JM 线路清单，可点「测速」看各线路延迟后选最快的",
+            60, ControlMeta.selectWithProbe(JmLineCatalog.Kind.API.code(), JmLineCatalog.apiControlOptions())),
+    JM_IMAGE_DOMAIN(ConfigFile.JM, "jm.image_domain", ConfigType.STRING, JmLineCatalog.DEFAULT_IMAGE_HOST, true,
+            "JM 图片域名（章节图片与封面走的图片CDN）。候选项来自 JM 线路清单，可点「测速」看各图源延迟后选最快的",
+            65, ControlMeta.selectWithProbe(JmLineCatalog.Kind.IMAGE.code(), JmLineCatalog.imageControlOptions())),
     JM_SEARCH_RESULT_IMAGE_MODE(ConfigFile.JM, "jm.search_result.image_mode", ConfigType.BOOL, "false", true,
             "JM搜索结果是否以图片方式发送，true表示以图片发送搜索结果，false表示合并转发消息发送", 70),
     JM_SEARCH_RESULT_LIMIT(ConfigFile.JM, "jm.search_result.limit", ConfigType.INT, "12", true,
@@ -162,7 +167,8 @@ public enum ConfigKey {
     JM_IMAGE_ENCRYPT_PREFIX_KB(ConfigFile.JM, "jm.image.encrypt.prefix.kb", ConfigType.INT, "32", true,
             "JM图片加密字节数（KB）：0=整图加密，大于0=仅加密文件前N KB；仅影响新下载的文件", 140),
     JM_IMAGE_COMPRESS_ENABLED(ConfigFile.JM, "jm.image.compress.enabled", ConfigType.BOOL, "true", true,
-            "JM漫画图片解扰后是否压缩保存，true=有损WebP(quality 85)，false=无损WebP(像素不变但体积约9倍)；仅影响新下载的图片", 150),
+            "JM漫画图片解扰后是否重新压缩：true=有损WebP q85，false=无损WebP q100。只影响需要解扰的webp；未加扰章节与jpg/gif原图按站点原始字节保存（不重编码）",
+            150),
 
     // ============================ 站点地址 ============================
     // ThirdPartyURL 中的地址常量已迁移到这里，除 identimg（识图，见 searchimg.properties）外
