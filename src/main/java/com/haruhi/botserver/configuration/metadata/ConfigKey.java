@@ -161,6 +161,8 @@ public enum ConfigKey {
             "JM漫画图片和封面是否加密保存到本地服务器，true=加密；仅影响新下载的文件，历史明文图片仍可正常读取", 130),
     JM_IMAGE_ENCRYPT_PREFIX_KB(ConfigFile.JM, "jm.image.encrypt.prefix.kb", ConfigType.INT, "32", true,
             "JM图片加密字节数（KB）：0=整图加密，大于0=仅加密文件前N KB；仅影响新下载的文件", 140),
+    JM_IMAGE_COMPRESS_ENABLED(ConfigFile.JM, "jm.image.compress.enabled", ConfigType.BOOL, "true", true,
+            "JM漫画图片解扰后是否压缩保存，true=有损WebP(quality 85)，false=无损WebP(像素不变但体积约9倍)；仅影响新下载的图片", 150),
 
     // ============================ 站点地址 ============================
     // ThirdPartyURL 中的地址常量已迁移到这里，除 identimg（识图，见 searchimg.properties）外

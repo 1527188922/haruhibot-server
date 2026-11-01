@@ -11,6 +11,8 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.luciad.imageio.webp.CompressionType;
+import com.luciad.imageio.webp.WebPWriteParam;
 import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import com.haruhi.botserver.shared.model.BaseResp;
 import com.haruhi.botserver.features.jmcomic.client.model.Album;
@@ -59,10 +61,13 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
+import javax.imageio.ImageWriter;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
@@ -92,6 +97,11 @@ public class JmcomicService {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
     public static final String JM_DEFAULT_PASSWORD = "1234";
+
+    /**
+     * 有损WebP质量，对应Android端的 q85，实测体积与官方下载包基本一致
+     */
+    private static final float JM_WEBP_LOSSY_QUALITY = 0.85f;
 
     /**
      * JM /search 接口每页固定返回80条
@@ -1126,10 +1136,10 @@ public class JmcomicService {
     }
 
     private void saveImg(int blockNum,byte[] bytes,File file) throws Exception {
-        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes)){
+        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes)) {
             BufferedImage srcImg = ImageIO.read(byteArrayInputStream);
             BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
-            ImageIO.write(dstImg, "webp", file);
+            saveImage(dstImg, file);
         }
     }
 
@@ -1137,13 +1147,41 @@ public class JmcomicService {
         try (InputStream fileInputStream = Files.newInputStream(tmpImgFile.toPath())){
             BufferedImage srcImg = ImageIO.read(fileInputStream);
             BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
-            if (JmImageCipherUtil.isEnabled()) {
-                try (OutputStream outputStream = JmImageCipherUtil.newEncryptingStream(file)) {
-                    ImageIO.write(dstImg, "webp", outputStream);
-                }
-            } else {
-                ImageIO.write(dstImg, "webp", file);
+            saveImage(dstImg, file);
+        }
+    }
+
+    private void saveImage(BufferedImage image, File file) throws IOException {
+        if (JmImageCipherUtil.isEnabled()) {
+            try (OutputStream outputStream = JmImageCipherUtil.newEncryptingStream(file)) {
+                writeWebp(image, outputStream);
             }
+        } else {
+            try (OutputStream outputStream = Files.newOutputStream(file.toPath())) {
+                writeWebp(image, outputStream);
+            }
+        }
+    }
+
+    /**
+     * 解扰后的图片写入WebP。
+     * 压缩开关只影响新下载的图片：true=有损q85（体积接近官方包），false=无损（像素不变、体积约9倍）
+     */
+    private void writeWebp(BufferedImage image, OutputStream outputStream) throws IOException {
+        boolean compress = Configs.getBool(ConfigKey.JM_IMAGE_COMPRESS_ENABLED, true);
+        ImageWriter writer = ImageIO.getImageWritersByFormatName("webp").next();
+        try (ImageOutputStream imageOutputStream = ImageIO.createImageOutputStream(outputStream)) {
+            writer.setOutput(imageOutputStream);
+            WebPWriteParam writeParam = (WebPWriteParam) writer.getDefaultWriteParam();
+            if (compress) {
+                writeParam.setCompressionType(CompressionType.Lossy);
+                writeParam.setCompressionQuality(JM_WEBP_LOSSY_QUALITY);
+            } else {
+                writeParam.setCompressionType(CompressionType.Lossless);
+            }
+            writer.write(null, new IIOImage(image, null, null), writeParam);
+        } finally {
+            writer.dispose();
         }
     }
 
