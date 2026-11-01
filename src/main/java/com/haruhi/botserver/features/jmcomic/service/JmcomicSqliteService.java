@@ -55,6 +55,12 @@ public interface JmcomicSqliteService {
      */
     String findServerCoverUrl(Long id);
 
+    /**
+     * 查询本地封面图是否加密保存，仅用于任务面板展示。
+     * 本子未入库或本地封面文件不存在时返回null
+     */
+    Boolean findServerCoverEncrypted(Long id);
+
     IPage<JmChapterImageManageResp> searchChapterImages(JmChapterImageQueryReq request);
 
     void deleteAlbums(JmAlbumDeleteReq request);

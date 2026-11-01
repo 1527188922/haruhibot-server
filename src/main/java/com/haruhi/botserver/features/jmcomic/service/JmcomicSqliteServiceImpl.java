@@ -21,6 +21,7 @@ import com.haruhi.botserver.features.jmcomic.persistence.mapper.JmAlbumSqliteMap
 import com.haruhi.botserver.features.jmcomic.persistence.mapper.JmChapterImageSqliteMapper;
 import com.haruhi.botserver.features.jmcomic.persistence.mapper.JmFavoriteAlbumSqliteMapper;
 import com.haruhi.botserver.features.jmcomic.persistence.mapper.JmFavoriteSqliteMapper;
+import com.haruhi.botserver.features.jmcomic.util.JmImageCipherUtil;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumDeleteReq;
@@ -166,8 +167,9 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         if (albumId == null || chapterId == null) {
             return Collections.emptyList();
         }
+        JmAlbumSqlite album = jmAlbumSqliteMapper.selectById(albumId);
         return jmChapterImageSqliteMapper.selectImages(albumId, chapterId).stream()
-                .map(this::toChapterImageResp)
+                .map(image -> toChapterImageResp(image, album))
                 .collect(Collectors.toList());
     }
 
@@ -357,6 +359,18 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
                 .eq(JmAlbumSqlite::getId, id));
         // 本地封面图还没下载时返回null，由前端回退到JM远程封面
         return buildServerCoverUrl(album);
+    }
+
+    @Override
+    public Boolean findServerCoverEncrypted(Long id) {
+        if (id == null) {
+            return null;
+        }
+        JmAlbumSqlite album = jmAlbumSqliteMapper.selectOne(new LambdaQueryWrapper<JmAlbumSqlite>()
+                .select(JmAlbumSqlite::getId, JmAlbumSqlite::getAlbumFolderName)
+                .eq(JmAlbumSqlite::getId, id));
+        File coverFile = getCoverFile(album);
+        return coverFile != null && coverFile.isFile() ? JmImageCipherUtil.isEncrypted(coverFile) : null;
     }
 
     @Override
@@ -876,7 +890,7 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         }).collect(Collectors.toList());
     }
 
-    JmChapterImageResp toChapterImageResp(JmChapterImageSqlite image) {
+    JmChapterImageResp toChapterImageResp(JmChapterImageSqlite image, JmAlbumSqlite album) {
         JmChapterImageResp resp = new JmChapterImageResp();
         resp.setAlbumId(image.getAlbumId());
         resp.setChapterId(image.getChapterId());
@@ -888,6 +902,8 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         resp.setImageFile(image.getImageFile());
         resp.setImageSort(image.getImageSort());
         resp.setImgUrl(JmcomicService.buildImgUrl(image.getChapterId(), image.getImageFile()));
+        File imageFile = getImageFile(album, image);
+        resp.setImageEncrypted(album != null && imageFile.isFile() ? JmImageCipherUtil.isEncrypted(imageFile) : null);
         return resp;
     }
 
@@ -901,7 +917,9 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         resp.setServerZipUrl(zipFile.exists() ? buildServerFileUrl(album.getAlbumFolderName() + ".zip") : null);
         resp.setServerPdfUrl(pdfFile.exists() ? buildServerFileUrl(album.getAlbumFolderName() + ".pdf") : null);
         resp.setCoverUrl(JmcomicService.buildCoverUrl(album.getId(), null));
+        File coverFile = getCoverFile(album);
         resp.setServerCoverUrl(coverFileExists(album) ? buildServerCoverUrl(album) : null);
+        resp.setServerCoverEncrypted(coverFile != null && coverFile.isFile() ? JmImageCipherUtil.isEncrypted(coverFile) : null);
         resp.setChapterList(this.listChapters(album));
         resp.setImageCount(jmChapterImageSqliteMapper.selectCount(new LambdaQueryWrapper<JmChapterImageSqlite>()
                 .eq(JmChapterImageSqlite::getAlbumId, album.getId())));
@@ -913,8 +931,10 @@ public class JmcomicSqliteServiceImpl implements JmcomicSqliteService {
         JmChapterImageManageResp resp = new JmChapterImageManageResp();
         BeanUtils.copyProperties(image, resp);
         resp.setImgUrl(JmcomicService.buildImgUrl(image.getChapterId(), image.getImageFile()));
-        resp.setImageFileExists(album != null && getImageFile(album, image).exists());
+        File imgFile = getImageFile(album, image);
+        resp.setImageFileExists(album != null && imgFile.exists());
         resp.setServerImgUrl(buildServerImgUrl(album, image));
+        resp.setImageEncrypted(album != null && imgFile.isFile() ? JmImageCipherUtil.isEncrypted(imgFile) : null);
         return resp;
     }
 

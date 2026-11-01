@@ -47,15 +47,15 @@
       <el-table-column v-if="isVisible('cover')" label="封面" width="96" align="center">
         <template slot-scope="{row}">
           <el-tooltip v-if="albumCoverSrc(row)" :content="albumCoverTip(row)" placement="right">
-            <el-image
+            <jm-image
               class="jm-cover-image"
               :src="albumCoverSrc(row)"
-              :preview-src-list="[albumCoverSrc(row)]"
-              fit="cover"
-              referrerpolicy="no-referrer">
+              :encrypted="row.serverCoverEncrypted"
+              preview
+              fit="cover">
               <div slot="placeholder" class="jm-cover-state"><i class="el-icon-loading"></i></div>
               <div slot="error" class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
-            </el-image>
+            </jm-image>
           </el-tooltip>
           <el-tooltip v-else content="本地与JM均无封面" placement="right">
             <div class="jm-cover-state"><i class="el-icon-picture-outline"></i></div>
@@ -213,11 +213,11 @@
           <!-- 瀑布流下也能勾选做批量操作，与列表视图共用同一份选中态 -->
           <el-checkbox v-if="isVisible('selection')" class="jm-waterfall-select"
                        :value="isRowSelected(row)" @change="toggleRowSelected(row)"></el-checkbox>
-          <el-image v-if="albumCoverSrc(row)" :src="albumCoverSrc(row)" :preview-src-list="[albumCoverSrc(row)]"
-                    fit="cover" referrerpolicy="no-referrer">
+          <jm-image v-if="albumCoverSrc(row)" :src="albumCoverSrc(row)" :encrypted="row.serverCoverEncrypted"
+                    preview fit="cover">
             <div slot="placeholder" class="jm-waterfall-placeholder"><i class="el-icon-loading"></i></div>
             <div slot="error" class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
-          </el-image>
+          </jm-image>
           <div v-else class="jm-waterfall-placeholder"><i class="el-icon-picture-outline"></i></div>
           <el-tag v-if="isCollected(row)" class="jm-waterfall-status" size="mini" type="warning">已收藏</el-tag>
           <i v-if="row.zipExists" class="jm-waterfall-badge jm-waterfall-badge-zip" title="已有ZIP">ZIP</i>
@@ -277,8 +277,11 @@
  * 记录在这里统一做一次字段展开（author/tags/works/actors/relatedList 都是JSON字符串），
  * 两个 tab 不再各自解析，展示结果必然一致。
  */
+import JmImage from './jm-image.vue';
+
 export default {
   name: 'JmAlbumView',
+  components: { JmImage },
   props: {
     albums: {
       type: Array,

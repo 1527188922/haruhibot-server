@@ -157,6 +157,10 @@ public enum ConfigKey {
             "JM搜索(/search)接口遇到网络超时最大重试次数，0=不重试", 110),
     JM_REQUEST_CHAPTER_RETRY(ConfigFile.JM, "jm.request.chapter.retry", ConfigType.INT, "0", true,
             "请求章节详情(/chapter)接口遇到网络超时最大重试次数，0=不重试", 120),
+    JM_IMAGE_ENCRYPT_ENABLED(ConfigFile.JM, "jm.image.encrypt.enabled", ConfigType.BOOL, "true", true,
+            "JM漫画图片和封面是否加密保存到本地服务器，true=加密；仅影响新下载的文件，历史明文图片仍可正常读取", 130),
+    JM_IMAGE_ENCRYPT_PREFIX_KB(ConfigFile.JM, "jm.image.encrypt.prefix.kb", ConfigType.INT, "32", true,
+            "JM图片加密字节数（KB）：0=整图加密，大于0=仅加密文件前N KB；仅影响新下载的文件", 140),
 
     // ============================ 站点地址 ============================
     // ThirdPartyURL 中的地址常量已迁移到这里，除 identimg（识图，见 searchimg.properties）外

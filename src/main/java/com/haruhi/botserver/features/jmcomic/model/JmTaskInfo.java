@@ -29,6 +29,10 @@ public class JmTaskInfo {
      */
     private String serverCoverUrl;
     /**
+     * 本地封面是否加密保存；本地封面不存在时为null
+     */
+    private Boolean serverCoverEncrypted;
+    /**
      * 动作code，见 {@link JmTaskAction#getCode()}
      */
     private String action;

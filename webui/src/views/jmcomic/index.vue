@@ -200,7 +200,13 @@
         </el-table-column>
         <el-table-column label="服务器图片url" prop="serverImgUrl" min-width="300" show-overflow-tooltip>
           <template slot-scope="{row}">
-            <a v-if="row.serverImgUrl" :href="serverImgUrlFor(row)" target="_blank">{{serverImgUrlFor(row)}}</a>
+            <div v-if="row.serverImgUrl" class="jm-server-image-cell">
+              <jm-image class="jm-server-image-thumb" :src="row.serverImgUrl" :encrypted="row.imageEncrypted"
+                        preview fit="cover"></jm-image>
+              <a v-if="row.imageEncrypted !== true" :href="serverImgUrlFor(row)" target="_blank"
+                 class="jm-server-image-link">{{serverImgUrlFor(row)}}</a>
+              <span v-else class="jm-server-image-link">图片已加密保存，点击左侧缩略图预览</span>
+            </div>
             <span v-else>-</span>
           </template>
         </el-table-column>
@@ -385,6 +391,7 @@ import JmFavoritePanel from "./jm-favorite-panel.vue";
 import JmAlbumView from "./jm-album-view.vue";
 import JmAddDialog from "./jm-add-dialog.vue";
 import JmFavoritePicker from "./jm-favorite-picker.vue";
+import JmImage from "./jm-image.vue";
 import { ALBUM_COLUMN_OPTIONS, DEFAULT_ALBUM_COLUMNS } from "./jm-album-columns";
 import numberInput from "@/components/input/numberInput.vue";
 import {
@@ -424,7 +431,7 @@ const ALBUM_BUSY_ACTIONS = ['download', 'zip', 'pdf'];
 
 export default {
   name: 'JmcomicManage',
-  components: { JmPreviewDrawer, JmTaskPanel, JmTagSelect, JmAuthorSelect, JmFavoritePanel, JmAlbumView, JmAddDialog, JmFavoritePicker, numberInput },
+  components: { JmPreviewDrawer, JmTaskPanel, JmTagSelect, JmAuthorSelect, JmFavoritePanel, JmAlbumView, JmAddDialog, JmFavoritePicker, JmImage, numberInput },
   data() {
     return {
       activeTab: 'album',
@@ -631,13 +638,7 @@ export default {
         this.$refs.albumView.doLayout()
       }
     },
-    handleRequestError(error) {
-      // const message = error && error.data && error.data.message
-      //   ? error.data.message
-      //   : error && error.message
-      //     ? error.message
-      //     : '请求失败'
-      // this.$message.error(message)
+    handleRequestError() {
     },
     /**
      * 标签候选由组件在首次展开下拉时拉取，新增/删除JM记录后标签可能变化，通知组件重新拉取
@@ -1545,7 +1546,7 @@ export default {
         this.deleteAllFileDialogVisible = false
         this.$message.success(message)
         this.searchChaptersFirst()
-      }).catch(error => {
+      }).catch(() => {
 
       }).finally(() => {
         this.allFileDeleteLoading = false
@@ -1619,6 +1620,38 @@ export default {
     color: #606266;
     font-size: 13px;
     line-height: 28px;
+  }
+
+  /**
+   * 章节图片管理里的"服务器图片url"：图片加密保存时链接打不开，
+   * 统一改成"缩略图 + 说明"，缩略图点击可预览解密后的图片
+   */
+  .jm-server-image-cell {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+  }
+
+  .jm-server-image-thumb {
+    border: 1px solid #ebeef5;
+    border-radius: 4px;
+    cursor: pointer;
+    flex: 0 0 auto;
+    height: 48px;
+    width: 36px;
+
+    ::v-deep .el-image__inner {
+      height: 100%;
+      width: 100%;
+    }
+  }
+
+  .jm-server-image-link {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /**

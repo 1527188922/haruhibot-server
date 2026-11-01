@@ -21,6 +21,10 @@ public class JmAlbumManageResp extends JmAlbumSqlite {
      * 本地服务器封面图url，本地封面文件(jmcomic/{文件夹}/{jmId}.jpg)不存在时为null
      */
     private String serverCoverUrl;
+    /**
+     * 本地封面是否加密保存；本地封面不存在时为null
+     */
+    private Boolean serverCoverEncrypted;
     private List<JmChapterInfoResp> chapterList;
     private Long imageCount;
     private Long actualImageCount;

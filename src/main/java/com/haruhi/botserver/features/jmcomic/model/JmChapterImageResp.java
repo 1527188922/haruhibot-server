@@ -14,4 +14,8 @@ public class JmChapterImageResp {
     private String imageFile;
     private Integer imageSort;
     private String imgUrl;
+    /**
+     * 服务器图片是否加密保存；文件不存在时为null
+     */
+    private Boolean imageEncrypted;
 }

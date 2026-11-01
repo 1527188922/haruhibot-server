@@ -27,6 +27,7 @@ import com.haruhi.botserver.features.jmcomic.model.JmTaskAction;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskInfo;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskSnapshot;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskStatusEnum;
+import com.haruhi.botserver.features.jmcomic.util.JmImageCipherUtil;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
@@ -390,6 +391,7 @@ public class JmcomicService {
             Long jmId = parseJmId(task.getAid());
             if (jmId != null) {
                 task.setServerCoverUrl(jmcomicSqliteService.findServerCoverUrl(jmId));
+                task.setServerCoverEncrypted(jmcomicSqliteService.findServerCoverEncrypted(jmId));
             }
         }
     }
@@ -577,10 +579,35 @@ public class JmcomicService {
             parameters.setEncryptionMethod(EncryptionMethod.AES);
             parameters.setIncludeRootFolder(false);
             zip.setCharset(StandardCharsets.UTF_8);
-            zip.addFolder(file, parameters);
+            // 图片可能新老混杂（旧明文、新加密），逐个按解密流写入zip，避免生成临时明文目录
+            addAlbumFilesToZip(zip, file, "", parameters);
         }
         log.info("打包完成：{} cost:{}", zipFile.getAbsolutePath(),(System.currentTimeMillis() - l));
         return BaseResp.success(oldFileDeleted ? "旧zip文件已删除，重新生成完成" : "zip生成完成", zipFile);
+    }
+
+    /**
+     * 递归把本子目录下的文件写入zip，zip内保留相对目录层级。
+     * 每个文件都通过 {@link JmImageCipherUtil#newDecryptingStream} 读取，
+     * 加密图片解密后写入、明文图片原样写入
+     */
+    private void addAlbumFilesToZip(ZipFile zip, File dir, String parentPath, ZipParameters parameters) throws Exception {
+        File[] files = FileUtil.getFileList(dir);
+        if (files != null) {
+            for (File file : files) {
+                parameters.setFileNameInZip(parentPath.isEmpty() ? file.getName() : parentPath + "/" + file.getName());
+                try (InputStream in = new BufferedInputStream(JmImageCipherUtil.newDecryptingStream(file))) {
+                    zip.addStream(in, parameters);
+                }
+            }
+        }
+        File[] childDirs = FileUtil.getDirectoryList(dir);
+        if (childDirs != null) {
+            for (File childDir : childDirs) {
+                addAlbumFilesToZip(zip, childDir,
+                        parentPath.isEmpty() ? childDir.getName() : parentPath + "/" + childDir.getName(), parameters);
+            }
+        }
     }
 
     /**
@@ -732,7 +759,10 @@ public class JmcomicService {
     }
 
     private void addImageToPdf(PDDocument document, File imageFile) throws IOException {
-        BufferedImage bufferedImage = ImageIO.read(imageFile);
+        BufferedImage bufferedImage;
+        try (InputStream in = new BufferedInputStream(JmImageCipherUtil.newDecryptingStream(imageFile))) {
+            bufferedImage = ImageIO.read(in);
+        }
         PDImageXObject image = LosslessFactory.createFromImage(document, bufferedImage);
         PDPage page = new PDPage(new PDRectangle(image.getWidth(), image.getHeight()));
         document.addPage(page);
@@ -818,6 +848,9 @@ public class JmcomicService {
         }
         cn.hutool.core.io.FileUtil.del(file);
         String imgUrl = buildCoverUrl(jmId, domain);
+        boolean encrypt = JmImageCipherUtil.isEnabled();
+        File tmpFile = encrypt ? new File(file.getAbsolutePath() + ".tmp") : null;
+        File downloadTarget = encrypt ? tmpFile : file;
         try {
             boolean result = RetryUtil.retry(maxAttempt, 100, false,
                     //属于这几个异常表示需要重试
@@ -832,11 +865,15 @@ public class JmcomicService {
                             if (!response.isOk()) {
                                 return false;
                             }
-                            response.writeBody(file);
+                            response.writeBody(downloadTarget);
                         }
-                        return file.exists() && file.length() > 0;
+                        return downloadTarget.exists() && downloadTarget.length() > 0;
                     }
             );
+            // 下载成功后按当前配置加密落盘
+            if (result && encrypt && tmpFile.exists() && tmpFile.length() > 0) {
+                JmImageCipherUtil.encryptFile(tmpFile, file);
+            }
         } catch (Exception e) {
             if (StringUtils.isNotBlank(domain)) {
                 // 指定了域名下载失败 则不再重试 直接返回
@@ -846,6 +883,10 @@ public class JmcomicService {
             DbLog.error(BusinessModuleEnum.JMCOMIC, "下载jm封面异常 imgUrl:{} error:{}",imgUrl,e.getMessage(),e);
             // 切换域名重试
             downloadCoverImage(jmId, albumPath, COVER_DOMAIN, maxAttempt);
+        } finally {
+            if (tmpFile != null) {
+                cn.hutool.core.io.FileUtil.del(tmpFile);
+            }
         }
         return file;
     }
@@ -1096,7 +1137,13 @@ public class JmcomicService {
         try (InputStream fileInputStream = Files.newInputStream(tmpImgFile.toPath())){
             BufferedImage srcImg = ImageIO.read(fileInputStream);
             BufferedImage dstImg = blockNum == 0 ? srcImg : stitchImg(srcImg, blockNum);
-            ImageIO.write(dstImg, "webp", file);
+            if (JmImageCipherUtil.isEnabled()) {
+                try (OutputStream outputStream = JmImageCipherUtil.newEncryptingStream(file)) {
+                    ImageIO.write(dstImg, "webp", outputStream);
+                }
+            } else {
+                ImageIO.write(dstImg, "webp", file);
+            }
         }
     }
 

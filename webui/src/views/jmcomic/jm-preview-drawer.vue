@@ -23,7 +23,9 @@
                   <span>{{formatPreviewImageIndex(image)}}</span>
                   <span :title="formatPreviewImageFileName(image)" class="jm-preview-image-name">{{formatPreviewImageFileName(image)}}</span>
                 </div>
-                <img v-if="isPreviewImageAvailable(image) && image.lazyVisible" :src="$localUrl(image.serverImgUrl)" :alt="image.imageFile" class="jm-preview-image" @error="markPreviewImageLoadFailed(image)">
+                <jm-image v-if="isPreviewImageAvailable(image) && image.lazyVisible" :src="image.serverImgUrl"
+                          :encrypted="image.imageEncrypted" :alt="image.imageFile" class="jm-preview-image"
+                          @error="markPreviewImageLoadFailed(image)"></jm-image>
                 <div v-else-if="isPreviewImageAvailable(image)" class="jm-preview-image-pending">
                   <i class="el-icon-loading"></i>
                   <div>图片进入可视区域后加载</div>
@@ -50,9 +52,11 @@
 
 <script>
 import { searchChapterImages } from "@/api/jmcomic";
+import JmImage from "./jm-image.vue";
 
 export default {
   name: 'JmPreviewDrawer',
+  components: { JmImage },
   props: {
     visible: {
       type: Boolean,

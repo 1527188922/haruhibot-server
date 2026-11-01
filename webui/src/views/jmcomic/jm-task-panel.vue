@@ -33,9 +33,10 @@
           <div v-else class="jm-task-list">
             <div v-for="task in runningList" :key="task.taskId" class="jm-task-card">
               <div class="jm-task-cover">
-                <el-image v-if="taskCoverSrc(task)" class="jm-task-cover-img" :src="taskCoverSrc(task)" fit="cover">
+                <jm-image v-if="taskCoverSrc(task)" class="jm-task-cover-img" :src="taskCoverSrc(task)"
+                          :encrypted="task.serverCoverEncrypted" fit="cover">
                   <div slot="error" class="jm-task-cover-fallback">JM{{task.aid}}</div>
-                </el-image>
+                </jm-image>
                 <div v-else class="jm-task-cover-fallback">JM{{task.aid}}</div>
               </div>
               <div class="jm-task-main">
@@ -78,9 +79,10 @@
           <div v-else class="jm-task-list">
             <div v-for="task in queuedList" :key="task.taskId" class="jm-task-card">
               <div class="jm-task-cover">
-                <el-image v-if="taskCoverSrc(task)" class="jm-task-cover-img" :src="taskCoverSrc(task)" fit="cover">
+                <jm-image v-if="taskCoverSrc(task)" class="jm-task-cover-img" :src="taskCoverSrc(task)"
+                          :encrypted="task.serverCoverEncrypted" fit="cover">
                   <div slot="error" class="jm-task-cover-fallback">JM{{task.aid}}</div>
-                </el-image>
+                </jm-image>
                 <div v-else class="jm-task-cover-fallback">JM{{task.aid}}</div>
               </div>
               <div class="jm-task-main">
@@ -114,9 +116,10 @@
             <div v-else class="jm-task-list">
               <div v-for="task in finishedList" :key="task.taskId" class="jm-task-card jm-task-card-finished">
                 <div class="jm-task-cover">
-                  <el-image v-if="taskCoverSrc(task)" class="jm-task-cover-img" :src="taskCoverSrc(task)" fit="cover">
+                  <jm-image v-if="taskCoverSrc(task)" class="jm-task-cover-img" :src="taskCoverSrc(task)"
+                            :encrypted="task.serverCoverEncrypted" fit="cover">
                     <div slot="error" class="jm-task-cover-fallback">JM{{task.aid}}</div>
-                  </el-image>
+                  </jm-image>
                   <div v-else class="jm-task-cover-fallback">JM{{task.aid}}</div>
                 </div>
                 <div class="jm-task-main">
@@ -149,6 +152,7 @@
 
 <script>
 import { cancelJmTask, cancelQueuedJmTasks, listJmTasks, retryJmTask } from "@/api/jmcomic";
+import JmImage from "./jm-image.vue";
 
 // 任务主题与命令，与后端 JmTaskPushService 保持一致
 const JM_TASK_TOPIC = 'jm.task'
@@ -158,6 +162,7 @@ const FALLBACK_POLL_MILLIS = 3000
 
 export default {
   name: 'JmTaskPanel',
+  components: { JmImage },
   props: {
     visible: {
       type: Boolean,
