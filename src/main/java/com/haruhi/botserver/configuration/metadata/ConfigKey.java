@@ -167,7 +167,7 @@ public enum ConfigKey {
     JM_IMAGE_ENCRYPT_PREFIX_KB(ConfigFile.JM, "jm.image.encrypt.prefix.kb", ConfigType.INT, "32", true,
             "JM图片加密字节数（KB）：0=整图加密，大于0=仅加密文件前N KB；仅影响新下载的文件", 140),
     JM_IMAGE_COMPRESS_ENABLED(ConfigFile.JM, "jm.image.compress.enabled", ConfigType.BOOL, "true", true,
-            "JM漫画图片解扰后是否重新压缩：true=有损WebP q85，false=无损WebP q100。只影响需要解扰的webp；未加扰章节与jpg/gif原图按站点原始字节保存（不重编码）",
+            "JM漫画图片解扰后是否重新压缩：true=有损WebP q85 / PDF内嵌JPEG q90，false=无损WebP q100 / PDF无损内嵌。只影响需要解扰的webp；未加扰章节与jpg/gif原图按站点原始字节保存（不重编码）",
             150),
 
     // ============================ 站点地址 ============================

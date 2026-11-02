@@ -44,12 +44,14 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.PageMode;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.encryption.*;
+import org.apache.pdfbox.pdmodel.graphics.image.JPEGFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
@@ -119,6 +121,23 @@ public class JmcomicService {
      * 无损模式下这个值只影响压缩努力程度（像素都不变），但默认的 0.75 与安卓不一致，所以显式对齐。
      */
     private static final float JM_WEBP_LOSSLESS_QUALITY = 1.0f;
+
+    /**
+     * PDF 内嵌 JPEG 质量，对应 Android 工程 ImageCodec.LOSSY_JPEG_QUALITY = 90。
+     * 仅在 {@code jm.image.compress.enabled=true} 时使用；关闭时按无损内嵌。
+     */
+    private static final float JM_PDF_JPEG_QUALITY = 0.9f;
+
+    /**
+     * PDF 单页单边上限（200 英寸 @72dpi），对应 Android 工程 PdfPagePlan.MAX_PAGE_SIDE。
+     * 超长图会按高度均匀切片，避免阅读器渲染异常。
+     */
+    private static final int PDF_MAX_PAGE_SIDE = 14400;
+
+    /**
+     * 一张图最多切几页（防御性上限，与 Android PdfPagePlan.MAX_SLICES 一致）。
+     */
+    private static final int PDF_MAX_SLICES = 64;
 
     /**
      * JM /search 接口每页固定返回80条
@@ -750,7 +769,8 @@ public class JmcomicService {
      */
     public void albumToPdf(File albumDir,File outputFile) throws Exception {
         List<File> directoryList = this.sortFolders(Arrays.asList(FileUtil.getDirectoryList(albumDir)));
-        try (PDDocument document = new PDDocument()){
+        // 图片流全部落到临时文件，避免几百页的图片数据在堆里累积（PDFBox 默认是纯内存）
+        try (PDDocument document = new PDDocument(IOUtils.createTempFileOnlyStreamCache())){
 
             AccessPermission permission = new AccessPermission();
             permission.setCanModify(false);
@@ -767,6 +787,8 @@ public class JmcomicService {
 //            document.setEncryptionDictionary(encryptionOptions);
 
             policy.setEncryptionKeyLength(128);
+            // 只设 keyLength 会被静默忽略（实际产出 40 位 RC4），必须同时 preferAES 才是 AES-128
+            policy.setPreferAES(true);
             document.protect(policy);
 
             PDDocumentOutline documentOutline = new PDDocumentOutline();
@@ -808,19 +830,66 @@ public class JmcomicService {
         return chapterFile.getParentFile().getName() + File.separator + chapterFile.getName();
     }
 
+    /**
+     * 把一张图写入 PDF（可能因超过单页上限被切成多页）。
+     * <p>
+     * 编码方式跟 {@code jm.image.compress.enabled} 一致：
+     * <ul>
+     *   <li>true：解码后按 JPEG q90 有损内嵌，体积与 Android 端默认导出的 PDF 同一量级；</li>
+     *   <li>false：无损 Flate 内嵌，像素完全不变（体积会大很多）。</li>
+     * </ul>
+     * 页面尺寸 = 图片像素尺寸；宽度超过 {@link #PDF_MAX_PAGE_SIDE} 时等比缩小，
+     * 高度超过时按高度均匀切片（与 Android {@code PdfPagePlan} 一致）。
+     */
     private void addImageToPdf(PDDocument document, File imageFile) throws IOException {
         BufferedImage bufferedImage;
         try (InputStream in = new BufferedInputStream(JmImageCipherUtil.newDecryptingStream(imageFile))) {
             bufferedImage = ImageIO.read(in);
         }
-        PDImageXObject image = LosslessFactory.createFromImage(document, bufferedImage);
-        PDPage page = new PDPage(new PDRectangle(image.getWidth(), image.getHeight()));
-        document.addPage(page);
-
-        try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-            contentStream.drawImage(image, 0, 0, image.getWidth(), image.getHeight());
+        if (bufferedImage == null) {
+            throw new IOException("无法解码JM图片：" + imageFile.getAbsolutePath());
         }
-        bufferedImage.flush();
+        try {
+            addImagePages(document, bufferedImage);
+        } finally {
+            bufferedImage.flush();
+        }
+    }
+
+    private void addImagePages(PDDocument document, BufferedImage source) throws IOException {
+        int width = source.getWidth();
+        int height = source.getHeight();
+
+        // 只有宽度超限才整体缩小；高度靠切片解决
+        float scale = width > PDF_MAX_PAGE_SIDE ? (float) PDF_MAX_PAGE_SIDE / width : 1f;
+        int pageWidth = Math.max(1, Math.round(width * scale));
+        int scaledHeight = Math.max(1, Math.round(height * scale));
+        int sliceCount = Math.min(PDF_MAX_SLICES,
+                Math.max(1, (int) Math.ceil((double) scaledHeight / PDF_MAX_PAGE_SIDE)));
+        boolean compress = Configs.getBool(ConfigKey.JM_IMAGE_COMPRESS_ENABLED, true);
+
+        for (int i = 0; i < sliceCount; i++) {
+            int pageTop = i * scaledHeight / sliceCount;
+            int pageBottom = (i + 1) * scaledHeight / sliceCount;
+            int pageHeight = Math.max(1, pageBottom - pageTop);
+
+            BufferedImage slice = source;
+            if (sliceCount > 1) {
+                int sourceY = Math.min(height - 1, Math.max(0, Math.round(pageTop / scale)));
+                int sourceBottom = Math.min(height, Math.max(sourceY + 1, Math.round(pageBottom / scale)));
+                slice = source.getSubimage(0, sourceY, width, sourceBottom - sourceY);
+            }
+
+            PDImageXObject image = compress
+                    ? JPEGFactory.createFromImage(document, slice, JM_PDF_JPEG_QUALITY)
+                    : LosslessFactory.createFromImage(document, slice);
+            PDPage page = new PDPage(new PDRectangle(pageWidth, pageHeight));
+            document.addPage(page);
+
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                contentStream.drawImage(image, 0, 0, pageWidth, pageHeight);
+            }
+        }
     }
 
     private List<File> sortFolders(List<File> folders) {
