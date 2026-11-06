@@ -113,11 +113,10 @@ public enum ConfigKey {
     // ============================ B站 ============================
     BILIBILI_COOKIES_RAW(ConfigFile.BILIBILI, "bilibili.cookies.raw", ConfigType.SECRET, "", true,
             "整条b站cookie（浏览器F12 -> Network -> 任意b站接口 -> Request Headers 里的 Cookie 整段复制）。" +
-                    "配置后覆盖下面的sessdata/bili_jct拼装逻辑，风控概率最低；留空则用下面几项自动拼装", 5),
+                    "配置后覆盖下面的sessdata登录态来源，风控概率最低；留空则用下面几项自动拼装。" +
+                    "其中的bili_ticket会被忽略，统一使用程序自动生成并定期刷新的那一份", 5),
     BILIBILI_COOKIES_SESSDATA(ConfigFile.BILIBILI, "bilibili.cookies.sessdata", ConfigType.SECRET, "", true,
             "b站cookie中的SESSDATA，用于解析b站视频等需要调用b站api的功能（已配置bilibili.cookies.raw时无需配置）", 10),
-    BILIBILI_COOKIES_BILI_JCT(ConfigFile.BILIBILI, "bilibili.cookies.bili_jct", ConfigType.SECRET, "", true,
-            "b站cookie中的bili_jct，用于解析b站视频等需要调用b站api的功能（已配置bilibili.cookies.raw时无需配置）", 20),
     // 保存接口响应 raw
     BILIBILI_COOKIES_TICKET(ConfigFile.BILIBILI, "bilibili.cookies.ticket", ConfigType.STRING, "", true,
             "请求b站接口自动获取，非必要，可减小风控概率", 30),

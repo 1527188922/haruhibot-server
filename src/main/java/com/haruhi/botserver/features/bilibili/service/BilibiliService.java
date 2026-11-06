@@ -386,9 +386,11 @@ public class BilibiliService {
     /**
      * 组装请求b站接口用的Cookie
      * <p>
-     * 优先级：{@code bilibili.cookies.raw}（浏览器整条cookie） &gt; SESSDATA+bili_jct+ticket 拼装。
-     * 无论有没有登录态，都会补齐设备标识（buvid3/buvid4）：一个不带任何cookie的客户端是
-     * b站风控里最"裸"的形态，很容易收到 -412「request was banned」。
+     * 组成部分：{@code bilibili.cookies.raw}（浏览器整条cookie）或 {@code bilibili.cookies.sessdata} 登录态，
+     * 加上程序维护的设备标识（buvid3/buvid4）与 bili_ticket。
+     * <p>
+     * 无论哪种模式，原始cookie里的 bili_ticket 都会被丢掉：它有3天有效期，浏览器里那份是快照且不会续期，
+     * 统一改用程序生成、过期前自动刷新的那一份。
      * @return 不会返回null
      */
     public String getCookie(){
@@ -396,31 +398,37 @@ public class BilibiliService {
         String raw = Configs.getStr(ConfigKey.BILIBILI_COOKIES_RAW, null);
         if (StringUtils.isNotBlank(raw)) {
             cookies.putAll(parseCookie(raw));
+            // 浏览器里的ticket是快照且不会续期，统一换成程序维护的那份
+            cookies.remove("bili_ticket");
+            cookies.remove("bili_ticket_expires");
         } else {
             String sessdata = Configs.getStr(ConfigKey.BILIBILI_COOKIES_SESSDATA, null);
-            String jct = Configs.getStr(ConfigKey.BILIBILI_COOKIES_BILI_JCT, null);
             if (StringUtils.isNotBlank(sessdata)) {
                 cookies.put("SESSDATA", sessdata);
             }
-            if (StringUtils.isNotBlank(jct)) {
-                cookies.put("bili_jct", jct);
-            }
             cookies.put("b_lsid", BilibiliSidUtil.generate());
-            BilibiliTickResp tick = this.getTick(null);
-            if (tick != null && StringUtils.isNotBlank(tick.getTicket())) {
-                cookies.put("bili_ticket", tick.getTicket());
-                Long expires = tick.expires();
-                if (expires != null) {
-                    cookies.put("bili_ticket_expires", String.valueOf(expires));
-                }
-            }
         }
         fillDeviceCookies(cookies);
+        appendTicket(cookies);
         List<String> parts = new ArrayList<>(cookies.size());
         for (Map.Entry<String, String> entry : cookies.entrySet()) {
             parts.add(entry.getKey() + "=" + entry.getValue());
         }
         return StringUtils.join(parts, "; ");
+    }
+
+    /**
+     * 追加 bili_ticket：过期（提前5分钟）后由 {@link #getTick(String)} 自动重新生成，所以每次请求前都能拿到有效的
+     */
+    private void appendTicket(Map<String, String> cookies){
+        BilibiliTickResp tick = this.getTick(null);
+        if (tick != null && StringUtils.isNotBlank(tick.getTicket())) {
+            cookies.put("bili_ticket", tick.getTicket());
+            Long expires = tick.expires();
+            if (expires != null) {
+                cookies.put("bili_ticket_expires", String.valueOf(expires));
+            }
+        }
     }
 
     /**

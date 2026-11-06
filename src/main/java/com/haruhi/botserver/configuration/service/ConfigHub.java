@@ -549,7 +549,6 @@ public class ConfigHub {
         WORD_MAP.put("grace", "宽限时长");
         WORD_MAP.put("enabled", "开关");
         WORD_MAP.put("sessdata", "SESSDATA");
-        WORD_MAP.put("bili_jct", "bili_jct");
         WORD_MAP.put("ticket", "ticket");
         WORD_MAP.put("duration_limit", "时长限制");
         WORD_MAP.put("apikey", "API KEY");
