@@ -69,6 +69,9 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
         ThreadPoolUtil.getHandleCommandPool().execute(() -> {
             try {
                 BilibiliBaseResp<VideoDetail> videoDetail = bilibiliService.getVideoDetail(finalBvid);
+                if (!videoDetail.isSuccess()) {
+                    return;
+                }
                 VideoDetail videoDetailData = videoDetail.getData();
                 Long cid = videoDetailData.getCidFirst();
                 VideoDetail.View videoDetailDataView = videoDetailData.getView();

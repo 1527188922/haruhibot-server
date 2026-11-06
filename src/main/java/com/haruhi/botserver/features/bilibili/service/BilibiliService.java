@@ -512,17 +512,12 @@ public class BilibiliService {
         Map<String, String> headers = getHeaders(true);
         HttpRequest httpRequest = HttpRequest.get(s).addHeaders(headers);
         try (HttpResponse execute = httpRequest.execute()){
-            if (execute.getStatus() != HttpStatus.HTTP_OK) {
-                DbLog.error(BusinessModuleEnum.BILIBILI,
-                        "请求b站接口失败 url:{} status:{} body:{}", s, execute.getStatus(), execute.body());
-                return null;
-            }
             String body = execute.body();
             BilibiliBaseResp<T> bilibiliBaseResp = JSONObject.parseObject(body,responseType);
             if (!bilibiliBaseResp.isSuccess()) {
-                DbLog.error(BusinessModuleEnum.BILIBILI,"b站接口响应异常 url:{} headers:{} body:{}", s, JSONObject.toJSONString(headers), body);
+                DbLog.error(BusinessModuleEnum.BILIBILI,"b站接口响应异常 url:{} status:{} headers:{} body:{}", s, execute.getStatus(), JSONObject.toJSONString(headers), body);
             }else {
-                DbLog.info(BusinessModuleEnum.BILIBILI,"b站接口响应 url:{} headers:{} body:{}", s, JSONObject.toJSONString(headers), body);
+                DbLog.info(BusinessModuleEnum.BILIBILI,"b站接口响应 url:{} status:{} headers:{} body:{}", s,execute.getStatus(), JSONObject.toJSONString(headers), body);
             }
             bilibiliBaseResp.setRaw(body);
             return bilibiliBaseResp;
