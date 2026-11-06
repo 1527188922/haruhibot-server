@@ -23,6 +23,7 @@ import com.haruhi.botserver.features.jmcomic.client.model.Series;
 import com.haruhi.botserver.features.jmcomic.client.model.UserProfile;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchReq;
 import com.haruhi.botserver.features.jmcomic.model.JmAlbumOnlineSearchResp;
+import com.haruhi.botserver.features.jmcomic.model.JmApiLanguage;
 import com.haruhi.botserver.features.jmcomic.model.JmOnlineSearchHistory;
 import com.haruhi.botserver.features.jmcomic.model.JmSearchSortEnum;
 import com.haruhi.botserver.features.jmcomic.model.JmTaskAction;
@@ -233,6 +234,18 @@ public class JmcomicService {
 
 
     public UserProfile login(String username, String password) throws Exception {
+        return login(username, password, JmApiLanguage.DEFAULT);
+    }
+
+    /**
+     * 登录(可指定接口语言)
+     * <p>
+     * 官方App的 fetchGet 只给GET接口自动补 {@code lang}；这里为了让「所有JM接口都能指定语言」
+     * 保持一致，POST表单里也带上 {@code lang}。语言只影响服务端渲染的中文文案，登录结果本身与它无关。
+     *
+     * @param language 接口语言，null=简体中文
+     */
+    public UserProfile login(String username, String password, JmApiLanguage language) throws Exception {
         String url = "https://" + this.getJmApiDomain() + "/login";
 
 
@@ -242,6 +255,7 @@ public class JmcomicService {
         HashMap<String, Object> formData = new HashMap<>();
         formData.put("username", username);
         formData.put("password", password);
+        formData.put("lang", languageOrDefault(language).getCode());
         HttpRequest httpRequest = HttpUtil.createPost(url).form(formData)
                 .addHeaders(headerParam.toSingleValueMap())
                 .timeout(10000);
@@ -1440,12 +1454,21 @@ public class JmcomicService {
     }
 
     /**
-     * 根据jm号查询本子详情
-     * @param aid
-     * @return
-     * @throws Exception
+     * 根据jm号查询本子详情(简体中文)
+     * @param aid jm号
+     * @return 本子详情
      */
     public BaseResp<Album> requestAlbum(String aid) {
+        return requestAlbum(aid, JmApiLanguage.DEFAULT);
+    }
+
+    /**
+     * 根据jm号查询本子详情
+     * @param aid jm号
+     * @param language 接口语言，决定本子名/标签/简介等中文文案的形态，null=简体中文
+     * @return 本子详情
+     */
+    public BaseResp<Album> requestAlbum(String aid, JmApiLanguage language) {
         try {
             reportStage("请求本子详情");
             String url = "https://" + this.getJmApiDomain() + "/album";
@@ -1454,6 +1477,7 @@ public class JmcomicService {
 
             HashMap<String, Object> urlParam = new HashMap<>();
             urlParam.put("id", aid);
+            withLanguage(urlParam, language);
 
             String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
             // 网络超时按 jm.request.album.retry 重试；ts 不变，重试拿到的响应仍能正常解密
@@ -1495,14 +1519,23 @@ public class JmcomicService {
     }
 
     /**
-     * 根据本子名称搜索
+     * 根据本子名称搜索(简体中文，第1页)
      * @param name jm后端会截取前8个字符串去搜索
      * @param sort 排序方式，见 {@link JmSearchSortEnum}，为空时按默认排序
-     * @return
-     * @throws Exception
+     * @return 搜索结果
      */
     public SearchResp search(String name, JmSearchSortEnum sort) throws Exception {
         return search(name, sort, DEFAULT_SEARCH_PAGE);
+    }
+
+    /**
+     * 根据本子名称搜索(分页，简体中文)
+     * @param name jm后端会截取前8个字符串去搜索
+     * @param sort 排序方式，见 {@link JmSearchSortEnum}，为空时按默认排序
+     * @param page 页码，从1开始，JM接口每页固定80条
+     */
+    public SearchResp search(String name, JmSearchSortEnum sort, int page) throws Exception {
+        return search(name, sort, page, JmApiLanguage.DEFAULT);
     }
 
     /**
@@ -1510,8 +1543,9 @@ public class JmcomicService {
      * @param name jm后端会截取前8个字符串去搜索
      * @param sort 排序方式，见 {@link JmSearchSortEnum}，为空时按默认排序
      * @param page 页码，从1开始，JM接口每页固定80条
+     * @param language 接口语言，决定分类名/简介等中文文案的形态，null=简体中文
      */
-    public SearchResp search(String name, JmSearchSortEnum sort, int page) throws Exception {
+    public SearchResp search(String name, JmSearchSortEnum sort, int page, JmApiLanguage language) throws Exception {
         String url = "https://" + this.getJmApiDomain() + "/search";
         long ts = System.currentTimeMillis() / 1000;
         HttpHeaders headerParam = headerParam(ts);
@@ -1521,6 +1555,7 @@ public class JmcomicService {
         urlParam.put("search_query", name);
         urlParam.put("page", page < 1 ? DEFAULT_SEARCH_PAGE : page);
         urlParam.put("o", (sort == null ? JmSearchSortEnum.DEFAULT : sort).getSort());
+        withLanguage(urlParam, language);
         String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
         // 网络超时按 jm.request.search.retry 重试
         String body = withTimeoutRetry(Configs.getInt(ConfigKey.JM_REQUEST_SEARCH_RETRY, 0),
@@ -1532,6 +1567,8 @@ public class JmcomicService {
 
     /**
      * 管理端JM在线搜索：分页交给JM服务器，另外补上封面地址和"是否已入库"标识
+     * <p>
+     * 语言取请求里的 {@link JmAlbumOnlineSearchReq#getLanguage()}，不传或非法时按简体中文
      */
     public JmAlbumOnlineSearchResp onlineSearch(JmAlbumOnlineSearchReq request) throws Exception {
         String name = request == null ? null : request.getName();
@@ -1541,7 +1578,8 @@ public class JmcomicService {
         // 前端传的是排序code，这里统一转成枚举，非法值回落默认排序
         JmSearchSortEnum sort = JmSearchSortEnum.getOrDefault(request.getSort());
         int page = (request.getPage() == null || request.getPage() < 1) ? DEFAULT_SEARCH_PAGE : request.getPage();
-        SearchResp searchResp = search(name.trim(), sort, page);
+        JmApiLanguage language = JmApiLanguage.getOrDefault(request.getLanguage());
+        SearchResp searchResp = search(name.trim(), sort, page, language);
         if (searchResp == null) {
             throw new IllegalStateException("JM搜索接口未返回数据");
         }
@@ -1665,18 +1703,28 @@ public class JmcomicService {
 
 
     /**
-     * 根据章节id 查询章节详情
-     * @param chapterId
-     * @return
-     * @throws Exception
+     * 根据章节id 查询章节详情(简体中文)
+     * @param chapterId 章节id
+     * @return 章节详情(含图片文件名清单)
      */
     public Chapter requestChapter(String chapterId)throws Exception{
+        return requestChapter(chapterId, JmApiLanguage.DEFAULT);
+    }
+
+    /**
+     * 根据章节id 查询章节详情
+     * @param chapterId 章节id
+     * @param language 接口语言，null=简体中文
+     * @return 章节详情(含图片文件名清单)
+     */
+    public Chapter requestChapter(String chapterId, JmApiLanguage language)throws Exception{
         String url = "https://" + this.getJmApiDomain() + "/chapter";
         long ts = System.currentTimeMillis() / 1000;
         HttpHeaders headerParam = headerParam(ts);
 
         HashMap<String, Object> urlParam = new HashMap<>();
         urlParam.put("id", chapterId);
+        withLanguage(urlParam, language);
 
         String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
         // 网络超时按 jm.request.chapter.retry 重试；下载任务重试时也是从这里继续请求章节
@@ -1687,7 +1735,26 @@ public class JmcomicService {
         return JSONObject.parseObject(data, Chapter.class);
     }
 
+    /**
+     * 查询章节的 scramble_id(简体中文)
+     * @param chapterId 章节id
+     * @return scramble_id，请求失败时返回兜底值
+     */
     public long getScrambleId(long chapterId){
+        return getScrambleId(chapterId, JmApiLanguage.DEFAULT);
+    }
+
+    /**
+     * 查询章节的 scramble_id
+     * <p>
+     * 该接口是旧版阅读页的HTML模板地址，官方那一版的URL里没有 {@code lang}；这里同样带上，
+     * 以保持「所有JM接口都能指定语言」的一致性（该页面只按 id 渲染模板，多一个参数不影响 {@code scramble_id} 的解析）。
+     *
+     * @param chapterId 章节id
+     * @param language 接口语言，null=简体中文
+     * @return scramble_id，请求失败时返回兜底值
+     */
+    public long getScrambleId(long chapterId, JmApiLanguage language){
         try {
             String url = "https://" + this.getJmApiDomain() + "/chapter_view_template";
             long ts = System.currentTimeMillis() / 1000;
@@ -1705,6 +1772,7 @@ public class JmcomicService {
             urlParam.put("page", 0);
             urlParam.put("app_img_shunt", 1);
             urlParam.put("express", "off");
+            withLanguage(urlParam, language);
 
             String s = HttpUtil.urlWithForm(url, urlParam, StandardCharsets.UTF_8, false);
             HttpRequest httpRequest = HttpUtil.createGet(s)
@@ -1731,6 +1799,29 @@ public class JmcomicService {
     }
     public static String buildImgUrl(Long chapterId,String filename) {
         return "https://" + getJmImageDomain() + "/media/photos/"+ chapterId +"/"+ filename;
+    }
+
+    /**
+     * 语言参数为null时回落到默认的简体中文
+     */
+    private static JmApiLanguage languageOrDefault(JmApiLanguage language) {
+        return language == null ? JmApiLanguage.DEFAULT : language;
+    }
+
+    /**
+     * 给JM接口的请求参数补上语言 {@code lang}。
+     * <p>
+     * 对齐Android工程 {@code core/protocol/ApiScheme.kt} 的 {@code ApiLanguage}：官方App会给每个GET请求
+     * 自动补 {@code lang=TW|CN}，服务端据此返回中文文案的对应形态（简中 {@code 汉化} / 繁中 {@code 漢化}，
+     * 以及本子名、标签、简介等）。本工程统一走简体中文，需要繁体时由调用方显式传入 {@code TW}。
+     *
+     * @param params   请求参数，直接在其上补 {@code lang}
+     * @param language 接口语言，null=简体中文
+     * @return 同一个参数Map，便于链式使用
+     */
+    static Map<String, Object> withLanguage(Map<String, Object> params, JmApiLanguage language) {
+        params.put("lang", languageOrDefault(language).getCode());
+        return params;
     }
 
     private HttpHeaders headerParam(long ts){

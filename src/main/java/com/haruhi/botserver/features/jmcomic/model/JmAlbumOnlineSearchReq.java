@@ -19,4 +19,9 @@ public class JmAlbumOnlineSearchReq {
      * 页码，从1开始
      */
     private Integer page;
+    /**
+     * 接口语言，取值见 {@link JmApiLanguage#getCode()}（CN 简中 / TW 繁中），
+     * 为空或非法时按简体中文
+     */
+    private String language;
 }
