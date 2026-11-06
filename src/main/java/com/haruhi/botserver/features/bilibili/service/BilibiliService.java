@@ -39,6 +39,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,7 +48,41 @@ import java.util.regex.Pattern;
 public class BilibiliService {
 
     private static final String BILIBILI_NAV_URL = "https://api.bilibili.com/x/web-interface/nav";
+    private static final String BILIBILI_FINGER_SPI_URL = "https://api.bilibili.com/x/frontend/finger/spi";
+    private static final String BILIBILI_VIEW_DETAIL_URL = "https://api.bilibili.com/x/web-interface/wbi/view/detail";
+    /**
+     * 老的未签名视频详情接口，wbi接口被风控时用于兜底
+     */
+    private static final String BILIBILI_VIEW_DETAIL_LEGACY_URL = "https://api.bilibili.com/x/web-interface/view";
+    private static final String BILIBILI_PLAY_URL = "https://api.bilibili.com/x/player/wbi/playurl";
     private static final long WBI_KEY_CACHE_MILLIS = 10 * 60 * 1000L;
+    private static final int REQUEST_TIMEOUT_MILLIS = 15 * 1000;
+    /**
+     * 命中风控(-412)后的冷却时长：冷却期内不再请求b站接口。
+     * b站的-412是"客户端ip被服务端风控"，短时间内再次请求只会延长封禁，所以要主动退避
+     */
+    private static final long RISK_BLOCK_COOL_DOWN_MILLIS = 3 * 60 * 1000L;
+    /**
+     * 视频详情缓存时长，避免同一条视频被反复解析时重复请求b站
+     */
+    private static final long DETAIL_CACHE_MILLIS = 10 * 60 * 1000L;
+    /**
+     * 下载链接缓存时长（b站返回的url本身有有效期，不宜缓存太久）
+     */
+    private static final long PLAY_URL_CACHE_MILLIS = 10 * 60 * 1000L;
+    private static final int CACHE_MAX_SIZE = 500;
+    /**
+     * 客户端ip被服务端风控，请求被拦截
+     */
+    private static final int CODE_RISK_BLOCKED = -412;
+    /**
+     * wbi签名校验失败（mixin key 过期或签名错误）
+     */
+    private static final int CODE_WBI_INVALID = -403;
+    /**
+     * b站被风控时HTTP状态码也是412（响应体是 {"code":-412,"message":"request was banned"}，不是业务json）
+     */
+    private static final int HTTP_STATUS_PRECONDITION_FAILED = 412;
     private static final int[] WBI_MIXIN_KEY_ENC_TAB = {
             46, 47, 18, 2, 53, 8, 23, 32,
             15, 50, 10, 31, 58, 3, 45, 35,
@@ -80,6 +115,16 @@ public class BilibiliService {
 
     private volatile String wbiMixinKey;
     private volatile long wbiMixinKeyExpireAt;
+    /**
+     * 风控冷却截止时间戳（毫秒），小于等于当前时间表示未被风控
+     */
+    private volatile long riskBlockedUntil;
+    /**
+     * 设备标识（buvid3/buvid4）首次获取时只让一个线程去请求
+     */
+    private final Object deviceCookieLock = new Object();
+    private final Map<String, CacheEntry<BilibiliBaseResp<VideoDetail>>> videoDetailCache = new ConcurrentHashMap<>();
+    private final Map<String, CacheEntry<BilibiliBaseResp<PlayUrlInfo>>> playUrlCache = new ConcurrentHashMap<>();
 
     /**
      * 视频入库。直接 new BilibiliService() 的场景（如main方法）下为null
@@ -92,16 +137,48 @@ public class BilibiliService {
      * 获取视频详情
      * <p>
      * 每次调用都会把响应按 bv号+cid 保存到 t_bilibili_video（存在则更新，不存在则插入）
+     * <p>
+     * 风控策略：
+     * <ol>
+     *     <li>先读缓存，10分钟内同一条视频不会重复请求</li>
+     *     <li>请求走带wbi签名的接口，被风控(-412)时降级到老的未签名接口</li>
+     *     <li>仍然被风控则进入冷却期，冷却期内直接返回失败响应，不再请求b站接口</li>
+     * </ol>
      * @param bvid
      * @return
      */
     public BilibiliBaseResp<VideoDetail> getVideoDetail(String bvid){
+        BilibiliBaseResp<VideoDetail> cached = getCache(videoDetailCache, bvid);
+        if (Objects.nonNull(cached)) {
+            DbLog.debug(BusinessModuleEnum.BILIBILI,"b站视频详情命中缓存 bvid:{}", bvid);
+            return cached;
+        }
+
+        BilibiliBaseResp<VideoDetail> resp = requestVideoDetail(BILIBILI_VIEW_DETAIL_URL, bvid);
+        if (isRiskBlocked(resp)) {
+            DbLog.warn(BusinessModuleEnum.BILIBILI,"b站wbi视频详情接口被风控，降级到老接口重试 bvid:{} code:{}", bvid, codeOf(resp));
+            resp = requestVideoDetail(BILIBILI_VIEW_DETAIL_LEGACY_URL, bvid);
+        }
+
+        if (Objects.nonNull(resp) && resp.isSuccess()) {
+            putCache(videoDetailCache, bvid, resp, DETAIL_CACHE_MILLIS);
+        }
+        saveVideoDetail(bvid, resp);
+        return resp;
+    }
+
+    /**
+     * 请求视频详情；风控冷却期内直接返回被拦截的响应，不再发请求
+     */
+    private BilibiliBaseResp<VideoDetail> requestVideoDetail(String url, String bvid){
+        if (inRiskCoolDown()) {
+            return blockedResp("b站接口被风控，冷却中，不再请求");
+        }
         HashMap<String, Object> param = new HashMap<String, Object>() {{
             put("bvid", bvid);
         }};
-        BilibiliBaseResp<VideoDetail> resp = sendGetRequest("https://api.bilibili.com/x/web-interface/wbi/view/detail", param, new TypeReference<BilibiliBaseResp<VideoDetail>>(){});
-        saveVideoDetail(bvid, resp);
-        return resp;
+        BilibiliBaseResp<VideoDetail> resp = sendGetRequest(url, param, new TypeReference<BilibiliBaseResp<VideoDetail>>(){});
+        return Objects.isNull(resp) ? blockedResp("请求b站视频详情接口异常") : resp;
     }
 
     /**
@@ -133,6 +210,16 @@ public class BilibiliService {
      * @return
      */
     public BilibiliBaseResp<PlayUrlInfo> getPlayUrlInfo(String bvid, Long avid, Long cid){
+        String cacheKey = bvid + "_" + cid;
+        BilibiliBaseResp<PlayUrlInfo> cached = getCache(playUrlCache, cacheKey);
+        if (Objects.nonNull(cached)) {
+            DbLog.debug(BusinessModuleEnum.BILIBILI,"b站视频下载链接命中缓存 bvid:{} cid:{}", bvid, cid);
+            return cached;
+        }
+        if (inRiskCoolDown()) {
+            return blockedResp("b站接口被风控，冷却中，不再请求");
+        }
+
         HashMap<String, Object> param = new HashMap<String, Object>() {{
             put("bvid", bvid);
             put("avid", avid);
@@ -148,7 +235,13 @@ public class BilibiliService {
             put("voice_balance", 1);
 //            put("fnval", 1024);
         }};
-        BilibiliBaseResp<PlayUrlInfo> resp = sendGetRequest("https://api.bilibili.com/x/player/wbi/playurl", param, new TypeReference<BilibiliBaseResp<PlayUrlInfo>>(){});
+        BilibiliBaseResp<PlayUrlInfo> resp = sendGetRequest(BILIBILI_PLAY_URL, param, new TypeReference<BilibiliBaseResp<PlayUrlInfo>>(){});
+        if (Objects.isNull(resp)) {
+            return blockedResp("请求b站视频下载链接接口异常");
+        }
+        if (resp.isSuccess() && Objects.nonNull(cid)) {
+            putCache(playUrlCache, cacheKey, resp, PLAY_URL_CACHE_MILLIS);
+        }
         updatePlayUrlRaw(bvid, cid, resp);
         return resp;
     }
@@ -245,10 +338,12 @@ public class BilibiliService {
 
         String url = Configs.getStr(ConfigKey.URL_CONF_BILIBILI_LIVE_STATUS);
         HttpRequest httpRequest = HttpRequest.post(url)
-                .addHeaders(getLiveHeaders())
                 .contentType(ContentType.JSON.getValue())
                 .body(body.toJSONString())
-                .timeout(10 * 1000);
+                .timeout(REQUEST_TIMEOUT_MILLIS);
+        for (Map.Entry<String, String> entry : getLiveHeaders().entrySet()) {
+            httpRequest.header(entry.getKey(), entry.getValue(), true);
+        }
         try (HttpResponse response = httpRequest.execute()){
             String respBody = response.body();
             if (response.getStatus() != HttpStatus.HTTP_OK || StringUtils.isBlank(respBody)) {
@@ -288,25 +383,129 @@ public class BilibiliService {
         return headers;
     }
 
+    /**
+     * 组装请求b站接口用的Cookie
+     * <p>
+     * 优先级：{@code bilibili.cookies.raw}（浏览器整条cookie） &gt; SESSDATA+bili_jct+ticket 拼装。
+     * 无论有没有登录态，都会补齐设备标识（buvid3/buvid4）：一个不带任何cookie的客户端是
+     * b站风控里最"裸"的形态，很容易收到 -412「request was banned」。
+     * @return 不会返回null
+     */
     public String getCookie(){
-        String sessdata = Configs.getStr(ConfigKey.BILIBILI_COOKIES_SESSDATA, null);
-        String jct = Configs.getStr(ConfigKey.BILIBILI_COOKIES_BILI_JCT, null);
-        if(StringUtils.isBlank(sessdata) || StringUtils.isBlank(jct)){
-            return null;
-        }
-        ArrayList<String> strings = new ArrayList<>();
-        strings.add("SESSDATA=" + sessdata);
-        strings.add("bili_jct=" + jct);
-        strings.add("b_lsid=" + BilibiliSidUtil.generate());
-        BilibiliTickResp tick = this.getTick(null);
-        if (tick != null) {
-            strings.add("bili_ticket=" + tick.getTicket());
-            Long expires = tick.expires();
-            if (expires != null) {
-                strings.add("bili_ticket_expires=" + expires);
+        Map<String, String> cookies = new LinkedHashMap<>();
+        String raw = Configs.getStr(ConfigKey.BILIBILI_COOKIES_RAW, null);
+        if (StringUtils.isNotBlank(raw)) {
+            cookies.putAll(parseCookie(raw));
+        } else {
+            String sessdata = Configs.getStr(ConfigKey.BILIBILI_COOKIES_SESSDATA, null);
+            String jct = Configs.getStr(ConfigKey.BILIBILI_COOKIES_BILI_JCT, null);
+            if (StringUtils.isNotBlank(sessdata)) {
+                cookies.put("SESSDATA", sessdata);
+            }
+            if (StringUtils.isNotBlank(jct)) {
+                cookies.put("bili_jct", jct);
+            }
+            cookies.put("b_lsid", BilibiliSidUtil.generate());
+            BilibiliTickResp tick = this.getTick(null);
+            if (tick != null && StringUtils.isNotBlank(tick.getTicket())) {
+                cookies.put("bili_ticket", tick.getTicket());
+                Long expires = tick.expires();
+                if (expires != null) {
+                    cookies.put("bili_ticket_expires", String.valueOf(expires));
+                }
             }
         }
-        return StringUtils.join(strings,"; ");
+        fillDeviceCookies(cookies);
+        List<String> parts = new ArrayList<>(cookies.size());
+        for (Map.Entry<String, String> entry : cookies.entrySet()) {
+            parts.add(entry.getKey() + "=" + entry.getValue());
+        }
+        return StringUtils.join(parts, "; ");
+    }
+
+    /**
+     * 解析浏览器复制出来的整条cookie（{@code a=1; b=2}），容忍换行、多余空格和开头的 "Cookie:" 前缀
+     */
+    private Map<String, String> parseCookie(String raw){
+        Map<String, String> cookies = new LinkedHashMap<>();
+        String text = raw.replace("\r", " ").replace("\n", " ").trim();
+        if (text.regionMatches(true, 0, "cookie:", 0, 7)) {
+            text = text.substring(7);
+        }
+        for (String segment : text.split(";")) {
+            String item = segment.trim();
+            if (item.isEmpty()) {
+                continue;
+            }
+            int index = item.indexOf('=');
+            if (index <= 0) {
+                continue;
+            }
+            cookies.put(item.substring(0, index).trim(), item.substring(index + 1).trim());
+        }
+        return cookies;
+    }
+
+    /**
+     * 补齐设备标识。buvid3/buvid4 由程序从b站接口获取后写入配置，之后一直复用（同一个设备标识才像同一个浏览器）
+     */
+    private void fillDeviceCookies(Map<String, String> cookies){
+        if (StringUtils.isNotBlank(cookies.get("buvid3"))) {
+            return;
+        }
+        String buvid3 = Configs.getStr(ConfigKey.BILIBILI_COOKIES_BUVID3, null);
+        String buvid4 = Configs.getStr(ConfigKey.BILIBILI_COOKIES_BUVID4, null);
+        if (StringUtils.isBlank(buvid3) || StringUtils.isBlank(buvid4)) {
+            synchronized (deviceCookieLock) {
+                buvid3 = Configs.getStr(ConfigKey.BILIBILI_COOKIES_BUVID3, null);
+                buvid4 = Configs.getStr(ConfigKey.BILIBILI_COOKIES_BUVID4, null);
+                if (StringUtils.isBlank(buvid3) || StringUtils.isBlank(buvid4)) {
+                    String[] device = fetchDeviceId();
+                    if (device != null) {
+                        buvid3 = device[0];
+                        buvid4 = device[1];
+                        Configs.save(ConfigKey.BILIBILI_COOKIES_BUVID3, buvid3);
+                        Configs.save(ConfigKey.BILIBILI_COOKIES_BUVID4, buvid4);
+                    }
+                }
+            }
+        }
+        if (StringUtils.isNotBlank(buvid3)) {
+            cookies.put("buvid3", buvid3);
+        }
+        if (StringUtils.isNotBlank(buvid4) && StringUtils.isBlank(cookies.get("buvid4"))) {
+            cookies.put("buvid4", buvid4);
+        }
+    }
+
+    /**
+     * 从b站获取一组设备标识
+     * @return {buvid3, buvid4}，获取失败返回null
+     */
+    private String[] fetchDeviceId(){
+        try (HttpResponse response = createGetRequest(BILIBILI_FINGER_SPI_URL, false).execute()){
+            String body = response.body();
+            if (response.getStatus() != HttpStatus.HTTP_OK || StringUtils.isBlank(body)) {
+                DbLog.warn(BusinessModuleEnum.BILIBILI,"获取b站设备标识失败 status:{} body:{}", response.getStatus(), body);
+                return null;
+            }
+            JSONObject json = JSONObject.parseObject(body);
+            JSONObject data = json == null ? null : json.getJSONObject("data");
+            if (data == null) {
+                DbLog.warn(BusinessModuleEnum.BILIBILI,"获取b站设备标识响应异常 body:{}", body);
+                return null;
+            }
+            String buvid3 = data.getString("b_3");
+            String buvid4 = data.getString("b_4");
+            if (StringUtils.isBlank(buvid3)) {
+                return null;
+            }
+            DbLog.info(BusinessModuleEnum.BILIBILI,"获取b站设备标识成功 buvid3:{}", buvid3);
+            return new String[]{buvid3, buvid4};
+        } catch (Exception e) {
+            DbLog.error(BusinessModuleEnum.BILIBILI,"获取b站设备标识异常", e);
+            return null;
+        }
     }
 
     public String getBvidInText(String text){
@@ -364,7 +563,10 @@ public class BilibiliService {
 
     public String getRedirectUrl(String url){
         HttpRequest httpRequest = HttpUtil.createGet(url).setFollowRedirects(false)
-                .addHeaders(getHeaders(false));
+                .timeout(REQUEST_TIMEOUT_MILLIS);
+        for (Map.Entry<String, String> entry : getHeaders(false).entrySet()) {
+            httpRequest.header(entry.getKey(), entry.getValue(), true);
+        }
         try (HttpResponse execute = httpRequest.execute()){
             if (execute.getStatus() >= HttpStatus.HTTP_BAD_REQUEST) {
                 return null;
@@ -469,7 +671,10 @@ public class BilibiliService {
                 StandardCharsets.UTF_8,
                 false);
 
-        HttpRequest request = HttpRequest.post(s).addHeaders(getHeaders(false));
+        HttpRequest request = HttpRequest.post(s);
+        for (Map.Entry<String, String> entry : getHeaders(false).entrySet()) {
+            request.header(entry.getKey(), entry.getValue(), true);
+        }
         try (HttpResponse response = request.execute()){
             String body = response.body();
             BilibiliBaseResp<BilibiliTickResp> tickResp = JSONObject.parseObject(body, new TypeReference<BilibiliBaseResp<BilibiliTickResp>>() {
@@ -505,23 +710,146 @@ public class BilibiliService {
     }
 
 
+    /**
+     * 发起一次b站GET请求
+     * <p>
+     * url 中包含 {@code /wbi/} 的接口会自动做WBI签名（wts+w_rid）；
+     * 签名后仍返回 -403（mixin key 过期）时刷新一次key再重试。
+     */
     public <T> BilibiliBaseResp<T> sendGetRequest(String url, HashMap<String, Object> urlParam, TypeReference<BilibiliBaseResp<T>> responseType){
-//        boolean wbiApi = url.contains("/wbi/");
-        String s = buildUrl(url, urlParam, false, false);
-
-        Map<String, String> headers = getHeaders(true);
-        HttpRequest httpRequest = HttpRequest.get(s).addHeaders(headers);
-        try (HttpResponse execute = httpRequest.execute()){
-            String body = execute.body();
-            BilibiliBaseResp<T> bilibiliBaseResp = JSONObject.parseObject(body,responseType);
-            if (!bilibiliBaseResp.isSuccess()) {
-                DbLog.error(BusinessModuleEnum.BILIBILI,"b站接口响应异常 url:{} status:{} headers:{} body:{}", s, execute.getStatus(), JSONObject.toJSONString(headers), body);
-            }else {
-                DbLog.info(BusinessModuleEnum.BILIBILI,"b站接口响应 url:{} status:{} headers:{} body:{}", s,execute.getStatus(), JSONObject.toJSONString(headers), body);
-            }
-            bilibiliBaseResp.setRaw(body);
-            return bilibiliBaseResp;
+        boolean wbiApi = url.contains("/wbi/");
+        BilibiliBaseResp<T> resp = doGet(url, urlParam, responseType, wbiApi, false);
+        if (wbiApi && Objects.equals(CODE_WBI_INVALID, codeOf(resp))) {
+            DbLog.warn(BusinessModuleEnum.BILIBILI,"b站wbi签名校验失败(-403)，刷新mixin key后重试 url:{}", url);
+            resp = doGet(url, urlParam, responseType, true, true);
         }
+        return resp;
+    }
+
+    private <T> BilibiliBaseResp<T> doGet(String url, HashMap<String, Object> urlParam, TypeReference<BilibiliBaseResp<T>> responseType,
+                                         boolean wbiSign, boolean refreshWbiKey){
+        String s = buildUrl(url, urlParam, wbiSign, refreshWbiKey);
+        Map<String, String> headers = getHeaders(true);
+        try (HttpResponse execute = createGetRequest(s, true).execute()){
+            int status = execute.getStatus();
+            String body = execute.body();
+            BilibiliBaseResp<T> resp = JSONObject.parseObject(body, responseType);
+            if (Objects.isNull(resp)) {
+                // 412等被拦截的响应不是业务json，这里要兜住，避免上层空指针
+                resp = new BilibiliBaseResp<>();
+                resp.setCode(status);
+                resp.setMessage("响应解析失败");
+                resp.setTtl(1L);
+            }
+            resp.setRaw(body);
+            if (isRiskBlocked(resp) || status == HTTP_STATUS_PRECONDITION_FAILED) {
+                markRiskBlocked();
+                DbLog.error(BusinessModuleEnum.BILIBILI,"b站接口被风控 url:{} status:{} headers:{} body:{}", s, status, maskHeaders(headers), body);
+            } else if (!resp.isSuccess()) {
+                DbLog.error(BusinessModuleEnum.BILIBILI,"b站接口响应异常 url:{} status:{} headers:{} body:{}", s, status, maskHeaders(headers), body);
+            } else {
+                DbLog.info(BusinessModuleEnum.BILIBILI,"b站接口响应 url:{} status:{} headers:{} body:{}", s, status, maskHeaders(headers), body);
+            }
+            return resp;
+        } catch (Exception e) {
+            DbLog.error(BusinessModuleEnum.BILIBILI,"请求b站接口异常 url:{}", s, e);
+            return null;
+        }
+    }
+
+    /**
+     * 构造GET请求
+     * <p>
+     * 注意必须用 {@code header(name, value, true)} 覆盖hutool自带的默认请求头：
+     * hutool 的 {@code HttpRequest.get()} 自带一个 "Chrome/75 ... Hutool" 的UserAgent和默认Accept，
+     * 用 {@code addHeaders} 是追加，实际会发出两个User-Agent和两个Accept，这本身就是一个很好认的爬虫特征
+     */
+    private HttpRequest createGetRequest(String url, boolean cookie){
+        HttpRequest httpRequest = HttpRequest.get(url).timeout(REQUEST_TIMEOUT_MILLIS);
+        for (Map.Entry<String, String> entry : getHeaders(cookie).entrySet()) {
+            httpRequest.header(entry.getKey(), entry.getValue(), true);
+        }
+        return httpRequest;
+    }
+
+    /**
+     * 日志里隐藏Cookie等敏感请求头，避免SESSDATA被打进数据库
+     */
+    private String maskHeaders(Map<String, String> headers){
+        Map<String, String> masked = new LinkedHashMap<>(headers.size());
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            String name = entry.getKey();
+            String value = entry.getValue();
+            boolean sensitive = "cookie".equalsIgnoreCase(name) || "authorization".equalsIgnoreCase(name);
+            masked.put(name, sensitive && value != null ? "<hidden len=" + value.length() + ">" : value);
+        }
+        return JSONObject.toJSONString(masked);
+    }
+
+    private Integer codeOf(BilibiliBaseResp<?> resp){
+        return Objects.isNull(resp) ? null : resp.getCode();
+    }
+
+    private boolean isRiskBlocked(BilibiliBaseResp<?> resp){
+        return Objects.equals(CODE_RISK_BLOCKED, codeOf(resp));
+    }
+
+    /**
+     * 记录一次风控，冷却期内不再请求b站接口
+     */
+    private void markRiskBlocked(){
+        long until = System.currentTimeMillis() + RISK_BLOCK_COOL_DOWN_MILLIS;
+        riskBlockedUntil = until;
+        DbLog.warn(BusinessModuleEnum.BILIBILI,"b站接口被风控，进入{}秒冷却，期间不再请求b站接口", RISK_BLOCK_COOL_DOWN_MILLIS / 1000);
+    }
+
+    private boolean inRiskCoolDown(){
+        long until = riskBlockedUntil;
+        if (until <= 0) {
+            return false;
+        }
+        if (System.currentTimeMillis() >= until) {
+            riskBlockedUntil = 0;
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 构造一个"请求被拦截"的响应，让调用方走失败分支，同时避免空指针
+     */
+    private <T> BilibiliBaseResp<T> blockedResp(String message){
+        BilibiliBaseResp<T> resp = new BilibiliBaseResp<>();
+        resp.setCode(CODE_RISK_BLOCKED);
+        resp.setMessage(message);
+        resp.setTtl(1L);
+        resp.setRaw("");
+        return resp;
+    }
+
+    private <T> BilibiliBaseResp<T> getCache(Map<String, CacheEntry<BilibiliBaseResp<T>>> cache, String key){
+        if (StringUtils.isBlank(key)) {
+            return null;
+        }
+        CacheEntry<BilibiliBaseResp<T>> entry = cache.get(key);
+        if (Objects.isNull(entry)) {
+            return null;
+        }
+        if (entry.expired()) {
+            cache.remove(key);
+            return null;
+        }
+        return entry.value;
+    }
+
+    private <T> void putCache(Map<String, CacheEntry<BilibiliBaseResp<T>>> cache, String key, BilibiliBaseResp<T> value, long ttlMillis){
+        if (StringUtils.isBlank(key) || Objects.isNull(value)) {
+            return;
+        }
+        if (cache.size() >= CACHE_MAX_SIZE) {
+            cache.clear();
+        }
+        cache.put(key, new CacheEntry<>(value, System.currentTimeMillis() + ttlMillis));
     }
 
     private String buildUrl(String url, Map<String, Object> urlParam, boolean wbiSign, boolean refreshWbiKey) {
@@ -599,10 +927,7 @@ public class BilibiliService {
     }
 
     private String fetchWbiMixinKey() {
-        try (HttpResponse response = HttpRequest.get(BILIBILI_NAV_URL)
-                .addHeaders(getHeaders(true))
-                .timeout(10 * 1000)
-                .execute()) {
+        try (HttpResponse response = createGetRequest(BILIBILI_NAV_URL, true).execute()) {
             if (response.getStatus() != HttpStatus.HTTP_OK) {
                 log.error("获取b站wbi key失败 status:{} body:{}", response.getStatus(), response.body());
                 return null;
@@ -654,5 +979,22 @@ public class BilibiliService {
         private String pageNum;
 
         private String matchedKeyword;
+    }
+
+    /**
+     * 带过期时间的缓存项
+     */
+    private static final class CacheEntry<T> {
+        private final T value;
+        private final long expireAt;
+
+        private CacheEntry(T value, long expireAt) {
+            this.value = value;
+            this.expireAt = expireAt;
+        }
+
+        private boolean expired() {
+            return System.currentTimeMillis() > expireAt;
+        }
     }
 }

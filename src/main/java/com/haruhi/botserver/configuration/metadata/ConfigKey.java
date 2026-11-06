@@ -111,12 +111,20 @@ public enum ConfigKey {
             "saucenao识图接口认证key，从 https://saucenao.com 获取", 20),
 
     // ============================ B站 ============================
+    BILIBILI_COOKIES_RAW(ConfigFile.BILIBILI, "bilibili.cookies.raw", ConfigType.SECRET, "", true,
+            "整条b站cookie（浏览器F12 -> Network -> 任意b站接口 -> Request Headers 里的 Cookie 整段复制）。" +
+                    "配置后覆盖下面的sessdata/bili_jct拼装逻辑，风控概率最低；留空则用下面几项自动拼装", 5),
     BILIBILI_COOKIES_SESSDATA(ConfigFile.BILIBILI, "bilibili.cookies.sessdata", ConfigType.SECRET, "", true,
-            "b站cookie中的SESSDATA，用于解析b站视频等需要调用b站api的功能", 10),
+            "b站cookie中的SESSDATA，用于解析b站视频等需要调用b站api的功能（已配置bilibili.cookies.raw时无需配置）", 10),
     BILIBILI_COOKIES_BILI_JCT(ConfigFile.BILIBILI, "bilibili.cookies.bili_jct", ConfigType.SECRET, "", true,
-            "b站cookie中的bili_jct，用于解析b站视频等需要调用b站api的功能", 20),
+            "b站cookie中的bili_jct，用于解析b站视频等需要调用b站api的功能（已配置bilibili.cookies.raw时无需配置）", 20),
+    // 保存接口响应 raw
     BILIBILI_COOKIES_TICKET(ConfigFile.BILIBILI, "bilibili.cookies.ticket", ConfigType.STRING, "", true,
             "请求b站接口自动获取，非必要，可减小风控概率", 30),
+    BILIBILI_COOKIES_BUVID3(ConfigFile.BILIBILI, "bilibili.cookies.buvid3", ConfigType.STRING, "", true,
+            "b站设备标识buvid3，程序首次请求b站接口时自动获取并写入，不要手工修改", 31),
+    BILIBILI_COOKIES_BUVID4(ConfigFile.BILIBILI, "bilibili.cookies.buvid4", ConfigType.STRING, "", true,
+            "b站设备标识buvid4，程序首次请求b站接口时自动获取并写入，不要手工修改", 32),
     BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT(ConfigFile.BILIBILI, "bilibili.upload_video.duration_limit", ConfigType.INT, "600", true,
             "上传b站视频时长限制，单位秒", 40),
     BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT(ConfigFile.BILIBILI, "bilibili.download_video.duration_limit", ConfigType.INT, "600", true,

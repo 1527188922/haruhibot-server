@@ -11,6 +11,8 @@ import org.slf4j.MarkerFactory;
 public class DbLog {
     public static final String DB_LOG_MARKER_NAME = "DB_LOG";
     public static final String MDC_KEY_BUSINESS_MODULE = "businessModule";
+    // 真实调用方信息：DbLog 在 lambda 中调用 slf4j，logback 算出的 %C/%M 是 DbLog 自己，
+    // 控制台/文件日志的 %logClass/%logMethod（见 logback-spring.xml）以及入库日志都依赖这里写入的 MDC
     public static final String MDC_KEY_LOG_CLASS_NAME = "logClassName";
     public static final String MDC_KEY_LOG_METHOD_NAME = "logMethodName";
 
