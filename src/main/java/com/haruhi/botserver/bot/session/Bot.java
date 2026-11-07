@@ -60,6 +60,15 @@ public class Bot implements Closeable {
     private WebSocketSession session;
     @Getter
     private SelfInfo selfInfo;
+    // 机器人是否在线（收到下线通知/生命周期disable时为false）
+    @Getter
+    private volatile boolean online = true;
+    // 最近一次心跳是否正常
+    @Getter
+    private volatile Boolean heartbeatGood;
+    // 最近一次心跳时间（秒级时间戳）
+    @Getter
+    private volatile long lastHeartbeatTime;
 
     private static final int SEND_TIME_LIMIT_MILLIS = 10 * 1000;
     private static final int BUFFER_SIZE_LIMIT_BYTES = 512 * 1024;
@@ -108,6 +117,25 @@ public class Bot implements Closeable {
         if (response.isSuccess() && response.getData() != null) {
             selfInfo = response.getData();
         }
+    }
+
+    /**
+     * 标记机器人为离线
+     */
+    public void markOffline() {
+        this.online = false;
+    }
+
+    /**
+     * 更新心跳信息
+     * @param online 是否在线
+     * @param good 心跳是否正常
+     * @param lastHeartbeatTime 心跳时间（秒级时间戳）
+     */
+    public void updateHeartbeat(boolean online, Boolean good, long lastHeartbeatTime) {
+        this.online = online;
+        this.heartbeatGood = good;
+        this.lastHeartbeatTime = lastHeartbeatTime;
     }
 
     /**

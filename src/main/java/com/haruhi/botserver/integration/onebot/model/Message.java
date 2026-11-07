@@ -98,6 +98,7 @@ public class Message implements Serializable {
     private final Long groupId;
     private final Long targetId;
     private final List<MessageHolder> message;
+    // 含有cq码的原始消息
     private final String rawMessage;
     private final Integer font;
     private final Sender sender;

@@ -5,8 +5,7 @@ import com.haruhi.botserver.bot.session.BotContainer;
 
 import com.alibaba.fastjson.JSONObject;
 import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
-import com.haruhi.botserver.integration.onebot.model.Message;
-import com.haruhi.botserver.bot.dispatch.MessageProcessor;
+import com.haruhi.botserver.bot.dispatch.EventRouter;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -26,7 +25,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class BotServer extends TextWebSocketHandler {
 
     @Autowired
-    private MessageProcessor messageProcessor;
+    private EventRouter eventRouter;
 
     // 逻辑启停 实际上服务并没有停止 只是拒绝连接(握手拦截器中去拒绝)
     private volatile boolean isRunning = true;
@@ -67,9 +66,7 @@ public class BotServer extends TextWebSocketHandler {
                 log.info("非echo响应：{}",s);
                 return;
             }
-            final Message bean = JSONObject.parseObject(s, Message.class);
-            bean.setRawWsMsg(s);
-            messageProcessor.execute(bot, bean);
+            eventRouter.route(bot, jsonObject, s);
         }catch (Exception e){
             DbLog.error(BusinessModuleEnum.BOT_WS,"解析payload异常:{}",s,e);
         }

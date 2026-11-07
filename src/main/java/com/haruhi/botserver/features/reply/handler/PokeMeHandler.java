@@ -1,12 +1,14 @@
 package com.haruhi.botserver.features.reply.handler;
 
-import com.haruhi.botserver.bot.handler.IPokeHandler;
+import com.haruhi.botserver.bot.handler.INoticeHandler;
 
-import com.haruhi.botserver.integration.onebot.model.Message;
-import com.haruhi.botserver.integration.onebot.model.MessageHolder;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
-import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.bot.session.Bot;
+import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
+import com.haruhi.botserver.integration.onebot.model.NoticeTypeEnum;
+import com.haruhi.botserver.integration.onebot.model.SubTypeEnum;
+import com.haruhi.botserver.integration.onebot.model.event.NoticeEvent;
+import com.haruhi.botserver.shared.util.CommonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -20,18 +22,24 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 @Slf4j
 @Component
-public class PokeMeHandler implements IPokeHandler {
+public class PokeMeHandler implements INoticeHandler {
 
     public volatile static List<String> cache = new CopyOnWriteArrayList<>();
 
     @Override
-    public void onPoke(final Bot bot, final Message message) {
+    public boolean support(NoticeEvent event) {
+        return NoticeTypeEnum.notify.name().equals(event.getNoticeType())
+                && SubTypeEnum.poke.name().equals(event.getSubType());
+    }
+
+    @Override
+    public void onNotice(final Bot bot, final NoticeEvent event) {
         if (cache.isEmpty()) {
             return;
         }
         // targetId: 被戳人
-        if(!Objects.equals(message.getSelfId(), message.getTargetId())
-                || Objects.equals(message.getSelfId(), message.getUserId())){
+        if(!Objects.equals(event.getSelfId(), event.getTargetId())
+                || Objects.equals(event.getSelfId(), event.getUserId())){
             // 只对戳了机器人生效
             return;
         }
@@ -42,9 +50,9 @@ public class PokeMeHandler implements IPokeHandler {
                 if(size > 0){
                     String reply = cache.get(CommonUtil.randomInt(0, size - 1));
                     if(StringUtils.isEmpty(reply)){
-                        bot.sendPoke(message.getUserId(), message.getGroupId());
+                        bot.sendPoke(event.getUserId(), event.getGroupId());
                     }else{
-                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageHolder.instanceText(reply));
+                        bot.sendMessage(event.getUserId(),event.getGroupId(),event.getMessageType(), MessageHolder.instanceText(reply));
                     }
                 }
             }catch (Exception e){
