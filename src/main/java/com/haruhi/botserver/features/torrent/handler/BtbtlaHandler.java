@@ -4,6 +4,8 @@ import com.haruhi.botserver.bot.handler.IAllMessageHandler;
 
 import cn.hutool.core.text.StrFormatter;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
+import com.haruhi.botserver.configuration.metadata.ConfigKey;
+import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.features.torrent.client.model.btbtla.SearchResult;
 import com.haruhi.botserver.integration.onebot.model.ForwardMsgItem;
 import com.haruhi.botserver.integration.onebot.model.Message;
@@ -44,6 +46,12 @@ public class BtbtlaHandler implements IAllMessageHandler {
     @Override
     public boolean onMessage(Bot bot, Message message) {
         if(!message.isTextMsgOnly()){
+            return false;
+        }
+
+        boolean allowGroup = Configs.getBool(ConfigKey.BOT_SWITCH_SEARCH_BT_ALLOW_GROUP, false);
+        if (message.isGroupMsg() && !allowGroup){
+            // bt功能不允许在群聊中使用
             return false;
         }
 

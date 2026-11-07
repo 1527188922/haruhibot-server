@@ -90,7 +90,7 @@ public enum ConfigKey {
             "是否启用青云可聊天api，任何命令都未触发时会调用", 70),
     BOT_SWITCH_SEARCH_IMAGE_ALLOW_GROUP(ConfigFile.BOT, "bot.switch.search_image_allow_group", ConfigType.BOOL, "true", true,
             "是否允许群聊中使用识图功能", 80),
-    BOT_SWITCH_SEARCH_BT_ALLOW_GROUP(ConfigFile.BOT, "bot.switch.search_bt_allow_group", ConfigType.BOOL, "true", true,
+    BOT_SWITCH_SEARCH_BT_ALLOW_GROUP(ConfigFile.BOT, "bot.switch.search_bt_allow_group", ConfigType.BOOL, "false", true,
             "是否允许群聊中使用bt搜索功能", 90),
     BOT_SWITCH_GROUP_INCREASE(ConfigFile.BOT, "bot.switch.group_increase", ConfigType.BOOL, "true", true,
             "是否开启加群提示", 100),
