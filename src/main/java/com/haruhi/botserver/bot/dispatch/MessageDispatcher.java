@@ -130,6 +130,8 @@ public class MessageDispatcher {
             executeGroupMessageHandler(groupContainer,bot,message);
         } else if (message.isPrivateMsg()) {
             executePrivateMessageHandler(privateContainer,bot,message);
+        } else {
+            log.warn("未知message_type：{}，rawMessage：{}", message.getMessageType(), message.getRawMessage());
         }
     }
 
@@ -138,21 +140,26 @@ public class MessageDispatcher {
             return;
         }
         for (IMessageHandler element : handlers) {
-            if (toContinue(element, message)) {
-                continue;
-            }
-            if (element instanceof IAllMessageHandler) {
-                IAllMessageHandler handler = (IAllMessageHandler) element;
-                if (handler.onMessage(bot, message)) {
-                    printLog("onMessage","群",message);
-                    break;
+            try {
+                if (toContinue(element, message)) {
+                    continue;
                 }
-            } else if(element instanceof IGroupMessageHandler){
-                IGroupMessageHandler handler = (IGroupMessageHandler) element;
-                if (handler.onGroup(bot, message)) {
-                    printLog("onGroup","群",message);
-                    break;
+                if (element instanceof IAllMessageHandler) {
+                    IAllMessageHandler handler = (IAllMessageHandler) element;
+                    if (handler.onMessage(bot, message)) {
+                        printLog("onMessage","群",message);
+                        break;
+                    }
+                } else if(element instanceof IGroupMessageHandler){
+                    IGroupMessageHandler handler = (IGroupMessageHandler) element;
+                    if (handler.onGroup(bot, message)) {
+                        printLog("onGroup","群",message);
+                        break;
+                    }
                 }
+            } catch (Exception e) {
+                log.error("处理群消息异常 handler：{}，UID：{}，GID：{}",
+                        element.getClass().getSimpleName(), message.getUserId(), message.getGroupId(), e);
             }
         }
     }
@@ -163,21 +170,26 @@ public class MessageDispatcher {
            return;
         }
         for (IMessageHandler element : handlers) {
-            if (toContinue(element, message)) {
-                continue;
-            }
-            if (element instanceof IAllMessageHandler) {
-                IAllMessageHandler handler = (IAllMessageHandler) element;
-                if (handler.onMessage(bot, message)) {
-                    printLog("onMessage","私",message);
-                    break;
+            try {
+                if (toContinue(element, message)) {
+                    continue;
                 }
-            } else if (element instanceof IPrivateMessageHandler) {
-                IPrivateMessageHandler handler = (IPrivateMessageHandler) element;
-                if (handler.onPrivate(bot, message)) {
-                    printLog("onPrivate","私",message);
-                    break;
+                if (element instanceof IAllMessageHandler) {
+                    IAllMessageHandler handler = (IAllMessageHandler) element;
+                    if (handler.onMessage(bot, message)) {
+                        printLog("onMessage","私",message);
+                        break;
+                    }
+                } else if (element instanceof IPrivateMessageHandler) {
+                    IPrivateMessageHandler handler = (IPrivateMessageHandler) element;
+                    if (handler.onPrivate(bot, message)) {
+                        printLog("onPrivate","私",message);
+                        break;
+                    }
                 }
+            } catch (Exception e) {
+                log.error("处理私聊消息异常 handler：{}，UID：{}",
+                        element.getClass().getSimpleName(), message.getUserId(), e);
             }
         }
     }
