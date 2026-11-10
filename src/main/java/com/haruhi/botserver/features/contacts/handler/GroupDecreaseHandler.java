@@ -10,10 +10,12 @@ import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.integration.onebot.model.MessageTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.NoticeTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.event.NoticeEvent;
+import com.haruhi.botserver.shared.util.CommonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.text.MessageFormat;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -31,8 +33,10 @@ public class GroupDecreaseHandler implements INoticeHandler {
             return;
         }
         ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            bot.sendMessage(event.getUserId(), event.getGroupId(), MessageTypeEnum.group.getType(),
-                    MessageHolder.instanceText(MessageFormat.format("{0} 离开了本群。",String.valueOf(event.getUserId()))));
+            List<MessageHolder> messageHolders = MessageHolder.instanceText(MessageFormat.format("{0} 离开了本群。", String.valueOf(event.getUserId())));
+            messageHolders.add(MessageHolder.instanceImage(CommonUtil.getAvatarUrl(event.getUserId(), false)));
+
+            bot.sendMessage(null, event.getGroupId(), MessageTypeEnum.group.getType(), messageHolders);
         });
     }
 

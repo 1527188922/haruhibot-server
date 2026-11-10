@@ -202,7 +202,7 @@ public class Bot implements Closeable {
         sendMessage(JSONObject.toJSONString(pokeRequest));
     }
 
-    public void sendMessage(Long userId,Long groupId,String messageType, List<MessageHolder> message){
+    public void sendMessage(Long userId, Long groupId, String messageType, List<MessageHolder> message){
         RequestBox<Params<List<MessageHolder>>> paramsRequestBox = new RequestBox<>();
         paramsRequestBox.setAction(QqClientActionEnum.SEND_MSG.getAction());
 
