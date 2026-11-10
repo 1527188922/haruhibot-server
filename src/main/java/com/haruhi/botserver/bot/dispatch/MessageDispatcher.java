@@ -195,7 +195,8 @@ public class MessageDispatcher {
     }
 
     private void printLog(String fnName,String messageType, Message message){
-        log.info("触发handler[{}][{}][UID:{}][GID:{}] {}",messageType,fnName,message.getUserId(),message.getGroupId(),message.getRawMessage());
+        log.info("[触发Handler][{}][{}][UID:{}][GID:{}] {}",
+                messageType, fnName, message.getUserId(), message.getGroupId(), message.getRawMessage());
     }
 
     /**
