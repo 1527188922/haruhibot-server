@@ -14,6 +14,9 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * 实测：国内网络直连会被 Yandex 拦截（返回 service is under construction 页面），需要科学上网
+ */
 @Component
 public class Yandex extends AbstractSearchEngine {
         public Yandex() {

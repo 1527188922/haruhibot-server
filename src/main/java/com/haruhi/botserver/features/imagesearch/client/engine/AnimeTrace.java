@@ -62,8 +62,11 @@ public class AnimeTrace extends AbstractSearchEngine {
             SearchResponse response = new SearchResponse(type(), http.url(), json, http.statusCode())
                     .put("code", json.get("code"))
                     .put("ai", json.get("ai"))
-                    .put("trace_id", json.get("trace_id"));
-            JSONArray data = json.getJSONArray("data");
+                    .put("trace_id", json.get("trace_id"))
+                    .put("message", PicImageSearchUtil.firstNonBlank(json.getString("zh_message"), json.getString("message")));
+            // 失败时 data 可能为对象而非数组，避免类型转换异常
+            Object dataObj = json.get("data");
+            JSONArray data = dataObj instanceof JSONArray array ? array : null;
             if (data != null) {
                 for (Object obj : data) {
                     JSONObject item = (JSONObject) obj;
