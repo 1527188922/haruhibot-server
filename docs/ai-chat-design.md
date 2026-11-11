@@ -17,18 +17,18 @@
 ## 0. 结论（TL;DR）
 
 1. **把「对话」和「命令」拆开**：
-   - 新增 `DeepSeekChatHandler`，权重 `W_170`，放在所有功能命令之后、青云客聊天 `AiChatHandler(W_160)` 之前，作为“没有命中任何命令”时的兜底对话入口。
+   - 新增 `DeepSeekChatHandler`，权重 `W_170`，放在所有功能命令之后、青云客聊天 `AiChatHandler(W_160)` 之前，只在 AI 启用范围内接管对话。
    - 原 `DeepSeekHandler(W_870)` 改造成 `DeepSeekCommandHandler`，只处理 `ds reset / ds role / ds status / ds on / ds off` 等控制命令，不再承担聊天。
 2. **一个群一个会话，一个私聊用户一个会话**：
    - 会话键使用 `(selfId, scene, targetId)`，不要再用字符串直接拼接，避免 `selfId+groupId` 的碰撞。
    - 群聊会话共享上下文，但每条消息都带说话人昵称/QQ；私聊会话隔离，绝不串到群里。
-   - 群里的**所有消息（含命令）都进入“环境上下文”**（内存环形缓冲）；命令仍由更高权重 Handler 处理，普通消息默认只有被 @、被引用、被叫名字、被直接提问时才真正调用 API。这样既满足“消息进入对话”，又不会刷屏。
+   - 群里的**所有消息（含命令）都进入“环境上下文”**（内存环形缓冲）；命令仍由更高权重 Handler 处理，普通消息只在被 @、被引用、被叫名字、命中关键词或随机接话命中时才真正调用 API。这样既满足“消息进入对话”，又不会刷屏。
 3. **提示词分四层**：
    - 安全层（最高优先级，不可被角色卡覆盖）
    - 协议层（JSON 输出协议，替代 qq-bridge 的“仿真提示词/工具协议”）
    - 场景层（群聊 / 私聊）
    - 角色卡层（只写“你是谁、怎么说话”，不写工具用法，直接移植 qq-bridge 的人格卡并去掉 `qq_*`/`mcp__*`/表情包/语音/记忆等工具内容）
-   - 角色卡用数据库管理，内置卡从 classpath 首次导入；支持 qq-bridge 风格的“按模式注入”小节标记。
+   - 角色卡以 Markdown 文件放在运行目录 `./aichat/roles/`，文件名即角色名，只从该目录加载；不建表、不从 classpath 导入；支持 qq-bridge 风格的“按模式注入”小节标记。
 4. **伪 Agent 用 JSON 协议实现，不用当前 SDK 的 function calling**：
    - 模型只输出一个 JSON：`{"type":"say|call|silent", ...}`。
    - `say` 支持一次多条、每条带 `delay_ms`，实现“分条 + 间隔发送”的拟人效果。
@@ -37,7 +37,10 @@
 5. **客户端自建一层轻量 HTTP 封装**：
    - 现有 `com.theokanning.openai-gpt3-java:service:0.18.2` 的 `ChatCompletionRequest` 没有 `response_format`、`thinking`、`reasoning_effort`、`tools`、`user_id`、多模态 content，无法满足 JSON 模式和视觉需求。
    - 用项目已有的 OkHttp + Jackson 直接请求 `/chat/completions`，保留 `ds.api.*` 配置；`OpenAiServiceHolder` 可继续给旧代码用，新链路不依赖它。
-6. **默认关闭、可灰度**：`ds.chat.enable=false`；未开启或未配置时 Handler 返回 `false`，青云客仍可兜底。运行期异常按第 12 节降级（短提示/silent），不自动切青云客。
+6. **默认全部关闭、按范围灰度**：只有 `ds.chat.group.whitelist` 里的群和 `ds.chat.private.enable=true` 的私聊才启用 AI；范围外青云客保持现状，`ds` 命令在所有范围内都仅超管可用。
+7. **启用范围内青云客失效**：群在 AI 白名单内、或私聊开关打开时，`AiChatHandler`（青云客）直接返回 `false`；`DeepSeekCommandHandler` 不失效，但所有 `ds` 命令仅超级管理员可触发，非管理员的消息继续流向 AI 或其他 Handler。
+8. **余额以官方接口为准**：通过 `GET /user/balance` 查询并展示，不在本地按价格和 token 估算余额；token 统计只用于用量报表和每日限额。
+9. **拟人延迟**：被 @ / 被叫到时先等 5~15 秒再处理（纯 @ 无文本等更久），私聊和群内随机接话的连续消息按 2~6 秒随机 debounce 合并。
 
 ---
 
@@ -119,11 +122,12 @@ qq-bridge 是“DSH agent 接入 QQ”的项目，提示词分两层：
 
 1. 群聊：每个群一个会话；私聊：每个用户一个会话；重启后会话可恢复。
 2. 所有未命中功能命令的消息都能进入 AI 对话链路；群聊默认“进入上下文但不一定回复”，被叫到时回复。
-3. 角色卡：可配置、可切换、可 WebUI 管理；直接移植 qq-bridge 的人格卡并做“去工具化”适配。
+3. 角色卡：放在 `./aichat/roles/*.md`，文件名即角色名，可增删文件、可切换；直接移植 qq-bridge 的人格卡并做“去工具化”适配。
 4. 伪 Agent：模型通过 JSON 决定“发一条/发多条/间隔多久/沉默/调用工具”，Java 解析并执行。
 5. 拟人：分条、间隔、短句、引用/@、群聊不刷屏、私聊不客服腔。
 6. 安全：无本地工具、无管理权限、工具白名单、CQ 注入防护、提示词注入防护、成本上限。
-7. 可观测：token 用量、缓存命中、延迟、失败原因、每个会话的上下文预览。
+7. 可观测：token 用量、缓存命中、延迟、失败原因、官方余额、每个会话的上下文预览。
+8. 开关：按群白名单 + 私聊总开关启用；默认全部关闭，启用范围内青云客失效，`ds` 命令仅超级管理员可用。
 
 ### 2.2 非目标（本期不做）
 
@@ -147,17 +151,17 @@ MessageDispatcher（按 weight 降序）
         ├─ W_999 ChatRecordHandler          保存原始聊天记录，返回 false
         ├─ W_998 AiContextCollectorHandler  群消息写入 AI 环境上下文，返回 false（新增）
         ├─ ... 各功能命令 ...
-        ├─ W_870 DeepSeekCommandHandler     ds 控制命令（新增/替换旧 DeepSeekHandler）
+        ├─ W_870 DeepSeekCommandHandler     ds 命令（仅超级管理员）
         ├─ W_180 自定义回复
-        ├─ W_170 DeepSeekChatHandler        ★ 兜底对话入口（新增）
-        └─ W_160 AiChatHandler              青云客兜底（保留）
+        ├─ W_170 DeepSeekChatHandler        ★ 兜底对话入口（仅 AI 启用范围，新增）
+        └─ W_160 AiChatHandler              青云客兜底（AI 启用范围内返回 false）
                     │
                     ▼
             AiChatService（编排）
         ┌───────────┼────────────┬──────────────┐
         ▼           ▼            ▼              ▼
  AiTriggerPolicy  AiSession   PromptAssembler  AiReplyParser
- （触发/限流）     Service     （四层提示词）    （JSON 校验）
+ （触发/限流/等待）     Service     （四层提示词）    （JSON 校验）
         │           │            │              │
         │           ▼            ▼              ▼
         │      SQLite 会话表   DeepSeekClient  AiToolService
@@ -174,6 +178,9 @@ MessageDispatcher（按 weight 降序）
 
 核心原则：
 
+- 启用范围由 `AiScopeService` 统一判断：群在 `ds.chat.group.whitelist` 内、或私聊 `ds.chat.private.enable=true` 才算启用；
+- 启用范围内 `DeepSeekChatHandler(W_170)` 接管聊天，`AiChatHandler(W_160)` 返回 false；
+- `DeepSeekCommandHandler(W_870)` 不失效，但所有 `ds` 命令仅超级管理员可触发；非管理员返回 false，消息继续向后流转；
 - Handler 只做“是否接管 + 入队”，不在分发线程里做网络请求；
 - 每个会话串行处理，会话之间并行；
 - 网络调用有全局并发上限和超时；
@@ -189,66 +196,78 @@ MessageDispatcher（按 weight 降序）
 
 ```text
 W_998(998, "AI上下文收集")   // 必须唯一，且大于所有命令
-W_170(170, "DeepSeek聊天")   // 小于 W_180 自定义回复，大于 W_160 青云客
+W_170(170, "DeepSeek聊天")   // 小于 W_180 自定义回复；仅在 AI 启用范围接管
 ```
 
 | 权重 | Handler | 是否新增 | 职责 | 返回值 |
 | --- | --- | --- | --- | --- |
 | 999 | `ChatRecordHandler` | 否 | 原始记录入库 | false |
 | 998 | `AiContextCollectorHandler` | 是 | 群消息写入环境上下文（不含机器人自己） | false |
-| 870 | `DeepSeekCommandHandler` | 替换旧 `DeepSeekHandler` | `ds` 控制命令 | true（命中命令）/ false |
+| 870 | `DeepSeekCommandHandler` | 替换旧 `DeepSeekHandler` | `ds` 命令；所有命令仅超级管理员可触发 | true（管理员命中命令）/ false |
 | 180 | 自定义回复 | 否 | 正则/词条 | 命中 true |
-| 170 | `DeepSeekChatHandler` | 是 | 兜底对话 | true（接管）/ false |
-| 160 | `AiChatHandler` | 否 | 青云客兜底 | 命中 true |
+| 170 | `DeepSeekChatHandler` | 是 | 兜底对话；仅 AI 启用范围内接管 | true（接管）/ false |
+| 160 | `AiChatHandler` | 否 | 青云客兜底；AI 启用范围内不接管 | 命中 true |
 
 说明：
 
 - `W_170` 必须小于 `W_180`，否则自定义回复会被 AI 抢走；
-- `W_170` 必须大于 `W_160`，这样 AI 启用时优先于青云客；AI 未配置/关闭时返回 false，青云客仍可工作；
-- `DeepSeekCommandHandler` 在 `W_870`，保证 `ds reset` 这类命令不会进入 AI 聊天；
-- 旧 `DeepSeekHandler` 的 `ds <任意文本>` 行为不再保留；若确实需要兼容，用 `ds.chat.group.trigger.prefix=ds ` 配置，让 W_170 把未知的 `ds xxx` 当聊天前缀处理。
+- `W_170` 只在该群/该私聊属于 AI 启用范围时接管，范围外返回 false；
+- `W_160` 入口先查 `AiScopeService`：启用范围内直接返回 false，保证青云客不会和 AI 抢话；
+- `W_870` 不判断启用范围，但所有命令仅超级管理员可触发；非管理员的消息返回 false，继续向后流转（启用范围内会落到 `W_170`）；
+- 旧 `DeepSeekHandler` 的 `ds <任意文本>` 行为不再保留；若确实需要兼容，用 `ds.chat.group.trigger.prefix=ds ` 配置，让 W_170 把未知的 `ds xxx` 当聊天前缀处理（该群必须已在 AI 白名单内）。
 
 ### 4.2 触发策略
 
 #### 私聊
 
+- 仅 `ds.chat.private.enable=true` 时生效；
 - 默认所有纯文本消息都触发；
-- 连续多条在 `debounce_ms` 内合并成一轮；
+- 连续多条按随机 2~6 秒 debounce 合并成一轮（`ds.chat.debounce.min_ms` / `max_ms`）；
 - 图片/语音/文件本期不触发（可返回 false 交给其他 Handler，或只记录占位）；
 - 机器人自己的消息永不触发（`handleSelfMsg=false`）。
 
 #### 群聊
 
-两种模式（`ds.chat.group.mode`）：
+仅 `ds.chat.group.whitelist` 包含该群时生效。只有一种行为，没有模式开关：
 
-| 模式 | 行为 | 适用 |
-| --- | --- | --- |
-| `addressed`（默认） | 所有群消息（包括命令）进入环境上下文；只有被 @ / 被引用回复 / 叫到名字 / 命中前缀或关键词 / 随机主动接话时才调用 API | 推荐，拟人且不刷屏 |
-| `all` | 所有非命令文本都调用 API，靠限流控制频率 | 只有明确想要“每条都回”时才用，不推荐 |
+- 所有群消息（包括命令、图片、表情、@别人、语音/文件）都进入环境上下文；
+- 直接触发（被 @ / 被引用回复 / 叫到名字 / 命中前缀或关键词）一定调用 API；
+- 其他消息按 `random_percent` 逐条掷骰子，命中就调用 API，未命中只进入环境上下文。
 
-`addressed` 模式的触发条件（可分别开关）：
+触发条件（可分别开关）：
 
 1. `@机器人`（`message.isAtBot()`）；
 2. 引用/回复了机器人的消息（`getReplyMsgIds()` 对应的消息 sender 是机器人）；
 3. 文本包含机器人昵称/配置的关键词（`Bot.getBotName()`、`ds.chat.group.trigger.keywords`）；
 4. 文本以配置前缀开头（`ds.chat.group.trigger.prefix`，默认空）；
-5. 随机主动接话：`ds.chat.group.trigger.random_percent`（0~100，默认 0），只在群最近有活跃聊天时生效；
-6. `ds.chat.group.mode=all` 时无条件触发。
+5. 随机主动接话：每条群消息（文本、图片、表情、@别人、语音/文件都算）独立掷骰子 `ds.chat.group.trigger.random_percent`（0~100，默认 0），命中即调用 API；不要求“群最近有活跃聊天”，刷屏由限流兜底。
+
+随机触发不区分消息类型：纯图片/表情/@别人也可能命中；`AiMessageExtractor` 用 `[图片]`/`[表情]`/`@某人` 占位，允许文本为空。随机触发不等于必须回复，模型仍可 `silent`。
 
 不触发时：
 
 - `AiContextCollectorHandler` 已经把消息写入环境上下文；
-- `DeepSeekChatHandler` 返回 `false`，让后面的 `AiChatHandler(W_160)` 仍有机会处理（青云客只对 @/私聊生效，不冲突）。
+- `DeepSeekChatHandler` 返回 `false`；该群若在 AI 启用范围内，`AiChatHandler(W_160)` 也已返回 false，因此不会有人回复。
 
 触发但决定沉默：
 
-- 仍返回 `true`，表示“这条消息归 AI 管”，避免青云客重复回复；
+- 仍返回 `true`，表示“这条消息归 AI 管”；
 - 模型可以返回 `{"type":"silent"}`。
+
+#### 提及后的等待窗口（拟人延迟）
+
+被直接叫到时（@、引用机器人、叫名字、命中关键词），不要立刻调用 API，先等一段随机时间，给用户把话说完的机会：
+
+- 普通提及：随机等待 `ds.chat.group.mention_delay_min_ms` ~ `mention_delay_max_ms`（默认 5000~15000ms）后再入队；文本越短越靠上限，完整问题取下限附近；
+- 等待窗口本身就是合并窗口：从收到触发消息开始计时，期间同一用户继续发消息会合并进同一轮并重新计时，总等待不超过 `ds.chat.group.mention_delay_cap_ms`（默认 30000ms）；不再额外叠加 2~6 秒 debounce；
+- 纯 @ 无文本（且无附件）：等待更久，随机 `ds.chat.group.at_only_delay_min_ms` ~ `at_only_delay_max_ms`（默认 15000~25000ms）；期间用户补了文本，就按普通提及合并处理；等待结束仍无内容时回一个“？”（`ds.chat.group.reply_at_only=true`，默认 true）；
+- 这段等待在服务端完成，模型输出的第一条 `delay_ms` 保持 0，避免双重延迟；
+- 私聊不走这个等待窗口，只走 2~6 秒 debounce。
 
 #### 边界
 
 - `@全体成员` 不触发；
-- 纯 @ 无文本：默认不触发；可选配置 `ds.chat.group.reply_at_only=true` 时回一个“？”（默认 false）；
+- 纯 @ 无文本（且无附件）：触发，但走更长的等待窗口；等待结束仍无内容时回一个“？”（`ds.chat.group.reply_at_only=true`，默认 true）；
 - 机器人自己的消息、其他机器人的消息不触发；其他机器人如果无法识别，建议用 `ds.chat.ignore_user_ids` 黑名单过滤；
 - 群访问列表、`bot.switch.disable_group` 由 `MessageDispatcher.toContinue` 统一拦截，AI Handler 不 `bypassGroupRestrictions`；
 - 私聊不受群开关影响。
@@ -267,14 +286,14 @@ record AiSessionKey(long selfId, AiScene scene, long targetId) {}
 - 内存用 Caffeine（项目已有 2.8.6）或 `ConcurrentHashMap` + 定时清理；
 - 空闲 `ds.chat.session.expire_minutes`（默认 120）后从内存卸载，数据库保留；
 - 下次消息到来时按需从数据库加载最近 `ds.chat.persistence.max_messages_per_session` 条；
-- `ds reset` 清空当前会话的内存历史 + 删除数据库消息（保留用量统计）；
-- 角色切换只改 `role_name`，不强制清历史；下一条消息生效。
+- `ds reset`（仅超级管理员）清空当前会话的内存历史 + 删除数据库消息（保留用量统计），不改 `status`；
+- 角色切换只改 `role_name`（角色文件名），WebUI 或 `ds role` 均可；不强制清历史，下一条消息生效。
 
 ### 4.4 群聊环境上下文
 
 新增 `AiContextCollectorHandler(W_998)`：
 
-- 只处理群消息，私聊忽略；
+- 只处理群消息，私聊忽略；只收集 `ds.chat.group.whitelist` 内的群，范围外直接返回 `false`；
 - 不改变消息归属，永远返回 `false`；
 - 文本化：`昵称/名片 + 文本 + [图片]/[表情]/[语音]/[视频]/[文件]/[转发]` 占位；
 - 写入 `Deque<AmbientMessage>`，每群最多 `ds.chat.group.ambient_size * 2`（默认 40），超过丢弃最旧；
@@ -314,25 +333,28 @@ class SessionState {
     AtomicBoolean running;
     ConcurrentLinkedQueue<AiTurn> pending;
     AtomicLong generation;
+    volatile long notBeforeEpochMs;   // 提及等待/合并窗口的到期时间
 }
 ```
 
 - `enqueue` 入队；如果 `running` 从 false 变 true，提交一个虚拟线程 worker；
+- 直接触发入队时带 `notBefore = now + 随机等待`；worker 取到后若未到期，挂起到期再处理；
+- 等待期间同一用户的新消息合并到本轮并刷新 `notBefore`，总等待不超过 cap；
 - worker 循环取 pending，处理完再取；队列空时 CAS 回 false，并再次检查队列（防竞态）；
 - 忙时不再返回“上一任务还未结束”，而是排队/合并；
 - pending 上限 3，超过时合并最早的两条或丢弃最旧（记录日志）。
 
 #### 合并（debounce）
 
-- 私聊：同一用户 `debounce_ms`（默认 1200）内的连续消息合并成一条 user 消息：
+- 私聊：同一用户 `ds.chat.debounce.min_ms` ~ `max_ms`（默认 2000~6000，每轮随机）内的连续消息合并成一条 user 消息；每来一条新消息重新计时，但一轮总等待不超过 `ds.chat.debounce.max_wait_ms`（默认 15000ms）：
   ```text
   对方连续发来 3 条：
   1. 在吗
   2. 问你个事
   3. 这个怎么回事
   ```
-- 群聊：同一用户短时间连发也合并；不同用户分别触发；
-- `debounce_ms=0` 关闭。
+- 群聊：非直接触发（随机接话）时，同一用户短时间连发按同样的 2~6 秒随机窗口合并；直接触发走提及等待窗口，不再叠加；
+- `max_ms=0` 关闭合并。
 
 #### 限流
 
@@ -343,7 +365,7 @@ class SessionState {
 | 群单用户冷却 | `ds.chat.group.user_cooldown_ms` | 10000 | 同一用户连续 @ 时降频 |
 | 私聊最小间隔 | `ds.chat.private.min_reply_interval_ms` | 1000 | 防止刷 |
 | 全局并发 | `ds.chat.max_concurrent` | 4 | 信号量，拿不到许可排队 30s，超时丢弃 |
-| 每日 token | `ds.chat.daily_token_limit` | 0（不限） | 达到 80% 提醒管理员，100% 停止 AI 并回退 |
+| 每日 token | `ds.chat.daily_token_limit` | 0（不限） | 达到 80% 提醒管理员，100% 停止 AI（不回落青云客） |
 
 限流命中时：
 
@@ -352,22 +374,43 @@ class SessionState {
 
 ### 4.6 控制命令（DeepSeekCommandHandler）
 
-原 `DeepSeekHandler` 的聊天能力移到 `W_170`，`W_870` 只保留控制命令。群聊里命令必须 @ 机器人；私聊不需要。
+原 `DeepSeekHandler` 的聊天能力移到 `W_170`，`W_870` 只保留命令。群聊里命令必须 @ 机器人；私聊不需要。
+
+**权限**：`DeepSeekCommandHandler` 的所有命令（含 `ds help`）仅超级管理员可触发；非超级管理员返回 false，消息继续向后流转（启用范围内会落到 `W_170`）。启用范围开关不影响命令 Handler 本身。
 
 | 命令 | 权限 | 行为 |
 | --- | --- | --- |
-| `ds help` | 所有人 | 列出可用命令（短文本） |
-| `ds reset` | 群：超级管理员；私聊：本人 | 清空当前会话历史（内存 + DB 消息），保留用量 |
-| `ds status` | 群：超级管理员；私聊：本人 | 显示会话 ID、角色、历史条数、今日 token、是否暂停 |
-| `ds role list` | 超级管理员 | 列出启用中的角色卡 |
-| `ds role <名称>` | 超级管理员 | 切换当前会话角色；不存在/禁用则报错 |
-| `ds on` / `ds off` | 超级管理员 | 恢复/暂停当前会话（`t_ai_session.status`） |
+| `ds help` | 超级管理员 | 列出可用命令（短文本） |
+| `ds reset` | 超级管理员 | 清空当前会话历史（内存 + DB 消息），保留用量 |
+| `ds status` | 超级管理员 | 显示会话 ID、角色、历史条数、今日 token、是否暂停，并实时查询官方余额 |
+| `ds role list` | 超级管理员 | 列出 `./aichat/roles/` 中的角色卡 |
+| `ds role <名称>` | 超级管理员 | 切换当前会话角色；名称大小写不敏感、`.md` 可省略；不存在则报错并列出可用角色 |
+| `ds on` / `ds off` | 超级管理员 | 恢复/暂停当前会话（`t_ai_session.status`）；`off` 期间不排队、不补发 |
+
+`ds status` 回复示例（固定模板，不调用 AI）：
+
+```text
+会话：群 123456789
+角色：春日酱（会话指定）
+状态：active
+历史：36 条（内存 36 / DB 200）
+今日 token：12345（输入 10000 / 输出 2345）
+余额：CNY 110.00（可用；赠金 10.00 / 充值 100.00）
+```
+
+- 余额字段每次执行都实时调用 `GET /user/balance`，不走 `ds.chat.balance.refresh_minutes` 缓存；
+- 查询失败时该行显示“查询失败”，其余字段照常输出，不影响命令成功；
+- 多币种时每个币种一行；`is_available=false` 时在余额行标注“不可用”。
 
 约定：
 
+- 非超级管理员发送任何 `ds ...` 都不会被命令层消费；
 - 未知的 `ds xxx` **不**算命令，返回 `false`；如果配置了 `ds.chat.group.trigger.prefix=ds `，它会继续落到 `W_170` 当聊天处理；
 - 命令回复不调用 AI，直接短文本；
 - 命令不写入 AI 会话历史（避免污染角色对话）；
+- `ds reset` / `ds off` / `ds role` 不取消正在生成或已排队中的轮次：当前轮照常跑完并发送，新状态从下一轮生效；
+- `ds off` 期间收到的消息不排队；`ds on` 只处理之后的新消息，不回补；
+- 角色文件的重命名由运维直接改文件名，同名（含仅大小写不同）直接覆盖原文件；
 - 权限判断用 `Configs.getList(ConfigKey.BOT_SUPERUSERS, Long.class, ...)`；
 - 群管理员（`Sender.role=admin/owner`）本期不额外授权，避免 OneBot 端字段被伪造；后续可配置。
 
@@ -476,10 +519,12 @@ class SessionState {
 
 #### 本项目的适配
 
-- 存储：`t_ai_role` 表，字段 `name/content/builtin/enabled/remark`，`name` 唯一；
-- 首次启动从 `src/main/resources/roles/*.md` 导入内置卡（`builtin=1`），之后以数据库为准；
-- 角色选择：会话级 `role_name` > 全局 `ds.chat.role` > 无角色；
-- 注入上限：`ds.chat.role.max_chars`（默认 6000），超出截断并在 WebUI 警告；
+- 存储：运行目录 `./aichat/roles/*.md`，**只从该目录加载**；文件名（去掉 `.md`）就是角色名；
+- 不建角色表、不从 classpath 导入；启动时目录不存在则创建，目录为空时记录 warn 并按“无角色”运行；
+- 加载：只允许目录内的 `*.md`，拒绝路径分隔符和 `..`；按文件 `mtime` 缓存，文件修改后下一轮生效；
+- 角色选择：会话级 `role_name` > 全局 `ds.chat.role` > 无角色；文件不存在时回退全局，再回退无角色；
+- 角色名匹配大小写不敏感（Windows 文件系统本身也不区分），`.md` 后缀可省略；仅大小写不同的文件视为同一角色；
+- 注入上限：`ds.chat.role.max_chars`（默认 6000），超出截断并记录日志；
 - 模式标记（借鉴 qq-bridge 的 `〔一代〕/〔二代〕`）：
   - `〔基础〕`：始终注入；
   - `〔有工具〕`：仅当 `ds.chat.agent.enable=true` 且当前会话有工具时注入；
@@ -491,9 +536,9 @@ class SessionState {
   - 检测空内容、超长、重复标题；
   - 显示按模式过滤后的字符数。
 
-#### 内置角色卡
+#### 示例角色卡
 
-提供三张：
+文档提供三份示例，部署时手工保存到 `./aichat/roles/`（文件名即角色名）。程序不会自动写入目录；目录为空时按“无角色”运行。
 
 | 名称 | 来源 | 说明 |
 | --- | --- | --- |
@@ -605,24 +650,25 @@ class SessionState {
 
 ```text
 1. Handler 收到触发消息
-2. 会话去重 + 限流 + 入队
+2. 会话去重 + 限流；直接触发先计算随机等待（普通提及 5~15s，纯 @ 15~25s）
 3. Worker：
-   a. debounce 合并连续消息
-   b. 加载会话历史
-   c. PromptAssembler 组装 system + history + 动态上下文
-   d. DeepSeekClient.chat(response_format=json_object, thinking=disabled)
-   e. AiReplyParser 解析 JSON
-   f. 如果 type=call：
+   a. 直接触发：等待提及窗口到期（5~15s，纯 @ 15~25s；窗口内同用户补话合并并重新计时，cap 30s，不再叠加 debounce）
+   b. 非直接触发（私聊/随机接话）：debounce 2~6s
+   c. 加载会话历史
+   d. PromptAssembler 组装 system + history + 动态上下文
+   e. DeepSeekClient.chat(response_format=json_object, thinking=disabled)
+   f. AiReplyParser 解析 JSON
+   g. 如果 type=call：
         - 校验工具名/参数/权限
         - 执行工具（超时 + 结果截断）
         - 把 assistant JSON + 【工具结果】追加到本轮 messages
-        - 回到 d，最多 ds.chat.agent.max_steps 轮
-   g. 如果 type=say：
+        - 回到 e，最多 ds.chat.agent.max_steps 轮
+   h. 如果 type=say：
         - AiReplySanitizer 清洗每条 text
         - 校验 reply_to/at
         - AiSendService 按 delay 发送
         - 落库 user + assistant 气泡
-   h. 如果 type=silent：
+   i. 如果 type=silent：
         - 只落库 user，不发送
 4. 记录 usage / latency / 失败原因
 5. 处理 pending 队列中的下一轮
@@ -736,6 +782,8 @@ class SessionState {
 
 - 默认 1 条；只有模型明确给多条才分条；
 - `delay_ms` 不要每条都很长；模型被提示“第一条 0，补话 600~2000”；
+- 被 @ / 被叫到时，服务端已经先等了 5~15 秒（纯 @ 更长），模型第一条 `delay_ms` 保持 0，不要叠加；
+- 私聊和群里的随机接话先经过 2~6 秒 debounce；群的直接触发走提及等待窗口；
 - 群聊被 @ 时不要秒回一大段；先短句，再补；
 - 私聊可以稍快；
 - 不发送“正在输入”之类占位（QQ 不支持）；
@@ -793,6 +841,7 @@ features/ai/client/deepseek/
 ├── DeepSeekMessage.java
 ├── DeepSeekContentPart.java
 ├── DeepSeekUsage.java
+├── DeepSeekBalanceResponse.java
 └── DeepSeekApiException.java
 ```
 
@@ -891,13 +940,13 @@ class Usage {
 - 连接超时 10s，读超时取 `ds.api.timeout`（默认 30s，建议调到 60s，尤其是开启思考时）；
 - 重试：429 / 500 / 503 / IO 超时，最多 `ds.chat.retry`（默认 2）次，指数退避 500ms、1500ms + 抖动；
 - 不重试：400 / 401 / 402 / 422 / content_filter；
-- 401/402：记录错误（不打印 key），发送管理员告警（WebUI 通知/日志），暂时熔断 10 分钟；
+- 401/402：记录错误（不打印 key），调用官方 `/user/balance` 刷新余额，发送管理员告警（WebUI 通知/日志），暂时熔断 10 分钟；
 - 连续失败 5 次：熔断 60s，快速失败，避免雪崩；
 - 每次请求带 `X-Request-Id`/日志 trace，便于排查；
 - 响应体上限 1MB；
 - 不把完整 prompt 打到 INFO 日志；debug 日志截断前 2000 字，且可配置关闭。
 
-**运行期失败的回退：** `DeepSeekChatHandler` 一旦返回 `true`（已接管），后续异步失败不会再交给青云客；失败时按第 12 节发短提示或 silent。若希望 API 不可用时自动切青云客，需要在 Handler 入口做一次轻量健康检查（最近 N 分钟内是否有 401/402/连续超时），不健康时返回 `false`；本期不做，避免把“偶发失败”误判为不可用。
+**运行期失败的回退：** `DeepSeekChatHandler` 一旦返回 `true`（已接管），后续异步失败不会再交给青云客；失败时按第 12 节发短提示或 silent。启用范围内青云客本来就不接管，所以不存在自动切换；如确需兜底，只能把该群移出白名单或关闭私聊开关。本期不做健康检查自动摘除，避免把“偶发失败”误判为不可用。
 
 ### 7.4 模型与参数
 
@@ -939,11 +988,44 @@ class Usage {
 - `deepseek-v4-pro` 不支持视觉；如果 `ds.chat.vision.enable=true` 且模型是 pro，启动时应 warn 并自动关闭视觉；
 - 本期默认关闭 `ds.chat.vision.enable=false`，只发占位，避免 URL 下载失败和成本。
 
+### 7.5 余额查询（官方接口）
+
+余额以 DeepSeek 官方接口为准，不在本地按 token × 价格估算。
+
+```text
+GET {ds.api.base_url}/user/balance
+Authorization: Bearer {ds.api.key}
+```
+
+响应：
+
+```json
+{
+  "is_available": true,
+  "balance_infos": [
+    {
+      "currency": "CNY",
+      "total_balance": "110.00",
+      "granted_balance": "10.00",
+      "topped_up_balance": "100.00"
+    }
+  ]
+}
+```
+
+- `DeepSeekClient.getBalance()` 返回上述结构，字段用 Jackson 显式映射 snake_case；
+- 余额接口不在 `/v1` 下：若 `ds.api.base_url` 以 `/v1` 结尾，先去掉再拼 `/user/balance`；
+- 启动时、打开 WebUI 用量页、执行 `ds status`、以及收到 401/402 时刷新；
+- 可选定时刷新 `ds.chat.balance.refresh_minutes`（默认 10，0=不自动刷新）；
+- `ds status` 直接实时查询，不读定时刷新的缓存；查询失败只影响该行展示；
+- `is_available=false` 或 `total_balance<=0` → 管理员告警，启用范围内按第 12 节降级；
+- token 统计继续保留，只用于用量报表和每日限额，不换算余额。
+
 ---
 
 ## 8. 数据模型
 
-新增 4 张表，加入 `DataBaseConst` 和 `SqliteDatabaseInitMapper.xml`，在 `SqliteDatabaseService.tableInit()` 中初始化。
+新增 3 张表，加入 `DataBaseConst` 和 `SqliteDatabaseInitMapper.xml`，在 `SqliteDatabaseService.tableInit()` 中初始化。
 
 ### 8.1 t_ai_session
 
@@ -953,7 +1035,7 @@ CREATE TABLE IF NOT EXISTS `t_ai_session` (
   `self_id` INTEGER NOT NULL,
   `scene` TEXT NOT NULL,                -- group / private
   `target_id` INTEGER NOT NULL,         -- group_id 或 user_id
-  `role_name` TEXT,                     -- 当前角色卡，空=全局默认
+  `role_name` TEXT,                     -- 角色卡文件名（不含 .md），空=全局默认
   `status` TEXT NOT NULL DEFAULT 'active', -- active / paused
   `last_active_at` DATETIME,
   `created_at` DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
@@ -965,7 +1047,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS `t_ai_session_key_idx`
 
 - `target_id` 非空，避免 SQLite 对 NULL 唯一索引的特殊行为；
 - 群会话 `target_id=groupId`，私聊 `target_id=userId`；
-- `status=paused` 时该会话不回复（`ds off`）。
+- `status=paused` 时该会话不回复（超级管理员可用 `ds off`，WebUI 始终可操作）。
 
 ### 8.2 t_ai_message
 
@@ -990,28 +1072,7 @@ CREATE INDEX IF NOT EXISTS `t_ai_message_session_idx`
 - 每个会话保留最近 `max_messages_per_session`（默认 200）条，超出异步删除最旧；
 - 机器人一次发多条时，每个气泡一行，方便回放。
 
-### 8.3 t_ai_role
-
-```sql
-CREATE TABLE IF NOT EXISTS `t_ai_role` (
-  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  `name` TEXT NOT NULL,
-  `content` TEXT NOT NULL,
-  `builtin` INTEGER NOT NULL DEFAULT 0,
-  `enabled` INTEGER NOT NULL DEFAULT 1,
-  `remark` TEXT,
-  `created_at` DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
-  `updated_at` DATETIME NOT NULL DEFAULT (datetime('now','localtime'))
-);
-CREATE UNIQUE INDEX IF NOT EXISTS `t_ai_role_name_idx` ON `t_ai_role` (`name`);
-```
-
-- 首次启动从 classpath `roles/*.md` 导入，`builtin=1`；
-- 内置卡可编辑但不可删除；删除时提示“可禁用”；
-- `enabled=0` 不参与选择；
-- WebUI 预览时计算“按模式过滤后的字符数”。
-
-### 8.4 t_ai_usage
+### 8.3 t_ai_usage
 
 ```sql
 CREATE TABLE IF NOT EXISTS `t_ai_usage` (
@@ -1031,11 +1092,11 @@ CREATE TABLE IF NOT EXISTS `t_ai_usage` (
 CREATE INDEX IF NOT EXISTS `t_ai_usage_time_idx` ON `t_ai_usage` (`created_at`);
 ```
 
-- 用于成本控制、WebUI 统计、每日限额；
+- 用于 WebUI 统计和每日 token 限额，不用于计算余额；
 - 写入异步（虚拟线程），不阻塞回复；
 - 可定期归档/删除（保留 90 天）。
 
-### 8.5 可选：t_ai_memory（第二阶段）
+### 8.4 可选：t_ai_memory（第二阶段）
 
 ```sql
 CREATE TABLE IF NOT EXISTS `t_ai_memory` (
@@ -1055,13 +1116,12 @@ CREATE TABLE IF NOT EXISTS `t_ai_memory` (
 
 ## 9. 配置项
 
-新增配置全部放在 `ai.properties`，使用 `ds.chat.*` 前缀，与现有 `ds.api.*` 保持一致。默认值保守，`enable=false`。
+新增配置全部放在 `ai.properties`，使用 `ds.chat.*` 前缀，与现有 `ds.api.*` 保持一致。默认值保守：群白名单为空、私聊开关关闭，即默认全部不启用。
 
 ### 9.1 核心
 
 | key | 类型 | 默认 | 热更新 | 说明 |
 | --- | --- | --- | --- | --- |
-| `ds.chat.enable` | BOOL | false | 是 | 总开关；false 时 Handler 直接返回 false，青云客兜底 |
 | `ds.chat.model` | STRING | `deepseek-flash` | 是 | 下拉：`deepseek-flash` / `deepseek-v4-pro` |
 | `ds.chat.thinking` | STRING | `disabled` | 是 | 下拉：`disabled` / `enabled` |
 | `ds.chat.reasoning_effort` | STRING | `high` | 是 | 下拉：`low` / `high` / `max`；仅 thinking=enabled |
@@ -1073,37 +1133,50 @@ CREATE TABLE IF NOT EXISTS `t_ai_memory` (
 | `ds.chat.session.expire_minutes` | INT | `120` | 是 | 内存会话空闲过期 |
 | `ds.chat.history.max_turns` | INT | `20` | 是 | 最多保留多少轮历史 |
 | `ds.chat.history.max_input_tokens` | INT | `12000` | 是 | 输入预算，超出裁剪 |
-| `ds.chat.role` | STRING | `春日酱` | 是 | 默认角色卡；空=无角色 |
+| `ds.chat.role` | STRING | `春日酱` | 是 | 默认角色卡文件名（不含 `.md`）；空=无角色 |
 | `ds.chat.role.max_chars` | INT | `6000` | 是 | 角色卡注入上限 |
 | `ds.chat.dedupe_ttl_seconds` | INT | `300` | 是 | 消息去重 TTL |
 | `ds.chat.ignore_user_ids` | LIST | `` | 是 | 不触发 AI 的 QQ 黑名单（其他机器人/不想理的人） |
 | `ds.chat.vision.enable` | BOOL | false | 是 | 是否把图片传给模型 |
+| `ds.chat.balance.refresh_minutes` | INT | `10` | 是 | 官方余额刷新间隔，0=不自动刷新 |
 
-### 9.2 群聊触发
+> `daily_token_limit` 只用于限制 token 消耗，不代表余额；余额以官方 `/user/balance` 为准。
+
+### 9.2 群聊启用与触发
 
 | key | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
-| `ds.chat.group.enable` | BOOL | true | 群聊 AI 开关 |
-| `ds.chat.group.mode` | STRING | `addressed` | `addressed` / `all` |
+| `ds.chat.group.whitelist` | LIST | `` | 启用 AI 的群号白名单，逗号分隔；空=所有群都不启用 |
 | `ds.chat.group.trigger.at` | BOOL | true | @ 触发 |
 | `ds.chat.group.trigger.reply` | BOOL | true | 引用/回复机器人触发 |
 | `ds.chat.group.trigger.name` | BOOL | true | 叫名字触发 |
 | `ds.chat.group.trigger.prefix` | STRING | `` | 文本前缀触发，空=关闭 |
 | `ds.chat.group.trigger.keywords` | LIST | `` | 关键词触发，逗号分隔 |
-| `ds.chat.group.trigger.random_percent` | INT | 0 | 随机主动接话概率 0~100 |
+| `ds.chat.group.trigger.random_percent` | INT | 0 | 每条群消息（含图片/表情/@别人）的随机接话概率 0~100 |
+| `ds.chat.group.mention_delay_min_ms` | INT | 5000 | 被直接叫到后的最小等待 |
+| `ds.chat.group.mention_delay_max_ms` | INT | 15000 | 被直接叫到后的最大等待 |
+| `ds.chat.group.mention_delay_cap_ms` | INT | 30000 | 等待期间连续补话的总等待上限 |
+| `ds.chat.group.at_only_delay_min_ms` | INT | 15000 | 纯 @ 无文本且无附件的最小等待 |
+| `ds.chat.group.at_only_delay_max_ms` | INT | 25000 | 纯 @ 无文本且无附件的最大等待 |
+| `ds.chat.group.reply_at_only` | BOOL | true | 纯 @ 无文本且无附件时，等待结束后是否回“？” |
 | `ds.chat.group.ambient_size` | INT | 20 | 环境上下文条数 |
 | `ds.chat.group.min_reply_interval_ms` | INT | 3000 | 群最小回复间隔 |
 | `ds.chat.group.max_replies_per_minute` | INT | 6 | 群每分钟上限 |
 | `ds.chat.group.user_cooldown_ms` | INT | 10000 | 单用户冷却 |
-| `ds.chat.group.reply_at_only` | BOOL | false | 纯 @ 无文本是否回“？” |
+
+> 群白名单内的群：AI 接管聊天，青云客失效；`ds` 命令仍可用，但仅超级管理员可触发。
 
 ### 9.3 私聊与合并
 
 | key | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
-| `ds.chat.private.enable` | BOOL | true | 私聊 AI 开关 |
+| `ds.chat.private.enable` | BOOL | false | 私聊 AI 总开关；默认关闭 |
 | `ds.chat.private.min_reply_interval_ms` | INT | 1000 | 私聊最小间隔 |
-| `ds.chat.debounce_ms` | INT | 1200 | 连续消息合并窗口 |
+| `ds.chat.debounce.min_ms` | INT | 2000 | 连续消息合并窗口下限（私聊/群同一用户） |
+| `ds.chat.debounce.max_ms` | INT | 6000 | 连续消息合并窗口上限 |
+| `ds.chat.debounce.max_wait_ms` | INT | 15000 | 一轮合并的总等待上限，防止用户持续输入导致永不回复 |
+
+> 私聊开关打开时：AI 接管私聊，青云客失效；`ds` 命令仍可用，但仅超级管理员可触发。
 
 ### 9.4 发送
 
@@ -1160,6 +1233,7 @@ src/main/java/com/haruhi/botserver/
 │   │   ├── DeepSeekMessage.java
 │   │   ├── DeepSeekContentPart.java
 │   │   ├── DeepSeekUsage.java
+│   │   ├── DeepSeekBalanceResponse.java
 │   │   └── DeepSeekApiException.java
 │   ├── model/
 │   │   ├── AiScene.java
@@ -1172,7 +1246,8 @@ src/main/java/com/haruhi/botserver/
 │   │   └── AiUsageRecord.java
 │   ├── service/
 │   │   ├── AiChatService.java                   ★ 编排
-│   │   ├── AiTriggerPolicy.java                 ★ 触发/限流
+│   │   ├── AiScopeService.java                  ★ 群白名单/私聊开关判断
+│   │   ├── AiTriggerPolicy.java                 ★ 触发/限流/等待窗口
 │   │   ├── AiSessionService.java                ★ 内存+DB 会话
 │   │   ├── AiContextService.java                ★ 环境上下文/历史
 │   │   ├── AiSendService.java                   ★ 分条/延迟/清洗/发送
@@ -1181,7 +1256,7 @@ src/main/java/com/haruhi/botserver/
 │   ├── support/
 │   │   ├── AiMessageExtractor.java              ★ 消息→文本/占位/引用/atOnly
 │   │   ├── prompt/PromptAssembler.java          ★ 四层提示词
-│   │   ├── prompt/RoleCardService.java          ★ 角色卡加载/过滤/Lint
+│   │   ├── prompt/RoleCardService.java          ★ 从 ./aichat/roles 加载/过滤/Lint
 │   │   ├── protocol/AiReplyParser.java          ★ JSON 解析/修复
 │   │   ├── protocol/AiReplySanitizer.java       ★ 文本清洗
 │   │   ├── protocol/AiJsonSchema.java           ★ 常量/schema
@@ -1193,44 +1268,43 @@ src/main/java/com/haruhi/botserver/
 │   ├── persistence/entity/
 │   │   ├── AiSessionEntity.java
 │   │   ├── AiMessageEntity.java
-│   │   ├── AiRoleEntity.java
 │   │   └── AiUsageEntity.java
 │   ├── persistence/mapper/
 │   │   ├── AiSessionMapper.java
 │   │   ├── AiMessageMapper.java
-│   │   ├── AiRoleMapper.java
 │   │   └── AiUsageMapper.java
 │   └── controller/
-│       ├── AiRoleController.java                （第二阶段）
 │       └── AiSessionController.java             （第二阶段）
 ├── administration/service/SqliteDatabaseService.java   + 建表
 ├── infrastructure/persistence/DataBaseConst.java       + 表名
 ├── configuration/metadata/ConfigKey.java               + 配置项
 └── resources/
     ├── config/ai.properties                            + 默认配置
-    ├── mapper/infrastructure/persistence/SqliteDatabaseInitMapper.xml + 建表 SQL
-    └── roles/
-        ├── 春日酱.md
-        ├── 小鲸鱼.md
-        └── 傲娇助手.md
+    └── mapper/infrastructure/persistence/SqliteDatabaseInitMapper.xml + 建表 SQL
 ```
+
+角色卡不放在 `resources`，也不打包：运行目录 `./aichat/roles/*.md`，由运维手工维护。
 
 ### 10.1 关键改动
 
 | 文件/模块 | 改动 |
 | --- | --- |
 | `HandlerWeightEnum` | 增加 `W_998`、`W_170`；保留 `W_870` 给命令 Handler |
-| `DeepSeekHandler` | 改名为 `DeepSeekCommandHandler`，去掉聊天逻辑、`CACHE`、`DeepSeek` 内部类；只保留命令解析 |
+| `DeepSeekHandler` | 改名为 `DeepSeekCommandHandler`，去掉聊天逻辑、`CACHE`、`DeepSeek` 内部类；只保留命令解析；所有命令仅超级管理员可触发 |
 | `DeepSeekChatHandler` | 新增，`IAllMessageHandler`，`weight=W_170`，`handleSelfMsg=false`，`bypassGroupRestrictions=false` |
-| `AiContextCollectorHandler` | 新增，`weight=W_998`，`handleSelfMsg=true`，永远返回 false |
+| `AiChatHandler` | 入口增加 `AiScopeService` 判断；AI 启用范围内返回 false，不改青云客原有逻辑 |
+| `AiContextCollectorHandler` | 新增，`weight=W_998`，`handleSelfMsg=true`，只收集白名单内的群，永远返回 false |
+| `AiScopeService` | 新增，统一判断群白名单/私聊开关，供 W_998/W_170/W_160 使用 |
 | `OpenAiServiceHolder` | 保持不变；新链路用 `DeepSeekClient`；后续可把旧引用清掉 |
-| `ConfigKey` | 新增约 40 个 `ds.chat.*`；`ai.properties` 补默认值 |
+| `RoleCardService` | 只从 `./aichat/roles/*.md` 加载；不做 DB、不做写入 |
+| `DeepSeekClient` | 增加 `getBalance()`，调用官方 `/user/balance` |
+| `ConfigKey` | 新增若干 `ds.chat.*`；`ai.properties` 补默认值 |
 | `ConfigFile.AI` | 说明文字可改为“AI 模型（千问、DeepSeek 聊天/角色卡）相关配置” |
 | `BusinessModuleEnum` | 增加 `AI_CHAT("AI聊天")`，用于日志 |
-| `SqliteDatabaseInitMapper.xml` | 增加 4 张表的 `CREATE TABLE` |
+| `SqliteDatabaseInitMapper.xml` | 增加 3 张表的 `CREATE TABLE` |
 | `SqliteDatabaseService` | `tableInit()` 调用建表；增加清理入口 |
 | `ChatRecordService` | 可选增加 `recentGroupMessages`（第二阶段回填环境上下文） |
-| `webui` | 第二阶段：角色卡/会话/用量页面 |
+| `webui` | 第二阶段：角色卡只读查看/会话/用量/余额页面 |
 
 ### 10.2 `DeepSeekChatHandler` 伪代码
 
@@ -1243,21 +1317,18 @@ public class DeepSeekChatHandler implements IAllMessageHandler {
 
     @Override
     public boolean onMessage(Bot bot, Message message) {
-        if (!settings.enabled()) return false;
         if (message.isSelfMsg()) return false;
-        if (message.isGroupMsg() && !settings.groupEnabled()) return false;
-        if (message.isPrivateMsg() && !settings.privateEnabled()) return false;
+        if (!scopeService.enabled(message)) return false; // 群白名单/私聊开关
 
         AiIncoming incoming = extractor.extract(bot, message); // 文本/图片占位/引用/atOnly
         AiSessionKey key = AiSessionKey.of(message);
         AiTriggerDecision decision = triggerPolicy.decide(bot, message, incoming);
 
+        // 纯 @ 无文本也接管：走更长的等待窗口，等待结束再决定回“？”或沉默
         if (incoming.isAtOnly()) {
-            // 纯 @ 无文本：默认不接管；开启 reply_at_only 时才入队一个“只被叫了一下”的轮次
-            return settings.replyAtOnly() && sessionService.enqueueAtOnly(key, incoming, decision);
+            sessionService.enqueueAtOnly(key, incoming, decision);
+            return true;
         }
-        if (incoming.isBlank()) return false;
-
         if (!decision.triggered()) {
             return false; // 环境上下文已由 W_998 收集
         }
@@ -1268,10 +1339,24 @@ public class DeepSeekChatHandler implements IAllMessageHandler {
             return true;
         }
 
+        // 直接触发：notBefore = now + 随机等待（5~15s，纯 @ 15~25s）
         sessionService.enqueue(key, incoming, decision);
         return true;
     }
 }
+```
+
+`AiChatHandler(W_160)` 的入口先判断启用范围：
+
+```java
+if (aiScopeService.enabled(message)) return false;
+```
+
+`DeepSeekCommandHandler(W_870)` 的入口先判断超级管理员：
+
+```java
+// 非超级管理员直接返回 false，消息继续向后流转
+if (!isSuperAdmin(message)) return false;
 ```
 
 ### 10.3 `AiChatService` 伪代码
@@ -1309,13 +1394,12 @@ public void process(AiSessionKey key, List<AiTurn> turns) {
 
 ## 11. WebUI（第二阶段）
 
-### 11.1 角色卡管理
+### 11.1 角色卡查看（只读）
 
-- 列表：名称、字符数、启用、内置、更新时间；
-- 新建/编辑：Markdown 文本域 + 实时字符数 + 模式过滤预览 + Lint 警告；
-- 预览：显示最终 system prompt（截断）、按模式注入的小节、估算 token；
-- 内置卡“重置为默认”；删除内置卡改为“禁用”；
-- 导入/导出 `.md`。
+- 角色卡只从 `./aichat/roles/*.md` 加载，WebUI 不提供在线新建/编辑/删除；
+- 列表：文件名、字符数、更新时间、是否被会话使用；
+- 预览：按模式过滤后的小节、最终 system 片段、估算 token、Lint 警告；
+- 提供“重新扫描目录”按钮；修改角色卡直接编辑目录里的文件。
 
 ### 11.2 会话管理
 
@@ -1330,7 +1414,7 @@ public void process(AiSessionKey key, List<AiTurn> turns) {
 - 今日/7 天/30 天 token、缓存命中、请求数、失败率、平均延迟；
 - 按模型/场景/群统计；
 - 每日限额进度条；
-- 成本估算（可选，按官方价格配置）。
+- 余额：调用官方 `GET /user/balance` 展示 `is_available` 和各币种 `total_balance`，不做本地成本估算。
 
 ### 11.4 提示词预览
 
@@ -1345,9 +1429,9 @@ public void process(AiSessionKey key, List<AiTurn> turns) {
 
 | 场景 | 行为 |
 | --- | --- |
-| API Key 未配置 / 为空 | 启动 warn；Handler 返回 false，青云客兜底 |
-| 401 认证失败 | 不重试；熔断 10 分钟；管理员告警；Handler 返回 false |
-| 402 余额不足 | 不重试；熔断 10 分钟；管理员告警；群聊回“我不太舒服，等下再说”一次，或直接 silent |
+| API Key 未配置 / 为空 | 启动 warn；启用范围内不回落到青云客；群聊 silent，私聊短提示，管理员告警 |
+| 401 认证失败 | 不重试；熔断 10 分钟；管理员告警；启用范围内不回落青云客 |
+| 402 余额不足 | 不重试；调官方 `/user/balance` 刷新余额；熔断 10 分钟；管理员告警；群聊回“我不太舒服，等下再说”一次，或直接 silent |
 | 429 限流 | 退避重试 2 次；仍失败则 silent，记录指标 |
 | 500/503 | 退避重试 2 次；仍失败 silent |
 | 请求超时 | 重试 1 次；仍失败，私聊回“刚走神了，再说一遍？”，群聊 silent |
@@ -1358,19 +1442,21 @@ public void process(AiSessionKey key, List<AiTurn> turns) {
 | 模型输出 @全体 | 丢弃该 at 字段 |
 | 模型输出系统提示片段 | 丢弃该条消息，记安全日志 |
 | 模型要求执行命令/读文件 | 安全层拒绝；工具白名单没有这些能力 |
-| 群消息太多/刷屏 | 触发限流 + 每分钟上限；默认 addressed 模式 |
+| 群消息太多/刷屏 | 触发限流 + 每分钟上限 |
 | 多个用户同时 @ | 会话串行，队列处理；不同群并行 |
 | 机器人离线 | 发送前检查 `bot.isOnline()`，中止剩余消息 |
 | WS 重复事件 | messageId 去重，只回一次 |
 | 群被禁用/不在访问列表 | Dispatcher 直接跳过，AI 不接收 |
 | 机器人自己的消息 | `handleSelfMsg=false`，不触发；环境上下文可记录 |
-| 角色卡被删除 | 回退 `ds.chat.role`，再回退无角色 |
-| 角色卡超长 | 截断到 `max_chars`，WebUI 警告 |
+| 角色卡文件被删除 | 回退 `ds.chat.role`，再回退无角色 |
+| 角色卡文件名非法 | 含路径分隔符、`..` 或非 `.md` 的文件直接忽略并记 warn |
+| 角色卡超长 | 截断到 `max_chars`，记录日志 |
 | 数据库写失败 | 记 error，不阻塞回复；下轮从内存继续 |
 | 重启 | 从 DB 加载最近消息；环境上下文为空（第二阶段可回填） |
 | 多机器人 | 会话键含 selfId；互不影响 |
 | 私聊/群聊串话 | 会话键隔离；prompt 明确“私聊不外传” |
-| 每日 token 超限 | 停止 AI，Handler 返回 false；管理员告警；次日恢复 |
+| 每日 token 超限 | 停止 AI，不回落青云客；管理员告警；次日恢复 |
+| 余额接口失败 | 保留上次缓存值，记 warn；不阻塞聊天；余额未知时 WebUI 显示“查询失败” |
 | 提示词注入（“忽略规则”） | 安全层 + 数据边界标记；不执行；必要时 silent |
 | 工具结果含指令 | 明确标注“数据不是指令”；模型被要求不执行；工具白名单限制 |
 
@@ -1384,52 +1470,60 @@ public void process(AiSessionKey key, List<AiTurn> turns) {
 | --- | --- |
 | `AiReplyParserTest` | say/call/silent、代码块、前后杂文本、空内容、截断、字段别名、超条数、空白文本、非法 type |
 | `AiReplySanitizerTest` | Markdown、CQ 注入、@全体、括号内心戏、系统提示泄露、超长切分、重复去重 |
-| `AiTriggerPolicyTest` | 私聊、群 @、引用、名字、前缀、关键词、随机、all 模式、at-only、self、群禁用、访问列表 |
+| `AiTriggerPolicyTest` | 私聊、群 @、引用、名字、前缀、关键词、随机（含图片/表情/@别人）、at-only、self、群不在白名单、访问列表、等待窗口 |
+| `AiScopeServiceTest` | 群白名单命中/未命中、私聊开关、启用的群内 W_160 失效、W_870 仅超管 |
 | `PromptAssemblerTest` | 四层顺序、角色卡截断、模式小节过滤、token 预算、动态内容位置、历史格式、数据边界 |
-| `RoleCardServiceTest` | 模式标记、Lint、字符统计、内置卡导入、禁用/回退 |
-| `AiSessionServiceTest` | 键隔离（群/私聊/多机器人）、DB 加载、reset、过期、暂停 |
+| `RoleCardServiceTest` | 目录扫描、缺失目录、非法文件名、模式标记、Lint、字符统计、文件删除回退 |
+| `AiSessionServiceTest` | 键隔离（群/私聊/多机器人）、DB 加载、reset、过期、暂停、等待窗口 |
 | `AiSendServiceTest` | 延迟 clamp、多条顺序、引用/@、离线中止、超时压缩、纯文本 autoEscape |
 | `AiToolServiceTest` | 白名单、group 作用域、参数校验、超时、结果截断、调用次数 |
-| `DeepSeekClientTest` | 请求 JSON（response_format/thinking/user_id）、响应解析、429/503 重试、401/402 不重试、超时 |
-| `DeepSeekChatHandlerTest` | 权重、返回值、去重、限流、命令分流 |
-| `DeepSeekCommandHandlerTest` | reset/role/status/on/off、权限、未知命令返回 false |
+| `DeepSeekClientTest` | 请求 JSON（response_format/thinking/user_id）、响应解析、429/503 重试、401/402 不重试、超时、余额接口 |
+| `DeepSeekChatHandlerTest` | 权重、返回值、去重、限流、命令分流、启用范围拦截 |
+| `DeepSeekCommandHandlerTest` | reset/role/status/on/off、所有命令仅超管、非超管返回 false、启用范围内超管仍可执行、未知命令返回 false、status 余额查询成功/失败降级 |
 
 ### 13.2 集成测试
 
 - Spring 上下文加载新 Mapper/建表；
 - SQLite 建表幂等；
-- 角色卡首次导入、重复启动不重复插入；
+- `./aichat/roles` 目录扫描、文件修改生效、目录缺失自动创建；
 - 会话持久化后重新加载；
-- Dispatcher 权重顺序（W_180 自定义回复优先于 W_170 AI）。
+- Dispatcher 权重顺序（W_180 自定义回复优先于 W_170 AI；AI 启用范围内 W_160 跳过，W_870 仅超管进入）。
 
 ### 13.3 手工验收清单
 
-1. 私聊发“在吗” → 一条短回复；
-2. 私聊连发 3 条 → 合并理解，一次回复；
-3. 群里 @机器人 问问题 → 回复，且能看到前面群聊上下文；
-4. 群里不 @ 聊天 → 不回复，但下一轮 @ 时模型知道前面聊了什么；
-5. 群里 @机器人 发“点歌 xxx” → 点歌 Handler 处理，AI 不抢；
-6. 群里 @机器人 发“ds reset” → 清空会话，AI 不回复；
-7. 切换角色卡 → 下一条回复风格变化；
+1. 打开私聊开关后发“在吗” → 一条短回复；
+2. 打开私聊开关后连发 3 条 → 合并理解，一次回复；
+3. 群加入白名单后 @机器人 问问题 → 回复，且能看到前面群聊上下文；
+4. 已启用的群里不 @ 聊天 → 不回复，但下一轮 @ 时模型知道前面聊了什么；
+5. 已启用的群里 @机器人 发“点歌 xxx” → 点歌 Handler 处理，AI 不抢；
+6. 非超级管理员发 `ds reset` → 命令不执行（消息继续流向 AI 或其他 Handler）；超级管理员在启用/未启用 AI 的群里都能执行；
+7. 切换角色卡文件内容 → 下一条回复风格变化；
 8. 模型返回 3 条 `messages` → QQ 上看到 3 条，间隔符合；
 9. 模型返回 `call group_history` → 工具执行后，最终只发一次消息；
 10. 模型返回 silent → 群里不出现消息；
 11. 人工制造 429/超时 → 重试/降级符合预期；
 12. 人工让模型输出 `[CQ:at,qq=all]` → 被清洗；
 13. 重复推送同一 messageId → 只回一次；
-14. 群被禁用/不在访问列表 → 不回复；
+14. 群不在白名单 → AI 不回复，`ds` 命令/青云客按原逻辑；
 15. 重启后继续聊 → 上下文还在；
 16. 两个群同时聊 → 会话不串；
 17. 私聊内容不出现在群里；
-18. 角色卡超 6000 字 → 截断且 WebUI 警告；
+18. 角色卡超 6000 字 → 截断并记录日志；
 19. 每日 token 限额触发 → 停止并告警；
-20. 关闭 `ds.chat.enable` → 青云客仍能兜底。
+20. 群不在 `ds.chat.group.whitelist` → AI 不接管、青云客按原逻辑；`ds` 命令仍仅超管可触发；
+21. 把群加入白名单 → AI 接管、青云客不响应；`ds` 命令仍可用，但仅超管可触发；
+22. 私聊开关关闭/打开 → 青云客随之恢复/失效；`ds` 命令始终仅超管可触发；
+23. 群里 @机器人 → 5~15 秒后才开始回复；只 @ 不说话 → 等待更久后回“？”；
+24. 私聊连发 3 条 → 2~6 秒内合并，只回一次；
+25. WebUI 查看余额 → 数值来自官方 `/user/balance`，不是本地估算；
+26. `random_percent=100` 时，群里只发表情/图片/@别人 → 也会进入 AI 判断，可能回复也可能 silent。
+27. 超管发 `ds status` → 输出会话/角色/历史/今日 token/余额，余额来自实时 `/user/balance`；断网时该行显示“查询失败”，其余字段正常。
 
 ### 13.4 回归命令
 
 ```bash
 mvn test -Dinternet-host=127.0.0.1 \
-  -Dtest=AiReplyParserTest,AiReplySanitizerTest,AiTriggerPolicyTest,PromptAssemblerTest,RoleCardServiceTest,AiSessionServiceTest,AiSendServiceTest,AiToolServiceTest,DeepSeekClientTest,DeepSeekChatHandlerTest,DeepSeekCommandHandlerTest,MessageDispatcherPolicyTest
+  -Dtest=AiReplyParserTest,AiReplySanitizerTest,AiTriggerPolicyTest,AiScopeServiceTest,PromptAssemblerTest,RoleCardServiceTest,AiSessionServiceTest,AiSendServiceTest,AiToolServiceTest,DeepSeekClientTest,DeepSeekChatHandlerTest,DeepSeekCommandHandlerTest,MessageDispatcherPolicyTest
 ```
 
 外部 API 的 smoke test 单独手工执行，不放进默认 CI。
@@ -1444,15 +1538,16 @@ mvn test -Dinternet-host=127.0.0.1 \
 
 - [ ] `ConfigKey` + `ai.properties` 核心配置（先 15 个）
 - [ ] `DeepSeekClient`（JSON 模式、thinking=disabled、重试、超时）
+- [ ] `AiScopeService`（群白名单 + 私聊开关；启用范围内 W_160 失效）
 - [ ] `AiSessionKey` / `AiSessionService`（内存 + 2 张表）
 - [ ] `AiReplyParser` / `AiReplySanitizer`
 - [ ] `PromptAssembler` + 安全层/协议层/场景层
-- [ ] `RoleCardService` + 3 张内置卡（DB 导入）
-- [ ] `AiTriggerPolicy`（私聊 + 群 addressed）
+- [ ] `RoleCardService` + `./aichat/roles/*.md` 目录加载
+- [ ] `AiTriggerPolicy`（私聊 + 群触发/随机 + 等待窗口）
 - [ ] `AiChatService` / `AiSendService`
 - [ ] `DeepSeekChatHandler(W_170)`
-- [ ] `DeepSeekCommandHandler(W_870)`（reset/role/status）
-- [ ] 单元测试 + 手工验收 1~8、11~18
+- [ ] `DeepSeekCommandHandler(W_870)`（reset/role/status，全部命令仅超管）
+- [ ] 单元测试 + 手工验收 1~8、11~18、20~24、26
 
 ### 阶段 2：伪 Agent + 群上下文（建议 3~4 天）
 
@@ -1461,9 +1556,10 @@ mvn test -Dinternet-host=127.0.0.1 \
 - [ ] 工具循环（max_steps、超时、截断、审计）
 - [ ] 群聊触发补全（引用、名字、关键词、随机）
 - [ ] 限流/去重/队列/合并
-- [ ] WebUI 角色卡 + 会话管理
+- [ ] WebUI 角色卡只读查看 + 会话管理
 - [ ] 用量统计 + 每日限额
-- [ ] 手工验收 9、10、19、20
+- [ ] 官方余额查询 `GET /user/balance` + WebUI 展示
+- [ ] 手工验收 9、10、19、25
 
 ### 阶段 3：增强（可选）
 
@@ -1473,7 +1569,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 - [ ] 聊天记录回填环境上下文
 - [ ] 思考模式/Pro 模型“认真回答”命令
 - [ ] 流式输出（仅纯文本模式；JSON 模式不适用）
-- [ ] 成本估算/报表
+- [ ] 余额报表（只展示官方接口返回值，不做本地成本估算）
 
 ---
 
@@ -1484,7 +1580,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 | JSON 不合规 | 回复失败/空白 | JSON 模式 + 修复重试 + 纯文本降级 + 监控 |
 | 模型话多/刷屏 | 群体验差 | 协议限制条数/字数 + 发送清洗 + 群限流 |
 | 提示词注入 | 越权/泄露 | 四层安全 + 数据边界 + 工具白名单 + 输出泄露过滤 |
-| 成本失控 | 账单高 | 历史/环境/角色上限 + 缓存 + 每日限额 + 非思考模式 |
+| 成本失控 | 账单高 | 历史/环境/角色上限 + 缓存 + 每日限额 + 官方余额监控 + 非思考模式 |
 | 延迟高 | 不像真人 | 默认非思考 + 短 max_tokens + 并发 + 超时 |
 | 群聊上下文串话 | 尴尬 | 说话人标注 + 场景隔离 + 私聊隔离 |
 | 重启丢上下文 | 体验断 | DB 持久化 + 最近消息加载 |
@@ -1492,15 +1588,15 @@ mvn test -Dinternet-host=127.0.0.1 \
 | 模型名变更 | 请求失败 | 配置化 + 启动校验 + 文档提示 |
 | 多机器人/多群并发 | 429/串会话 | 会话键 + 全局信号量 + 退避 |
 | SQLite 写放大 | 性能 | 只存干净 transcript + 每会话上限 + 异步写 |
-| 角色卡带工具说明 | 模型胡言 | Lint + 内置卡去工具化 + 只允许 DB 管理 |
+| 角色卡带工具说明 | 模型胡言 | Lint + 示例卡去工具化 + 只从 `./aichat/roles/*.md` 加载 |
 
 **关键取舍：**
 
 - 本期不做原生 tool calls：牺牲一点结构化可靠性，换来实现简单、无 `reasoning_content` 坑；
-- 本期群聊默认 addressed：牺牲“每条都回”的存在感，换来不刷屏；
+- 本期群聊只做被叫到才回：牺牲“每条都回”的存在感，换来不刷屏；
 - 本期环境上下文只放内存：牺牲重启后的群聊记忆，换来实现简单；第二阶段可回填；
-- 本期角色卡放 DB：牺牲“直接改文件”的简单性，换来 WebUI/权限/预览；
-- 本期默认关闭：牺牲开箱即用，换来安全灰度。
+- 本期角色卡放文件目录：牺牲 WebUI 在线编辑，换来直接改文件、无迁移；
+- 本期默认全部关闭：牺牲开箱即用，换来安全灰度。
 
 ---
 
@@ -1508,13 +1604,13 @@ mvn test -Dinternet-host=127.0.0.1 \
 
 以下默认值/取舍需要产品侧确认，确认后可直接进入阶段 1：
 
-1. **默认角色**：`春日酱`（与当前机器人名一致）还是 `小鲸鱼`（qq-bridge 移植）？建议 `春日酱`，`小鲸鱼` 作为可选卡。
-2. **群聊触发**：默认 `addressed`（只被叫到才回）是否可以？是否需要开启“随机主动接话”（建议默认 0，先观察）。
-3. **是否允许 `all` 模式**：如果不需要“每条都回”，可以不做这个配置，减少误用。
+1. **默认角色**：`春日酱`（与当前机器人名一致）还是 `小鲸鱼`（qq-bridge 移植）？建议 `春日酱`，`小鲸鱼` 作为可选卡；
+2. **群聊触发**：只保留“被叫到才回”是否足够？是否需要开启“随机主动接话”（建议默认 0，先观察）；
+3. **等待窗口**：5~15 秒（纯 @ 15~25 秒）是否符合体感？是否需要按群配置不同区间？
 4. **伪 Agent 工具范围**：本期只做 `group_history`/`member_info` 是否够？`web_search` 需要额外搜索 API（DeepSeek Search 按次收费），是否纳入阶段 2？
 5. **模型默认**：`deepseek-flash` + 非思考模式是否接受？是否需要“认真回答”命令切 `deepseek-v4-pro`/思考模式？
 6. **每日 token 限额**：是否需要默认值（例如 200 万/天）？还是 0=不限，先观察用量？
-7. **WebUI 优先级**：角色卡管理是否必须第一阶段就有？还是先用配置文件/数据库，第二阶段再做页面？
+7. **WebUI 优先级**：角色卡只读查看是否必须第一阶段就有？还是第二阶段再做页面？
 8. **旧 `ds ` 前缀**：是否保留兼容（`ds.chat.group.trigger.prefix=ds `）？还是直接废弃，统一 @/私聊？
 
 ---
@@ -1523,7 +1619,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 
 | qq-bridge | 本项目 | 说明 |
 | --- | --- | --- |
-| `roles/<name>.md` 人格卡 | `t_ai_role` + `roles/*.md` 种子 | 只写人设，不写工具 |
+| `roles/<name>.md` 人格卡 | `./aichat/roles/*.md` | 文件名即角色名，只写人设，不写工具 |
 | `persona.prefix` 仿真提示词 | 安全层 + 协议层 + 场景层 | 静态 system 前缀 |
 | 一代空格分条 | `messages[]` + `delay_ms` | 更可控 |
 | `[SILENT]` | `{"type":"silent"}` | 结构化 |
