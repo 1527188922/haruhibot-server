@@ -22,7 +22,7 @@
 2. **一个群一个会话，一个私聊用户一个会话**：
    - 会话键使用 `(selfId, scene, targetId)`，不要再用字符串直接拼接，避免 `selfId+groupId` 的碰撞。
    - 群聊会话共享上下文，但每条消息都带说话人昵称/QQ；私聊会话隔离，绝不串到群里。
-   - 群里的**所有消息（含命令）都进入“环境上下文”**（内存环形缓冲）；命令仍由更高权重 Handler 处理，普通消息只在被 @、被引用、被叫名字、命中关键词或随机接话命中时才真正调用 API。这样既满足“消息进入对话”，又不会刷屏。
+   - 群里的**所有消息（含命令）都进入“环境上下文”**（内存环形缓冲）；命令仍由更高权重 Handler 处理，普通消息只在被 @、被引用、命中当前角色卡触发词且语境指向机器人、或随机接话命中时才真正调用 API。这样既满足“消息进入对话”，又不会刷屏。
 3. **提示词分四层**：
    - 安全层（最高优先级，不可被角色卡覆盖）
    - 协议层（JSON 输出协议，替代 qq-bridge 的“仿真提示词/工具协议”）
@@ -231,18 +231,41 @@ W_170(170, "DeepSeek聊天")   // 小于 W_180 自定义回复；仅在 AI 启�
 仅 `ds.chat.group.whitelist` 包含该群时生效。只有一种行为，没有模式开关：
 
 - 所有群消息（包括命令、图片、表情、@别人、语音/文件）都进入环境上下文；
-- 直接触发（被 @ / 被引用回复 / 叫到名字 / 命中前缀或关键词）一定调用 API；
+- 直接触发（被 @ / 被引用回复 / 触发词命中且通过语境判定 / 命中前缀或全局补充词）一定调用 API；
 - 其他消息按 `random_percent` 逐条掷骰子，命中就调用 API，未命中只进入环境上下文。
 
 触发条件（可分别开关）：
 
 1. `@机器人`（`message.isAtBot()`）；
 2. 引用/回复了机器人的消息（`getReplyMsgIds()` 对应的消息 sender 是机器人）；
-3. 文本包含机器人昵称/配置的关键词（`Bot.getBotName()`、`ds.chat.group.trigger.keywords`）；
+3. 文本命中**当前会话角色卡**的触发词（角色卡顶部 `触发词：` 行，逗号/顿号分隔；未声明时用角色名），或命中全局补充词 `ds.chat.group.trigger.keywords`，**且通过语境判定**（见下）；
+   - `Bot.getBotName()` 不参与 dschat 触发：机器人 QQ 昵称叫什么，与是否被叫到无关；
 4. 文本以配置前缀开头（`ds.chat.group.trigger.prefix`，默认空）；
 5. 随机主动接话：每条群消息（文本、图片、表情、@别人、语音/文件都算）独立掷骰子 `ds.chat.group.trigger.random_percent`（0~100，默认 0），命中即调用 API；不要求“群最近有活跃聊天”，刷屏由限流兜底。
 
 随机触发不区分消息类型：纯图片/表情/@别人也可能命中；`AiMessageExtractor` 用 `[图片]`/`[表情]`/`@某人` 占位，允许文本为空。随机触发不等于必须回复，模型仍可 `silent`。
+
+#### 触发词的语境判定
+
+触发词命中只是“候选提及”，不等于在叫机器人。`AiTriggerPolicy` 在命中后做一次轻量语境判定，不额外调用模型：
+
+判为“不是在叫机器人”（不算提及）：
+
+1. 触发词只出现在引用/转发内容里，且被引用消息不是机器人发的；
+2. 同一消息 @ 了其他人且没有 @ 机器人；
+3. 正在回复别人的消息，且正文没有呼叫机器人的信号；
+4. 触发词只出现在 URL、文件名、代码块、CQ 码等非对话片段里；
+5. 触发词明显在转述/讨论（如“他说小鲸鱼……”“所谓春日酱”），且正文没有呼叫机器人的信号。
+
+加强“在叫机器人”的信号（可覆盖上述 2/3/5）：触发词附近出现第二人称/呼叫词，如“你、您、在吗、出来、帮我、你觉得、你说、看看、怎么办、咋办”，或触发词位于句首并紧跟逗号/空格。
+
+无法判断时按“不是在叫”处理，宁可漏判，避免误触发刷屏。
+
+未通过语境判定的消息：
+
+- 仍然写入环境上下文；
+- 仍然参与第 5 条 `random_percent` 随机接话掷骰子；
+- 不进入提及等待窗口，不要求必须回复。
 
 不触发时：
 
@@ -256,7 +279,7 @@ W_170(170, "DeepSeek聊天")   // 小于 W_180 自定义回复；仅在 AI 启�
 
 #### 提及后的等待窗口（拟人延迟）
 
-被直接叫到时（@、引用机器人、叫名字、命中关键词），不要立刻调用 API，先等一段随机时间，给用户把话说完的机会：
+被直接叫到时（@、引用机器人、通过语境判定的角色触发词/全局补充词），不要立刻调用 API，先等一段随机时间，给用户把话说完的机会：
 
 - 普通提及：随机等待 `ds.chat.group.mention_delay_min_ms` ~ `mention_delay_max_ms`（默认 5000~15000ms）后再入队；文本越短越靠上限，完整问题取下限附近；
 - 等待窗口本身就是合并窗口：从收到触发消息开始计时，期间同一用户继续发消息会合并进同一轮并重新计时，总等待不超过 `ds.chat.group.mention_delay_cap_ms`（默认 30000ms）；不再额外叠加 2~6 秒 debounce；
@@ -287,7 +310,7 @@ record AiSessionKey(long selfId, AiScene scene, long targetId) {}
 - 空闲 `ds.chat.session.expire_minutes`（默认 120）后从内存卸载，数据库保留；
 - 下次消息到来时按需从数据库加载最近 `ds.chat.persistence.max_messages_per_session` 条；
 - `ds reset`（仅超级管理员）清空当前会话的内存历史 + 删除数据库消息（保留用量统计），不改 `status`；
-- 角色切换只改 `role_name`（角色文件名），WebUI 或 `ds role` 均可；不强制清历史，下一条消息生效。
+- 角色按会话独立：每个群、每个私聊用户各自一份 `role_name`，可指向不同角色卡；切换只改 `role_name`（角色文件名），WebUI 或 `ds role` 均可；不强制清历史，下一条消息生效。
 
 ### 4.4 群聊环境上下文
 
@@ -491,7 +514,7 @@ class SessionState {
 **群聊：**
 
 - 群里不是每句话都对你说，先看【最近群聊】判断谁在跟谁说话；
-- 必须回：被 @、被引用回复、被叫名字、被直接提问；
+- 必须回：被 @、被引用回复、命中角色卡触发词且确实在叫你、被直接提问；
 - 其他时候可以接，也可以 `silent`；
 - 不逐条点评、不总结群聊、不当主持人、不劝架；
 - 被问到时先正面回应，别装死；
@@ -522,7 +545,9 @@ class SessionState {
 - 存储：运行目录 `./aichat/roles/*.md`，**只从该目录加载**；文件名（去掉 `.md`）就是角色名；
 - 不建角色表、不从 classpath 导入；启动时目录不存在则创建，目录为空时记录 warn 并按“无角色”运行；
 - 加载：只允许目录内的 `*.md`，拒绝路径分隔符和 `..`；按文件 `mtime` 缓存，文件修改后下一轮生效；
-- 角色选择：会话级 `role_name` > 全局 `ds.chat.role` > 无角色；文件不存在时回退全局，再回退无角色；
+- 角色选择按会话独立：每个群、每个私聊用户各自一份 `role_name`，可以指向不同角色卡；
+  优先级：会话 `role_name`（`ds role` 设置） > 按目标配置（`ds.chat.group.roles` / `ds.chat.private.roles`） > 全局 `ds.chat.role` > 无角色；文件不存在时回退下一级；
+- 触发词声明：角色卡顶部可写一行 `触发词：春日酱,春日,团长`（中英文冒号均可，逗号/顿号分隔）；加载时解析并从注入文本中剥离，不进入 prompt；未声明时默认使用角色名；
 - 角色名匹配大小写不敏感（Windows 文件系统本身也不区分），`.md` 后缀可省略；仅大小写不同的文件视为同一角色；
 - 注入上限：`ds.chat.role.max_chars`（默认 6000），超出截断并记录日志；
 - 模式标记（借鉴 qq-bridge 的 `〔一代〕/〔二代〕`）：
@@ -1133,7 +1158,7 @@ CREATE TABLE IF NOT EXISTS `t_ai_memory` (
 | `ds.chat.session.expire_minutes` | INT | `120` | 是 | 内存会话空闲过期 |
 | `ds.chat.history.max_turns` | INT | `20` | 是 | 最多保留多少轮历史 |
 | `ds.chat.history.max_input_tokens` | INT | `12000` | 是 | 输入预算，超出裁剪 |
-| `ds.chat.role` | STRING | `春日酱` | 是 | 默认角色卡文件名（不含 `.md`）；空=无角色 |
+| `ds.chat.role` | STRING | `春日酱` | 是 | 全局默认角色卡文件名（不含 `.md`）；空=无角色；群/私聊可分别覆盖 |
 | `ds.chat.role.max_chars` | INT | `6000` | 是 | 角色卡注入上限 |
 | `ds.chat.dedupe_ttl_seconds` | INT | `300` | 是 | 消息去重 TTL |
 | `ds.chat.ignore_user_ids` | LIST | `` | 是 | 不触发 AI 的 QQ 黑名单（其他机器人/不想理的人） |
@@ -1149,9 +1174,12 @@ CREATE TABLE IF NOT EXISTS `t_ai_memory` (
 | `ds.chat.group.whitelist` | LIST | `` | 启用 AI 的群号白名单，逗号分隔；空=所有群都不启用 |
 | `ds.chat.group.trigger.at` | BOOL | true | @ 触发 |
 | `ds.chat.group.trigger.reply` | BOOL | true | 引用/回复机器人触发 |
-| `ds.chat.group.trigger.name` | BOOL | true | 叫名字触发 |
+| `ds.chat.group.trigger.role` | BOOL | true | 角色卡触发词触发（来自当前会话角色卡） |
+| `ds.chat.group.trigger.context_judge` | BOOL | true | 触发词命中后是否做语境判定；关闭=命中即算提及 |
+| `ds.chat.group.trigger.address_words` | LIST | `你,您,在吗,出来,帮我,你觉得,你说,看看,怎么办,咋办` | 语境判定用的呼叫词；与触发词共现时加强“在叫机器人” |
 | `ds.chat.group.trigger.prefix` | STRING | `` | 文本前缀触发，空=关闭 |
-| `ds.chat.group.trigger.keywords` | LIST | `` | 关键词触发，逗号分隔 |
+| `ds.chat.group.trigger.keywords` | LIST | `` | 全局补充触发词，逗号分隔；与角色卡触发词叠加 |
+| `ds.chat.group.roles` | LIST | `` | 群角色映射，格式 `群号=角色名,群号=角色名`；优先于全局 `ds.chat.role` |
 | `ds.chat.group.trigger.random_percent` | INT | 0 | 每条群消息（含图片/表情/@别人）的随机接话概率 0~100 |
 | `ds.chat.group.mention_delay_min_ms` | INT | 5000 | 被直接叫到后的最小等待 |
 | `ds.chat.group.mention_delay_max_ms` | INT | 15000 | 被直接叫到后的最大等待 |
@@ -1171,6 +1199,7 @@ CREATE TABLE IF NOT EXISTS `t_ai_memory` (
 | key | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
 | `ds.chat.private.enable` | BOOL | false | 私聊 AI 总开关；默认关闭 |
+| `ds.chat.private.roles` | LIST | `` | 私聊角色映射，格式 `QQ号=角色名,QQ号=角色名`；优先于全局 `ds.chat.role` |
 | `ds.chat.private.min_reply_interval_ms` | INT | 1000 | 私聊最小间隔 |
 | `ds.chat.debounce.min_ms` | INT | 2000 | 连续消息合并窗口下限（私聊/群同一用户） |
 | `ds.chat.debounce.max_ms` | INT | 6000 | 连续消息合并窗口上限 |
@@ -1470,10 +1499,10 @@ public void process(AiSessionKey key, List<AiTurn> turns) {
 | --- | --- |
 | `AiReplyParserTest` | say/call/silent、代码块、前后杂文本、空内容、截断、字段别名、超条数、空白文本、非法 type |
 | `AiReplySanitizerTest` | Markdown、CQ 注入、@全体、括号内心戏、系统提示泄露、超长切分、重复去重 |
-| `AiTriggerPolicyTest` | 私聊、群 @、引用、名字、前缀、关键词、随机（含图片/表情/@别人）、at-only、self、群不在白名单、访问列表、等待窗口 |
+| `AiTriggerPolicyTest` | 私聊、群 @、引用、角色卡触发词、触发词语境（引用他人/at他人/URL/转述/第二人称加强）、全局补充词、机器人昵称不触发、前缀、随机（含图片/表情/@别人）、at-only、self、群不在白名单、访问列表、等待窗口 |
 | `AiScopeServiceTest` | 群白名单命中/未命中、私聊开关、启用的群内 W_160 失效、W_870 仅超管 |
 | `PromptAssemblerTest` | 四层顺序、角色卡截断、模式小节过滤、token 预算、动态内容位置、历史格式、数据边界 |
-| `RoleCardServiceTest` | 目录扫描、缺失目录、非法文件名、模式标记、Lint、字符统计、文件删除回退 |
+| `RoleCardServiceTest` | 目录扫描、缺失目录、非法文件名、触发词解析/剥离、未声明回退角色名、模式标记、Lint、字符统计、文件删除回退 |
 | `AiSessionServiceTest` | 键隔离（群/私聊/多机器人）、DB 加载、reset、过期、暂停、等待窗口 |
 | `AiSendServiceTest` | 延迟 clamp、多条顺序、引用/@、离线中止、超时压缩、纯文本 autoEscape |
 | `AiToolServiceTest` | 白名单、group 作用域、参数校验、超时、结果截断、调用次数 |
@@ -1518,6 +1547,9 @@ public void process(AiSessionKey key, List<AiTurn> turns) {
 25. WebUI 查看余额 → 数值来自官方 `/user/balance`，不是本地估算；
 26. `random_percent=100` 时，群里只发表情/图片/@别人 → 也会进入 AI 判断，可能回复也可能 silent。
 27. 超管发 `ds status` → 输出会话/角色/历史/今日 token/余额，余额来自实时 `/user/balance`；断网时该行显示“查询失败”，其余字段正常。
+28. 机器人 QQ 昵称改成任意值都不触发 dschat；角色卡写 `触发词：小鲸鱼,大肥鱼` 后，叫“小鲸鱼”触发。
+29. 触发词语境：引用别人的消息里出现“小鲸鱼”、@别人时提到“小鲸鱼” → 不算提及、不走等待窗口；`random_percent=100` 时同一条消息仍会被随机接话。
+30. 两个群或两个私聊用户指向不同角色卡，回复风格互不影响。
 
 ### 13.4 回归命令
 
@@ -1554,7 +1586,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 - [ ] `AiContextCollectorHandler(W_998)` 环境上下文
 - [ ] `AiToolService` + `group_history` / `member_info`
 - [ ] 工具循环（max_steps、超时、截断、审计）
-- [ ] 群聊触发补全（引用、名字、关键词、随机）
+- [ ] 群聊触发补全（引用、角色触发词、全局补充词、随机）
 - [ ] 限流/去重/队列/合并
 - [ ] WebUI 角色卡只读查看 + 会话管理
 - [ ] 用量统计 + 每日限额
