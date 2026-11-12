@@ -8,7 +8,6 @@ import com.haruhi.botserver.features.wordstrip.persistence.entity.WordStripSqlit
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.features.wordstrip.service.WordStripSqliteService;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
@@ -56,50 +55,51 @@ public class WordStripAddHandler implements IGroupMessageHandler {
 
         final String finalKeyWord = keyWord;
         final String finalAnswer = answer;
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            try {
+        handle(bot, message, finalKeyWord, finalAnswer);
+        return true;
+    }
 
-                LambdaQueryWrapper<WordStripSqlite> queryWrapper = new LambdaQueryWrapper<>();
-                queryWrapper.eq(WordStripSqlite::getGroupId,message.getGroupId())
-                        .eq(WordStripSqlite::getSelfId,message.getSelfId())
-                        .eq(WordStripSqlite::getKeyWord, finalKeyWord);
-                WordStripSqlite wordStrip = wordStripService.getOne(queryWrapper);
-                WordStripSqlite param = new WordStripSqlite();
-                boolean save = false;
-                if(wordStrip != null){
-                    // 词条已存在
-                    if(wordStrip.getUserId().equals(message.getUserId())){
-                        // 修改人为创建人
-                        param.setAnswer(finalAnswer);
-                        param.setModifyTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
-                        save = wordStripService.update(param,queryWrapper);
-                    }else{
-                        bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("已存在词条：{0}",finalKeyWord),false);
-                        return;
-                    }
-                }else{
-                    param.setKeyWord(finalKeyWord);
+    private void handle(Bot bot, Message message, String finalKeyWord, String finalAnswer){
+        try {
+
+            LambdaQueryWrapper<WordStripSqlite> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(WordStripSqlite::getGroupId,message.getGroupId())
+                    .eq(WordStripSqlite::getSelfId,message.getSelfId())
+                    .eq(WordStripSqlite::getKeyWord, finalKeyWord);
+            WordStripSqlite wordStrip = wordStripService.getOne(queryWrapper);
+            WordStripSqlite param = new WordStripSqlite();
+            boolean save = false;
+            if(wordStrip != null){
+                // 词条已存在
+                if(wordStrip.getUserId().equals(message.getUserId())){
+                    // 修改人为创建人
                     param.setAnswer(finalAnswer);
-                    param.setGroupId(message.getGroupId());
-                    param.setUserId(message.getUserId());
-                    param.setSelfId(message.getSelfId());
-                    Date date = new Date();
-                    param.setCreateTime(DateTimeUtil.dateTimeFormat(date, DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
-                    param.setModifyTime(DateTimeUtil.dateTimeFormat(date, DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
-                    save = wordStripService.save(param);
-                }
-                if(save){
-                    WordStripHandler.putCache(message.getSelfId(),message.getGroupId(),finalKeyWord,finalAnswer);
-                    bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("词条添加成功：{0}",finalKeyWord),false);
+                    param.setModifyTime(DateTimeUtil.dateTimeFormat(new Date(), DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+                    save = wordStripService.update(param,queryWrapper);
+                }else{
+                    bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("已存在词条：{0}",finalKeyWord),false);
                     return;
                 }
-                bot.sendGroupMessage(message.getGroupId(), MessageFormat.format("词条添加失败：{0}-->0",finalKeyWord),false);
-            }catch (Exception e){
-                log.error("添加词条异常",e);
+            }else{
+                param.setKeyWord(finalKeyWord);
+                param.setAnswer(finalAnswer);
+                param.setGroupId(message.getGroupId());
+                param.setUserId(message.getUserId());
+                param.setSelfId(message.getSelfId());
+                Date date = new Date();
+                param.setCreateTime(DateTimeUtil.dateTimeFormat(date, DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+                param.setModifyTime(DateTimeUtil.dateTimeFormat(date, DateTimeUtil.PatternEnum.yyyyMMddHHmmss));
+                save = wordStripService.save(param);
             }
-
-        });
-        return true;
+            if(save){
+                WordStripHandler.putCache(message.getSelfId(),message.getGroupId(),finalKeyWord,finalAnswer);
+                bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("词条添加成功：{0}",finalKeyWord),false);
+                return;
+            }
+            bot.sendGroupMessage(message.getGroupId(), MessageFormat.format("词条添加失败：{0}-->0",finalKeyWord),false);
+        }catch (Exception e){
+            log.error("添加词条异常",e);
+        }
     }
 
 }

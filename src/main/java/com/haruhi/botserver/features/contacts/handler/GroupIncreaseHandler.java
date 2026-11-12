@@ -5,7 +5,6 @@ import com.haruhi.botserver.bot.handler.INoticeHandler;
 import com.haruhi.botserver.bot.session.Bot;
 import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.integration.onebot.model.CqCodeTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.NoticeTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.event.NoticeEvent;
@@ -31,17 +30,14 @@ public class GroupIncreaseHandler implements INoticeHandler {
         if(!groupIncrease || event.isSelfMsg()){
             return;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-
-            KQCodeUtils instance = KQCodeUtils.getInstance();
-            String at = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + event.getUserId());
-            String faces = "";
-            String face = instance.toCq(CqCodeTypeEnum.face.getType(), "id=" + 144);
-            for (int i = 0; i < 3; i++) {
-                faces += face;
-            }
-            bot.sendGroupMessage(event.getGroupId(), MessageFormat.format("{0} 欢迎小可爱~{1}",at,faces),false);
-        });
+        KQCodeUtils instance = KQCodeUtils.getInstance();
+        String at = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + event.getUserId());
+        String faces = "";
+        String face = instance.toCq(CqCodeTypeEnum.face.getType(), "id=" + 144);
+        for (int i = 0; i < 3; i++) {
+            faces += face;
+        }
+        bot.sendGroupMessage(event.getGroupId(), MessageFormat.format("{0} 欢迎小可爱~{1}",at,faces),false);
     }
 
 }

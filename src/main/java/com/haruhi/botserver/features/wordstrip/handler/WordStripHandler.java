@@ -3,7 +3,6 @@ package com.haruhi.botserver.features.wordstrip.handler;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -46,9 +45,7 @@ public class WordStripHandler implements IGroupMessageHandler {
         if(answer == null){
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            bot.sendGroupMessage(message.getGroupId(),answer,false);
-        });
+        bot.sendGroupMessage(message.getGroupId(),answer,false);
         return true;
     }
 }

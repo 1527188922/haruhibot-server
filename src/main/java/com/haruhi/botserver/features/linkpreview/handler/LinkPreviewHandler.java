@@ -15,7 +15,6 @@ import com.haruhi.botserver.features.torrent.client.model.whatslink.AnalysisMagn
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.shared.util.CommonUtil;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -49,20 +48,22 @@ public class LinkPreviewHandler implements IPrivateMessageHandler {
             return false;
         }
 
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            String link = message.getText(-1);
-            AnalysisMagnetLinkResp resp = request(link);
-            if(resp == null || resp.getCount() == null || resp.getCount() == 0){
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("磁力未解析出结果\n"+link));
-                return;
-            }
-            if(StringUtils.isNotBlank(resp.getError())){
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("磁力解析异常\n"+resp.getError()));
-                return;
-            }
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(formatterResp(resp)));
-        });
+        String link = message.getText(-1);
+        handle(bot, message, link);
         return true;
+    }
+
+    private void handle(Bot bot, Message message, String link) {
+        AnalysisMagnetLinkResp resp = request(link);
+        if(resp == null || resp.getCount() == null || resp.getCount() == 0){
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("磁力未解析出结果\n"+link));
+            return;
+        }
+        if(StringUtils.isNotBlank(resp.getError())){
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("磁力解析异常\n"+resp.getError()));
+            return;
+        }
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(formatterResp(resp)));
     }
 
     private String formatterResp(AnalysisMagnetLinkResp resp){

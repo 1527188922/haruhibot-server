@@ -13,7 +13,6 @@ import com.alibaba.dashscope.common.Role;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.shared.util.MatchResult;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -57,17 +56,15 @@ public class QianWenHandler implements IAllMessageHandler {
             return false;
         }
 
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            String data = match.getData();
-            String key = key(message);
-            QianWen qianWen = CACHE.get(key(message));
-            if(qianWen == null){
-                qianWen = new QianWen(MODEL);
-                CACHE.put(key,qianWen);
-            }
-            String res = qianWen.call(data);
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),res,true);
-        });
+        String data = match.getData();
+        String key = key(message);
+        QianWen qianWen = CACHE.get(key(message));
+        if(qianWen == null){
+            qianWen = new QianWen(MODEL);
+            CACHE.put(key,qianWen);
+        }
+        String res = qianWen.call(data);
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),res,true);
         return true;
     }
     private MatchResult<String> matches(Message message){

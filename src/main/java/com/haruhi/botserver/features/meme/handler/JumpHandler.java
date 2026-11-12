@@ -14,7 +14,6 @@ import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.shared.util.MatchResult;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -87,21 +86,19 @@ public class JumpHandler implements IGroupMessageHandler {
 
         Pair<String, String> data = pairMatchResult.getData();
 
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            try {
-                String fileName = prefix + data.getRight() + ".gif";
-                String out = FileUtil.getFaceDir() + File.separator + fileName;
-                File file = new File(out);
-                if(!file.exists()){
-                    log.info("不存在该表情，开始生成: {}",fileName);
-                    makeHuaQFace(Long.valueOf(data.getRight()), out);
-                }
-                log.info("jump表情图片地址：{}",out);
-                sendFaceMsg(bot,message.getGroupId(),file);
-            }catch (Exception e){
-                log.error("发送jump表情异常",e);
+        try {
+            String fileName = prefix + data.getRight() + ".gif";
+            String out = FileUtil.getFaceDir() + File.separator + fileName;
+            File file = new File(out);
+            if(!file.exists()){
+                log.info("不存在该表情，开始生成: {}",fileName);
+                makeHuaQFace(Long.valueOf(data.getRight()), out);
             }
-        });
+            log.info("jump表情图片地址：{}",out);
+            sendFaceMsg(bot,message.getGroupId(),file);
+        }catch (Exception e){
+            log.error("发送jump表情异常",e);
+        }
         return true;
     }
 

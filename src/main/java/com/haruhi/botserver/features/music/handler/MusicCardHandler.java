@@ -9,7 +9,6 @@ import com.haruhi.botserver.integration.onebot.model.ForwardMsgItem;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.features.music.client.model.music163.Song;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.features.music.service.AbstractMusicService;
 import com.haruhi.botserver.features.music.service.MusicServiceFactory;
 import com.haruhi.botserver.shared.util.CommonUtil;
@@ -78,7 +77,7 @@ public class MusicCardHandler implements IAllMessageHandler {
             // 若这里删除缓存，那么一次搜索只能点一次歌
             // 若不删除，那么在缓存 存在期间，都可以通过输入纯数字持续点歌
             // cache.remove(key);
-            ThreadPoolUtil.getHandleCommandPool().execute(new SendMusicCardTask(bot,songs,index,message));
+            doSendMusicCard(bot,message,songs,index);
             return true;
         }else{
             // 不存在缓存
@@ -93,48 +92,34 @@ public class MusicCardHandler implements IAllMessageHandler {
     }
     private void search(Bot bot,Message message,String songName){
         bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜索歌曲：" + songName,true);
-        ThreadPoolUtil.getHandleCommandPool().execute(new SearchMusicTask(bot,message,songName));
+        doSearch(bot,message,songName);
     }
 
     private String getSongName(final String command){
         return CommonUtil.commandReplaceFirst(command, RegexEnum.MUSIC_CARD);
     }
 
-    private class SearchMusicTask implements Runnable{
-
-        private Bot bot;
-        private Message message;
-        private String musicName;
-
-        SearchMusicTask(Bot bot, Message message, String musicName){
-            this.bot = bot;
-            this.message = message;
-            this.musicName = musicName;
-        }
-
-        @Override
-        public void run() {
-            try {
-                List<Song> res = MusicServiceFactory.getMusicService(MusicServiceFactory.MusicType.cloudMusic).searchMusic(musicName);
-                if(CollectionUtils.isEmpty(res)){
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"未找到歌曲：" + musicName,true);
-                    return;
-                }
-                if(res.size() == 1){
-                    // 搜索结果只有一条，直接发送这个音乐卡片
-                    sendMusicCard(bot,message,res,0,true);
-                    return;
-                }
-                // 将搜索结果保存到缓存
-                cache.put(getKey(message),res);
-                if(message.isGroupMsg()){
-                    sendGroup(bot,message,res,musicName);
-                }else if(message.isPrivateMsg()){
-                    sendPrivate(bot,message,res,musicName);
-                }
-            } catch (Exception e) {
-                log.error("搜索歌曲发生异常",e);
+    private void doSearch(Bot bot, Message message, String musicName) {
+        try {
+            List<Song> res = MusicServiceFactory.getMusicService(MusicServiceFactory.MusicType.cloudMusic).searchMusic(musicName);
+            if(CollectionUtils.isEmpty(res)){
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"未找到歌曲：" + musicName,true);
+                return;
             }
+            if(res.size() == 1){
+                // 搜索结果只有一条，直接发送这个音乐卡片
+                sendMusicCard(bot,message,res,0,true);
+                return;
+            }
+            // 将搜索结果保存到缓存
+            cache.put(getKey(message),res);
+            if(message.isGroupMsg()){
+                sendGroup(bot,message,res,musicName);
+            }else if(message.isPrivateMsg()){
+                sendPrivate(bot,message,res,musicName);
+            }
+        } catch (Exception e) {
+            log.error("搜索歌曲发生异常",e);
         }
     }
 
@@ -166,27 +151,11 @@ public class MusicCardHandler implements IAllMessageHandler {
         bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(stringBuilder.toString()));
     }
 
-    private class SendMusicCardTask implements Runnable{
-
-        private Bot bot;
-        private List<Song> songs;
-        private Integer index;
-        private Message message;
-
-        SendMusicCardTask(Bot bot,List<Song> songs,Integer index,Message message){
-            this.bot = bot;
-            this.songs = songs;
-            this.index = index;
-            this.message = message;
-        }
-
-        @Override
-        public void run() {
-            try {
-                sendMusicCard(bot,message,songs,index - 1,true);
-            } catch (ObjectNotFoundException e) {
-                log.error("发送音乐卡片异常",e);
-            }
+    private void doSendMusicCard(Bot bot, Message message, List<Song> songs, Integer index) {
+        try {
+            sendMusicCard(bot,message,songs,index - 1,true);
+        } catch (ObjectNotFoundException e) {
+            log.error("发送音乐卡片异常",e);
         }
     }
 

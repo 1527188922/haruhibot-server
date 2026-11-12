@@ -5,7 +5,6 @@ import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.bot.handler.IAllMessageHandler;
 import com.haruhi.botserver.features.pixiv.service.PixivSqliteService;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -63,9 +62,7 @@ public class PixivHandler implements IAllMessageHandler {
 
         List<String> finalTags = tags;
         String finalTag = tag;
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            pixivSqliteService.roundSend(bot,20,null, finalTags,message, finalTag);
-        });
+        pixivSqliteService.roundSend(bot,20,null, finalTags,message, finalTag);
         return true;
     }
 

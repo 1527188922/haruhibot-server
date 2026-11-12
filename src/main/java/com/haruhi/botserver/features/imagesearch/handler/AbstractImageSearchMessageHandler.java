@@ -2,7 +2,6 @@ package com.haruhi.botserver.features.imagesearch.handler;
 
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.bot.handler.IAllMessageHandler;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -68,17 +67,15 @@ public abstract class AbstractImageSearchMessageHandler implements IAllMessageHa
         if (StringUtils.isNotBlank(s)) {
             bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), s, true);
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(() -> {
-            for (ImageSearchProvider provider : providers()) {
-                try {
-                    provider.search(bot, message, match.getReplyMessage(), match.getImageUrl());
-                } catch (Exception e) {
-                    log.error("{}{} provider:{}", errorPrefix(), match.getImageUrl(), provider.type(), e);
-                    bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
-                            provider.type() + " " + errorPrefix() + e.getMessage(), true);
-                }
+        for (ImageSearchProvider provider : providers()) {
+            try {
+                provider.search(bot, message, match.getReplyMessage(), match.getImageUrl());
+            } catch (Exception e) {
+                log.error("{}{} provider:{}", errorPrefix(), match.getImageUrl(), provider.type(), e);
+                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
+                        provider.type() + " " + errorPrefix() + e.getMessage(), true);
             }
-        });
+        }
         triggerResolver.clear(match.getCacheKey());
     }
 }

@@ -6,7 +6,6 @@ import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.features.chatrecord.service.ChatRecordService;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -42,9 +41,7 @@ public class FindGroupChatHandler implements IGroupMessageHandler {
             return false;
         }
 
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            chatRecordService.sendGroupChatList(bot,message,param);
-        });
+        chatRecordService.sendGroupChatList(bot,message,param);
         return true;
     }
 

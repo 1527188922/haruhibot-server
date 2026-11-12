@@ -6,7 +6,6 @@ import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.features.chatrecord.service.ChatRecordService;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,9 +60,7 @@ public class GroupWordCloudHandler implements IGroupMessageHandler {
         }else{
             lock.put(String.valueOf(message.getGroupId()) + message.getSelfId(),1);
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            chatRecordService.sendWordCloudImage(bot,matching, message);
-        });
+        chatRecordService.sendWordCloudImage(bot,matching, message);
         return true;
     }
 

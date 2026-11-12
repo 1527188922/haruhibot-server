@@ -4,7 +4,6 @@ import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -36,27 +35,27 @@ public class OneMoreHandler implements IGroupMessageHandler {
 
     @Override
     public boolean onGroup(Bot bot, Message message) {
-
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-
-            String groupIdStr = String.valueOf(message.getGroupId())+message.getSelfId();
-            Pair<String, Boolean> pair = msgCache.get(groupIdStr);
-            if(pair == null){
-                putMsg(message);
-                return;
-            }
-
-            if (pair.getLeft().equals(message.getRawMessage())) {
-                if (!pair.getRight()) {
-                    bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getMessage());
-                    pair.setValue(true);
-                }
-            }else{
-                msgCache.remove(groupIdStr);
-                putMsg(message);
-            }
-        });
+        handle(bot, message);
         return false;
+    }
+
+    private void handle(Bot bot, Message message){
+        String groupIdStr = String.valueOf(message.getGroupId())+message.getSelfId();
+        Pair<String, Boolean> pair = msgCache.get(groupIdStr);
+        if(pair == null){
+            putMsg(message);
+            return;
+        }
+
+        if (pair.getLeft().equals(message.getRawMessage())) {
+            if (!pair.getRight()) {
+                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getMessage());
+                pair.setValue(true);
+            }
+        }else{
+            msgCache.remove(groupIdStr);
+            putMsg(message);
+        }
     }
 
     private void putMsg(Message message){

@@ -18,7 +18,6 @@ import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.features.chatrecord.service.ChatRecordService;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.shared.util.MatchResult;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.text.StrBuilder;
@@ -79,55 +78,53 @@ public class ExportGroupChatRecordHandler implements IGroupMessageHandler {
     }
    
     private void exportExcel(Bot bot, Message message, AtomicBoolean lock){
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            try {
-                List<String> atQQs = message.getAtQQs();
-                BaseResp<File> baseResp = chatRecordService.exportGroupChatRecord(message.getGroupId(), atQQs);
-                if (!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())) {
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(baseResp.getMsg()));
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("开始生成Excel文件..."));
+        try {
+            List<String> atQQs = message.getAtQQs();
+            BaseResp<File> baseResp = chatRecordService.exportGroupChatRecord(message.getGroupId(), atQQs);
+            if (!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())) {
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(baseResp.getMsg()));
+                return;
+            }
+            File excelFile = baseResp.getData();
+            String fileName = excelFile.getName();
+            String url = webResourceConfig.webExcelPath() + "/" + fileName;
+            StrBuilder strBuilder = new StrBuilder();
+            strBuilder.append("生成完成，正在上传群文件").append("\n");
+            strBuilder.append("浏览器打开下方链接可下载Excel");
+
+            List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
+            forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(strBuilder.toString())));
+            forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(url)));
+
+            bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
+
+            String filePath = "";
+            if (Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT)) {
+                filePath = excelFile.getAbsolutePath();
+            }else{
+                long l6 = System.currentTimeMillis();
+                SyncResponse<DownloadFileResp> downloadFileRes = bot.downloadFile(url, 1, null, -1);
+                log.info("qq客户端下载群聊excel文件完成 cost:{} resp:{}",(System.currentTimeMillis()-l6),JSONObject.toJSONString(downloadFileRes));
+                if (downloadFileRes == null || downloadFileRes.getData() == null || StringUtils.isBlank(downloadFileRes.getData().getFile())) {
                     return;
                 }
-                File excelFile = baseResp.getData();
-                String fileName = excelFile.getName();
-                String url = webResourceConfig.webExcelPath() + "/" + fileName;
-                StrBuilder strBuilder = new StrBuilder();
-                strBuilder.append("生成完成，正在上传群文件").append("\n");
-                strBuilder.append("浏览器打开下方链接可下载Excel");
-
-                List<ForwardMsgItem> forwardMsgs = new ArrayList<>();
-                forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(strBuilder.toString())));
-                forwardMsgs.add(ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), MessageHolder.instanceText(url)));
-
-                bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgs);
-
-                String filePath = "";
-                if (Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT)) {
-                    filePath = excelFile.getAbsolutePath();
-                }else{
-                    long l6 = System.currentTimeMillis();
-                    SyncResponse<DownloadFileResp> downloadFileRes = bot.downloadFile(url, 1, null, -1);
-                    log.info("qq客户端下载群聊excel文件完成 cost:{} resp:{}",(System.currentTimeMillis()-l6),JSONObject.toJSONString(downloadFileRes));
-                    if (downloadFileRes == null || downloadFileRes.getData() == null || StringUtils.isBlank(downloadFileRes.getData().getFile())) {
-                        return;
-                    }
-                    filePath = downloadFileRes.getData().getFile();
-                }
-                long l5 = System.currentTimeMillis();
-                log.info("开始上传qq文件：{}",filePath);
-                bot.uploadGroupFile(message.getGroupId(), filePath, fileName, null, Duration.ofMinutes(10).toMillis(), syncResponse -> {
-                    // 如果是串行上传模式：cost = 排队时长 + 上传耗时
-                    log.info("群聊记录excel上传完成 cost:{} resp:{}",(System.currentTimeMillis()-l5),JSONObject.toJSONString(syncResponse));
-                });
-            }catch (Exception e){
-                log.info("导出群聊记录异常 groupId:{}",message.getGroupId(), e);
-                String err = "导出群聊记录异常\n"+ "群号："+ message.getGroupId() + "\n"+e.getMessage();
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                        MessageHolder.instanceText(err));
-            }finally {
-                lock.set(false);
+                filePath = downloadFileRes.getData().getFile();
             }
-        });
-        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("开始生成Excel文件..."));
+            long l5 = System.currentTimeMillis();
+            log.info("开始上传qq文件：{}",filePath);
+            bot.uploadGroupFile(message.getGroupId(), filePath, fileName, null, Duration.ofMinutes(10).toMillis(), syncResponse -> {
+                // 如果是串行上传模式：cost = 排队时长 + 上传耗时
+                log.info("群聊记录excel上传完成 cost:{} resp:{}",(System.currentTimeMillis()-l5),JSONObject.toJSONString(syncResponse));
+            });
+        }catch (Exception e){
+            log.info("导出群聊记录异常 groupId:{}",message.getGroupId(), e);
+            String err = "导出群聊记录异常\n"+ "群号："+ message.getGroupId() + "\n"+e.getMessage();
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                    MessageHolder.instanceText(err));
+        }finally {
+            lock.set(false);
+        }
     }
 
 

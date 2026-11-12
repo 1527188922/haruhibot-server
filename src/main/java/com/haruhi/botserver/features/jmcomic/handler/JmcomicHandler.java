@@ -30,7 +30,6 @@ import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.infrastructure.image.HtmlToImageUtils;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Entities;
@@ -87,58 +86,59 @@ public class JmcomicHandler implements IAllMessageHandler {
         if (StringUtils.isBlank(pair.getKey())) {
             return false;
         }
-
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            String finalAid = pair.getKey();
-            Boolean isPdf = pair.getRight();
-            try {
-                if (!StringUtils.isNumeric(finalAid)) {
-                    // 根据名称搜索本子
-                    SearchResp searchResp = jmcomicService.search(finalAid, JmSearchSortEnum.VIEW);
-                    List<SearchResp.ContentItem> content = searchResp.getContent();
-                    if (CollectionUtils.isEmpty(content)) {
-                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                                MessageHolder.instanceText(StrFormatter.format("未搜索到结果：{}", searchResp.getSearchQuery() != null ? searchResp.getSearchQuery() : finalAid)));
-                        return;
-                    }
-                    sendSearchResult(bot, message, searchResp);
-                    return;
-                }
-                isPdf = isPdf == null || isPdf;
-                boolean generatePdf = isPdf;
-                // 根据jm号下载本子
-                BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum(finalAid);
-                if (!albumBaseResp.isSuccess()) {
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                            MessageHolder.instanceText(albumBaseResp.getMsg()));
-                    return;
-                }
-                Album album = albumBaseResp.getData();
-                sendAlbumInfo(bot, message, album);
-
-                Consumer<BaseResp<File>> onDownloadResult = fileResp -> {
-                    if(!BaseResp.SUCCESS_CODE.equals(fileResp.getCode())){
-                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                                MessageHolder.instanceText(fileResp.getMsg()));
-                        return;
-                    }
-                    sendDownloadResult(bot, message, finalAid, generatePdf, fileResp.getData());
-                };
-
-                BaseResp<File> resp = generatePdf
-                        ? jmcomicService.downloadAlbumAsPdf(album, onDownloadResult)
-                        : jmcomicService.downloadAlbumAsZip(album, onDownloadResult);
-                if (resp.isQueued()) {
-//                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-//                            MessageHolder.instanceText(resp.getMsg()));
-                }
-            } catch (Exception e) {
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                        MessageHolder.instanceText(MessageFormat.format("下载【JM{0}】异常"+e.getMessage(), finalAid)));
-                log.error("处理本子下载命令异常 【{}】",finalAid,e);
-            }
-        });
+        handle(bot, message, pair);
         return true;
+    }
+
+    private void handle(Bot bot, Message message, Pair<String, Boolean> pair) {
+        String finalAid = pair.getKey();
+        Boolean isPdf = pair.getRight();
+        try {
+            if (!StringUtils.isNumeric(finalAid)) {
+                // 根据名称搜索本子
+                SearchResp searchResp = jmcomicService.search(finalAid, JmSearchSortEnum.VIEW);
+                List<SearchResp.ContentItem> content = searchResp.getContent();
+                if (CollectionUtils.isEmpty(content)) {
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                            MessageHolder.instanceText(StrFormatter.format("未搜索到结果：{}", searchResp.getSearchQuery() != null ? searchResp.getSearchQuery() : finalAid)));
+                    return;
+                }
+                sendSearchResult(bot, message, searchResp);
+                return;
+            }
+            isPdf = isPdf == null || isPdf;
+            boolean generatePdf = isPdf;
+            // 根据jm号下载本子
+            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum(finalAid);
+            if (!albumBaseResp.isSuccess()) {
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                        MessageHolder.instanceText(albumBaseResp.getMsg()));
+                return;
+            }
+            Album album = albumBaseResp.getData();
+            sendAlbumInfo(bot, message, album);
+
+            Consumer<BaseResp<File>> onDownloadResult = fileResp -> {
+                if(!BaseResp.SUCCESS_CODE.equals(fileResp.getCode())){
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                            MessageHolder.instanceText(fileResp.getMsg()));
+                    return;
+                }
+                sendDownloadResult(bot, message, finalAid, generatePdf, fileResp.getData());
+            };
+
+            BaseResp<File> resp = generatePdf
+                    ? jmcomicService.downloadAlbumAsPdf(album, onDownloadResult)
+                    : jmcomicService.downloadAlbumAsZip(album, onDownloadResult);
+            if (resp.isQueued()) {
+//                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+//                        MessageHolder.instanceText(resp.getMsg()));
+            }
+        } catch (Exception e) {
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                    MessageHolder.instanceText(MessageFormat.format("下载【JM{0}】异常"+e.getMessage(), finalAid)));
+            log.error("处理本子下载命令异常 【{}】",finalAid,e);
+        }
     }
 
     private void sendDownloadResult(Bot bot, Message message, String aid, boolean isPdf, File file) {

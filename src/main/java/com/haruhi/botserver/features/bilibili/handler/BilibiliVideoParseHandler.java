@@ -20,7 +20,6 @@ import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
 import com.haruhi.botserver.shared.util.FileUtil;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -65,57 +64,59 @@ public class BilibiliVideoParseHandler implements IAllMessageHandler {
         if (StringUtils.isBlank(bvid)) {
             return false;
         }
-        final String finalBvid = bvid;
-        ThreadPoolUtil.getHandleCommandPool().execute(() -> {
-            try {
-                BilibiliBaseResp<VideoDetail> videoDetail = bilibiliService.getVideoDetail(finalBvid);
-                if (!videoDetail.isSuccess()) {
-                    return;
-                }
-                VideoDetail videoDetailData = videoDetail.getData();
-                Long cid = videoDetailData.getCidFirst();
-                VideoDetail.View videoDetailDataView = videoDetailData.getView();
-                if (videoDetailDataView == null) {
-//                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频信息 bvid:{} resp:{}", finalBvid, videoDetail.getRaw());
-                    return;
-                }
-
-                BilibiliBaseResp<PlayUrlInfo> playUrlInfo = bilibiliService.getPlayUrlInfo(videoDetailDataView.getBvid(),videoDetailDataView.getAid(),cid);
-
-                PlayUrlInfo playUrlInfoData = playUrlInfo.getData();
-                if (playUrlInfoData == null) {
-//                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频下载链接信息 bvid:{} resp:{}", finalBvid, playUrlInfo.getRaw());
-                    return;
-                }
-                sendInfoMessage(videoDetailDataView, message, bot);
-
-                String url = playUrlInfoData.getDurlFirst();
-                File bilibiliVideoFile = new File(FileUtil.getBilibiliVideoFileName(videoDetailDataView.getBvid(), cid,"mp4"));
-                if (!bilibiliVideoFile.exists()) {
-                    // 判断视频时长是否超过下载限制
-                    long downloadDurationLimit = getDurationLimit(ConfigKey.BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT);
-                    if (videoDetailDataView.getDuration() > downloadDurationLimit) {
-                        log.error("视频时长超过下载限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),downloadDurationLimit);
-                        return;
-                    }
-
-                    log.info("开始下载b站视频 {}",url);
-                    long l = System.currentTimeMillis();
-                    bilibiliService.downloadVideo(url, bilibiliVideoFile,-1);
-                    log.info("下载b站视频完成 cost:{}",(System.currentTimeMillis()-l));
-                }
-
-                long uploadDurationLimit = getDurationLimit(ConfigKey.BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT);
-                if (videoDetailDataView.getDuration() > uploadDurationLimit) {
-                    log.error("视频时长超过上传限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),uploadDurationLimit);
-                    return;
-                }
-                uploadFileToQq(bot, message, bilibiliVideoFile);
-            }catch (Exception e) {
-                DbLog.error(BusinessModuleEnum.BILIBILI,"解析b站视频异常", e);
-            }
-        });
+        handle(bot, message, bvid);
         return true;
+    }
+
+    private void handle(Bot bot, Message message, String bvid) {
+        final String finalBvid = bvid;
+        try {
+            BilibiliBaseResp<VideoDetail> videoDetail = bilibiliService.getVideoDetail(finalBvid);
+            if (!videoDetail.isSuccess()) {
+                return;
+            }
+            VideoDetail videoDetailData = videoDetail.getData();
+            Long cid = videoDetailData.getCidFirst();
+            VideoDetail.View videoDetailDataView = videoDetailData.getView();
+            if (videoDetailDataView == null) {
+//                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频信息 bvid:{} resp:{}", finalBvid, videoDetail.getRaw());
+                return;
+            }
+
+            BilibiliBaseResp<PlayUrlInfo> playUrlInfo = bilibiliService.getPlayUrlInfo(videoDetailDataView.getBvid(),videoDetailDataView.getAid(),cid);
+
+            PlayUrlInfo playUrlInfoData = playUrlInfo.getData();
+            if (playUrlInfoData == null) {
+//                    DbLog.error(BusinessModuleEnum.BILIBILI,"未查询到视频下载链接信息 bvid:{} resp:{}", finalBvid, playUrlInfo.getRaw());
+                return;
+            }
+            sendInfoMessage(videoDetailDataView, message, bot);
+
+            String url = playUrlInfoData.getDurlFirst();
+            File bilibiliVideoFile = new File(FileUtil.getBilibiliVideoFileName(videoDetailDataView.getBvid(), cid,"mp4"));
+            if (!bilibiliVideoFile.exists()) {
+                // 判断视频时长是否超过下载限制
+                long downloadDurationLimit = getDurationLimit(ConfigKey.BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT);
+                if (videoDetailDataView.getDuration() > downloadDurationLimit) {
+                    log.error("视频时长超过下载限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),downloadDurationLimit);
+                    return;
+                }
+
+                log.info("开始下载b站视频 {}",url);
+                long l = System.currentTimeMillis();
+                bilibiliService.downloadVideo(url, bilibiliVideoFile,-1);
+                log.info("下载b站视频完成 cost:{}",(System.currentTimeMillis()-l));
+            }
+
+            long uploadDurationLimit = getDurationLimit(ConfigKey.BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT);
+            if (videoDetailDataView.getDuration() > uploadDurationLimit) {
+                log.error("视频时长超过上传限制 {} 视频时长：{} 限制时长：{}",videoDetailDataView.getBvid(),videoDetailDataView.getDuration(),uploadDurationLimit);
+                return;
+            }
+            uploadFileToQq(bot, message, bilibiliVideoFile);
+        }catch (Exception e) {
+            DbLog.error(BusinessModuleEnum.BILIBILI,"解析b站视频异常", e);
+        }
     }
 
     public long getDurationLimit(ConfigKey key) {
