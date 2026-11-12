@@ -23,8 +23,10 @@ import java.util.Map;
 public class NoticeDispatcher {
 
     private final List<INoticeHandler> container = new ArrayList<>();
+    private final DebounceSupport debounceSupport;
 
-    public NoticeDispatcher(Map<String, INoticeHandler> noticeHandlerMap) {
+    public NoticeDispatcher(Map<String, INoticeHandler> noticeHandlerMap, DebounceSupport debounceSupport) {
+        this.debounceSupport = debounceSupport;
         if (!CollectionUtils.isEmpty(noticeHandlerMap)) {
             container.addAll(noticeHandlerMap.values());
             log.info("加载了{}个通知处理类", container.size());
@@ -49,9 +51,16 @@ public class NoticeDispatcher {
         }
         for (INoticeHandler handler : container) {
             try {
-                if (handler.support(event)) {
-                    handler.onNotice(bot, event);
+                if (!handler.support(event)) {
+                    continue;
                 }
+                if (debounceSupport.isDebounced(handler, event)) {
+                    log.info("【触发防抖】通知事件重复，已忽略 handler：{}，noticeType：{}，subType：{}，groupId：{}，userId：{}",
+                            handler.getClass().getSimpleName(), event.getNoticeType(), event.getSubType(),
+                            event.getGroupId(), event.getUserId());
+                    continue;
+                }
+                handler.onNotice(bot, event);
             } catch (Exception e) {
                 log.error("处理通知事件异常 noticeType:{} subType:{} handler:{}",
                         event.getNoticeType(), event.getSubType(), handler.getClass().getSimpleName(), e);
