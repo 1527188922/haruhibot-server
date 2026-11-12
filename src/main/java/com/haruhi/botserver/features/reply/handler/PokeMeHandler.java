@@ -42,7 +42,7 @@ public class PokeMeHandler implements INoticeHandler {
             // 只对戳了机器人生效
             return;
         }
-
+        // 被戳人=唧唧人 & 发送戳一戳的人!=唧唧人
         try {
             int size = cache.size();
             if(size > 0){
@@ -54,7 +54,7 @@ public class PokeMeHandler implements INoticeHandler {
                 }
             }
         }catch (Exception e){
-            log.error("处理戳一戳发生异常",e);
+            log.error("处理戳一戳发生异常", e);
         }
     }
 }
