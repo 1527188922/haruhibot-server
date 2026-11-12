@@ -44,12 +44,10 @@ public class GroupIncreaseHandler implements IDebounceableNoticeHandler {
         }
         KQCodeUtils instance = KQCodeUtils.getInstance();
         String at = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + event.getUserId());
-        String faces = "";
         String face = instance.toCq(CqCodeTypeEnum.face.getType(), "id=" + 144);
-        for (int i = 0; i < 3; i++) {
-            faces += face;
-        }
-        bot.sendGroupMessage(event.getGroupId(), MessageFormat.format("{0} 欢迎小可爱~{1}",at,faces),false);
+        bot.sendGroupMessage(event.getGroupId(),
+                MessageFormat.format("{0} 欢迎小可爱~{1}",at, face.repeat(3)),
+                false);
     }
 
 }
