@@ -46,7 +46,10 @@ public class WhoTaggedMeHandler  implements IGroupMessageHandler {
     @Override
     public boolean onGroup(Bot bot, Message message) {
         String text = message.getText(0);
-        if (!(StringUtils.isNotBlank(text) && "谁at我".equalsIgnoreCase(text.trim()))) {
+        if (! (
+                StringUtils.isNotBlank(text)
+                        && ("谁at我".equalsIgnoreCase(text.trim()) || "谁@我".equalsIgnoreCase(text.trim()))
+                )) {
             return false;
         }
         ChatRecordQueryReq chatRecordQueryReq = new ChatRecordQueryReq();
@@ -62,7 +65,7 @@ public class WhoTaggedMeHandler  implements IGroupMessageHandler {
         chatRecordQueryReq.setContent(KQCodeUtils.INSTANCE.toCq(
                 CqCodeTypeEnum.at.getType(),
                 new HashMap<>(1){{
-                    put("qq",message.getUserId());
+                    put("qq", message.getUserId());
                 }}
         ));
         PageInfo<ChatRecordVo> pageInfo = chatRecordService.search(chatRecordQueryReq, true, false);
