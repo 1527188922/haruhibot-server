@@ -115,7 +115,7 @@ public class SystemController {
             SyncResponse<Object> syncResponse = bot.sendSyncRequest(JSONObject.toJSONString(request),request.getEcho(), timeout, new TypeReference<SyncResponse<Object>>() {
             });
             return HttpResp.success("发送成功",syncResponse);
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+        } catch (Exception e) {
             return HttpResp.fail("发送异常",e.getMessage());
         }
 
