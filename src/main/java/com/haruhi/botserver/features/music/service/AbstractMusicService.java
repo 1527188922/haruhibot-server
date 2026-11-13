@@ -1,8 +1,7 @@
 package com.haruhi.botserver.features.music.service;
 
-import com.haruhi.botserver.integration.onebot.model.CqCodeTypeEnum;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.features.music.client.model.music163.Song;
-import com.simplerobot.modules.utils.KQCodeUtils;
 
 import java.util.List;
 
@@ -23,12 +22,11 @@ public abstract class AbstractMusicService {
      * @param checked 调用者是否以及对参数做了校验 true:是
      * @return
      */
-   public String createMusicCq(List<Song> songs, int index,boolean checked){
+   public List<MessageHolder> createMusicCq(List<Song> songs, int index,boolean checked){
         if(!checked && (index < 0 || index >= songs.size())){
             return null;
         }
         Song song = songs.get(index);
-        String s = KQCodeUtils.getInstance().toCq(CqCodeTypeEnum.music.getType(), "type=" + type().getType(), "id=" + song.getId());
-        return s;
+        return MessageHolder.instanceMusic(song.getId(), type().getType(), null, null);
     }
 }

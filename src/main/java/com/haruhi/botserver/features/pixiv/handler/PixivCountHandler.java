@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.features.pixiv.persistence.entity.PixivSqlite;
 import com.haruhi.botserver.bot.handler.IAllMessageHandler;
 import com.haruhi.botserver.features.pixiv.service.PixivSqliteService;
@@ -42,8 +43,7 @@ public class PixivCountHandler implements IAllMessageHandler {
         long count = pixivSqliteService.count(queryWrapper);
         long countR18 = pixivSqliteService.count(queryWrapperR18);
         bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                MessageFormat.format("pixiv库：\n非r18：{0}\nr18：{1}\n总计：{2}",count,countR18,count + countR18)
-                ,true);
+                MessageHolder.instanceText(MessageFormat.format("pixiv库：\n非r18：{0}\nr18：{1}\n总计：{2}",count,countR18,count + countR18)));
 
         return true;
     }

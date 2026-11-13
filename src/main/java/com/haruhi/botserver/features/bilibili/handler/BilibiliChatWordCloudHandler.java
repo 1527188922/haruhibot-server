@@ -77,13 +77,13 @@ public class BilibiliChatWordCloudHandler implements IAllMessageHandler {
             PlayerInfoResp playerInfoResp = bilibiliService.getPlayerInfo(bvid);
 
             if(playerInfoResp == null || Objects.isNull(playerInfoResp.getCid())){
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"视频cid获取失败",true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("视频cid获取失败"));
                 return;
             }
             BulletChatResp bulletChatResp = bilibiliService.getChatList(playerInfoResp.getCid());
             List<String> chatList = bulletChatResp != null ? bulletChatResp.getChatList() : null;
             if(chatList == null){
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"弹幕数为0，不生成",true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("弹幕数为0，不生成"));
                 return;
             }
             List<MessageHolder> textMessageHolders = MessageHolder.instanceText(MessageFormat.format("获取弹幕成功，数量：{0}\n视频标题：{1}\n开始生成...", chatList.size(), playerInfoResp.getPart()));

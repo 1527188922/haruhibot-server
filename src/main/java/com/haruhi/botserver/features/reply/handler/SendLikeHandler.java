@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.integration.onebot.model.SyncResponse;
 import com.haruhi.botserver.features.reply.persistence.entity.SendLikeRecordSqlite;
 import com.haruhi.botserver.features.reply.service.SendLikeRecordSqliteService;
@@ -50,28 +51,26 @@ public class SendLikeHandler implements IAllMessageHandler {
     private void handle(Bot bot, Message message){
         try {
             if(isLiked(message.getUserId(), message.getSelfId())){
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"今日已给你点赞过啦",true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("今日已给你点赞过啦"));
                 return;
             }
 
             SyncResponse<String> sendLikeRes = bot.sendLike(message.getUserId(), TIMES, 10 * 1000);
             log.info("发送点赞响应：{}", JSONObject.toJSONString(sendLikeRes));
             if(sendLikeRes.isSuccess()){
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"攒了你"+TIMES+"次哦，记得回赞",true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("攒了你"+TIMES+"次哦，记得回赞"));
                 record(message);
                 return;
             }
 
             bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                    StringUtils.isNotBlank(sendLikeRes.getMessage())
+                    MessageHolder.instanceText(StringUtils.isNotBlank(sendLikeRes.getMessage())
                             ? sendLikeRes.getMessage() : StringUtils.isNotBlank(sendLikeRes.getWording())
-                            ? sendLikeRes.getWording() : "点赞失败"
-                    ,true);
+                            ? sendLikeRes.getWording() : "点赞失败"));
         }catch (Exception e){
             log.error("点赞异常",e);
             bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
-                    "点赞异常\n"+e.getMessage(),
-                    true);
+                    MessageHolder.instanceText("点赞异常\n"+e.getMessage()));
         }
     }
     private MatchResult matches(Message message){

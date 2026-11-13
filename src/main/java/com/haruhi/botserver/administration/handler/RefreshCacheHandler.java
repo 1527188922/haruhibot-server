@@ -7,6 +7,7 @@ import com.haruhi.botserver.shared.annotation.SuperuserAuthentication;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.administration.service.SystemService;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,7 @@ public class RefreshCacheHandler implements IAllMessageHandler {
 
         if(!REFRESH_LOCK.compareAndSet(false,true)){
             bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
-                    "正在刷新中...", true);
+                    MessageHolder.instanceText("正在刷新中..."));
             return true;
         }
         
@@ -58,7 +59,7 @@ public class RefreshCacheHandler implements IAllMessageHandler {
             systemService.clearCache();
             systemService.loadCache(3);
             bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
-                    "刷新缓存完成\n耗时：" + (System.currentTimeMillis() - l) + "ms", true);
+                    MessageHolder.instanceText("刷新缓存完成\n耗时：" + (System.currentTimeMillis() - l) + "ms"));
         }finally {
             REFRESH_LOCK.set(false);
         }

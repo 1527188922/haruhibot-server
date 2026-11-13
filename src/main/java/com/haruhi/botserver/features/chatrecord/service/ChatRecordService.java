@@ -49,7 +49,6 @@ import com.haruhi.botserver.features.chatrecord.model.ChatRecordQueryReq;
 import com.haruhi.botserver.shared.model.CodeNameReq;
 import com.haruhi.botserver.features.chatrecord.model.GroupChatUserResp;
 import com.haruhi.botserver.bot.session.Bot;
-import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -556,7 +555,7 @@ public class ChatRecordService{
         PageInfo<ChatRecordVo> pageInfo = this.search(req, false, false);
         List<ChatRecordVo> chatList = pageInfo.getList();
         if(CollectionUtils.isEmpty(chatList)){
-            bot.sendGroupMessage(message.getGroupId(), "该条件下没有聊天记录。",true);
+            bot.sendGroupMessage(message.getGroupId(), MessageHolder.instanceText("该条件下没有聊天记录。"));
             return;
         }
         int limit = 80;
@@ -629,12 +628,12 @@ public class ChatRecordService{
 
         List<ChatRecordGroup> corpus = chatRecordGroupMapper.selectWordCloudCorpus(chatTableName, message.getSelfId(), longs,date ,list);
         if (CollectionUtils.isEmpty(corpus)) {
-            bot.sendGroupMessage(message.getGroupId(),"该条件下没有聊天记录",true);
+            bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("该条件下没有聊天记录"));
             generateComplete(message);
             return;
         }
 
-        bot.sendGroupMessage(message.getGroupId(), MessageFormat.format("词云图片将从{0}条聊天记录中生成,开始分词...",corpus.size()),true);
+        bot.sendGroupMessage(message.getGroupId(), MessageHolder.instanceText(MessageFormat.format("词云图片将从{0}条聊天记录中生成,开始分词...",corpus.size())));
         try{
             // 开始分词
             long l = System.currentTimeMillis();
@@ -643,12 +642,12 @@ public class ChatRecordService{
             // 设置权重和排除指定词语
             Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(strings));
             if(org.springframework.util.CollectionUtils.isEmpty(map)){
-                bot.sendGroupMessage(message.getGroupId(),"分词为0，本次不生成词云图",true);
+                bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("分词为0，本次不生成词云图"));
                 generateComplete(message);
                 return;
             }
             long l1 = System.currentTimeMillis();
-            bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("分词完成:{0}条\n耗时:{1}毫秒\n开始生成图片...",strings.size(),l1 - l),true);
+            bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText(MessageFormat.format("分词完成:{0}条\n耗时:{1}毫秒\n开始生成图片...",strings.size(),l1 - l)));
             // 开始生成图片
             String fileName = regexEnum.getUnit().toString() + "-" + message.getGroupId() + ".png";
             outPutPath = FileUtil.mkdirs(FileUtil.getWordCloudDir()) + File.separator + fileName;
@@ -660,13 +659,11 @@ public class ChatRecordService{
             WordCloudUtil.generateWordCloudImage(map,outPutPath);
             log.info("生成词云图完成,耗时:{}",System.currentTimeMillis() - l1);
             // 生成图片完成,发送图片
-            KQCodeUtils instance = KQCodeUtils.getInstance();
             String s = abstractPathConfig.webWordCloudPath() + "/" + fileName + "?t=" + System.currentTimeMillis();
             log.info("群词云图片地址：{}",s);
-            String imageCq = instance.toCq(CqCodeTypeEnum.image.getType(), "file=" + s);
-            bot.sendGroupMessage(message.getGroupId(),imageCq,false);
+            bot.sendGroupMessage(message.getGroupId(), Collections.singletonList(MessageHolder.instanceImage(s)));
         }catch (Exception e){
-            bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("生成词云图片异常：{0}",e.getMessage()),true);
+            bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText(MessageFormat.format("生成词云图片异常：{0}",e.getMessage())));
             log.error("生成词云图片异常",e);
         }finally {
             generateComplete(message);

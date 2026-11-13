@@ -6,14 +6,14 @@ import com.haruhi.botserver.bot.handler.IDebounceableNoticeHandler;
 import com.haruhi.botserver.bot.session.Bot;
 import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
-import com.haruhi.botserver.integration.onebot.model.CqCodeTypeEnum;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.integration.onebot.model.NoticeTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.event.NoticeEvent;
-import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -42,12 +42,10 @@ public class GroupIncreaseHandler implements IDebounceableNoticeHandler {
         if(!groupIncrease || event.isSelfMsg()){
             return;
         }
-        KQCodeUtils instance = KQCodeUtils.getInstance();
-        String at = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + event.getUserId());
-        String face = instance.toCq(CqCodeTypeEnum.face.getType(), "id=" + 144);
-        bot.sendGroupMessage(event.getGroupId(),
-                MessageFormat.format("{0} 欢迎小可爱~{1}",at, face.repeat(3)),
-                false);
+        List<MessageHolder> messageHolders = MessageHolder.instanceAt(String.valueOf(event.getUserId()));
+        messageHolders.addAll(MessageHolder.instanceText(" 欢迎小可爱~"));
+        messageHolders.addAll(MessageHolder.instanceFace("144", 3));
+        bot.sendGroupMessage(event.getGroupId(), messageHolders);
     }
 
 }

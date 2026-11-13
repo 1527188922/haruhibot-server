@@ -42,7 +42,7 @@ public class YandexImageSearchProvider implements ImageSearchProvider {
         List<SearchItem> results = searchResponse.getRaw();
         if (CollectionUtils.isEmpty(results)) {
             bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
-                    "Yandex：未搜索到结果", true);
+                    MessageHolder.instanceText("Yandex：未搜索到结果"));
             return;
         }
         List<ForwardMsgItem> forwardMsgs = new ArrayList<>();

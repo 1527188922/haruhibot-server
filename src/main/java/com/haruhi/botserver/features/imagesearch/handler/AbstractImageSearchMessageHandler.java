@@ -1,6 +1,7 @@
 package com.haruhi.botserver.features.imagesearch.handler;
 
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.bot.handler.IAllMessageHandler;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public abstract class AbstractImageSearchMessageHandler implements IAllMessageHa
         }
 
         if (match.isWaitingImage()) {
-            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), waitingImageMessage(), true);
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText(waitingImageMessage()));
             return true;
         }
 
@@ -65,7 +66,7 @@ public abstract class AbstractImageSearchMessageHandler implements IAllMessageHa
     private void startSearch(Bot bot, Message message, ImageSearchMatch match) {
         String s = this.startSearchMessage();
         if (StringUtils.isNotBlank(s)) {
-            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), s, true);
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText(s));
         }
         for (ImageSearchProvider provider : providers()) {
             try {
@@ -73,7 +74,7 @@ public abstract class AbstractImageSearchMessageHandler implements IAllMessageHa
             } catch (Exception e) {
                 log.error("{}{} provider:{}", errorPrefix(), match.getImageUrl(), provider.type(), e);
                 bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
-                        provider.type() + " " + errorPrefix() + e.getMessage(), true);
+                        MessageHolder.instanceText(provider.type() + " " + errorPrefix() + e.getMessage()));
             }
         }
         triggerResolver.clear(match.getCacheKey());

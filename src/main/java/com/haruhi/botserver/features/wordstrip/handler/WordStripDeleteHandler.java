@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.features.wordstrip.persistence.entity.WordStripSqlite;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.features.wordstrip.service.WordStripSqliteService;
@@ -68,7 +69,7 @@ public class WordStripDeleteHandler implements IGroupMessageHandler {
                 bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("删除词条成功：{0}",finalKeyWord),false);
             }
         }catch (Exception e){
-            bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("删除词条异常：{0}",e.getMessage()),true);
+            bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText(MessageFormat.format("删除词条异常：{0}",e.getMessage())));
             log.error("删除词条异常",e);
         }
     }

@@ -4,6 +4,7 @@ import com.haruhi.botserver.bot.handler.IAllMessageHandler;
 
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.shared.util.MatchResult;
 import com.haruhi.botserver.features.ai.support.OpenAiServiceHolder;
 import com.haruhi.botserver.bot.session.Bot;
@@ -61,7 +62,7 @@ public class DeepSeekHandler implements IAllMessageHandler {
             CACHE.put(key, deepSeek);
         }
         String res = deepSeek.call(data);
-        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),res,true);
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(res));
         return true;
     }
     private MatchResult<String> matches(Message message){

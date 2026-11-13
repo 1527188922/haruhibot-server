@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.features.wordstrip.persistence.entity.WordStripSqlite;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.features.wordstrip.service.WordStripSqliteService;
@@ -46,7 +47,7 @@ public class WordStripShowHandler implements IGroupMessageHandler {
         queryWrapper.eq(WordStripSqlite::getGroupId,message.getGroupId()).eq(WordStripSqlite::getSelfId,message.getSelfId());
         List<WordStripSqlite> list = wordStripService.list(queryWrapper);
         if(CollectionUtils.isEmpty(list)){
-            bot.sendGroupMessage(message.getGroupId(),"本群没有词条",true);
+            bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("本群没有词条"));
             return;
         }
         bot.sendGroupMessage(message.getGroupId(), processWordStrip(list),false);

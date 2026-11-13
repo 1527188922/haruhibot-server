@@ -72,6 +72,17 @@ public class MessageHolder{
         return messageHolders;
     }
 
+    public static List<MessageHolder> instanceFace(String id, int repeat){
+        List<MessageHolder> messageHolders = new ArrayList<>();
+        repeat = Math.max(repeat, 1);
+        for (int i = 0; i < repeat; i++) {
+            MessageData messageData = new MessageData();
+            messageData.setId(id);
+            messageHolders.add(new MessageHolder(MessageHolderTypeEnum.face.name(), messageData));
+        }
+        return messageHolders;
+    }
+
     public static MessageHolder instanceJson(String json){
         MessageData messageData = new MessageData();
         messageData.setData(json);

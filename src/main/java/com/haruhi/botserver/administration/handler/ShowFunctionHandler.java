@@ -7,6 +7,7 @@ import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.bot.dispatch.MessageDispatcher;
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -40,7 +41,7 @@ public class ShowFunctionHandler implements IAllMessageHandler {
             stringBuilder.append("id：").append(eventType.weight()).append("\n");
             stringBuilder.append("名称：").append(eventType.funName()).append("\n");
         }
-        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),stringBuilder.toString(),true);
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(stringBuilder.toString()));
         return true;
     }
 

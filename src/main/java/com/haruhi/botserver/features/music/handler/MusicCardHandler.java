@@ -14,10 +14,10 @@ import com.haruhi.botserver.features.music.service.MusicServiceFactory;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.ibatis.javassist.tools.rmi.ObjectNotFoundException;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -71,7 +71,7 @@ public class MusicCardHandler implements IAllMessageHandler {
         }else if(songs != null){
             // 存在缓存 输入了纯数字
             if(index <= 0 || index > songs.size()){
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"不存在序号" + index + "的歌曲",true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("不存在序号" + index + "的歌曲"));
                 return true;
             }
             // 若这里删除缓存，那么一次搜索只能点一次歌
@@ -91,7 +91,7 @@ public class MusicCardHandler implements IAllMessageHandler {
         return false;
     }
     private void search(Bot bot,Message message,String songName){
-        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"开始搜索歌曲：" + songName,true);
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("开始搜索歌曲：" + songName));
         doSearch(bot,message,songName);
     }
 
@@ -103,7 +103,7 @@ public class MusicCardHandler implements IAllMessageHandler {
         try {
             List<Song> res = MusicServiceFactory.getMusicService(MusicServiceFactory.MusicType.cloudMusic).searchMusic(musicName);
             if(CollectionUtils.isEmpty(res)){
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"未找到歌曲：" + musicName,true);
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("未找到歌曲：" + musicName));
                 return;
             }
             if(res.size() == 1){
@@ -161,8 +161,11 @@ public class MusicCardHandler implements IAllMessageHandler {
 
     private void sendMusicCard(Bot bot, Message message, List<Song> songs, Integer index, boolean checked) throws ObjectNotFoundException {
         AbstractMusicService musicService = MusicServiceFactory.getMusicService(MusicServiceFactory.MusicType.cloudMusic);
-        String musicCq = musicService.createMusicCq(songs, index,checked);
-        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),musicCq,false);
+        List<MessageHolder> music = musicService.createMusicCq(songs, index,checked);
+        if (CollectionUtils.isEmpty(music)) {
+            return;
+        }
+        bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), music);
     }
 
 

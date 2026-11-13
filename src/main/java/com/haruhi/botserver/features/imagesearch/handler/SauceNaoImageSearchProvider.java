@@ -49,13 +49,13 @@ public class SauceNaoImageSearchProvider implements ImageSearchProvider {
                     .search(SearchInput.byUrl(imageUrl));
             List<SearchItem> resultList = new ArrayList<>(searchResponse.getRaw());
             if (CollectionUtils.isEmpty(resultList)) {
-                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), "SauceNao：未搜索到结果", true);
+                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText("SauceNao：未搜索到结果"));
                 return;
             }
             resultList.sort(Comparator.comparingDouble(SearchItem::getSimilarity).reversed());
             sendResult(bot, resultList, message);
         } catch (Exception e) {
-            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), "SauceNao：搜图异常：" + e.getMessage(), true);
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText("SauceNao：搜图异常：" + e.getMessage()));
             DbLog.error(BusinessModuleEnum.IMAGE_SEARCH,"SauceNao搜图异常", e);
         }
     }
