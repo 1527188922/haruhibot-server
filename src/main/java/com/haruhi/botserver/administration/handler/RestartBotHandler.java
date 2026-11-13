@@ -46,10 +46,10 @@ public class RestartBotHandler implements IPrivateMessageHandler {
         try {
             systemService.restartBot();
         }catch (BusinessException e){
-            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText(e.getErrorMsg()));
+            bot.sendPrivateMessage(message.getUserId(), MessageHolder.instanceText(e.getErrorMsg()));
             return;
         }
-        bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText("重启命令已执行"));
+        bot.sendPrivateMessage(message.getUserId(), MessageHolder.instanceText("重启命令已执行"));
     }
 
 }

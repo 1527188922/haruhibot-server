@@ -223,6 +223,10 @@ public class Bot implements Closeable {
         sendMessage(null, groupId, MessageTypeEnum.group.getType(), message);
     }
 
+    public void sendPrivateMessage(Long userId, List<MessageHolder> message){
+        sendMessage(userId, null, MessageTypeEnum.privat.getType(), message);
+    }
+
     public void sendMessage(Long userId, Long groupId, String messageType, List<MessageHolder> message){
         RequestBox<Params<List<MessageHolder>>> paramsRequestBox = new RequestBox<>();
         paramsRequestBox.setAction(QqClientActionEnum.SEND_MSG.getAction());

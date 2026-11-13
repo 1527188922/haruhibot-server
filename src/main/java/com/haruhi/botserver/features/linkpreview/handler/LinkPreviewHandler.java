@@ -56,14 +56,14 @@ public class LinkPreviewHandler implements IPrivateMessageHandler {
     private void handle(Bot bot, Message message, String link) {
         AnalysisMagnetLinkResp resp = request(link);
         if(resp == null || resp.getCount() == null || resp.getCount() == 0){
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("磁力未解析出结果\n"+link));
+            bot.sendPrivateMessage(message.getUserId(),MessageHolder.instanceText("磁力未解析出结果\n"+link));
             return;
         }
         if(StringUtils.isNotBlank(resp.getError())){
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("磁力解析异常\n"+resp.getError()));
+            bot.sendPrivateMessage(message.getUserId(),MessageHolder.instanceText("磁力解析异常\n"+resp.getError()));
             return;
         }
-        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(formatterResp(resp)));
+        bot.sendPrivateMessage(message.getUserId(),MessageHolder.instanceText(formatterResp(resp)));
     }
 
     private String formatterResp(AnalysisMagnetLinkResp resp){
