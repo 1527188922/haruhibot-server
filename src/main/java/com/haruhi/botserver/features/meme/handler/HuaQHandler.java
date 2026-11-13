@@ -7,7 +7,6 @@ import cn.hutool.core.img.gif.AnimatedGifEncoder;
 import cn.hutool.core.img.gif.GifDecoder;
 import com.haruhi.botserver.bootstrap.WebResourceConfig;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
-import com.haruhi.botserver.integration.onebot.model.MessageTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
@@ -107,7 +106,7 @@ public class HuaQHandler implements IGroupMessageHandler {
         log.info("huaq图片url ：{}",imageUrl);
 
         MessageHolder messageHolder = MessageHolder.instanceImage(imageUrl);
-        bot.sendMessage(null,groupId, MessageTypeEnum.group.getType(), Collections.singletonList(messageHolder));
+        bot.sendGroupMessage(groupId, Collections.singletonList(messageHolder));
     }
 
 

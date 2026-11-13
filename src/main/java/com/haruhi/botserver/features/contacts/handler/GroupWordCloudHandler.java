@@ -54,7 +54,7 @@ public class GroupWordCloudHandler implements IGroupMessageHandler {
             return false;
         }
         if(lock.containsKey(String.valueOf(message.getGroupId()) + message.getSelfId())){
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+            bot.sendGroupMessage(message.getGroupId(),
                     MessageHolder.instanceText("词云正在生成中...莫着急"));
             return true;
         }else{

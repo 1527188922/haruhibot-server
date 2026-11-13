@@ -72,14 +72,14 @@ public class WhoTaggedMeHandler  implements IGroupMessageHandler {
 
         List<ChatRecordVo> list = pageInfo.getList();
         if (list.isEmpty()) {
-            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText("最近好像没人at你。。"));
+            bot.sendGroupMessage(message.getGroupId(), MessageHolder.instanceText("最近好像没人at你。。"));
             return true;
         }
         ChatRecordVo first = list.getFirst();
 
         List<MessageHolder> messageHolders = MessageHolder.instanceReply(first.getMessageId());
         messageHolders.addAll(MessageHolder.instanceText("这里有人at你"));
-        bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), messageHolders);
+        bot.sendGroupMessage(message.getGroupId(), messageHolders);
         return true;
     }
 }

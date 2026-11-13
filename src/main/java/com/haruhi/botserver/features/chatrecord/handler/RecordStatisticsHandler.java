@@ -71,7 +71,7 @@ public class RecordStatisticsHandler implements IGroupMessageHandler {
             List<ChatRecordVo> recordVoList = chatRecordGroupMapper.chatStats(chatTableName, selfId);
             log.info("聊天记录分组执行sql cost:{}",System.currentTimeMillis() - l);
             if(CollectionUtils.isEmpty(recordVoList)){
-                bot.sendMessage(message.getUserId(), groupId, message.getMessageType(),
+                bot.sendGroupMessage(groupId,
                         MessageHolder.instanceText("暂无聊天记录"));
                 return;
             }
@@ -123,7 +123,7 @@ public class RecordStatisticsHandler implements IGroupMessageHandler {
             }
         }catch (Exception e){
             log.error("聊天统计异常",e);
-            bot.sendMessage(message.getUserId(), groupId,message.getMessageType(),
+            bot.sendGroupMessage(groupId,
                     MessageHolder.instanceText("聊天统计异常\n"+e.getMessage()));
         }
     }

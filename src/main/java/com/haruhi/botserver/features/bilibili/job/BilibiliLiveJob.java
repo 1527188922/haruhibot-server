@@ -330,7 +330,7 @@ public class BilibiliLiveJob extends AbstractJob {
             List<MessageHolder> groupMessage = atAllGroupIds.contains(groupId)
                     ? this.messageWithAtAll(bot, selfId, groupId, subscribe.getUid(), message)
                     : message;
-            bot.sendMessage(null, groupId, MessageTypeEnum.group.getType(), groupMessage);
+            bot.sendGroupMessage(groupId, groupMessage);
         }
         Set<Long> joinedFriends = joinedFriendIds.getOrDefault(selfId, Collections.emptySet());
         for (Long friendId : friendIds) {

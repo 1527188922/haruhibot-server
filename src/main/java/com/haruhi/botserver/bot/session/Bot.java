@@ -160,24 +160,6 @@ public class Bot implements Closeable {
     }
 
     /**
-     * 发送群消息
-     * @param groupId 群号
-     * @param message 消息
-     */
-    public void sendGroupMessage(Long groupId, List<MessageHolder> message){
-        RequestBox<Params<List<MessageHolder>>> requestBox = new RequestBox<>();
-        requestBox.setAction(QqClientActionEnum.SEND_GROUP_MSG.getAction());
-
-        Params<List<MessageHolder>> params = new Params<>();
-        params.setMessageType(MessageTypeEnum.group.getType());
-        params.setGroupId(groupId);
-        params.setMessage(message);
-
-        requestBox.setParams(params);
-        sendMessage(JSONObject.toJSONString(requestBox));
-    }
-
-    /**
      * 发送消息
      * 根据messageType来发送群还是私聊
      * @param userId 对方qq
@@ -219,6 +201,26 @@ public class Bot implements Closeable {
         pokeRequest.setParams(params);
 
         sendMessage(JSONObject.toJSONString(pokeRequest));
+    }
+
+    /**
+     * 发送群消息
+     * @param groupId 群号
+     * @param message 消息
+     */
+    public void sendGroupMessage(Long groupId, List<MessageHolder> message){
+//        RequestBox<Params<List<MessageHolder>>> requestBox = new RequestBox<>();
+//        requestBox.setAction(QqClientActionEnum.SEND_GROUP_MSG.getAction());
+//
+//        Params<List<MessageHolder>> params = new Params<>();
+//        params.setMessageType(MessageTypeEnum.group.getType());
+//        params.setGroupId(groupId);
+//        params.setMessage(message);
+//
+//        requestBox.setParams(params);
+//        sendMessage(JSONObject.toJSONString(requestBox));
+
+        sendMessage(null, groupId, MessageTypeEnum.group.getType(), message);
     }
 
     public void sendMessage(Long userId, Long groupId, String messageType, List<MessageHolder> message){

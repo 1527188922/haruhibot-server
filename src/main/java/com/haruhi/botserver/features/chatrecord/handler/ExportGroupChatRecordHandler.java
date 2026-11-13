@@ -70,7 +70,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageHandler {
             return true;
         }
         if(!lock.compareAndSet(false,true)){
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("正在生成Excel中，请稍等..."));
+            bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("正在生成Excel中，请稍等..."));
             return true;
         }
         exportExcel(bot, message, lock);
@@ -78,12 +78,12 @@ public class ExportGroupChatRecordHandler implements IGroupMessageHandler {
     }
    
     private void exportExcel(Bot bot, Message message, AtomicBoolean lock){
-        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("开始生成Excel文件..."));
+        bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("开始生成Excel文件..."));
         try {
             List<String> atQQs = message.getAtQQs();
             BaseResp<File> baseResp = chatRecordService.exportGroupChatRecord(message.getGroupId(), atQQs);
             if (!BaseResp.SUCCESS_CODE.equals(baseResp.getCode())) {
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText(baseResp.getMsg()));
+                bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText(baseResp.getMsg()));
                 return;
             }
             File excelFile = baseResp.getData();
@@ -120,7 +120,7 @@ public class ExportGroupChatRecordHandler implements IGroupMessageHandler {
         }catch (Exception e){
             log.info("导出群聊记录异常 groupId:{}",message.getGroupId(), e);
             String err = "导出群聊记录异常\n"+ "群号："+ message.getGroupId() + "\n"+e.getMessage();
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+            bot.sendGroupMessage(message.getGroupId(),
                     MessageHolder.instanceText(err));
         }finally {
             lock.set(false);

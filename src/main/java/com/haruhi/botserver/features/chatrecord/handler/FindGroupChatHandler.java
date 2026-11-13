@@ -60,7 +60,7 @@ public class FindGroupChatHandler implements IGroupMessageHandler {
                     args = matcher.group(1);
                     num = Integer.valueOf(args);
                 }catch (Exception e){
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),
+                    bot.sendGroupMessage(message.getGroupId(),
                             MessageHolder.instanceText(MessageFormat.format("错误的参数[{0}],请输入整数...",args)));
                     return null;
                 }

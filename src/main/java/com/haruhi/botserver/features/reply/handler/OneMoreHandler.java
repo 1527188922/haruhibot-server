@@ -49,7 +49,7 @@ public class OneMoreHandler implements IGroupMessageHandler {
 
         if (pair.getLeft().equals(message.getRawMessage())) {
             if (!pair.getRight()) {
-                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), message.getMessage());
+                bot.sendGroupMessage(message.getGroupId(), message.getMessage());
                 pair.setValue(true);
             }
         }else{
