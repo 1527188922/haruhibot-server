@@ -54,8 +54,7 @@ public class BilibiliVideoService {
                 .eq(Objects.nonNull(req.getOwnerMid()), BilibiliVideoSqlite::getOwnerMid, req.getOwnerMid())
                 .like(StringUtils.isNotBlank(req.getOwnerName()), BilibiliVideoSqlite::getOwnerName, req.getOwnerName())
                 .like(StringUtils.isNotBlank(req.getTag()), BilibiliVideoSqlite::getTag, req.getTag())
-                .orderByDesc(BilibiliVideoSqlite::getPubdate)
-                .orderByDesc(BilibiliVideoSqlite::getId);
+                .orderByDesc(BilibiliVideoSqlite::getId, BilibiliVideoSqlite::getPubdate);
         // 标签是逗号分隔保存的，instr 可以精确匹配"完整的一个标签"，不会被"财经商业"命中"财经"
         if (StringUtils.isNotBlank(req.getTagExact())) {
             queryWrapper.apply("instr(',' || tag || ',', ',' || {0} || ',') > 0", req.getTagExact());

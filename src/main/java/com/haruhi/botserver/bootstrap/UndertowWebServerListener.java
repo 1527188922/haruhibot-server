@@ -21,8 +21,7 @@ public class UndertowWebServerListener implements ApplicationListener<WebServerI
     @Override
     public void onApplicationEvent(WebServerInitializedEvent event) {
         WebServer webServer = event.getWebServer();
-        if (webServer instanceof UndertowServletWebServer) {
-            UndertowWebServer undertowServer = (UndertowServletWebServer) webServer;
+        if (webServer instanceof UndertowServletWebServer undertowServer) {
             Field[] fields = UndertowWebServer.class.getDeclaredFields();
             for (Field field : fields) {
                 field.setAccessible(true);
@@ -33,8 +32,8 @@ public class UndertowWebServerListener implements ApplicationListener<WebServerI
                     log.error("获取属性异常",e);
                     continue;
                 }
-                if (o instanceof Undertow) {
-                    this.undertow = (Undertow) o;
+                if (o instanceof Undertow u) {
+                    this.undertow = u;
                     break;
                 }
             }
