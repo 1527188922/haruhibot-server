@@ -17,28 +17,25 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 /**
- * 机器人是服务端
- * gocq（客户端）使用反向ws连接
+ * 机器人反向ws入口
+ * <p>
+ * 机器人是服务端，gocq（客户端）使用反向ws连接
  */
 @Slf4j
 @Component
-public class BotServer extends TextWebSocketHandler {
+public class BotWsHandler extends TextWebSocketHandler {
 
     @Autowired
     private EventRouter eventRouter;
+    @Autowired
+    private BotWsState botWsState;
 
-    // 逻辑启停 实际上服务并没有停止 只是拒绝连接(握手拦截器中去拒绝)
-    private volatile boolean isRunning = true;
-
-    public boolean isRunning() {
-        return isRunning;
-    }
     public void stop(){
-        isRunning = false;
+        botWsState.stop();
         BotContainer.removeAllClient();
     }
     public void start(){
-        isRunning = true;
+        botWsState.start();
     }
 
     @Override

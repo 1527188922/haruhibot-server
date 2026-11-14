@@ -9,7 +9,6 @@ import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.configuration.service.ConfigHub;
 
 import cn.hutool.core.util.RuntimeUtil;
-import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botserver.bootstrap.SysConstants;
 import com.haruhi.botserver.infrastructure.persistence.DataBaseConst;
@@ -29,7 +28,7 @@ import com.haruhi.botserver.administration.model.BotWebSocketInfo;
 import com.haruhi.botserver.administration.model.FileNode;
 import com.haruhi.botserver.administration.model.DatabaseInfoNode;
 import com.haruhi.botserver.bot.session.BotContainer;
-import com.haruhi.botserver.integration.onebot.websocket.BotServer;
+import com.haruhi.botserver.integration.onebot.websocket.BotWsState;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
@@ -70,15 +69,8 @@ public class SystemService {
     private SqliteSchemaMapper sqliteSchemaMapper;
     @Autowired
     private ConfigHub configHub;
-
-    private BotServer botServer;
-
-    private BotServer getBotServer() {
-        if (botServer == null) {
-            botServer = SpringUtil.getBean(BotServer.class);
-        }
-        return botServer;
-    }
+    @Autowired
+    private BotWsState botWsState;
 
     public void writeStopScript(){
         String s = null;
@@ -351,7 +343,7 @@ public class SystemService {
 
     public BotWebSocketInfo getBotWebSocketInfo(){
         BotWebSocketInfo botWebSocketInfo = new BotWebSocketInfo();
-        botWebSocketInfo.setRunning(getBotServer().isRunning());
+        botWebSocketInfo.setRunning(botWsState.isRunning());
         botWebSocketInfo.setConnections(BotContainer.getConnections());
         botWebSocketInfo.setMaxConnections(Configs.getInt(ConfigKey.WS_MAX_CONNECTIONS, 0));
         botWebSocketInfo.setPath(SysConstants.WEB_SOCKET_PATH);

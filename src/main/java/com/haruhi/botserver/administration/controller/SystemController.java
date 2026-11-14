@@ -2,7 +2,6 @@ package com.haruhi.botserver.administration.controller;
 
 import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
-import com.haruhi.botserver.configuration.service.ConfigHub;
 import com.haruhi.botserver.infrastructure.cache.SqlCacheStore;
 
 import cn.hutool.core.io.LineHandler;
@@ -38,7 +37,7 @@ import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import com.haruhi.botserver.bot.session.BotContainer;
-import com.haruhi.botserver.integration.onebot.websocket.BotServer;
+import com.haruhi.botserver.integration.onebot.websocket.BotWsHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,8 +55,6 @@ import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 @RestController
 @Slf4j
@@ -68,11 +65,9 @@ public class SystemController {
     private SystemService systemService;
 
     @Autowired
-    private BotServer botServer;
+    private BotWsHandler botWsHandler;
     @Autowired
     private SqliteDatabaseService sqliteDatabaseService;
-    @Autowired
-    private ConfigHub configHub;
     @Autowired
     private SqlCacheStore sqlCacheStore;
     @Autowired
@@ -271,11 +266,11 @@ public class SystemController {
     @PostMapping("/botws/opt")
     public HttpResp botWebSocketOperation(@RequestParam String command) {
         if ("1".equals(command)) {
-            botServer.start();
+            botWsHandler.start();
             return HttpResp.success("已启动",systemService.getBotWebSocketInfo());
         }
         if ("2".equals(command)) {
-            botServer.stop();
+            botWsHandler.stop();
             return HttpResp.success("已逻辑停止",systemService.getBotWebSocketInfo());
         }
         return HttpResp.fail("不支持的操作",null);
