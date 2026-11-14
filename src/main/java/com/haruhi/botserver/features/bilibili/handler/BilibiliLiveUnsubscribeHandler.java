@@ -6,7 +6,6 @@ import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.features.bilibili.persistence.entity.BilibiliSubscribeSqlite;
 import com.haruhi.botserver.features.notification.support.PushTargetUtil;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -44,14 +43,12 @@ public class BilibiliLiveUnsubscribeHandler extends AbstractBilibiliSubscribeHan
         if (Objects.isNull(uid)) {
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(() -> {
-            try {
-                this.unsubscribe(bot, message, uid);
-            } catch (Exception e) {
-                log.error("取消b站订阅异常 uid:{}", uid, e);
-                this.reply(bot, message, StrFormatter.format("取消b站订阅异常：{}", e.getMessage()));
-            }
-        });
+        try {
+            this.unsubscribe(bot, message, uid);
+        } catch (Exception e) {
+            log.error("取消b站订阅异常 uid:{}", uid, e);
+            this.reply(bot, message, StrFormatter.format("取消b站订阅异常：{}", e.getMessage()));
+        }
         return true;
     }
 

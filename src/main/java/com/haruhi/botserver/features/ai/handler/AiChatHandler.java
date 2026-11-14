@@ -17,7 +17,6 @@ import com.haruhi.botserver.features.ai.client.model.qingyunke.ChatResp;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
 import com.haruhi.botserver.shared.util.MatchResult;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -78,32 +77,33 @@ public class AiChatHandler implements IAllMessageHandler {
         if(!matchResult.isMatched()){
             return false;
         }
-
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            Map<String, Object> urlParam = new HashMap<>(3);
-            urlParam.put("key","free");
-            urlParam.put("appid",0);
-            urlParam.put("msg",matchResult.getData());
-
-            String s = HttpUtil.urlWithForm(Configs.getStr(ConfigKey.URL_CONF_QINGYUNKE_AI_CHAT), urlParam, StandardCharsets.UTF_8, false);
-            HttpRequest httpRequest = HttpUtil.createGet(s).timeout(8000);
-            try (HttpResponse response = httpRequest.execute()){
-                String body = response.body();
-                if (StringUtils.isBlank(body)) {
-                    return;
-                }
-                ChatResp chatResp = JSONObject.parseObject(body, ChatResp.class);
-                if(chatResp != null){
-                    String content = chatResp.getContent();
-                    if(content != null){
-                        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),processContent(content, bot.getBotName()),false);
-                    }
-                }
-            }catch (Exception e){
-                DbLog.error(BusinessModuleEnum.MSG_HANDLE,"青云客api请求异常",e);
-            }
-        });
+        handle(bot, message, matchResult.getData());
         return true;
+    }
+
+    private void handle(Bot bot, Message message, String text) {
+        Map<String, Object> urlParam = new HashMap<>(3);
+        urlParam.put("key","free");
+        urlParam.put("appid",0);
+        urlParam.put("msg",text);
+
+        String s = HttpUtil.urlWithForm(Configs.getStr(ConfigKey.URL_CONF_QINGYUNKE_AI_CHAT), urlParam, StandardCharsets.UTF_8, false);
+        HttpRequest httpRequest = HttpUtil.createGet(s).timeout(8000);
+        try (HttpResponse response = httpRequest.execute()){
+            String body = response.body();
+            if (StringUtils.isBlank(body)) {
+                return;
+            }
+            ChatResp chatResp = JSONObject.parseObject(body, ChatResp.class);
+            if(chatResp != null){
+                String content = chatResp.getContent();
+                if(content != null){
+                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),processContent(content, bot.getBotName()),false);
+                }
+            }
+        }catch (Exception e){
+            DbLog.error(BusinessModuleEnum.MSG_HANDLE,"青云客api请求异常",e);
+        }
     }
 
     private static String reg ="(?<=\\{face:)[0-9]*(?=\\})";

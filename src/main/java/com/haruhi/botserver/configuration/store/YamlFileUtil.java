@@ -100,7 +100,7 @@ public final class YamlFileUtil {
             // 列表统一用逗号连接，与 ConfigType.LIST 的解析方式保持一致
             StringBuilder sb = new StringBuilder();
             for (Object item : iterable) {
-                if (sb.length() > 0) {
+                if (!sb.isEmpty()) {
                     sb.append(',');
                 }
                 sb.append(item);

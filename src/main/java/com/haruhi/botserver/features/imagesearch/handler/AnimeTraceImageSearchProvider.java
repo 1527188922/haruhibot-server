@@ -42,13 +42,13 @@ public class AnimeTraceImageSearchProvider implements ImageSearchProvider {
         Object errorMessage = searchResponse.getExtra().get("message");
         if (errorMessage != null && StringUtils.isNotBlank(String.valueOf(errorMessage))) {
             bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
-                    "AnimeTrace：" + errorMessage, true);
+                    MessageHolder.instanceText("AnimeTrace：" + errorMessage));
             return;
         }
         List<SearchItem> results = searchResponse.getRaw();
         if (CollectionUtils.isEmpty(results)) {
             bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
-                    "AnimeTrace：未搜索到结果", true);
+                    MessageHolder.instanceText("AnimeTrace：未搜索到结果"));
             return;
         }
         List<ForwardMsgItem> forwardMsgs = new ArrayList<>();

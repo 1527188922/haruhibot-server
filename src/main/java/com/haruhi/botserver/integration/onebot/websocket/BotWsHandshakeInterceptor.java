@@ -1,9 +1,8 @@
-package com.haruhi.botserver.infrastructure.web.interceptor;
+package com.haruhi.botserver.integration.onebot.websocket;
 
 import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.bot.session.BotContainer;
-import com.haruhi.botserver.integration.onebot.websocket.BotServer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.HttpHeaders;
@@ -13,24 +12,39 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.WebSocketHandler;
-import org.springframework.web.socket.handler.ExceptionWebSocketHandlerDecorator;
-import org.springframework.web.socket.handler.LoggingWebSocketHandlerDecorator;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * 拦截握手
+ * 机器人反向ws握手拦截器
+ * <p>
+ * 所有拒绝逻辑都必须放在 beforeHandshake：afterHandshake 时握手已完成，设置状态码无法阻止连接
  */
 @Slf4j
 @Component
-public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
+public class BotWsHandshakeInterceptor implements HandshakeInterceptor {
+
+    private final BotWsState botWsState;
+
+    public BotWsHandshakeInterceptor(BotWsState botWsState) {
+        this.botWsState = botWsState;
+    }
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
-        log.info("收到握手请求 {}:{}",request.getRemoteAddress().getHostString(),request.getRemoteAddress().getPort());
-        if (!checkBotServerRunning(wsHandler)) {
+        String host = request.getRemoteAddress().getHostString();
+        int port = request.getRemoteAddress().getPort();
+        log.info("收到握手请求 {}:{}",host,port);
+        if (!checkAuthorization(request)) {
+            response.setStatusCode(HttpStatus.FORBIDDEN);
+            log.error("无token或token错误，禁止握手！ {}:{}",host,port);
+            return false;
+        }
+        if (!botWsState.isRunning()) {
+            response.setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
+            log.info("机器人反向ws已逻辑停止，禁止握手 {}:{}",host,port);
             return false;
         }
         return checkConnections();
@@ -38,14 +52,7 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
 
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
-        if(!checkAuthorization(request)){
-            doForbidden(request,response);
-        }
-    }
-
-    private void doForbidden(ServerHttpRequest request,ServerHttpResponse response){
-        response.setStatusCode(HttpStatus.FORBIDDEN);
-        log.error("无token或token错误，禁止握手！ {}:{}",request.getRemoteAddress().getHostString(),request.getRemoteAddress().getPort());
+        // 无需处理
     }
 
     /**
@@ -61,24 +68,6 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
         if(connections >= botMaxConnections){
             log.info("当前连接数:{},已达到最大连接数:{},本次禁止握手",connections, botMaxConnections);
             return false;
-        }
-        return true;
-    }
-
-
-    private boolean checkBotServerRunning(WebSocketHandler wsHandler){
-        if(wsHandler instanceof ExceptionWebSocketHandlerDecorator) {
-            ExceptionWebSocketHandlerDecorator exceptionWebSocketHandlerDecorator = (ExceptionWebSocketHandlerDecorator) wsHandler;
-            WebSocketHandler exceptionWebSocketHandlerDecoratorDelegate = exceptionWebSocketHandlerDecorator.getDelegate();
-
-            if(exceptionWebSocketHandlerDecoratorDelegate instanceof LoggingWebSocketHandlerDecorator) {
-                LoggingWebSocketHandlerDecorator loggingWebSocketHandlerDecorator = (LoggingWebSocketHandlerDecorator) exceptionWebSocketHandlerDecoratorDelegate;
-                WebSocketHandler loggingWebSocketHandlerDecoratorDelegate = loggingWebSocketHandlerDecorator.getDelegate();
-                if(loggingWebSocketHandlerDecoratorDelegate instanceof BotServer){
-                    BotServer botServer = (BotServer) loggingWebSocketHandlerDecoratorDelegate;
-                    return botServer.isRunning();
-                }
-            }
         }
         return true;
     }

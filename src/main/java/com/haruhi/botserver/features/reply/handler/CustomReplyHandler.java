@@ -7,7 +7,6 @@ import com.haruhi.botserver.integration.onebot.model.CqCodeTypeEnum;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.features.reply.persistence.entity.CustomReplySqlite;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import com.simplerobot.modules.utils.KQCodeUtils;
@@ -71,35 +70,36 @@ public class CustomReplyHandler implements IAllMessageHandler {
         if(!pass){
             return false;
         }
-        
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            if (customReply.getIsText() == 1) {
-                if(StringUtils.isBlank(customReply.getReply())){
-                    log.error("text类型自定义回复中，reply为空 {}", JSONObject.toJSONString(customReply));
-                    return;
-                }
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),customReply.getReply(),false);
-            }else{
-                CqCodeTypeEnum cqCodeTypeEnum = CqCodeTypeEnum.getByType(customReply.getCqType());
-                if(cqCodeTypeEnum == null){
-                    log.error("非text类型自定义回复中，cqType错误 {}", JSONObject.toJSONString(customReply));
-                    return;
-                }
 
-                if (StringUtils.isBlank(customReply.getRelativePath()) && StringUtils.isBlank(customReply.getUrl())) {
-                    log.error("非text类型自定义回复中，relativePath和url都为空 {}", JSONObject.toJSONString(customReply));
-                    return;
-                }
-                
-                String file = StringUtils.isNotBlank(customReply.getAbsolutePath()) ? "file:///" + customReply.getAbsolutePath()
-                        : customReply.getUrl();
-                String cq = KQCodeUtils.getInstance().toCq(cqCodeTypeEnum.getType(), "file=" + file);
+        handle(bot, message, customReply);
+        return true;
+    }
 
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);
+    private void handle(Bot bot, Message message, CustomReplySqlite customReply){
+        if (customReply.getIsText() == 1) {
+            if(StringUtils.isBlank(customReply.getReply())){
+                log.error("text类型自定义回复中，reply为空 {}", JSONObject.toJSONString(customReply));
+                return;
+            }
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),customReply.getReply(),false);
+        }else{
+            CqCodeTypeEnum cqCodeTypeEnum = CqCodeTypeEnum.getByType(customReply.getCqType());
+            if(cqCodeTypeEnum == null){
+                log.error("非text类型自定义回复中，cqType错误 {}", JSONObject.toJSONString(customReply));
+                return;
+            }
+
+            if (StringUtils.isBlank(customReply.getRelativePath()) && StringUtils.isBlank(customReply.getUrl())) {
+                log.error("非text类型自定义回复中，relativePath和url都为空 {}", JSONObject.toJSONString(customReply));
+                return;
             }
             
-        });
-        return true;
+            String file = StringUtils.isNotBlank(customReply.getAbsolutePath()) ? "file:///" + customReply.getAbsolutePath()
+                    : customReply.getUrl();
+            String cq = KQCodeUtils.getInstance().toCq(cqCodeTypeEnum.getType(), "file=" + file);
+
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),cq,false);
+        }
     }
     
 }

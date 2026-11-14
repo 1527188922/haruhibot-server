@@ -6,7 +6,6 @@ import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import com.haruhi.botserver.features.bilibili.model.BilibiliSubscribeTypeEnum;
-import com.haruhi.botserver.integration.onebot.model.MessageTypeEnum;
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.LiveStatusInfo;
 import com.haruhi.botserver.integration.onebot.model.GroupAtAllRemainInfo;
 import com.haruhi.botserver.integration.onebot.model.GroupMember;
@@ -330,7 +329,7 @@ public class BilibiliLiveJob extends AbstractJob {
             List<MessageHolder> groupMessage = atAllGroupIds.contains(groupId)
                     ? this.messageWithAtAll(bot, selfId, groupId, subscribe.getUid(), message)
                     : message;
-            bot.sendMessage(null, groupId, MessageTypeEnum.group.getType(), groupMessage);
+            bot.sendGroupMessage(groupId, groupMessage);
         }
         Set<Long> joinedFriends = joinedFriendIds.getOrDefault(selfId, Collections.emptySet());
         for (Long friendId : friendIds) {
@@ -339,7 +338,7 @@ public class BilibiliLiveJob extends AbstractJob {
                         selfId, friendId, subscribe.getUid());
                 continue;
             }
-            bot.sendMessage(friendId, null, MessageTypeEnum.privat.getType(), message);
+            bot.sendPrivateMessage(friendId, message);
         }
     }
 

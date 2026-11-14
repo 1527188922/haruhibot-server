@@ -144,14 +144,12 @@ public class MessageDispatcher {
                 if (toContinue(element, message)) {
                     continue;
                 }
-                if (element instanceof IAllMessageHandler) {
-                    IAllMessageHandler handler = (IAllMessageHandler) element;
+                if (element instanceof IAllMessageHandler handler) {
                     if (handler.onMessage(bot, message)) {
                         printLog("onMessage","群",message);
                         break;
                     }
-                } else if(element instanceof IGroupMessageHandler){
-                    IGroupMessageHandler handler = (IGroupMessageHandler) element;
+                } else if(element instanceof IGroupMessageHandler handler){
                     if (handler.onGroup(bot, message)) {
                         printLog("onGroup","群",message);
                         break;
@@ -174,14 +172,12 @@ public class MessageDispatcher {
                 if (toContinue(element, message)) {
                     continue;
                 }
-                if (element instanceof IAllMessageHandler) {
-                    IAllMessageHandler handler = (IAllMessageHandler) element;
+                if (element instanceof IAllMessageHandler handler) {
                     if (handler.onMessage(bot, message)) {
                         printLog("onMessage","私",message);
                         break;
                     }
-                } else if (element instanceof IPrivateMessageHandler) {
-                    IPrivateMessageHandler handler = (IPrivateMessageHandler) element;
+                } else if (element instanceof IPrivateMessageHandler handler) {
                     if (handler.onPrivate(bot, message)) {
                         printLog("onPrivate","私",message);
                         break;

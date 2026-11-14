@@ -10,6 +10,12 @@
       <div v-else class="bili-cover-empty"><i class="el-icon-picture-outline"></i></div>
       <span v-if="row.duration" class="bili-cover-duration">{{durationText}}</span>
       <span class="bili-cover-flag" :class="flagClass">{{flagText}}</span>
+      <!-- 服务器本地存在视频时，封面中间显示播放图标，点击打开播放弹框 -->
+      <div v-if="row.downloaded" class="bili-cover-play"
+           :title="`播放服务器上的视频：${row.videoFileName}`"
+           @click="$emit('play', row)">
+        <i class="el-icon-caret-right"></i>
+      </div>
     </div>
 
     <div class="bili-card-body">
@@ -62,14 +68,6 @@
         </el-tooltip>
         <el-button size="mini" plain icon="el-icon-refresh" @click="$emit('refresh', row)">刷新</el-button>
         <el-button size="mini" type="danger" plain icon="el-icon-delete" @click="$emit('delete', row)">删除</el-button>
-      </div>
-
-      <!-- 已下载时点击这里在页面内播放服务器上的视频 -->
-      <div class="bili-file" :class="{'bili-file-playable': row.downloaded}"
-           :title="row.downloaded ? `点击播放服务器上的视频：${row.videoFileName}` : `服务器本地文件：${row.videoFileName}（未下载）`"
-           @click="onFileClick">
-        <i :class="row.downloaded ? 'el-icon-video-play' : 'el-icon-document'"></i>
-        <span class="bili-file-name">{{row.videoFileName}}</span>
       </div>
 
       <div v-if="failed" class="bili-download-error">
@@ -152,13 +150,6 @@ export default {
     openSpace() {
       if (this.row.ownerMid) {
         window.open(`https://space.bilibili.com/${this.row.ownerMid}`, '_blank')
-      }
-    },
-    onFileClick() {
-      if (this.row.downloaded) {
-        this.$emit('play', this.row)
-      } else {
-        // this.$message.info('该视频还没有下载到服务器')
       }
     },
     formatTs(timestamp) {
@@ -264,6 +255,36 @@ export default {
 
     &.is-undownloaded {
       background-color: rgba(144, 147, 153, .85);
+    }
+  }
+
+  /* 封面中间的播放图标：半透明，悬停加深 */
+  .bili-cover-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, .3);
+    color: #fff;
+    font-size: 30px;
+    opacity: .8;
+    cursor: pointer;
+    transition: opacity .2s, background-color .2s;
+
+    i {
+      /* 三角形面积重心偏底边(左侧)，向右补偿一点才显得居中；图标缩小后补偿量也要跟着变小 */
+      margin-left: 2px;
+    }
+
+    &:hover {
+      opacity: 1;
+      background-color: rgba(0, 0, 0, .5);
     }
   }
 }
@@ -418,32 +439,6 @@ export default {
 
   .bili-downloaded-tag {
     line-height: 22px;
-  }
-}
-
-.bili-file {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 6px;
-  font-size: 11px;
-  color: #c0c4cc;
-
-  .bili-file-name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-.bili-file-playable {
-  color: #409eff;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
   }
 }
 

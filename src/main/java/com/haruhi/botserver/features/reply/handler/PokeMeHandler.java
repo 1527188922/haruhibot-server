@@ -3,7 +3,6 @@ package com.haruhi.botserver.features.reply.handler;
 import com.haruhi.botserver.bot.handler.INoticeHandler;
 
 import com.haruhi.botserver.bot.session.Bot;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.integration.onebot.model.NoticeTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.SubTypeEnum;
@@ -43,21 +42,19 @@ public class PokeMeHandler implements INoticeHandler {
             // 只对戳了机器人生效
             return;
         }
-
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            try {
-                int size = cache.size();
-                if(size > 0){
-                    String reply = cache.get(CommonUtil.randomInt(0, size - 1));
-                    if(StringUtils.isEmpty(reply)){
-                        bot.sendPoke(event.getUserId(), event.getGroupId());
-                    }else{
-                        bot.sendMessage(event.getUserId(),event.getGroupId(),event.getMessageType(), MessageHolder.instanceText(reply));
-                    }
+        // 被戳人=唧唧人 & 发送戳一戳的人!=唧唧人
+        try {
+            int size = cache.size();
+            if(size > 0){
+                String reply = cache.get(CommonUtil.randomInt(0, size - 1));
+                if(StringUtils.isEmpty(reply)){
+                    bot.sendPoke(event.getUserId(), event.getGroupId());
+                }else{
+                    bot.sendMessage(event.getUserId(),event.getGroupId(),event.getMessageType(), MessageHolder.instanceText(reply));
                 }
-            }catch (Exception e){
-                log.error("处理戳一戳发生异常",e);
             }
-        });
+        }catch (Exception e){
+            log.error("处理戳一戳发生异常", e);
+        }
     }
 }

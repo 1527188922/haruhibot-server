@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.features.wordstrip.persistence.entity.WordStripSqlite;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.features.wordstrip.service.WordStripSqliteService;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,17 +38,19 @@ public class WordStripShowHandler implements IGroupMessageHandler {
         if (!message.getRawMessage().matches(RegexEnum.WORD_STRIP_SHOW.getValue())) {
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            LambdaQueryWrapper<WordStripSqlite> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(WordStripSqlite::getGroupId,message.getGroupId()).eq(WordStripSqlite::getSelfId,message.getSelfId());
-            List<WordStripSqlite> list = wordStripService.list(queryWrapper);
-            if(CollectionUtils.isEmpty(list)){
-                bot.sendGroupMessage(message.getGroupId(),"本群没有词条",true);
-                return;
-            }
-            bot.sendGroupMessage(message.getGroupId(), processWordStrip(list),false);
-        });
+        handle(bot, message);
         return true;
+    }
+
+    private void handle(Bot bot, Message message){
+        LambdaQueryWrapper<WordStripSqlite> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(WordStripSqlite::getGroupId,message.getGroupId()).eq(WordStripSqlite::getSelfId,message.getSelfId());
+        List<WordStripSqlite> list = wordStripService.list(queryWrapper);
+        if(CollectionUtils.isEmpty(list)){
+            bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("本群没有词条"));
+            return;
+        }
+        bot.sendGroupMessage(message.getGroupId(), processWordStrip(list),false);
     }
 
     private String processWordStrip(List<WordStripSqlite> list){

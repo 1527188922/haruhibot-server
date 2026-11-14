@@ -1,13 +1,12 @@
 package com.haruhi.botserver.features.game.handler;
 
 import com.haruhi.botserver.infrastructure.cache.CacheMap;
-import com.haruhi.botserver.integration.onebot.model.CqCodeTypeEnum;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
+import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.bot.session.Bot;
-import com.simplerobot.modules.utils.KQCodeUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -49,7 +47,6 @@ public class RussianRouletteHandler implements IGroupMessageHandler {
     
     @Override
     public boolean onGroup(Bot bot, final Message message) {
-        KQCodeUtils instance = KQCodeUtils.getInstance();
         // 对发起游戏的判断
         String cmd = message.getText(-1);
         if(message.isTextMsgOnly() && StringUtils.isNotBlank(cmd)
@@ -59,11 +56,11 @@ public class RussianRouletteHandler implements IGroupMessageHandler {
             if (game != null) {
                 int size = game.getPlayers().size();
                 if(size < maxPlayers){
-                    bot.sendGroupMessage(message.getGroupId(),"一场游戏正在招募，你可以回复他的发起消息为:'参加' 即可参加",true);
+                    bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("一场游戏正在招募，你可以回复他的发起消息为:'参加' 即可参加"));
                 }else if(size == maxPlayers){
-                    bot.sendGroupMessage(message.getGroupId(),"一场游戏正在进行，请稍后",true);
+                    bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("一场游戏正在进行，请稍后"));
                 }else{
-                    bot.sendGroupMessage(message.getGroupId(),"当前群已发起一场游戏",true);
+                    bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("当前群已发起一场游戏"));
                 }
                 return true;
             }
@@ -71,13 +68,13 @@ public class RussianRouletteHandler implements IGroupMessageHandler {
             RussianRouletteGame russianRouletteGame = new RussianRouletteGame(message.getUserId());
             russianRouletteGame.addPlayer(message.getGroupId(),message.getUserId());
             cache.put(cacheKey,russianRouletteGame);
-            String atSender = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getUserId());
-            bot.sendGroupMessage(message.getGroupId(),
-                    MessageFormat.format("{0} 发起了俄罗斯轮盘\n发送消息为：参加，即可参加游戏\n玩家轮流发送：`扣动扳机`进行游戏\n弹夹最大容量"
-                                    + maxBullets
-                                    + "颗，随机填充1颗子弹\n最多{1}人，还缺人{2}人",
-                            atSender,maxPlayers,(maxPlayers - russianRouletteGame.getPlayers().size())),
-                    false);
+            List<MessageHolder> messages = new ArrayList<>();
+            messages.addAll(MessageHolder.instanceAt(String.valueOf(message.getUserId())));
+            messages.addAll(MessageHolder.instanceText(" 发起了俄罗斯轮盘\n发送消息为：参加，即可参加游戏\n玩家轮流发送：`扣动扳机`进行游戏\n弹夹最大容量"
+                    + maxBullets
+                    + "颗，随机填充1颗子弹\n最多" + maxPlayers + "人，还缺人"
+                    + (maxPlayers - russianRouletteGame.getPlayers().size()) + "人"));
+            bot.sendGroupMessage(message.getGroupId(), messages);
             return true;
         }
         
@@ -110,17 +107,19 @@ public class RussianRouletteHandler implements IGroupMessageHandler {
             
             
             if(game.getPlayers().size() == maxPlayers){
-                bot.sendGroupMessage(message.getGroupId(),"当前群已开始游戏，无法再参加",true);
+                bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("当前群已开始游戏，无法再参加"));
                 return true;
             }
             // 参加成功
             game.addPlayer(message.getGroupId(),message.getUserId());
             RussianRouletteGame.Player currentPlayer = game.getCurrentPlayer();
             cache.refreshKey(cacheKey);
-            String atSender = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getSender().getUserId());
-            String s1 = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + currentPlayer.getUserId());
-            bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("{0} 参加了游戏，对局开始\n请{1} 先手",atSender,
-                    s1),false);
+            List<MessageHolder> messages = new ArrayList<>();
+            messages.addAll(MessageHolder.instanceAt(String.valueOf(message.getSender().getUserId())));
+            messages.addAll(MessageHolder.instanceText(" 参加了游戏，对局开始\n请"));
+            messages.addAll(MessageHolder.instanceAt(String.valueOf(currentPlayer.getUserId())));
+            messages.addAll(MessageHolder.instanceText(" 先手"));
+            bot.sendGroupMessage(message.getGroupId(),messages);
             return true;
         }
         
@@ -151,24 +150,32 @@ public class RussianRouletteHandler implements IGroupMessageHandler {
                 return false;
             }
             if(!currentPlayer.getUserId().equals(message.getUserId())){
-                bot.sendGroupMessage(message.getGroupId(),"当前不是你的回合",true);
+                bot.sendGroupMessage(message.getGroupId(),MessageHolder.instanceText("当前不是你的回合"));
                 return true;
             }
             RussianRouletteGame.Player player = game.nextPlayer();
-            String atSender = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + message.getSender().getUserId());
-            String s1 = instance.toCq(CqCodeTypeEnum.at.getType(), "qq=" + player.getUserId());
             
             if (game.isHit()) {
                 cache.remove(cacheKey);
-                bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("当前第{0}次扣动扳机\n嘭！{1} 被击中了！\n{2} 获得胜利！\n本场游戏结束！",
-                        game.getCurrentPosition() + 1,atSender,s1),false);
+                List<MessageHolder> messages = new ArrayList<>();
+                messages.addAll(MessageHolder.instanceText("当前第" + (game.getCurrentPosition() + 1) + "次扣动扳机\n嘭！"));
+                messages.addAll(MessageHolder.instanceAt(String.valueOf(message.getSender().getUserId())));
+                messages.addAll(MessageHolder.instanceText(" 被击中了！\n"));
+                messages.addAll(MessageHolder.instanceAt(String.valueOf(player.getUserId())));
+                messages.addAll(MessageHolder.instanceText(" 获得胜利！\n本场游戏结束！"));
+                bot.sendGroupMessage(message.getGroupId(),messages);
                 
             }else{
                 int i = game.nextPosition();
 //                game.randomBulletPosition();// 每次扣完，重新摇一下
                 cache.refreshKey(cacheKey);
-                bot.sendGroupMessage(message.getGroupId(),MessageFormat.format("当前第{0}次扣动扳机\n{1} 未被击中\n接下来请{2} 扣动扳机！",
-                        i,atSender,s1),false);
+                List<MessageHolder> messages = new ArrayList<>();
+                messages.addAll(MessageHolder.instanceText("当前第" + i + "次扣动扳机\n"));
+                messages.addAll(MessageHolder.instanceAt(String.valueOf(message.getSender().getUserId())));
+                messages.addAll(MessageHolder.instanceText(" 未被击中\n接下来请"));
+                messages.addAll(MessageHolder.instanceAt(String.valueOf(player.getUserId())));
+                messages.addAll(MessageHolder.instanceText(" 扣动扳机！"));
+                bot.sendGroupMessage(message.getGroupId(),messages);
             }
             return true;
         }

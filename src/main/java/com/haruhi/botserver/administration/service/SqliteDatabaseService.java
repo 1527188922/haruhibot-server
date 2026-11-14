@@ -435,13 +435,11 @@ public class SqliteDatabaseService{
 
 
     public DruidDataSource getMasterDataSource() {
-        if (dataSource instanceof DynamicRoutingDataSource) {
-            DynamicRoutingDataSource dynamicRoutingDataSource = (DynamicRoutingDataSource) dataSource;
+        if (dataSource instanceof DynamicRoutingDataSource dynamicRoutingDataSource) {
             DataSource realDatasource = dynamicRoutingDataSource.getDataSource(DataBaseConst.DATA_SOURCE_MASTER);
-            if (realDatasource instanceof ItemDataSource) {
-                ItemDataSource itemDataSource = (ItemDataSource) realDatasource;
-                if (itemDataSource.getDataSource() instanceof DruidDataSource) {
-                    return (DruidDataSource) itemDataSource.getDataSource();
+            if (realDatasource instanceof ItemDataSource itemDataSource) {
+                if (itemDataSource.getDataSource() instanceof DruidDataSource ds) {
+                    return ds;
                 }
             }
 

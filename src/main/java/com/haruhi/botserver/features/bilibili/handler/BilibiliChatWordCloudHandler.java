@@ -14,7 +14,6 @@ import com.haruhi.botserver.features.bilibili.client.model.bilibili.PlayerInfoRe
 import com.haruhi.botserver.features.bilibili.client.model.bilibili.BulletChatResp;
 import com.haruhi.botserver.features.bilibili.service.BilibiliService;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.infrastructure.wordcloud.WordSlicesTask;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.infrastructure.wordcloud.WordCloudUtil;
@@ -67,53 +66,55 @@ public class BilibiliChatWordCloudHandler implements IAllMessageHandler {
             log.error("未获取到bvid");
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            String outPutPath = null;
-            try {
-
-                PlayerInfoResp playerInfoResp = bilibiliService.getPlayerInfo(bvid);
-
-                if(playerInfoResp == null || Objects.isNull(playerInfoResp.getCid())){
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"视频cid获取失败",true);
-                    return;
-                }
-                BulletChatResp bulletChatResp = bilibiliService.getChatList(playerInfoResp.getCid());
-                List<String> chatList = bulletChatResp != null ? bulletChatResp.getChatList() : null;
-                if(chatList == null){
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"弹幕数为0，不生成",true);
-                    return;
-                }
-                List<MessageHolder> textMessageHolders = MessageHolder.instanceText(MessageFormat.format("获取弹幕成功，数量：{0}\n视频标题：{1}\n开始生成...", chatList.size(), playerInfoResp.getPart()));
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),textMessageHolders);
-
-                List<String> list = WordSlicesTask.execute(chatList);
-                Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(list));
-                if(CollectionUtils.isEmpty(map)){
-                    List<MessageHolder> textMessageHolders1 = MessageHolder.instanceText("有效词料为0，不生成");
-                    bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),textMessageHolders1);
-                    return;
-                }
-                String fileName = bvid + "-" + message.getUserId() + ".png";
-                outPutPath = FileUtil.mkdirs(FileUtil.getBulletWordCloudDir()) + File.separator + fileName;
-                File file = new File(outPutPath);
-                FileUtil.deleteFile(file);
-                WordCloudUtil.generateWordCloudImage(map,outPutPath);
-
-                String url = Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT) ?
-                        "file://"+file.getAbsolutePath()
-                        : abstractPathConfig.webBulletWordCloudPath() + "/" + fileName + "?t=" + System.currentTimeMillis();
-                log.info("弹幕词云地址：{}",url);
-
-                MessageHolder imgMessageHolder = MessageHolder.instanceImage(url);
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), Arrays.asList(imgMessageHolder));
-
-            }catch (Exception e){
-                List<MessageHolder> messageHolders = MessageHolder.instanceText(MessageFormat.format("弹幕词云生成异常:{0}",e.getMessage()));
-                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),messageHolders);
-                DbLog.error(BusinessModuleEnum.BILIBILI,"弹幕词云异常",e);
-            }
-        });
+        handle(bot, message, bvid);
         return true;
+    }
+
+    private void handle(Bot bot, final Message message, String bvid) {
+        String outPutPath = null;
+        try {
+
+            PlayerInfoResp playerInfoResp = bilibiliService.getPlayerInfo(bvid);
+
+            if(playerInfoResp == null || Objects.isNull(playerInfoResp.getCid())){
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("视频cid获取失败"));
+                return;
+            }
+            BulletChatResp bulletChatResp = bilibiliService.getChatList(playerInfoResp.getCid());
+            List<String> chatList = bulletChatResp != null ? bulletChatResp.getChatList() : null;
+            if(chatList == null){
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("弹幕数为0，不生成"));
+                return;
+            }
+            List<MessageHolder> textMessageHolders = MessageHolder.instanceText(MessageFormat.format("获取弹幕成功，数量：{0}\n视频标题：{1}\n开始生成...", chatList.size(), playerInfoResp.getPart()));
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),textMessageHolders);
+
+            List<String> list = WordSlicesTask.execute(chatList);
+            Map<String, Integer> map = WordCloudUtil.exclusionsWord(WordCloudUtil.setFrequency(list));
+            if(CollectionUtils.isEmpty(map)){
+                List<MessageHolder> textMessageHolders1 = MessageHolder.instanceText("有效词料为0，不生成");
+                bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),textMessageHolders1);
+                return;
+            }
+            String fileName = bvid + "-" + message.getUserId() + ".png";
+            outPutPath = FileUtil.mkdirs(FileUtil.getBulletWordCloudDir()) + File.separator + fileName;
+            File file = new File(outPutPath);
+            FileUtil.deleteFile(file);
+            WordCloudUtil.generateWordCloudImage(map,outPutPath);
+
+            String url = Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT) ?
+                    "file://"+file.getAbsolutePath()
+                    : abstractPathConfig.webBulletWordCloudPath() + "/" + fileName + "?t=" + System.currentTimeMillis();
+            log.info("弹幕词云地址：{}",url);
+
+            MessageHolder imgMessageHolder = MessageHolder.instanceImage(url);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), Arrays.asList(imgMessageHolder));
+
+        }catch (Exception e){
+            List<MessageHolder> messageHolders = MessageHolder.instanceText(MessageFormat.format("弹幕词云生成异常:{0}",e.getMessage()));
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),messageHolders);
+            DbLog.error(BusinessModuleEnum.BILIBILI,"弹幕词云异常",e);
+        }
     }
 
 }

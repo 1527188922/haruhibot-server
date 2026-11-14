@@ -7,7 +7,6 @@ import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.features.news.client.model.news163.NewsResp;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.bot.handler.IAllMessageHandler;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.features.news.service.NewsService;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
@@ -39,24 +38,26 @@ public class SeeNewsHandler implements IAllMessageHandler {
         if(!message.getRawMessage().matches(RegexEnum.SEE_TODAY_NEWS.getValue())){
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            try {
-                List<NewsResp> newsBy163Resps = newsService.requestNewsBy163();
-                if(CollectionUtils.isEmpty(newsBy163Resps)){
-                    return;
-                }
-
-                List<List<MessageHolder>> newsMessages = newsService.createNewsMessage(newsBy163Resps);
-
-                List<ForwardMsgItem> forwardMsgItems = newsMessages.stream()
-                        .map(messageHolders -> ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), messageHolders))
-                        .collect(Collectors.toList());
-
-                bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgItems);
-            }catch (Exception e){
-                log.error("查看今日新闻异常",e);
-            }
-        });
+        handle(bot, message);
         return true;
+    }
+
+    private void handle(Bot bot, Message message){
+        try {
+            List<NewsResp> newsBy163Resps = newsService.requestNewsBy163();
+            if(CollectionUtils.isEmpty(newsBy163Resps)){
+                return;
+            }
+
+            List<List<MessageHolder>> newsMessages = newsService.createNewsMessage(newsBy163Resps);
+
+            List<ForwardMsgItem> forwardMsgItems = newsMessages.stream()
+                    .map(messageHolders -> ForwardMsgItem.instance(message.getSelfId(), bot.getBotName(), messageHolders))
+                    .collect(Collectors.toList());
+
+            bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgItems);
+        }catch (Exception e){
+            log.error("查看今日新闻异常",e);
+        }
     }
 }

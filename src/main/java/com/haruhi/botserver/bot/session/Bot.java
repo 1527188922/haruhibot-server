@@ -27,7 +27,6 @@ import com.haruhi.botserver.integration.onebot.model.SendMsgResp;
 import com.haruhi.botserver.integration.onebot.model.SyncResponse;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -98,6 +97,7 @@ public class Bot implements Closeable {
     @Override
     public void close() throws IOException {
         uploadFileQueue.shutdownNow();
+        failAllPending(new IOException("bot连接已关闭"));
         session.close();
     }
 
@@ -124,6 +124,7 @@ public class Bot implements Closeable {
      */
     public void markOffline() {
         this.online = false;
+        failAllPending(new IOException("bot已离线"));
     }
 
     /**
@@ -200,6 +201,30 @@ public class Bot implements Closeable {
         pokeRequest.setParams(params);
 
         sendMessage(JSONObject.toJSONString(pokeRequest));
+    }
+
+    /**
+     * 发送群消息
+     * @param groupId 群号
+     * @param message 消息
+     */
+    public void sendGroupMessage(Long groupId, List<MessageHolder> message){
+//        RequestBox<Params<List<MessageHolder>>> requestBox = new RequestBox<>();
+//        requestBox.setAction(QqClientActionEnum.SEND_GROUP_MSG.getAction());
+//
+//        Params<List<MessageHolder>> params = new Params<>();
+//        params.setMessageType(MessageTypeEnum.group.getType());
+//        params.setGroupId(groupId);
+//        params.setMessage(message);
+//
+//        requestBox.setParams(params);
+//        sendMessage(JSONObject.toJSONString(requestBox));
+
+        sendMessage(null, groupId, MessageTypeEnum.group.getType(), message);
+    }
+
+    public void sendPrivateMessage(Long userId, List<MessageHolder> message){
+        sendMessage(userId, null, MessageTypeEnum.privat.getType(), message);
     }
 
     public void sendMessage(Long userId, Long groupId, String messageType, List<MessageHolder> message){
@@ -286,20 +311,37 @@ public class Bot implements Closeable {
 
     public void sendMessage(String text){
         try {
+            sendMessageOrThrow(text);
+        } catch (IllegalStateException ignored) {
+            // 异步发送失败 已在sendMessageOrThrow中记录日志
+        }
+    }
+
+    private void sendMessageOrThrow(String text){
+        try {
             log.debug("发送消息给gocq {}",text);
             session.sendMessage(new TextMessage(text));
         } catch (Exception e) {
             DbLog.error(BusinessModuleEnum.BOT_WS,
                     "发送消息发生异常,session:{},消息：{}",session,text,e);
+            throw new IllegalStateException("发送websocket消息失败", e);
         }
     }
 
-    private final static long GET_SYNC_RESP_PERIOD = 1L;
+    /**
+     * 同步请求等待者 echo -> future
+     */
+    private final Map<String, CompletableFuture<JSONObject>> pendingRequests = new ConcurrentHashMap<>();
 
-    private final Map<String,JSONObject> resultMap = new ConcurrentHashMap<>();
-    public void putEchoResult(String key, JSONObject val){
-        log.debug("echo message {}\n{}",key,val);
-        resultMap.put(key,val);
+    public void putEchoResult(String echo, JSONObject val){
+        log.debug("echo message {}\n{}",echo,val);
+        CompletableFuture<JSONObject> future = pendingRequests.remove(echo);
+        if (future != null) {
+            future.complete(val);
+            return;
+        }
+        // 超时或断连后晚到的响应 直接丢弃 避免残留内存
+        log.warn("无等待者的echo响应,已丢弃,echo:{}",echo);
     }
 
     /**
@@ -558,49 +600,34 @@ public class Bot implements Closeable {
 
     public <R> SyncResponse<R> sendSyncRequest(String text,String echo, long timeout, TypeReference<SyncResponse<R>> typeReference)
             throws ExecutionException, InterruptedException, TimeoutException {
-        sendMessage(text);
-
-        log.debug("echo: {}",echo);
-        FutureTask<JSONObject> futureTask = new FutureTask<>(new GetSyncRespTask(echo, resultMap));
-        new Thread(futureTask).start();
+        CompletableFuture<JSONObject> future = new CompletableFuture<>();
+        // 先注册再发送 避免响应先于注册到达而丢失 同时检测echo冲突
+        if (pendingRequests.putIfAbsent(echo, future) != null) {
+            throw new IllegalStateException("echo重复,已存在未完成的同echo请求,echo:" + echo);
+        }
         try {
-            JSONObject res;
-            if(timeout <= GET_SYNC_RESP_PERIOD){
-                res = futureTask.get();
-            }else{
-                res = futureTask.get(timeout, TimeUnit.MILLISECONDS);
-            }
+            sendMessageOrThrow(text);
+
+            log.debug("echo: {}",echo);
+            JSONObject res = future.get(timeout, TimeUnit.MILLISECONDS);
             SyncResponse<R> resJavaObject = res.toJavaObject(typeReference);
             resJavaObject.setRaw(res);
             log.debug("echo: {},result: {}",echo,res);
             return resJavaObject;
         }finally {
-            futureTask.cancel(true);
-            resultMap.remove(echo);
+            pendingRequests.remove(echo, future);
         }
     }
 
-    @AllArgsConstructor
-    private static class GetSyncRespTask implements Callable<JSONObject> {
-        private final String echo;
-        private final Map<String,JSONObject> resultMap;
-
-        @Override
-        public JSONObject call() {
-            JSONObject res = null;
-            while (!Thread.currentThread().isInterrupted()){
-                res = resultMap.get(echo);
-                if(res != null){
-                    break;
-                }else {
-                    try {
-                        Thread.sleep(Bot.GET_SYNC_RESP_PERIOD);
-                    } catch (InterruptedException e) {
-                        break;
-                    }
-                }
+    /**
+     * 立即失败所有等待中的同步请求 避免断连后仍等到超时
+     */
+    private void failAllPending(Throwable cause) {
+        for (String echo : pendingRequests.keySet()) {
+            CompletableFuture<JSONObject> future = pendingRequests.remove(echo);
+            if (future != null) {
+                future.completeExceptionally(cause);
             }
-            return res;
         }
     }
 }

@@ -66,9 +66,9 @@ public class PixivSqliteServiceImpl extends ServiceImpl<PixivSqliteMapper, Pixiv
     }
     private void empty(Bot bot,boolean noTag, String tag, Message message){
         if(noTag){
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),"pix图库还没有图片~",true);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(),MessageHolder.instanceText("pix图库还没有图片~"));
         }else{
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageFormat.format("没有[{0}]的图片，换一个tag试试吧~", tag),true);
+            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), MessageHolder.instanceText(MessageFormat.format("没有[{0}]的图片，换一个tag试试吧~", tag)));
         }
     }
     private List<String> pixFormat(Collection<PixivSqlite> pixivs){

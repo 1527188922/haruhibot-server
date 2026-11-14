@@ -70,8 +70,8 @@ public class EventRouter {
         // 部分实现（如 bot_offline）的 message 字段是字符串，
         // 而 Message.message 是 List<MessageHolder>，这里统一转成文本消息段
         Object message = json.get("message");
-        if (message instanceof String) {
-            json.put("message", MessageHolder.instanceText((String) message));
+        if (message instanceof String s) {
+            json.put("message", MessageHolder.instanceText(s));
         }
         Message bean = json.toJavaObject(Message.class);
         bean.setRawWsMsg(raw);

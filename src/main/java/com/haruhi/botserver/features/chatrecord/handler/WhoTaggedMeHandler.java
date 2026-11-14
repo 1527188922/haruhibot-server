@@ -46,7 +46,10 @@ public class WhoTaggedMeHandler  implements IGroupMessageHandler {
     @Override
     public boolean onGroup(Bot bot, Message message) {
         String text = message.getText(0);
-        if (!(StringUtils.isNotBlank(text) && "谁at我".equalsIgnoreCase(text.trim()))) {
+        if (! (
+                StringUtils.isNotBlank(text)
+                        && ("谁at我".equalsIgnoreCase(text.trim()) || "谁@我".equalsIgnoreCase(text.trim()))
+                )) {
             return false;
         }
         ChatRecordQueryReq chatRecordQueryReq = new ChatRecordQueryReq();
@@ -62,21 +65,21 @@ public class WhoTaggedMeHandler  implements IGroupMessageHandler {
         chatRecordQueryReq.setContent(KQCodeUtils.INSTANCE.toCq(
                 CqCodeTypeEnum.at.getType(),
                 new HashMap<>(1){{
-                    put("qq",message.getUserId());
+                    put("qq", message.getUserId());
                 }}
         ));
         PageInfo<ChatRecordVo> pageInfo = chatRecordService.search(chatRecordQueryReq, true, false);
 
         List<ChatRecordVo> list = pageInfo.getList();
         if (list.isEmpty()) {
-            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText("最近好像没人at你。。"));
+            bot.sendGroupMessage(message.getGroupId(), MessageHolder.instanceText("最近好像没人at你。。"));
             return true;
         }
         ChatRecordVo first = list.getFirst();
 
         List<MessageHolder> messageHolders = MessageHolder.instanceReply(first.getMessageId());
         messageHolders.addAll(MessageHolder.instanceText("这里有人at你"));
-        bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), messageHolders);
+        bot.sendGroupMessage(message.getGroupId(), messageHolders);
         return true;
     }
 }

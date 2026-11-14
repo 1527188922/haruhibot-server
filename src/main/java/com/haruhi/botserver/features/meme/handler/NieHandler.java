@@ -55,7 +55,7 @@ public class NieHandler implements IGroupMessageHandler {
 
         MessageHolder messageHolder = MessageHolder.instanceImage(imageUrl);
 
-        bot.sendMessage(message.getUserId(),message.getGroupId(), message.getMessageType(), Collections.singletonList(messageHolder));
+        bot.sendGroupMessage(message.getGroupId(), Collections.singletonList(messageHolder));
         return true;
     }
 

@@ -11,7 +11,6 @@ import com.haruhi.botserver.integration.onebot.model.ForwardMsgItem;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.features.torrent.service.BtbtlaService;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -63,29 +62,31 @@ public class BtbtlaHandler implements IAllMessageHandler {
         if(StringUtils.isBlank(keyword)){
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            SearchResult searchResult = btbtlaService.search(keyword);
-            if (searchResult.getException() != null) {
-                log.error("bt影视搜索异常 {}",keyword,searchResult.getException());
-                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText(
-                        StrFormatter.format("搜索【{}】异常\n{}",keyword,searchResult.getException().getMessage())
-                ));
-                return;
-            }
-            List<SearchResult.ModuleItem> moduleItems = searchResult.getModuleItems();
-            if (CollectionUtils.isEmpty(moduleItems)) {
-                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText(
-                        StrFormatter.format("无搜索结果【{}】",keyword)
-                ));
-                return;
-            }
-            List<ForwardMsgItem> forwardMsgItems = new ArrayList<>();
-            forwardMsgItems.add(ForwardMsgItem.instance(bot.getId(),bot.getBotName(),
-                    MessageHolder.instanceText(StrFormatter.format("搜索【{}】完成", keyword))));
-            forwardMsgItems.addAll(resultToForwardMsgItemList(bot, moduleItems));
-            bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgItems);
-        });
+        handle(bot, message, keyword);
         return true;
+    }
+
+    private void handle(Bot bot, Message message, String keyword){
+        SearchResult searchResult = btbtlaService.search(keyword);
+        if (searchResult.getException() != null) {
+            log.error("bt影视搜索异常 {}",keyword,searchResult.getException());
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText(
+                    StrFormatter.format("搜索【{}】异常\n{}",keyword,searchResult.getException().getMessage())
+            ));
+            return;
+        }
+        List<SearchResult.ModuleItem> moduleItems = searchResult.getModuleItems();
+        if (CollectionUtils.isEmpty(moduleItems)) {
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText(
+                    StrFormatter.format("无搜索结果【{}】",keyword)
+            ));
+            return;
+        }
+        List<ForwardMsgItem> forwardMsgItems = new ArrayList<>();
+        forwardMsgItems.add(ForwardMsgItem.instance(bot.getId(),bot.getBotName(),
+                MessageHolder.instanceText(StrFormatter.format("搜索【{}】完成", keyword))));
+        forwardMsgItems.addAll(resultToForwardMsgItemList(bot, moduleItems));
+        bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), forwardMsgItems);
     }
 
     private List<ForwardMsgItem> resultToForwardMsgItemList(Bot bot, List<SearchResult.ModuleItem> moduleItems) {

@@ -5,9 +5,7 @@ import com.haruhi.botserver.bot.handler.INoticeHandler;
 import com.haruhi.botserver.bot.session.Bot;
 import com.haruhi.botserver.configuration.metadata.ConfigKey;
 import com.haruhi.botserver.configuration.service.Configs;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
-import com.haruhi.botserver.integration.onebot.model.MessageTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.NoticeTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.event.NoticeEvent;
 import com.haruhi.botserver.shared.util.CommonUtil;
@@ -32,12 +30,10 @@ public class GroupDecreaseHandler implements INoticeHandler {
         if(!groupDecrease){
             return;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            List<MessageHolder> messageHolders = MessageHolder.instanceText(MessageFormat.format("{0} 离开了本群。", String.valueOf(event.getUserId())));
-            messageHolders.add(MessageHolder.instanceImage(CommonUtil.getAvatarUrl(event.getUserId(), false)));
+        List<MessageHolder> messageHolders = MessageHolder.instanceText(MessageFormat.format("{0} 离开了本群。", String.valueOf(event.getUserId())));
+        messageHolders.add(MessageHolder.instanceImage(CommonUtil.getAvatarUrl(event.getUserId(), false)));
 
-            bot.sendMessage(null, event.getGroupId(), MessageTypeEnum.group.getType(), messageHolders);
-        });
+        bot.sendGroupMessage(event.getGroupId(), messageHolders);
     }
 
 }

@@ -12,7 +12,6 @@ import com.haruhi.botserver.features.bilibili.job.BilibiliLiveJob;
 import com.haruhi.botserver.features.bilibili.service.BilibiliService;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
 import com.haruhi.botserver.features.notification.support.PushTargetUtil;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -64,14 +63,12 @@ public class BilibiliLiveSubscribeHandler extends AbstractBilibiliSubscribeHandl
         if (Objects.isNull(uid)) {
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(() -> {
-            try {
-                this.subscribe(bot, message, uid);
-            } catch (Exception e) {
-                DbLog.error(BusinessModuleEnum.BILIBILI,"b站订阅异常 uid:{}", uid, e);
-                this.reply(bot, message, StrFormatter.format("b站订阅异常：{}", e.getMessage()));
-            }
-        });
+        try {
+            this.subscribe(bot, message, uid);
+        } catch (Exception e) {
+            DbLog.error(BusinessModuleEnum.BILIBILI,"b站订阅异常 uid:{}", uid, e);
+            this.reply(bot, message, StrFormatter.format("b站订阅异常：{}", e.getMessage()));
+        }
         return true;
     }
 

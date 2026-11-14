@@ -7,14 +7,12 @@ import cn.hutool.core.img.gif.AnimatedGifEncoder;
 import cn.hutool.core.img.gif.GifDecoder;
 import com.haruhi.botserver.bootstrap.WebResourceConfig;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
-import com.haruhi.botserver.integration.onebot.model.MessageTypeEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.shared.util.MatchResult;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.bot.session.Bot;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -86,21 +84,19 @@ public class HuaQHandler implements IGroupMessageHandler {
 
         Pair<String, String> data = pairMatchResult.getData();
 
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            try {
-                String fileName = prefix + data.getLeft() + "_" + data.getRight() + ".gif";
-                String out = FileUtil.getFaceDir() + File.separator + fileName;
-                File file = new File(out);
-                if(!file.exists()){
-                    log.info("不存在该表情，开始生成: {}",fileName);
-                    makeHuaQFace(Long.valueOf(data.getLeft()), Long.valueOf(data.getRight()), out);
-                }
-                log.info("huaq表情图片地址：{}",out);
-                sendFaceMsg(bot,message.getGroupId(),file);
-            }catch (Exception e){
-                log.error("发送huaQ表情异常",e);
+        try {
+            String fileName = prefix + data.getLeft() + "_" + data.getRight() + ".gif";
+            String out = FileUtil.getFaceDir() + File.separator + fileName;
+            File file = new File(out);
+            if(!file.exists()){
+                log.info("不存在该表情，开始生成: {}",fileName);
+                makeHuaQFace(Long.valueOf(data.getLeft()), Long.valueOf(data.getRight()), out);
             }
-        });
+            log.info("huaq表情图片地址：{}",out);
+            sendFaceMsg(bot,message.getGroupId(),file);
+        }catch (Exception e){
+            log.error("发送huaQ表情异常",e);
+        }
         return true;
     }
     
@@ -110,7 +106,7 @@ public class HuaQHandler implements IGroupMessageHandler {
         log.info("huaq图片url ：{}",imageUrl);
 
         MessageHolder messageHolder = MessageHolder.instanceImage(imageUrl);
-        bot.sendMessage(null,groupId, MessageTypeEnum.group.getType(), Collections.singletonList(messageHolder));
+        bot.sendGroupMessage(groupId, Collections.singletonList(messageHolder));
     }
 
 

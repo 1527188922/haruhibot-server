@@ -9,7 +9,6 @@ import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.shared.constant.RegexEnum;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
-import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
 import com.haruhi.botserver.shared.util.CommonUtil;
 import com.haruhi.botserver.shared.util.FileUtil;
 import com.haruhi.botserver.bot.session.Bot;
@@ -53,16 +52,14 @@ public class ScoldMeHandler implements IAllMessageHandler {
         if (!cmd.trim().matches(RegexEnum.SCOLD_ME_DG.getValue())){
             return false;
         }
-        ThreadPoolUtil.getHandleCommandPool().execute(()->{
-            int i = CommonUtil.randomInt(0, fileList.length - 1);
-            File file = fileList[i];
-            String s = Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT) ?
-                    "file://"+file.getAbsolutePath() :
-                    abstractPathConfig.webDgAudioPath() + "/" + file.getName();
-            log.info("骂我音频地址：{}",s);
-            MessageHolder messageHolder = MessageHolder.instanceRecord(s);
-            bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), Arrays.asList(messageHolder));
-        });
+        int i = CommonUtil.randomInt(0, fileList.length - 1);
+        File file = fileList[i];
+        String s = Configs.getBool(ConfigKey.SAME_MACHINE_QQCLIENT) ?
+                "file://"+file.getAbsolutePath() :
+                abstractPathConfig.webDgAudioPath() + "/" + file.getName();
+        log.info("骂我音频地址：{}",s);
+        MessageHolder messageHolder = MessageHolder.instanceRecord(s);
+        bot.sendMessage(message.getUserId(),message.getGroupId(),message.getMessageType(), Arrays.asList(messageHolder));
 
         return true;
     }
