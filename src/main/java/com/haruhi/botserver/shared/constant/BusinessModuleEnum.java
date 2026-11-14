@@ -22,6 +22,7 @@ public enum BusinessModuleEnum {
     JOB("定时任务"),
     AUTH("认证"),
     MSG_HANDLE("QQ消息处理"),
+    AI_CHAT("AI聊天"),
     HTML_TO_IMAGE("HTML转图片"),
     ;
 

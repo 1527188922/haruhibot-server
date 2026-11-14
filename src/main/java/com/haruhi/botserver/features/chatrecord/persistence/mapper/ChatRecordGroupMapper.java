@@ -39,6 +39,8 @@ public interface ChatRecordGroupMapper {
 
     List<ChatRecordGroup> selectListByIdBetween(@Param("tableName") String tableName, @Param("start") long start, @Param("end") long end);
 
+    List<ChatRecordGroup> selectRecent(@Param("tableName") String tableName, @Param("limit") int limit);
+
 
     List<ChatRecordGroup> selectListByTime(String tableName, boolean before, String time, long offset);
 }

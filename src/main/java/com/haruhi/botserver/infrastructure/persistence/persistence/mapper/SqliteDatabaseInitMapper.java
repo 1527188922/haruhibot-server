@@ -112,4 +112,10 @@ public interface SqliteDatabaseInitMapper {
      * @return
      */
     int createBilibiliVideo(@Param("tableName") String tableName);
+
+    int createAiSession(@Param("tableName") String tableName);
+
+    int createAiMessage(@Param("tableName") String tableName);
+
+    int createAiUsage(@Param("tableName") String tableName);
 }

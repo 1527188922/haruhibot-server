@@ -1,7 +1,8 @@
 # DeepSeek 聊天提示词与角色卡（可直接使用）
 
 > 配套方案：`docs/ai-chat-design.md`
-> 状态：设计稿，未写入代码；本文件中的文本可直接作为 `PromptAssembler` 的模板和 `./aichat/roles/*.md` 的初始内容。
+> 状态：后端已落地；本文件中的文本可直接作为 `PromptAssembler` 的模板和 `./aichat/roles/*.md` 的初始内容（仓库根目录已提供三张示例卡）。
+> master 合并（2026-11-14）不改变提示词内容；角色卡顶部的 `触发词：` 行仍由 `RoleCardService` 解析并在注入前剥离。
 > 占位符用 `{{...}}` 表示，由 Java 在 assembly 时替换。
 
 ---

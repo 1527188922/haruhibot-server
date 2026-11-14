@@ -64,6 +64,10 @@
             <outputDirectory>/customReply</outputDirectory>
         </fileSet>
         <fileSet>
+            <directory>${project.basedir}/aichat</directory>
+            <outputDirectory>/aichat</outputDirectory>
+        </fileSet>
+        <fileSet>
             <directory>${project.basedir}/src/main/resources/audio</directory>
             <outputDirectory>/audio</outputDirectory>
         </fileSet>

@@ -331,6 +331,51 @@
             `update_time` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
         );
     </update>
+    <update id="createAiSession">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `self_id` INTEGER NOT NULL,
+            `scene` TEXT NOT NULL,
+            `target_id` INTEGER NOT NULL,
+            `role_name` TEXT,
+            `status` TEXT NOT NULL DEFAULT 'active',
+            `last_active_at` DATETIME,
+            `created_at` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+            `updated_at` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
+
+    <update id="createAiMessage">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `session_id` INTEGER NOT NULL,
+            `role` TEXT NOT NULL,
+            `speaker_id` INTEGER,
+            `speaker_name` TEXT,
+            `content` TEXT NOT NULL,
+            `message_id` TEXT,
+            `token_count` INTEGER,
+            `created_at` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
+
+    <update id="createAiUsage">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `session_id` INTEGER,
+            `model` TEXT,
+            `prompt_tokens` INTEGER,
+            `completion_tokens` INTEGER,
+            `total_tokens` INTEGER,
+            `cache_hit_tokens` INTEGER,
+            `latency_ms` INTEGER,
+            `tool_calls` INTEGER,
+            `success` INTEGER NOT NULL DEFAULT 1,
+            `error_code` TEXT,
+            `created_at` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
+
     <select id="pragmaTableInfo" resultType="com.haruhi.botserver.infrastructure.persistence.persistence.entity.TableInfoSqlite">
         PRAGMA table_info(${tableName})
     </select>

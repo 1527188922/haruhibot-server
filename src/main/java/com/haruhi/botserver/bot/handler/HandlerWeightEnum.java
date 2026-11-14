@@ -8,8 +8,8 @@ import lombok.Getter;
 public enum HandlerWeightEnum {
     // 9开头 优先级最高 处理之后还需要继续往下传递
     W_999(999,"保存聊天记录"),
+    W_998(998,"AI上下文收集"),
     W_990(990,"复读机"),
-
     W_890(890,"捏"),
     W_880(880,"千问"),
     W_870(870,"DeepSeek"),
@@ -59,6 +59,7 @@ public enum HandlerWeightEnum {
 
     W_190(190,"重启BOT程序"),
     W_180(180,"自定义回复"),
+    W_170(170,"DeepSeek聊天"),
     W_160(160,"智障聊天"),
 
 

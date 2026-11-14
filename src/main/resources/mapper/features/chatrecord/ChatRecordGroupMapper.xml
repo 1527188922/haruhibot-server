@@ -76,6 +76,13 @@
         order by ${prop} ${order}
     </select>
 
+    <select id="selectRecent" resultType="com.haruhi.botserver.features.chatrecord.persistence.entity.ChatRecordGroup">
+        select <include refid="base_columns"></include>
+        from ${tableName}
+        order by id desc
+        limit #{limit}
+    </select>
+
     <select id="selectUserInPrivate" resultType="com.haruhi.botserver.features.chatrecord.persistence.entity.ChatRecordPrivate">
         SELECT user_id, max(`time`) `time`,min(nickname) nickname
         FROM ${tableName}

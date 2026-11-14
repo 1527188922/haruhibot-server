@@ -47,6 +47,11 @@ public class DataBaseConst {
     // b站视频信息表（调用 getVideoDetail 时按 bv+cid 入库）
     public final static String T_BILIBILI_VIDEO = "t_bilibili_video";
 
+    // DeepSeek 群聊/私聊会话、消息、用量
+    public final static String T_AI_SESSION = "t_ai_session";
+    public final static String T_AI_MESSAGE = "t_ai_message";
+    public final static String T_AI_USAGE = "t_ai_usage";
+
     public final static String SQLITE_SYS_T_SQLITE_SCHEMA = "sqlite_schema";
     public final static String SQLITE_SYS_T_SQLITE_SEQUENCE = "sqlite_sequence";
 

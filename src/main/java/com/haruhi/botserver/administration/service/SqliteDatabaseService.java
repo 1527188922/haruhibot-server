@@ -226,6 +226,23 @@ public class SqliteDatabaseService{
                 StrFormatter.format("{}_pubdate_idx",DataBaseConst.T_BILIBILI_VIDEO),
                 "pubdate",
                 false);
+
+        // DeepSeek 群聊/私聊：会话、消息、用量
+        sqliteDatabaseInitMapper.createAiSession(DataBaseConst.T_AI_SESSION);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_AI_SESSION,
+                StrFormatter.format("{}_key_idx", DataBaseConst.T_AI_SESSION),
+                "self_id,scene,target_id",
+                true);
+        sqliteDatabaseInitMapper.createAiMessage(DataBaseConst.T_AI_MESSAGE);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_AI_MESSAGE,
+                StrFormatter.format("{}_session_idx", DataBaseConst.T_AI_MESSAGE),
+                "session_id,id",
+                false);
+        sqliteDatabaseInitMapper.createAiUsage(DataBaseConst.T_AI_USAGE);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_AI_USAGE,
+                StrFormatter.format("{}_time_idx", DataBaseConst.T_AI_USAGE),
+                "created_at",
+                false);
     }
 
     private static final ConcurrentHashMap<String,Boolean> tableExistsCache = new ConcurrentHashMap<>();

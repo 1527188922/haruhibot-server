@@ -106,6 +106,20 @@ public class ChatRecordService{
         return pageInfoRes.getList();
     }
 
+    /**
+     * 供 AI group_history 工具使用：按 id 倒序取最近 N 条，再还原成时间正序。
+     */
+    public List<ChatRecordGroup> recentGroupMessages(Long groupId, int limit) {
+        String tableName = sqliteDatabaseService.getChatTableName(groupId, null);
+        if (!sqliteDatabaseService.checkTableExists(tableName)) {
+            return Collections.emptyList();
+        }
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        List<ChatRecordGroup> list = chatRecordGroupMapper.selectRecent(tableName, safeLimit);
+        list.sort(Comparator.comparing(ChatRecordGroup::getId));
+        return list;
+    }
+
 
     public List<ChatRecordVo> groupMsgContextByTime(long groupId, long id, long offset1, long offset2) {
         offset1 = Math.abs(offset1);

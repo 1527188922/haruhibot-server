@@ -1,0 +1,9 @@
+package com.haruhi.botserver.features.ai.persistence.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.haruhi.botserver.features.ai.persistence.entity.AiUsageEntity;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface AiUsageMapper extends BaseMapper<AiUsageEntity> {
+}

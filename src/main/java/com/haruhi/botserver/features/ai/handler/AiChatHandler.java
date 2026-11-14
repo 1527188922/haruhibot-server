@@ -14,6 +14,7 @@ import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import com.haruhi.botserver.integration.onebot.model.CqCodeTypeEnum;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.features.ai.client.model.qingyunke.ChatResp;
+import com.haruhi.botserver.features.ai.service.AiScopeService;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.infrastructure.logging.DbLog;
 import com.haruhi.botserver.shared.util.MatchResult;
@@ -38,6 +39,12 @@ import java.util.regex.Pattern;
 @Slf4j
 @Component
 public class AiChatHandler implements IAllMessageHandler {
+
+    private final AiScopeService aiScopeService;
+
+    public AiChatHandler(AiScopeService aiScopeService) {
+        this.aiScopeService = aiScopeService;
+    }
 
     @Override
     public int weight() {
@@ -69,6 +76,10 @@ public class AiChatHandler implements IAllMessageHandler {
     @Override
     public boolean onMessage(Bot bot, Message message) {
 
+        // AI 启用范围内由 DeepSeekChatHandler 接管，青云客不再抢话
+        if (aiScopeService.enabled(message)) {
+            return false;
+        }
         boolean qingyunkeChat = Configs.getBool(ConfigKey.BOT_SWITCH_QINGYUNKE_CHAT, false);
         if(!qingyunkeChat){
             return false;

@@ -32,7 +32,7 @@ public enum ConfigFile {
     WEBSOCKET("websocket.properties", "WebSocket", "机器人Websocket服务的认证token与连接数限制", 30),
     SEARCH_IMG("searchimg.properties", "识图", "识图引擎地址与key", 30),
     BILIBILI("bilibili.properties", "B站", "b站cookie、上传下载限制", 30),
-    AI("ai.properties", "AI", "AI模型（千问、DeepSeek）相关配置", 30),
+    AI("ai.properties", "AI", "AI模型（千问、DeepSeek 聊天/角色卡）相关配置", 30),
     JM("jm.properties", "JM漫画", "JM漫画下载、搜索相关配置", 30),
     URL("url.properties", "站点地址", "第三方站点与接口地址", 30),
     DATABASE("database.properties", "数据库", "数据源配置（jdbc url、驱动、druid参数），修改后需重启", 30),
