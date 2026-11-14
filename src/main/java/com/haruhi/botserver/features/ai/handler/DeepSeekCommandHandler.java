@@ -3,8 +3,6 @@ package com.haruhi.botserver.features.ai.handler;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.bot.handler.IAllMessageHandler;
 import com.haruhi.botserver.bot.session.Bot;
-import com.haruhi.botserver.configuration.metadata.ConfigKey;
-import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.features.ai.client.deepseek.DeepSeekBalanceResponse;
 import com.haruhi.botserver.features.ai.client.deepseek.DeepSeekClient;
 import com.haruhi.botserver.features.ai.model.AiSessionKey;
@@ -13,11 +11,11 @@ import com.haruhi.botserver.features.ai.service.AiSessionService;
 import com.haruhi.botserver.features.ai.support.prompt.RoleCardService;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
+import com.haruhi.botserver.shared.annotation.SuperuserAuthentication;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -49,7 +47,12 @@ public class DeepSeekCommandHandler implements IAllMessageHandler {
         return HandlerWeightEnum.W_870.getName();
     }
 
+    /**
+     * 权限由 {@link SuperuserAuthentication} 统一校验：非超级管理员在 AOP 层直接返回 false，
+     * 不会进入本方法；这里只负责命令解析。
+     */
     @Override
+    @SuperuserAuthentication
     public boolean onMessage(Bot bot, Message message) {
         if (!message.isTextMsg() || message.isSelfMsg()) {
             return false;
@@ -59,9 +62,6 @@ public class DeepSeekCommandHandler implements IAllMessageHandler {
         }
         String text = StringUtils.trimToEmpty(message.getText(-1));
         if (!text.equals("ds") && !text.startsWith("ds ")) {
-            return false;
-        }
-        if (!isSuperAdmin(message.getUserId())) {
             return false;
         }
         String command = text.length() <= 2 ? "" : text.substring(3).trim();
@@ -148,13 +148,5 @@ public class DeepSeekCommandHandler implements IAllMessageHandler {
         } else {
             bot.sendPrivateMessage(message.getUserId(), MessageHolder.instanceText(text));
         }
-    }
-
-    private boolean isSuperAdmin(Long userId) {
-        if (userId == null) {
-            return false;
-        }
-        List<Long> superUsers = Configs.getList(ConfigKey.BOT_SUPERUSERS, Long.class, Collections.emptyList());
-        return superUsers.contains(userId);
     }
 }

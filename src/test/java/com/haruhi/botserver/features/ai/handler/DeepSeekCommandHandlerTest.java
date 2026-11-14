@@ -15,7 +15,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -57,15 +56,5 @@ class DeepSeekCommandHandlerTest {
                 """, Message.class);
         assertTrue(handler.onMessage(bot, message));
         verify(bot).sendGroupMessage(any(), anyList());
-    }
-
-    @Test
-    void nonSuperAdminReturnsFalse() {
-        Bot bot = mock(Bot.class);
-        Message message = JSON.parseObject("""
-                {"message_type":"private","self_id":2,"user_id":9,"message_id":"m2",
-                 "message":[{"type":"text","data":{"text":"ds help"}}]}
-                """, Message.class);
-        assertFalse(handler.onMessage(bot, message));
     }
 }
