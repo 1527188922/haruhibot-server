@@ -47,6 +47,7 @@ public class AiChatService {
     private final DeepSeekClient deepSeekClient;
     private final AiSendService sendService;
     private final AiToolService toolService;
+    private final AiMemoryService memoryService;
 
     private final AtomicInteger active = new AtomicInteger();
     private final AtomicLong dailyTokens = new AtomicLong();
@@ -57,13 +58,15 @@ public class AiChatService {
                          PromptAssembler promptAssembler,
                          DeepSeekClient deepSeekClient,
                          AiSendService sendService,
-                         AiToolService toolService) {
+                         AiToolService toolService,
+                         AiMemoryService memoryService) {
         this.sessionService = sessionService;
         this.contextService = contextService;
         this.promptAssembler = promptAssembler;
         this.deepSeekClient = deepSeekClient;
         this.sendService = sendService;
         this.toolService = toolService;
+        this.memoryService = memoryService;
     }
 
     public void enqueue(AiSessionKey key, AiTurn turn) {
@@ -252,6 +255,11 @@ public class AiChatService {
         if (state.generation() != generation) {
             log.debug("AI会话已被重置，丢弃本轮结果: {}", key.cacheKey());
             return;
+        }
+
+        if (AiChatSettings.memoryAutoSave()) {
+            memoryService.rememberAll(state, reply.getMemory());
+            memoryService.forgetAll(state, reply.getForgetMemory());
         }
 
         sessionService.appendUser(state, incoming);

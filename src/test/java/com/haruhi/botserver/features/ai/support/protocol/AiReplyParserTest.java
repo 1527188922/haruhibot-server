@@ -68,6 +68,19 @@ class AiReplyParserTest {
     }
 
     @Test
+    void parsesMemoryAndForget() {
+        AiReply reply = AiReplyParser.parse("""
+                {"type":"say","messages":[{"text":"好"}],
+                 "memory":{"称呼":"小明","note":"喜欢咖啡"},
+                 "forget":["旧称呼"]}
+                """);
+        assertTrue(reply.isSay());
+        assertEquals("小明", reply.getMemory().get("称呼"));
+        assertEquals("喜欢咖啡", reply.getMemory().get("note"));
+        assertEquals("旧称呼", reply.getForgetMemory().get(0));
+    }
+
+    @Test
     void rejectsUnknownType() {
         AiReply reply = AiReplyParser.parse("{\"type\":\"dance\"}");
         assertTrue(reply.isInvalid());

@@ -3,7 +3,9 @@ package com.haruhi.botserver.features.ai.model;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 模型一次回复的协议解析结果。
@@ -18,6 +20,8 @@ public class AiReply {
     private Type type = Type.INVALID;
     private List<AiReplyMessage> messages = new ArrayList<>();
     private AiToolCall call;
+    private Map<String, String> memory = new LinkedHashMap<>();
+    private List<String> forgetMemory = new ArrayList<>();
     private String rawContent;
     private String error;
 

@@ -51,6 +51,7 @@ public class DataBaseConst {
     public final static String T_AI_SESSION = "t_ai_session";
     public final static String T_AI_MESSAGE = "t_ai_message";
     public final static String T_AI_USAGE = "t_ai_usage";
+    public final static String T_AI_MEMORY = "t_ai_memory";
 
     public final static String SQLITE_SYS_T_SQLITE_SCHEMA = "sqlite_schema";
     public final static String SQLITE_SYS_T_SQLITE_SEQUENCE = "sqlite_sequence";

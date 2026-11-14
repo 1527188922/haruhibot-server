@@ -118,4 +118,6 @@ public interface SqliteDatabaseInitMapper {
     int createAiMessage(@Param("tableName") String tableName);
 
     int createAiUsage(@Param("tableName") String tableName);
+
+    int createAiMemory(@Param("tableName") String tableName);
 }

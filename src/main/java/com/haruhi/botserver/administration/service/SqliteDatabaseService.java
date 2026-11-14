@@ -243,6 +243,11 @@ public class SqliteDatabaseService{
                 StrFormatter.format("{}_time_idx", DataBaseConst.T_AI_USAGE),
                 "created_at",
                 false);
+        sqliteDatabaseInitMapper.createAiMemory(DataBaseConst.T_AI_MEMORY);
+        sqliteDatabaseInitMapper.createIndexEnhance(DataBaseConst.T_AI_MEMORY,
+                StrFormatter.format("{}_session_key_idx", DataBaseConst.T_AI_MEMORY),
+                "session_id,mem_key",
+                true);
     }
 
     private static final ConcurrentHashMap<String,Boolean> tableExistsCache = new ConcurrentHashMap<>();

@@ -76,6 +76,26 @@ public final class AiChatSettings {
         return Math.max(200, Configs.getInt(ConfigKey.DS_CHAT_ROLE_MAX_CHARS, 6000));
     }
 
+    public static boolean memoryEnabled() {
+        return Configs.getBool(ConfigKey.DS_CHAT_MEMORY_ENABLE, true);
+    }
+
+    public static boolean memoryAutoSave() {
+        return memoryEnabled() && Configs.getBool(ConfigKey.DS_CHAT_MEMORY_AUTO_SAVE, true);
+    }
+
+    public static int memoryMaxEntries() {
+        return Math.max(1, Configs.getInt(ConfigKey.DS_CHAT_MEMORY_MAX_ENTRIES, 20));
+    }
+
+    public static int memoryMaxValueChars() {
+        return Math.max(20, Configs.getInt(ConfigKey.DS_CHAT_MEMORY_MAX_VALUE_CHARS, 200));
+    }
+
+    public static int memoryInjectMax() {
+        return Math.max(1, Configs.getInt(ConfigKey.DS_CHAT_MEMORY_INJECT_MAX, 10));
+    }
+
     public static long dedupeTtlMillis() {
         return Math.max(1, Configs.getInt(ConfigKey.DS_CHAT_DEDUPE_TTL_SECONDS, 300)) * 1000L;
     }

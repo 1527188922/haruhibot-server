@@ -10,7 +10,9 @@ import com.haruhi.botserver.features.ai.support.AiChatSettings;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 解析模型输出的 JSON 协议。对字段宽容、对类型严格。
@@ -46,9 +48,15 @@ public final class AiReplyParser {
             call.put("args", root.get("arguments"));
         }
         JSONArray messages = firstArray(root, "messages");
+        Map<String, String> memory = parseMemory(root.get("memory"));
+        List<String> forgetMemory = parseForget(root.get("forget"));
+        Object memoryRaw = root.get("memory");
+        if (memoryRaw instanceof JSONObject memoryObject) {
+            forgetMemory.addAll(parseForget(memoryObject.get("forget")));
+        }
 
         if ("silent".equalsIgnoreCase(type) || Boolean.TRUE.equals(root.getBoolean("silent"))) {
-            return AiReply.silent();
+            return withMemory(AiReply.silent(), memory, forgetMemory);
         }
         if (call != null || "call".equalsIgnoreCase(type)) {
             if (call == null) {
@@ -64,16 +72,84 @@ public final class AiReplyParser {
             if (StringUtils.isBlank(toolCall.getName())) {
                 return AiReply.invalid("call_name_missing");
             }
-            return AiReply.call(toolCall);
+            return withMemory(AiReply.call(toolCall), memory, forgetMemory);
         }
         if ("say".equalsIgnoreCase(type) || messages != null) {
             List<AiReplyMessage> result = parseMessages(messages, root);
             if (result.isEmpty()) {
                 return AiReply.invalid("say_empty");
             }
-            return AiReply.say(result);
+            return withMemory(AiReply.say(result), memory, forgetMemory);
         }
         return AiReply.invalid("unknown_type");
+    }
+
+    private static AiReply withMemory(AiReply reply, Map<String, String> memory, List<String> forget) {
+        reply.setMemory(memory == null ? new LinkedHashMap<>() : memory);
+        reply.setForgetMemory(forget == null ? new ArrayList<>() : forget);
+        return reply;
+    }
+
+    private static Map<String, String> parseMemory(Object raw) {
+        Map<String, String> result = new LinkedHashMap<>();
+        if (raw instanceof JSONObject object) {
+            Object add = object.get("add");
+            JSONObject source = add instanceof JSONObject addObject ? addObject : object;
+            for (Map.Entry<String, Object> entry : source.entrySet()) {
+                if ("add".equals(entry.getKey()) || "forget".equals(entry.getKey())) {
+                    continue;
+                }
+                String key = entry.getKey();
+                String value = stringValue(entry.getValue());
+                if (StringUtils.isNotBlank(key) && StringUtils.isNotBlank(value)) {
+                    result.put(key, value);
+                }
+            }
+        } else if (raw instanceof JSONArray array) {
+            for (int i = 0; i < array.size(); i++) {
+                String value = stringValue(array.get(i));
+                if (StringUtils.isNotBlank(value)) {
+                    result.put("m" + (i + 1), value);
+                }
+            }
+        } else if (raw != null) {
+            String value = stringValue(raw);
+            if (StringUtils.isNotBlank(value)) {
+                result.put("note", value);
+            }
+        }
+        return result;
+    }
+
+    private static List<String> parseForget(Object raw) {
+        List<String> result = new ArrayList<>();
+        if (raw instanceof JSONArray array) {
+            for (int i = 0; i < array.size(); i++) {
+                String key = stringValue(array.get(i));
+                if (StringUtils.isNotBlank(key)) {
+                    result.add(key);
+                }
+            }
+        } else if (raw != null) {
+            String key = stringValue(raw);
+            if (StringUtils.isNotBlank(key)) {
+                result.add(key);
+            }
+        }
+        return result;
+    }
+
+    private static String stringValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String text) {
+            return text;
+        }
+        if (value instanceof Number || value instanceof Boolean) {
+            return String.valueOf(value);
+        }
+        return null;
     }
 
     private static List<AiReplyMessage> parseMessages(JSONArray array, JSONObject root) {

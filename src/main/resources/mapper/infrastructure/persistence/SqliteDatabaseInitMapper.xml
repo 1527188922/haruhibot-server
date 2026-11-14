@@ -376,6 +376,17 @@
         );
     </update>
 
+    <update id="createAiMemory">
+        CREATE TABLE IF NOT EXISTS `${tableName}` (
+            `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            `session_id` INTEGER NOT NULL,
+            `mem_key` TEXT NOT NULL,
+            `mem_value` TEXT NOT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+            `updated_at` DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+        );
+    </update>
+
     <select id="pragmaTableInfo" resultType="com.haruhi.botserver.infrastructure.persistence.persistence.entity.TableInfoSqlite">
         PRAGMA table_info(${tableName})
     </select>

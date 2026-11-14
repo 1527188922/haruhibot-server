@@ -48,7 +48,7 @@ class AiChatServiceTest {
         RoleCardService roleCardService = new RoleCardService();
         AiSessionService sessionService = new AiSessionService(null, null, null);
         AiContextService contextService = new AiContextService();
-        PromptAssembler promptAssembler = new PromptAssembler(roleCardService);
+        PromptAssembler promptAssembler = new PromptAssembler(roleCardService, new AiMemoryService(null));
         DeepSeekClient client = mock(DeepSeekClient.class);
         AiSendService sendService = mock(AiSendService.class);
         AiToolService toolService = mock(AiToolService.class);
@@ -65,7 +65,7 @@ class AiChatServiceTest {
         }).when(sendService).send(any(), any(), any(), anyList(), any(), anyList());
 
         AiChatService service = new AiChatService(sessionService, contextService, promptAssembler,
-                client, sendService, toolService);
+                client, sendService, toolService, new AiMemoryService(null));
 
         AiIncoming incoming = new AiIncoming();
         incoming.setKey(new AiSessionKey(2L, com.haruhi.botserver.features.ai.model.AiScene.GROUP, 10L));
