@@ -29,8 +29,8 @@ class MessageDispatcherPolicyTest {
             public int weight() { return 1; }
             public String funName() { return "example"; }
         };
-        MessageDispatcher first = new MessageDispatcher(Map.of("example", handler));
-        MessageDispatcher second = new MessageDispatcher(Map.of("example", handler));
+        MessageDispatcher first = new MessageDispatcher(Map.of("example", handler), new DebounceSupport());
+        MessageDispatcher second = new MessageDispatcher(Map.of("example", handler), new DebounceSupport());
         assertEquals(1, first.getContainer().size());
         assertEquals(1, second.getContainer().size());
         assertNotSame(first.getContainer(), second.getContainer());
@@ -43,7 +43,7 @@ class MessageDispatcherPolicyTest {
         Files.writeString(directory.resolve("config/bot.properties"), "bot.switch.disable_group=" + disabled + "\nbot.access_groups=999\n");
         Configs.useConfigDirForTest(directory.toString());
         Message message = JSON.parseObject("{\"message_type\":\"group\",\"group_id\":123,\"user_id\":1,\"self_id\":2}", Message.class);
-        MessageDispatcher dispatcher = new MessageDispatcher(Map.of());
+        MessageDispatcher dispatcher = new MessageDispatcher(Map.of(), new DebounceSupport());
         IMessageHandler ordinary = new IMessageHandler() {
             public int weight() { return 1; }
             public String funName() { return "ordinary"; }

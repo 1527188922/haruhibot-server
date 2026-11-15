@@ -31,7 +31,10 @@ public class MessageDispatcher {
 
 
 
-    public MessageDispatcher(Map<String, IMessageHandler> map) {
+    private final DebounceSupport debounceSupport;
+
+    public MessageDispatcher(Map<String, IMessageHandler> map, DebounceSupport debounceSupport) {
+        this.debounceSupport = debounceSupport;
         loadHandlers(map);
     }
 
@@ -141,7 +144,7 @@ public class MessageDispatcher {
         }
         for (IMessageHandler element : handlers) {
             try {
-                if (toContinue(element, message)) {
+                if (skip(element, message)) {
                     continue;
                 }
                 if (element instanceof IAllMessageHandler handler) {
@@ -169,7 +172,7 @@ public class MessageDispatcher {
         }
         for (IMessageHandler element : handlers) {
             try {
-                if (toContinue(element, message)) {
+                if (skip(element, message)) {
                     continue;
                 }
                 if (element instanceof IAllMessageHandler handler) {
@@ -193,6 +196,25 @@ public class MessageDispatcher {
     private void printLog(String fnName,String messageType, Message message){
         log.info("[触发Handler][{}][{}][UID:{}][GID:{}] {}",
                 messageType, fnName, message.getUserId(), message.getGroupId(), message.getRawMessage());
+    }
+
+    /**
+     * 是否跳过当前handler：先做配置/权限准入判断，再做事件级防抖判断
+     *
+     * @param handler 处理器
+     * @param message 本次消息事件
+     * @return true:跳过当前handler不执行
+     */
+    private boolean skip(IMessageHandler handler, Message message){
+        if (toContinue(handler, message)) {
+            return true;
+        }
+        if (debounceSupport.isDebounced(handler, message)) {
+            log.info("【触发防抖】消息事件重复，已忽略 handler：{}，UID：{}，GID：{}",
+                    handler.getClass().getSimpleName(), message.getUserId(), message.getGroupId());
+            return true;
+        }
+        return false;
     }
 
     /**

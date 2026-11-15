@@ -1,6 +1,5 @@
 package com.haruhi.botserver.features.ai.handler;
 
-import com.haruhi.botserver.bot.dispatch.DebounceSupport;
 import com.haruhi.botserver.bot.handler.DebounceParam;
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
 import com.haruhi.botserver.bot.handler.IAllMessageHandler;
@@ -23,6 +22,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * DeepSeek 兜底聊天入口（W_170）。只负责判定/入队，实际生成在会话 worker。
+ * 事件去重由 MessageDispatcher 统一入口通过 IDebounceable 完成，本类不再自行判定。
  */
 @Component
 @Slf4j
@@ -32,18 +32,15 @@ public class DeepSeekChatHandler implements IAllMessageHandler, IDebounceable<Me
     private final AiTriggerPolicy triggerPolicy;
     private final AiChatService chatService;
     private final AiSessionService sessionService;
-    private final DebounceSupport debounceSupport;
 
     public DeepSeekChatHandler(AiScopeService scopeService,
                                AiTriggerPolicy triggerPolicy,
                                AiChatService chatService,
-                               AiSessionService sessionService,
-                               DebounceSupport debounceSupport) {
+                               AiSessionService sessionService) {
         this.scopeService = scopeService;
         this.triggerPolicy = triggerPolicy;
         this.chatService = chatService;
         this.sessionService = sessionService;
-        this.debounceSupport = debounceSupport;
     }
 
     @Override
@@ -58,12 +55,16 @@ public class DeepSeekChatHandler implements IAllMessageHandler, IDebounceable<Me
 
     @Override
     public DebounceParam debounceParam(Message message) {
-        if (message == null || !scopeService.enabled(message)) {
+        if (message == null || message.isSelfMsg() || !scopeService.enabled(message)) {
+            return null;
+        }
+        String messageId = message.getMessageId();
+        if (StringUtils.isBlank(messageId)) {
+            // 无消息id时放弃去重，避免哈希兜底误判导致静默吞消息
             return null;
         }
         AiSessionKey key = AiSessionKey.of(message);
-        String id = StringUtils.defaultIfBlank(message.getMessageId(), fallbackHash(message));
-        return new DebounceParam("dschat:dup:" + key.cacheKey() + ":" + id,
+        return new DebounceParam("dschat:dup:" + key.cacheKey() + ":" + messageId,
                 AiChatSettings.dedupeTtlMillis());
     }
 
@@ -83,17 +84,11 @@ public class DeepSeekChatHandler implements IAllMessageHandler, IDebounceable<Me
         AiTriggerDecision decision = triggerPolicy.decide(bot, message, incoming);
 
         if (incoming.isAtOnly()) {
-            if (debounceSupport.isDebounced(this, message)) {
-                return true;
-            }
             chatService.enqueue(key, turn(bot, incoming, decision, true));
             return true;
         }
         if (!decision.triggered()) {
             return false;
-        }
-        if (debounceSupport.isDebounced(this, message)) {
-            return true;
         }
         chatService.enqueue(key, turn(bot, incoming, decision, decision.direct()));
         return true;
@@ -109,10 +104,5 @@ public class DeepSeekChatHandler implements IAllMessageHandler, IDebounceable<Me
         long cap = decision.atOnly() ? AiChatSettings.mentionCapMillis() : AiChatSettings.debounceMaxWaitMillis();
         turn.setDeadline(now + cap);
         return turn;
-    }
-
-    private String fallbackHash(Message message) {
-        return Integer.toHexString((String.valueOf(message.getSelfId()) + message.getUserId()
-                + message.getGroupId() + message.getTime() + message.getRawMessage()).hashCode());
     }
 }
