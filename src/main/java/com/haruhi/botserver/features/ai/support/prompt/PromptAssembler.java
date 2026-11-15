@@ -126,6 +126,9 @@ public class PromptAssembler {
         String name = incoming == null ? "群友" : incoming.getUserName();
         long userId = incoming == null ? 0L : incoming.getUserId();
         String text = mergedText(turns);
+        if (StringUtils.isBlank(text) && incoming != null && incoming.isAtOnly()) {
+            text = "（只@了你，没有文字）";
+        }
         LocalDateTime now = LocalDateTime.now();
         String time = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                 + " " + weekday(now.getDayOfWeek());

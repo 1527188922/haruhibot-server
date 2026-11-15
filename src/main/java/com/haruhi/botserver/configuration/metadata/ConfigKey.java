@@ -225,8 +225,6 @@ public enum ConfigKey {
             "纯 @ 无文本的最小等待，单位毫秒", 470),
     DS_CHAT_GROUP_AT_ONLY_DELAY_MAX_MS(ConfigFile.AI, "ds.chat.group.at_only_delay_max_ms", ConfigType.INT, "25000", true,
             "纯 @ 无文本的最大等待，单位毫秒", 480),
-    DS_CHAT_GROUP_REPLY_AT_ONLY(ConfigFile.AI, "ds.chat.group.reply_at_only", ConfigType.BOOL, "true", true,
-            "纯 @ 无文本等待结束后是否回一个“？”", 490),
 
     DS_CHAT_PRIVATE_ENABLE(ConfigFile.AI, "ds.chat.private.enable", ConfigType.BOOL, "false", true,
             "私聊 DeepSeek 聊天总开关", 500),

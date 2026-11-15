@@ -173,10 +173,6 @@ public final class AiChatSettings {
         return Math.max(0, Configs.getInt(ConfigKey.DS_CHAT_GROUP_USER_COOLDOWN_MS, 10000));
     }
 
-    public static boolean replyAtOnly() {
-        return Configs.getBool(ConfigKey.DS_CHAT_GROUP_REPLY_AT_ONLY, true);
-    }
-
     public static long mentionWaitMillis(String text) {
         int min = Math.max(0, Configs.getInt(ConfigKey.DS_CHAT_GROUP_MENTION_DELAY_MIN_MS, 5000));
         int max = Math.max(min, Configs.getInt(ConfigKey.DS_CHAT_GROUP_MENTION_DELAY_MAX_MS, 15000));
