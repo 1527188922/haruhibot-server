@@ -18,7 +18,18 @@ public class AiPrompt {
 
     public void add(DeepSeekMessage message) {
         messages.add(message);
-        estimatedTokens += estimate(message.getContent());
+        estimatedTokens += estimate(message);
+    }
+
+    public static int estimate(DeepSeekMessage message) {
+        if (message == null) {
+            return 0;
+        }
+        int tokens = estimate(message.getContent());
+        if (message.getImageUrls() != null) {
+            tokens += message.getImageUrls().size() * 1024;
+        }
+        return tokens;
     }
 
     public void addToolResult(String assistantJson, String toolResult) {

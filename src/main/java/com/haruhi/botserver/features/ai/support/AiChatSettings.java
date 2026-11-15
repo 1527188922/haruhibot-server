@@ -109,6 +109,14 @@ public final class AiChatSettings {
                 && "deepseek-flash".equals(model());
     }
 
+    public static boolean emojiEnabled() {
+        return Configs.getBool(ConfigKey.DS_CHAT_EMOJI_ENABLE, true);
+    }
+
+    public static int emojiMaxList() {
+        return Math.max(0, Configs.getInt(ConfigKey.DS_CHAT_EMOJI_MAX_LIST, 50));
+    }
+
     // ==================== 群聊 ====================
 
     public static List<Long> groupWhitelist() {

@@ -118,6 +118,7 @@ public class AiChatService {
             a.setAtOnly(false);
         }
         a.getMessageIds().addAll(b.getMessageIds());
+        a.getImageUrls().addAll(b.getImageUrls());
         if (b.isHasImage()) {
             a.setHasImage(true);
         }

@@ -185,6 +185,10 @@ public enum ConfigKey {
             "不触发 AI 的 QQ 号黑名单，逗号分隔", 250),
     DS_CHAT_VISION_ENABLE(ConfigFile.AI, "ds.chat.vision.enable", ConfigType.BOOL, "false", true,
             "是否把图片传给 deepseek-flash 做视觉理解；关闭时只发 [图片] 占位", 260),
+    DS_CHAT_EMOJI_ENABLE(ConfigFile.AI, "ds.chat.emoji.enable", ConfigType.BOOL, "true", true,
+            "是否允许 AI 从 aichat/emojis 目录中选择表情发送", 262),
+    DS_CHAT_EMOJI_MAX_LIST(ConfigFile.AI, "ds.chat.emoji.max_list", ConfigType.INT, "50", true,
+            "最多向 AI 展示多少个表情名称", 263),
 
     DS_CHAT_GROUP_WHITELIST(ConfigFile.AI, "ds.chat.group.whitelist", ConfigType.LIST, "", true,
             "启用 DeepSeek 聊天的群号白名单，逗号分隔；留空=所有群都不启用", 300),

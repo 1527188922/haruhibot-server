@@ -11,6 +11,7 @@ import com.haruhi.botserver.features.ai.persistence.entity.AiMemoryEntity;
 import com.haruhi.botserver.features.ai.persistence.entity.AiMessageEntity;
 import com.haruhi.botserver.features.ai.service.AiMemoryService;
 import com.haruhi.botserver.features.ai.support.AiChatSettings;
+import com.haruhi.botserver.features.ai.support.EmojiService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -30,10 +31,12 @@ public class PromptAssembler {
 
     private final RoleCardService roleCardService;
     private final AiMemoryService memoryService;
+    private final EmojiService emojiService;
 
-    public PromptAssembler(RoleCardService roleCardService, AiMemoryService memoryService) {
+    public PromptAssembler(RoleCardService roleCardService, AiMemoryService memoryService, EmojiService emojiService) {
         this.roleCardService = roleCardService;
         this.memoryService = memoryService;
+        this.emojiService = emojiService;
     }
 
     public AiPrompt assemble(AiSessionState state, List<AiTurn> turns, List<AiAmbientMessage> ambient) {
@@ -46,6 +49,11 @@ public class PromptAssembler {
         system.append(PromptTemplates.PROTOCOL).append('\n');
         if (AiChatSettings.agentEnabled() && !AiChatSettings.agentTools().isEmpty()) {
             system.append(PromptTemplates.TOOLS).append('\n');
+        }
+        String emojiNames = emojiService.namesForPrompt(AiChatSettings.emojiMaxList());
+        if (StringUtils.isNotBlank(emojiNames)) {
+            system.append(PromptTemplates.EMOJI).append('\n');
+            system.append("可用表情：").append(emojiNames).append('\n');
         }
         system.append(key.group() ? PromptTemplates.SCENE_GROUP : PromptTemplates.SCENE_PRIVATE).append('\n');
         if (role == null || StringUtils.isBlank(role.content())) {
@@ -72,7 +80,13 @@ public class PromptAssembler {
 
         List<AiAmbientMessage> filteredAmbient = filterAmbient(ambient, history);
         List<AiMemoryEntity> memories = memoryService.list(state, AiChatSettings.memoryInjectMax());
-        prompt.add(DeepSeekMessage.user(contextBlock(key, turns, filteredAmbient, memories)));
+        String context = contextBlock(key, turns, filteredAmbient, memories);
+        AiIncoming current = turns.isEmpty() ? null : turns.get(0).getIncoming();
+        if (current != null && AiChatSettings.visionEnabled() && !current.getImageUrls().isEmpty()) {
+            prompt.add(DeepSeekMessage.userWithImages(context, current.getImageUrls()));
+        } else {
+            prompt.add(DeepSeekMessage.user(context));
+        }
 
         int budget = AiChatSettings.historyMaxInputTokens();
         while (prompt.getEstimatedTokens() > budget && prompt.getMessages().size() > 3) {
@@ -190,7 +204,7 @@ public class PromptAssembler {
     private int recalculate(List<DeepSeekMessage> messages) {
         int total = 0;
         for (DeepSeekMessage message : messages) {
-            total += AiPrompt.estimate(message.getContent());
+            total += AiPrompt.estimate(message);
         }
         return total;
     }

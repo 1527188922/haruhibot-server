@@ -9,6 +9,7 @@ import lombok.Data;
 public class AiReplyMessage {
 
     private String text;
+    private String emoji;
     private int delayMs;
     private String replyTo;
     private String at;

@@ -105,7 +105,27 @@ public class DeepSeekClient implements ConfigApplier {
         for (DeepSeekMessage message : messages) {
             JSONObject item = new JSONObject(true);
             item.put("role", message.getRole());
-            item.put("content", message.getContent() == null ? "" : message.getContent());
+            if (message.getImageUrls() != null && !message.getImageUrls().isEmpty() && AiChatSettings.visionEnabled()) {
+                JSONArray content = new JSONArray();
+                JSONObject textPart = new JSONObject(true);
+                textPart.put("type", "text");
+                textPart.put("text", message.getContent() == null ? "" : message.getContent());
+                content.add(textPart);
+                for (String url : message.getImageUrls()) {
+                    if (StringUtils.isBlank(url)) {
+                        continue;
+                    }
+                    JSONObject imageUrl = new JSONObject(true);
+                    imageUrl.put("url", url);
+                    JSONObject imagePart = new JSONObject(true);
+                    imagePart.put("type", "image_url");
+                    imagePart.put("image_url", imageUrl);
+                    content.add(imagePart);
+                }
+                item.put("content", content);
+            } else {
+                item.put("content", message.getContent() == null ? "" : message.getContent());
+            }
             if (StringUtils.isNotBlank(message.getName())) {
                 item.put("name", message.getName());
             }

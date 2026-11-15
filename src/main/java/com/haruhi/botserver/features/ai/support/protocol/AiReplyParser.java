@@ -158,9 +158,11 @@ public final class AiReplyParser {
         if (array == null) {
             // 允许 {"type":"say","text":"..."} 这种简化写法
             String text = root.getString("text");
-            if (StringUtils.isNotBlank(text)) {
+            String emoji = StringUtils.defaultIfBlank(root.getString("emoji"), root.getString("sticker"));
+            if (StringUtils.isNotBlank(text) || StringUtils.isNotBlank(emoji)) {
                 AiReplyMessage message = new AiReplyMessage();
                 message.setText(text);
+                message.setEmoji(emoji);
                 result.add(message);
             }
             return result;
@@ -179,11 +181,13 @@ public final class AiReplyParser {
                 continue;
             }
             String text = object.getString("text");
-            if (StringUtils.isBlank(text)) {
+            String emoji = StringUtils.defaultIfBlank(object.getString("emoji"), object.getString("sticker"));
+            if (StringUtils.isBlank(text) && StringUtils.isBlank(emoji)) {
                 continue;
             }
             AiReplyMessage message = new AiReplyMessage();
             message.setText(text);
+            message.setEmoji(emoji);
             message.setDelayMs(parseDelay(object));
             message.setReplyTo(StringUtils.defaultIfBlank(object.getString("reply_to"), object.getString("replyTo")));
             message.setAt(StringUtils.defaultIfBlank(object.getString("at"), object.getString("at_qq")));

@@ -10,6 +10,7 @@ import com.haruhi.botserver.features.ai.model.AiReplyMessage;
 import com.haruhi.botserver.features.ai.model.AiSessionKey;
 import com.haruhi.botserver.features.ai.model.AiSessionState;
 import com.haruhi.botserver.features.ai.model.AiTurn;
+import com.haruhi.botserver.features.ai.support.EmojiService;
 import com.haruhi.botserver.features.ai.support.prompt.PromptAssembler;
 import com.haruhi.botserver.features.ai.support.prompt.RoleCardService;
 import org.junit.jupiter.api.AfterEach;
@@ -47,8 +48,8 @@ class AiChatServiceTest {
         Configs.useConfigDirForTest(dir.toString());
         RoleCardService roleCardService = new RoleCardService();
         AiSessionService sessionService = new AiSessionService(null, null, null);
-        AiContextService contextService = new AiContextService();
-        PromptAssembler promptAssembler = new PromptAssembler(roleCardService, new AiMemoryService(null));
+        AiContextService contextService = new AiContextService(null);
+        PromptAssembler promptAssembler = new PromptAssembler(roleCardService, new AiMemoryService(null), new EmojiService());
         DeepSeekClient client = mock(DeepSeekClient.class);
         AiSendService sendService = mock(AiSendService.class);
         AiToolService toolService = mock(AiToolService.class);

@@ -9,6 +9,7 @@ import com.haruhi.botserver.features.ai.model.AiScene;
 import com.haruhi.botserver.features.ai.model.AiSessionKey;
 import com.haruhi.botserver.features.ai.model.AiSessionState;
 import com.haruhi.botserver.features.ai.persistence.entity.AiSessionEntity;
+import com.haruhi.botserver.features.ai.support.EmojiService;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class AiSendServiceTest {
         Configs.useConfigDirForTest(dir.toString());
 
         AiSessionService sessionService = new AiSessionService(null, null, null);
-        AiSendService sendService = new AiSendService(sessionService, new AiRateLimiter());
+        AiSendService sendService = new AiSendService(sessionService, new AiRateLimiter(), new EmojiService());
         Bot bot = mock(Bot.class);
         when(bot.isOnline()).thenReturn(true);
 

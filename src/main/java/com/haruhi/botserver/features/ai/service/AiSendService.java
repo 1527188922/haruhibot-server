@@ -7,6 +7,7 @@ import com.haruhi.botserver.features.ai.model.AiReplyMessage;
 import com.haruhi.botserver.features.ai.model.AiSessionKey;
 import com.haruhi.botserver.features.ai.model.AiSessionState;
 import com.haruhi.botserver.features.ai.support.AiChatSettings;
+import com.haruhi.botserver.features.ai.support.EmojiService;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -27,10 +28,12 @@ public class AiSendService {
 
     private final AiSessionService sessionService;
     private final AiRateLimiter rateLimiter;
+    private final EmojiService emojiService;
 
-    public AiSendService(AiSessionService sessionService, AiRateLimiter rateLimiter) {
+    public AiSendService(AiSessionService sessionService, AiRateLimiter rateLimiter, EmojiService emojiService) {
         this.sessionService = sessionService;
         this.rateLimiter = rateLimiter;
+        this.emojiService = emojiService;
     }
 
     public void send(Bot bot, AiSessionState state, AiSessionKey key, List<AiReplyMessage> messages,
@@ -105,7 +108,16 @@ public class AiSendService {
                     && !message.getAt().equals(String.valueOf(key.selfId()))) {
                 holders.addAll(MessageHolder.instanceAt(message.getAt()));
             }
-            holders.addAll(MessageHolder.instanceText(message.getText()));
+            if (StringUtils.isNotBlank(message.getText())) {
+                holders.addAll(MessageHolder.instanceText(message.getText()));
+            }
+            EmojiService.Emoji emoji = emojiService.find(message.getEmoji()).orElse(null);
+            if (emoji != null) {
+                holders.add(MessageHolder.instanceImage(emoji.path().toString().replace('\\', '/')));
+            }
+            if (holders.isEmpty()) {
+                continue;
+            }
 
             try {
                 if (key.group()) {
@@ -113,11 +125,19 @@ public class AiSendService {
                 } else {
                     bot.sendPrivateMessage(key.targetId(), holders);
                 }
-                sessionService.appendAssistant(state, message.getText());
+                sessionService.appendAssistant(state, historyText(message, emoji));
             } catch (Exception e) {
                 log.error("发送AI消息失败: session={}, text={}", key.cacheKey(), message.getText(), e);
                 return;
             }
         }
+    }
+
+    private String historyText(AiReplyMessage message, EmojiService.Emoji emoji) {
+        String text = StringUtils.defaultString(message.getText());
+        if (emoji == null) {
+            return text;
+        }
+        return (text.isBlank() ? "" : text + " ") + "[表情:" + emoji.name() + "]";
     }
 }

@@ -1,7 +1,7 @@
 # DeepSeek 群聊 / 私聊 + 角色卡 + 伪 Agent 实施方案
 
-> 状态：后端阶段 1 + 阶段 2 + 长期记忆已落地；WebUI/视觉/联网搜索仍为后续项
-> 日期：2026-11-10（初稿）；2026-11-14 修订并实施（合并 master 后的基线变化）
+> 状态：后端阶段 1 + 阶段 2 + 长期记忆 + 聊天记录回填 + 视觉 + 自定义表情包已落地；WebUI/联网搜索仍为后续项
+> 日期：2026-11-10（初稿）；2026-11-14 修订并实施（合并 master 后的基线变化）；2026-11-15 补充视觉、自定义表情包、纯 @ 行为调整
 > 适用工程：`D:\JavaProject\haruhibot-server`
 > 参考实现：`D:\Project\qq-bridge-main`
 > 官方文档：
@@ -150,7 +150,7 @@ qq-bridge 是“DSH agent 接入 QQ”的项目，提示词分两层：
 ### 2.2 非目标（本期不做）
 
 - 不做真正的多步自主 Agent（文件、命令、浏览器、数据库操作）；
-- 不做语音、表情包、拍一拍、合并转发、图片生成；
+- 不做语音、拍一拍、合并转发、图片生成；表情包只支持本地图片目录（见 18.2），不做 QQ 收藏表情；
 - 不做群管理（禁言/踢人/改名片）；
 - 不做跨群记忆共享；
 - 不做 WebUI 的完整可视化编辑器（第二阶段）；
@@ -301,14 +301,14 @@ W_170(170, "DeepSeek聊天")   // 小于 W_180 自定义回复；仅在 AI 启�
 
 - 普通提及：随机等待 `ds.chat.group.mention_delay_min_ms` ~ `mention_delay_max_ms`（默认 5000~15000ms）后再入队；文本越短越靠上限，完整问题取下限附近；
 - 等待窗口本身就是合并窗口：从收到触发消息开始计时，期间同一用户继续发消息会合并进同一轮并重新计时，总等待不超过 `ds.chat.group.mention_delay_cap_ms`（默认 30000ms）；不再额外叠加 2~6 秒 debounce；
-- 纯 @ 无文本（且无附件）：等待更久，随机 `ds.chat.group.at_only_delay_min_ms` ~ `at_only_delay_max_ms`（默认 15000~25000ms）；期间用户补了文本，就按普通提及合并处理；等待结束仍无内容时回一个“？”（`ds.chat.group.reply_at_only=true`，默认 true）；
+- 纯 @ 无文本（且无附件）：等待更久，随机 `ds.chat.group.at_only_delay_min_ms` ~ `at_only_delay_max_ms`（默认 15000~25000ms）；期间用户补了文本，就按普通提及合并处理；等待结束仍无内容时仍交给模型，由模型决定是否回复、回什么（可以只发一个表情或 `silent`）；
 - 这段等待在服务端完成，模型输出的第一条 `delay_ms` 保持 0，避免双重延迟；
 - 私聊不走这个等待窗口，只走 2~6 秒 debounce。
 
 #### 边界
 
 - `@全体成员` 不触发；
-- 纯 @ 无文本（且无附件）：触发，但走更长的等待窗口；等待结束仍无内容时回一个“？”（`ds.chat.group.reply_at_only=true`，默认 true）；
+- 纯 @ 无文本（且无附件）：触发，但走更长的等待窗口；等待结束仍无内容时仍交给模型，由模型决定接不接、回什么；
 - 机器人自己的消息、其他机器人的消息不触发；其他机器人如果无法识别，建议用 `ds.chat.ignore_user_ids` 黑名单过滤；
 - 群访问列表、`bot.switch.disable_group` 由 `MessageDispatcher.toContinue` 统一拦截，AI Handler 不 `bypassGroupRestrictions`；
 - 私聊不受群开关影响。
@@ -355,7 +355,12 @@ record AiSessionKey(long selfId, AiScene scene, long targetId) {}
 
 每条环境上下文都带 `messageId`；组装时排除“已经出现在会话历史里”的消息，避免同一句话在 history 和【最近群聊】里出现两遍。
 
-重启后环境上下文为空；第一轮只能看到“本条消息 + 空环境”。第二阶段可选从聊天记录表回填最近 N 条（`ChatRecordService.recentGroupMessages`），本期不做，避免跨功能依赖和 CQ 码清洗成本。
+重启后环境上下文为空；此时由 `AiContextService` 从聊天记录表回填最近 N 条（`ChatRecordService.recentGroupMessages`，已落地）：
+
+- 只在内存上下文条数不足 `ambient_size` 时回填，最多取 `min(50, limit * 2)` 条；
+- 过滤机器人自己发的消息、已撤回的消息、当前这条消息、以及超过 30 分钟的消息；
+- CQ 码转成 `[图片]` / `[表情]` / `[语音]` / `[视频]` / `[卡片]` / `[音乐]` / `[文件]` / `@你` 占位；
+- 与内存上下文按 `messageId` 去重，按时间排序后截取最近 `ambient_size` 条。
 
 ### 4.5 去重、并发、限流
 
@@ -510,10 +515,11 @@ class SessionState {
 
 - 每次只输出一个 JSON 对象，不能有 JSON 以外的文字，不能包 ```json 代码块；
 - `type` 只能是 `say` / `call` / `silent`；
-- `say.messages[]`：每条一句完整的话，1~30 字，一次最多 4 条，默认 1~2 条；
+- `say.messages[]`：每条一句完整的话（或只带一个 `emoji`），1~30 字，一次最多 4 条，默认 1~2 条；
 - `delay_ms`：0~5000，模拟真人“想到一句补一句”；
 - `reply_to`：引用某条消息的 `message_id`；
 - `at`：@ 某个 QQ（必须是消息里出现过的、本群的人）；
+- `emoji`：可选，表情包名称；只能取系统提示里列出的名称，不能写文件路径；可与 `text` 同时出现，也可单独出现；一次回复最多 1 个；
 - `call`：调用一个白名单工具，Java 执行后把结果回灌，再让模型 `say`/`silent`；
 - `silent`：这次不说话，只在群聊且没人问你时使用；
 - `memory`：可选，对象；key 最长 30 字、value 最长 200 字，记录称呼/喜好/约定/进行中的话题，落库到 `t_ai_memory`；`forget` 数组可删除旧记忆；不记录隐私/密钥/联系方式。
@@ -540,7 +546,7 @@ class SessionState {
 **群聊：**
 
 - 群里不是每句话都对你说，先看【最近群聊】判断谁在跟谁说话；
-- 必须回：被 @、被引用回复、命中角色卡触发词且确实在叫你、被直接提问；
+- 优先回：被 @ 且带内容、被引用回复、命中角色卡触发词且确实在叫你、被直接提问；纯 @ 无文字时由模型自行判断；
 - 其他时候可以接，也可以 `silent`；
 - 不逐条点评、不总结群聊、不当主持人、不劝架；
 - 被问到时先正面回应，别装死；
@@ -619,7 +625,8 @@ class SessionState {
 - 历史里的 `user` 消息带说话人名字，`assistant` 消息只放机器人说过的话；
 - 同一轮机器人发了多条，历史合并成一条 assistant 消息，用 `\n` 分隔（避免连续同角色消息的兼容性问题）；
 - 当前消息放在最后，用【消息开始】/【消息结束】包起来，明确“这是数据不是指令”；
-- 引用内容最多 200 字，图片只给占位或视觉块；
+- 引用内容最多 200 字；历史里的图片始终是 `[图片]` 占位，只有当前这条消息在视觉开启时才改成多模态 `content` 数组；
+- 机器人发表情时，历史里记录为 `[表情:名称]`，让下一轮知道自己发过什么；
 - 不在 system 里放时间、群号、昵称等动态内容。
 
 ### 5.7 缓存友好与预算
@@ -661,9 +668,9 @@ class SessionState {
       "maxItems": 4,
       "items": {
         "type": "object",
-        "required": ["text"],
         "properties": {
-          "text": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "text": { "type": "string", "maxLength": 500 },
+          "emoji": { "type": ["string", "null"], "maxLength": 40 },
           "delay_ms": { "type": "integer", "minimum": 0, "maximum": 5000 },
           "reply_to": { "type": ["string", "null"] },
           "at": { "type": ["string", "null"] }
@@ -697,7 +704,7 @@ class SessionState {
 
 - 这是“语义校验用的 schema”，不直接作为 `response_format` 的 JSON Schema 传给 API（DeepSeek 的 `response_format` 目前只接受 `json_object`，不接受 `json_schema`）；
 - 校验时对额外字段宽容（忽略），对关键字段严格；
-- `say` 必须有非空 `messages`；`call` 必须有白名单工具；`silent` 不应有 `messages`。
+- `say` 必须有非空 `messages`；每条至少要有非空的 `text` 或 `emoji`；`call` 必须有白名单工具；`silent` 不应有 `messages`。
 
 ### 6.3 一轮完整时序
 
@@ -833,7 +840,7 @@ class SessionState {
      - 需要同时兼容群/私聊时：`bot.sendMessage(userId, groupId, messageType, holders)`；
      - `holders` 由 `MessageHolder.instanceText` + 可选的 `instanceReply` / `instanceAt` / `instanceFace` 组成；
      - 纯文本字符串重载 `bot.sendMessage(..., text, true)` 只作为兜底；AI 正常路径统一走 holder 列表，避免 CQ 解析和字符串转义问题；
-   - `MessageHolder.instanceFace(id, repeat)` 是 master 新增能力，但本期协议不暴露 `face_id`；需要发表情时先在 `AiSendService` 做白名单映射（第二阶段）；
+   - `MessageHolder.instanceFace(id, repeat)` 是 master 新增能力，但协议不暴露 `face_id`；表情包走本地图片：`EmojiService` 把 AI 给的名称映射为 `./aichat/emojis/` 下的文件，再用 `MessageHolder.instanceImage` 发送；
    - 需要拿到机器人发出的 `messageId`（用于“引用机器人消息”精确判断）时，改用 `sendSyncMessage(..., 3000)`；它会阻塞等 echo，本期不依赖，避免每条消息多等一次往返；
    - QQ 单条长度建议 <= 300 字（配置），超过切分。
 4. **落库**：
@@ -1042,14 +1049,14 @@ class Usage {
 - 可选开启：`ds.chat.thinking=enabled`，适合“认真回答”场景；注意此时 `temperature` 无效，`top_p` 行为受模型限制；
 - 本期不使用 `tools` 参数，因此不需要回传 `reasoning_content`；如果未来切原生 tool calls，必须按官方要求回传，否则 400。
 
-**视觉（可选，第二阶段）：**
+**视觉（已落地，2026-11-15）：**
 
-- `deepseek-flash` 支持图片；
-- 群聊里 @机器人 + 图片：可以把图片 URL 作为 `image_url` 传给模型；QQ 图片 URL 可能带防盗链/过期，失败时降级为 `[图片]` 占位；
-- 图片只允许出现在 user 消息中；system/assistant 带图会 400；
-- 每张图最多 1024 token；请求体 48MiB 限制；
-- `deepseek-v4-pro` 不支持视觉；如果 `ds.chat.vision.enable=true` 且模型是 pro，启动时应 warn 并自动关闭视觉；
-- 本期默认关闭 `ds.chat.vision.enable=false`，只发占位，避免 URL 下载失败和成本。
+- `deepseek-flash` 支持图片；`ds.chat.vision.enable=true` 且当前模型是 `deepseek-flash` 时才启用，其他模型自动降级为 `[图片]` 占位；
+- 只把**当前这条消息**的图片 URL 作为 `image_url` 传给模型；历史与环境上下文里的图片仍只保留 `[图片]` 占位，避免重复计费和上下文膨胀；
+- 取图顺序：`data.url` 优先，回退 `data.file`；只接受 `http/https`，去重，最多 4 张；
+- 图片只出现在 user 消息中（`content` 数组：text part + image_url parts）；system/assistant 带图会 400；
+- 每张图按 1024 token 计入预算；请求体 48MiB 限制；
+- QQ 图片 URL 可能带防盗链或过期，失败时表现为模型看不到图，不影响整轮回复。
 
 ### 7.5 余额查询（官方接口）
 
@@ -1211,7 +1218,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS `t_ai_memory_session_key_idx`
 | `ds.chat.memory.inject_max` | INT | `10` | 是 | 每轮最多注入记忆条数 |
 | `ds.chat.dedupe_ttl_seconds` | INT | `300` | 是 | 消息去重 TTL |
 | `ds.chat.ignore_user_ids` | LIST | `` | 是 | 不触发 AI 的 QQ 黑名单（其他机器人/不想理的人） |
-| `ds.chat.vision.enable` | BOOL | false | 是 | 是否把图片传给模型 |
+| `ds.chat.vision.enable` | BOOL | false | 是 | 是否把当前消息的图片传给模型（仅 `deepseek-flash` 生效） |
+| `ds.chat.emoji.enable` | BOOL | true | 是 | 是否启用 `./aichat/emojis/` 自定义表情包 |
+| `ds.chat.emoji.max_list` | INT | `50` | 是 | 注入系统提示词的表情名称上限，0 按 50 处理 |
 | `ds.chat.balance.refresh_minutes` | INT | `10` | 是 | 官方余额刷新间隔，0=不自动刷新 |
 
 > `daily_token_limit` 只用于限制 token 消耗，不代表余额；余额以官方 `/user/balance` 为准。
@@ -1235,7 +1244,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS `t_ai_memory_session_key_idx`
 | `ds.chat.group.mention_delay_cap_ms` | INT | 30000 | 等待期间连续补话的总等待上限 |
 | `ds.chat.group.at_only_delay_min_ms` | INT | 15000 | 纯 @ 无文本且无附件的最小等待 |
 | `ds.chat.group.at_only_delay_max_ms` | INT | 25000 | 纯 @ 无文本且无附件的最大等待 |
-| `ds.chat.group.reply_at_only` | BOOL | true | 纯 @ 无文本且无附件时，等待结束后是否回“？” |
 | `ds.chat.group.ambient_size` | INT | 20 | 环境上下文条数 |
 | `ds.chat.group.min_reply_interval_ms` | INT | 3000 | 群最小回复间隔 |
 | `ds.chat.group.max_replies_per_minute` | INT | 6 | 群每分钟上限 |
@@ -1333,7 +1341,8 @@ src/main/java/com/haruhi/botserver/
 │   │   ├── AiMemoryService.java                 ★ 会话级长期记忆读写/上限
 │   │   └── AiUsageService.java                   （用量目前由 AiSessionService 记录）
 │   ├── support/
-│   │   ├── AiMessageExtractor.java              ★ 消息→文本/占位/引用/atOnly
+│   │   ├── AiMessageExtractor.java              ★ 消息→文本/占位/引用/atOnly/图片 URL
+│   │   ├── EmojiService.java                    ★ ./aichat/emojis 扫描与名称映射
 │   │   ├── prompt/PromptAssembler.java          ★ 四层提示词 + 长期记忆注入
 │   │   ├── prompt/RoleCardService.java          ★ 从 ./aichat/roles 加载/过滤/Lint
 │   │   ├── protocol/AiReplyParser.java          ★ JSON 解析/修复
@@ -1386,6 +1395,8 @@ src/main/java/com/haruhi/botserver/
 | `RoleCardService` | 只从 `./aichat/roles/*.md` 加载；不做 DB、不做写入 |
 | `DeepSeekClient` | 增加 `getBalance()`，调用官方 `/user/balance` |
 | `AiMemoryService` | 新增，`t_ai_memory` 读写/去重/上限；`PromptAssembler` 注入最近记忆 |
+| `EmojiService` | 新增，扫描 `./aichat/emojis/`，文件名即表情名；AI 只输出名称，服务端映射为本地路径 |
+| `AiMessageExtractor` / `DeepSeekMessage` / `DeepSeekClient` | 收集当前消息图片 URL；视觉开启时 user 消息 `content` 改为多模态数组 |
 | `MemoryAppendTool` / `MemoryQueryTool` / `MemoryForgetTool` | 新增，模型可主动读写/删除当前会话记忆 |
 | `ConfigKey` | 新增若干 `ds.chat.*`；`ai.properties` 补默认值 |
 | `ConfigFile.AI` | 说明文字可改为“AI 模型（千问、DeepSeek 聊天/角色卡）相关配置” |
@@ -1629,7 +1640,7 @@ private void process(AiSessionKey key, AiTurn turn) {
 20. 群不在 `ds.chat.group.whitelist` → AI 不接管、青云客按原逻辑；`ds` 命令仍仅超管可触发；
 21. 把群加入白名单 → AI 接管、青云客不响应；`ds` 命令仍可用，但仅超管可触发；
 22. 私聊开关关闭/打开 → 青云客随之恢复/失效；`ds` 命令始终仅超管可触发；
-23. 群里 @机器人 → 5~15 秒后才开始回复；只 @ 不说话 → 等待更久后回“？”；
+23. 群里 @机器人 → 5~15 秒后才开始回复；只 @ 不说话 → 等待更久后由模型自行决定是否回复、回什么，可能只发一个表情或 silent；
 24. 私聊连发 3 条 → 2~6 秒内合并，只回一次；
 25. WebUI 查看余额 → 数值来自官方 `/user/balance`，不是本地估算；
 26. `random_percent=100` 时，群里只发表情/图片/@别人 → 也会进入 AI 判断，可能回复也可能 silent。
@@ -1641,6 +1652,10 @@ private void process(AiSessionKey key, AiTurn turn) {
 32. 群/私聊连发多条时，Handler 不在 `onMessage` 里再套一层 `ThreadPoolUtil.execute`；同会话仍串行、可合并。
 33. 机器人断连后触发 `member_info` 工具 → 快速失败并回退为“查询失败”，不等待 30 秒。
 34. 同一条 WS 消息重复推送（相同 messageId）→ `DebounceSupport` 拦截，只处理一次。
+35. 视觉：`ds.chat.vision.enable=true` 且模型为 `deepseek-flash`，@机器人 发图 + 问题 → 模型能描述图片内容；切到 `deepseek-v4-pro` 后同一消息只看到 `[图片]` 占位。
+36. 表情：把 `开心.png` 放入 `./aichat/emojis/` → 系统提示出现「开心」；模型输出 `{"emoji":"开心"}` → QQ 收到该图片。
+37. 表情：模型输出不存在的名称 → 该条被跳过，不报错；只有 emoji 没有 text 的消息也能正常发出。
+38. 表情：一次回复里出现 2 个 emoji → 只保留第一个；机器人发表情后，下一轮历史里能看到 `[表情:名称]`。
 
 ### 13.4 回归命令
 
@@ -1689,10 +1704,11 @@ mvn test -Dinternet-host=127.0.0.1 \
 
 ### 阶段 3：增强（可选）
 
-- [ ] 视觉：`deepseek-flash` 图片输入
+- [x] 视觉：`deepseek-flash` 图片输入（2026-11-15）
+- [x] 自定义表情包 `./aichat/emojis/` + 协议 `emoji` 字段（2026-11-15）
 - [ ] `web_search` 工具（DeepSeek Search API 或自建搜索）
 - [x] 长期记忆 `t_ai_memory`
-- [ ] 聊天记录回填环境上下文
+- [x] 聊天记录回填环境上下文（2026-11-15）
 - [ ] 思考模式/Pro 模型“认真回答”命令
 - [ ] 流式输出（仅纯文本模式；JSON 模式不适用）
 - [ ] 余额报表（只展示官方接口返回值，不做本地成本估算）
@@ -1765,7 +1781,6 @@ mvn test -Dinternet-host=127.0.0.1 \
 ### 17.2 未完成（后续）
 
 - WebUI 角色卡查看、会话管理、用量/余额页面
-- 视觉：图片 URL 传给 `deepseek-flash`
 - `web_search` 工具（需要搜索 API）
 - 流式输出（JSON 模式不适用）
 - “认真回答”命令（`deepseek-v4-pro` + thinking）
@@ -1787,6 +1802,44 @@ ds.chat.memory.enable=true
 
 ---
 
+## 18. 实施记录（2026-11-15 增量）
+
+### 18.1 视觉
+
+- 入口：`AiMessageExtractor` 收集当前消息的图片 URL（`data.url` 优先，回退 `data.file`；只接受 `http/https`、去重、最多 4 张）；
+- 承载：`AiIncoming.imageUrls` → `AiTurn` 合并 → `PromptAssembler` 仅在最后一条 user 消息使用 `DeepSeekMessage.userWithImages`；
+- 请求：`DeepSeekClient` 在 `AiChatSettings.visionEnabled()` 为真时把 `content` 组装为 `[{type:text},{type:image_url}]` 数组，否则仍是字符串；
+- 预算：`AiPrompt.estimate` 对每张图按 1024 token 计；
+- 降级：模型不是 `deepseek-flash` 或开关关闭时，图片仍只以 `[图片]` 占位进入上下文。
+
+### 18.2 自定义表情包
+
+- 目录：运行目录 `./aichat/emojis/`；开发环境该目录没有图片时回退到仓库根目录 `aichat/emojis/`；
+- 命名：文件名去扩展名即名称，中英文均可，大小写不敏感；支持 `png/jpg/jpeg/gif/webp`，单文件 ≤5MB；隐藏文件跳过；
+- 扫描：`EmojiService` 2 秒节流 + 目录 mtime 变化才重扫，运行中加图无需重启；重名保留先扫到的并 warn；
+- 协议：`messages[]` 新增可选 `emoji` 字段；`text` 与 `emoji` 至少一个；一次回复最多 1 个表情；未知名称丢弃；
+- 提示词：`PromptTemplates.EMOJI` + 名称列表（`ds.chat.emoji.max_list`）注入 system；
+- 发送：`AiSendService` 用 `EmojiService.find` 把名称映射为本地路径，再由 `MessageHolder.instanceImage` 发送（Windows 反斜杠替换为 `/`）；
+- 历史：机器人发表情时记录为 `[表情:名称]`；
+- 安全：AI 不能写路径；`EmojiService.normalize` 拒绝路径分隔符与 `..`。
+
+### 18.3 纯 @ 行为调整
+
+- 删除 `ds.chat.group.reply_at_only` 及其冷却机制；
+- 纯 @ 无文字也完整进入模型；上下文标记为“（只@了你，没有文字）”，由模型自行判断是否回复、回什么，允许只发一个表情或 `silent`。
+
+### 18.4 聊天记录回填
+
+- `AiContextService` 在内存环境上下文不足时调用 `ChatRecordService.recentGroupMessages` 回填；
+- 过滤机器人自己、已撤回、当前消息、超过 30 分钟的消息；CQ 码转占位；按 `messageId` 去重后按时间排序取最近 `ambient_size` 条。
+
+### 18.5 表情清单
+
+- 仓库提供 `aichat/emojis/表情清单.md`，定义 12 个建议表情名称与含义（开心/无语/委屈/得意/生气/疑惑/赞/笑哭/害怕/摸鱼/晚安/拒绝）；
+- 清单文件本身不会被当作表情加载，图片由运维按名称自行放入。
+
+---
+
 ## 附录 A：与 qq-bridge 的映射表
 
 | qq-bridge | 本项目 | 说明 |
@@ -1800,7 +1853,7 @@ ds.chat.memory.enable=true
 | `atUserId` | `at` | 只允许本群出现过的 QQ |
 | `qq_get_unread_messages` | `group_history` 工具 | 只查当前群 |
 | `qq_memory_append` | `memory` 字段 + `memory_append` 工具 + `t_ai_memory` | 已落地 |
-| `qq_list_stickers` / 表情包 | 暂不支持；master 已提供 `MessageHolder.instanceFace`，第二阶段可加 face 白名单 | 表情包图片/收藏仍不做 |
+| `qq_list_stickers` / 表情包 | 本地表情包 `./aichat/emojis/` + 协议 `emoji` 字段，文件名即名称 | 已落地；不支持 QQ 收藏表情与 `face_id` |
 | `qq_send_voice` / 语音 | 不支持 | 第二阶段 |
 | `qq_get_forward_msg` / 合并转发 | 不支持 | 第二阶段 |
 | `qq_send_poke` / 拍一拍 | 不支持 | 第二阶段 |

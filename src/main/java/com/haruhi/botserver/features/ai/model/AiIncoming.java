@@ -20,6 +20,7 @@ public class AiIncoming {
     private boolean hasImage;
     private String messageId;
     private final List<String> messageIds = new ArrayList<>();
+    private final List<String> imageUrls = new ArrayList<>();
     private String replyMessageId;
     private long timestamp;
     private String rawMessage;

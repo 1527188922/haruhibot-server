@@ -36,6 +36,7 @@ public final class AiReplySanitizer {
             return result;
         }
         String previous = null;
+        boolean emojiUsed = false;
         int maxCount = AiChatSettings.messageMaxCount();
         int maxChars = AiChatSettings.messageMaxChars();
         for (AiReplyMessage message : messages) {
@@ -43,23 +44,46 @@ public final class AiReplySanitizer {
                 break;
             }
             String text = cleanText(message.getText());
+            String emoji = StringUtils.trimToEmpty(message.getEmoji());
+            if (emoji.length() > 40) {
+                emoji = emoji.substring(0, 40).trim();
+            }
+            if (emojiUsed) {
+                emoji = "";
+            }
+            if (StringUtils.isBlank(text) && emoji.isEmpty()) {
+                continue;
+            }
+            if (text.equals(previous) && emoji.isEmpty()) {
+                continue;
+            }
             if (StringUtils.isBlank(text)) {
+                emojiUsed = true;
+                AiReplyMessage item = new AiReplyMessage();
+                item.setEmoji(emoji);
+                item.setDelayMs(message.getDelayMs());
+                item.setReplyTo(message.getReplyTo());
+                item.setAt(message.getAt());
+                result.add(item);
                 continue;
             }
-            if (text.equals(previous)) {
-                continue;
-            }
+            boolean first = true;
             for (String part : split(text, maxChars)) {
                 if (result.size() >= maxCount) {
                     break;
                 }
                 AiReplyMessage item = new AiReplyMessage();
                 item.setText(part);
+                item.setEmoji(first ? emoji : null);
+                if (first && StringUtils.isNotBlank(emoji)) {
+                    emojiUsed = true;
+                }
                 item.setDelayMs(message.getDelayMs());
                 item.setReplyTo(message.getReplyTo());
                 item.setAt(message.getAt());
                 result.add(item);
                 previous = part;
+                first = false;
             }
         }
         return result;

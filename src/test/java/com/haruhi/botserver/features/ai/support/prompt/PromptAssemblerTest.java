@@ -10,6 +10,7 @@ import com.haruhi.botserver.features.ai.model.AiTurn;
 import com.haruhi.botserver.features.ai.persistence.entity.AiMemoryEntity;
 import com.haruhi.botserver.features.ai.persistence.entity.AiSessionEntity;
 import com.haruhi.botserver.features.ai.service.AiMemoryService;
+import com.haruhi.botserver.features.ai.support.EmojiService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -57,7 +58,7 @@ class PromptAssemblerTest {
         AiTurn turn = new AiTurn();
         turn.setIncoming(incoming);
 
-        AiPrompt prompt = new PromptAssembler(roleCardService, memoryService)
+        AiPrompt prompt = new PromptAssembler(roleCardService, memoryService, new EmojiService())
                 .assemble(state, List.of(turn), List.of());
 
         String context = prompt.getMessages().get(prompt.getMessages().size() - 1).getContent();

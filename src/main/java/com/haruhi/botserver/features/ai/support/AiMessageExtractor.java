@@ -31,6 +31,7 @@ public final class AiMessageExtractor {
         incoming.setRawMessage(message.getRawMessage());
         incoming.setAtBot(message.isAtBot());
         incoming.setHasImage(message.isPicMsg());
+        incoming.getImageUrls().addAll(collectImageUrls(message));
 
         Sender sender = message.getSender();
         incoming.setUserName(displayName(sender, incoming.getUserId()));
@@ -91,6 +92,38 @@ public final class AiMessageExtractor {
         }
         String text = sb.toString().trim();
         return text.isBlank() ? StringUtils.defaultString(message.getRawMessage()) : text;
+    }
+
+    private static List<String> collectImageUrls(Message message) {
+        if (message.getMessage() == null) {
+            return List.of();
+        }
+        List<String> urls = new java.util.ArrayList<>();
+        for (MessageHolder holder : message.getMessage()) {
+            if (holder == null || !MessageHolderTypeEnum.image.name().equals(holder.getType())) {
+                continue;
+            }
+            MessageData data = holder.getData();
+            String url = data == null ? null : data.getUrl();
+            if (!isHttpUrl(url) && data != null) {
+                url = data.getFile();
+            }
+            if (!isHttpUrl(url)) {
+                continue;
+            }
+            url = url.trim();
+            if (!urls.contains(url)) {
+                urls.add(url);
+            }
+            if (urls.size() >= 4) {
+                break;
+            }
+        }
+        return urls;
+    }
+
+    private static boolean isHttpUrl(String value) {
+        return value != null && (value.startsWith("http://") || value.startsWith("https://"));
     }
 
     private static boolean hasOtherMedia(Message message) {
