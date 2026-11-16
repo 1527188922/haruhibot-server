@@ -2,7 +2,6 @@
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 const devTarget = 'http://127.0.0.1:8090'// 后端地址
-// const devTarget = 'http://1.116.116.31:8090'// 后端地址
 //本地静态资源目录：前端会把后端返回的封面/漫画图片地址换成当前访问站点(src/util/url.js)，
 //开发环境这些路径同样需要代理到后端，否则dev(8091)下会404
 const localResourcePaths = ['/jmcomic', '/image', '/audio', '/excel', '/video', '/logs']

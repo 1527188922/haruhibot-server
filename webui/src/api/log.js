@@ -4,7 +4,7 @@ import {baseUrl} from '@/config/env';
 import {getToken, getUsername} from '@/util/auth';
 import website from '@/config/website';
 
-export const createLogSSEClient = (initLine, handleMessage) => {
+export const createLogSSEClient = (initLine, handleMessage, callbacks = {}) => {
     const headers = {};
     headers[website.Authorization] = getToken();
     headers[website.headerUserNameKey] = getUsername();
@@ -14,15 +14,9 @@ export const createLogSSEClient = (initLine, handleMessage) => {
         params: {initLine},
         headers,
         onMessage: handleMessage,
-        onOpen: () => {
-
-        },
-        onError: () => {
-
-        },
-        onClose: () => {
-
-        }
+        onOpen: callbacks.onOpen || (() => {}),
+        onError: callbacks.onError || (() => {}),
+        onClose: callbacks.onClose || (() => {})
     });
 };
 
