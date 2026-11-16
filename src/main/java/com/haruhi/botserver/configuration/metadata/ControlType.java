@@ -20,6 +20,8 @@ public enum ControlType {
     SWITCH,
     /** 下拉选择：单选 / 多选 / 可自定义值（见 {@link ControlMeta#isMultiple()}、{@link ControlMeta#isAllowCustom()}） */
     SELECT,
+    /** 群号选择器：候选由前端调用群列表接口远程搜索，支持单选/多选 */
+    GROUP,
     /** 复选框：单个（布尔）或复选组（多个值） */
     CHECKBOX,
     /** 单选框组：从候选项里选一个 */

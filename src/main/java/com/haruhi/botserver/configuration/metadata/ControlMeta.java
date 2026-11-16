@@ -22,6 +22,8 @@ import java.util.List;
  * X(..., ConfigType.STRING, "0", true, "说明", 10, ControlMeta.select("0:关闭,1:开启"))
  * // 下拉多选（候选固定，不允许自定义）
  * X(..., ConfigType.LIST, "a", true, "说明", 10, ControlMeta.selectMultiple("a,b,c"))
+ * // 群号选择器（候选由前端调用群列表接口远程搜索，true 表示多选）
+ * X(..., ConfigType.LIST, "", true, "说明", 10, ControlMeta.groupSelect(true))
  * // 下拉多选 + 可自定义值（LIST 的默认控件就是它，候选可以为空）
  * X(..., ConfigType.LIST, "", true, "说明", 10, ControlMeta.selectCustom(true, null))
  * // 复选组（多值）/ 单个复选框（布尔）
@@ -124,6 +126,15 @@ public final class ControlMeta {
 
     private static ControlMeta select(boolean multiple, boolean allowCustom, String options) {
         return new ControlMeta(ControlType.SELECT, multiple, allowCustom, parse(options));
+    }
+
+    /**
+     * 群号选择器：候选项由前端调用群列表接口远程搜索，群号不在列表里时允许直接输入
+     *
+     * @param multiple 是否多选（多值用逗号拼成一个值）
+     */
+    public static ControlMeta groupSelect(boolean multiple) {
+        return new ControlMeta(ControlType.GROUP, multiple, true, null);
     }
 
     /** 复选组（多值：勾选的项用逗号拼成一个值） */

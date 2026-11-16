@@ -1,5 +1,6 @@
 <template>
   <el-select class="group-select" :style="{width: width}" :value="innerValue" filterable remote
+             :multiple="multiple"
              :remote-method="remoteSearch"
              :allow-create="allowCreateOption"
              :loading="loading"
@@ -34,17 +35,26 @@ import {codeNameList} from "@/api/group";
  * 用法：
  * <group-select v-model="queryFormObj.groupId" width="180px" placeholder="输入群号或群名"/>
  * <group-select v-model="queryFormObj.groupId" :limit="0"/>   全量候选，只在首次展开时请求一次
- * 事件：change(value, group)  group为选中项({code,name,avatarUrl})，手动输入且群列表查不到时为null
+ * <group-select v-model="form.groupIds" multiple/>            多选，v-model为群号数组(逗号拼接的值由使用方转换)
+ * 事件：change(value, group)  group为选中项({code,name,avatarUrl})，手动输入且群列表查不到时为null；
+ *      多选时 value 为群号数组，group 为选中项数组
  */
 export default {
   name:'GroupSelect',
   props:{
     /**
-     * 群号，空值为''或null
+     * 群号，空值为''或null；多选时为群号数组
      */
     value:{
-      type:[Number,String],
+      type:[Number,String,Array],
       default:''
+    },
+    /**
+     * 是否多选
+     */
+    multiple:{
+      type:Boolean,
+      default:false
     },
     /**
      * 组件宽度，父组件需要不同宽度时传入
@@ -112,11 +122,11 @@ export default {
     }
   },
   watch:{
-    // 外部直接赋值的群号(如回显、重置)也需要拿到群名/头像
+    // 外部直接赋值(如回显、重置)也需要拿到群名/头像；多选逐个解析
     value:{
       immediate:true,
       handler(v){
-        this.resolveValue(v)
+        this.resolveValues(v)
       }
     }
   },
@@ -125,6 +135,9 @@ export default {
      * 统一成数字后再交给el-select，否则外部传入字符串群号时无法与候选(数字群号)匹配上，会直接展示群号
      */
     innerValue(){
+      if(this.multiple){
+        return this.toList(this.value).map(e=>this.normalizeValue(e)).filter(e=>e !== '')
+      }
       return this.normalizeValue(this.value)
     },
     /**
@@ -230,10 +243,11 @@ export default {
         // 只有"无过滤值"的候选才保留已选中的群(手动输入的群号在群列表里查不到名称/头像，需要它来展示名称)
         // 关键字搜索的结果里不能塞：过滤后列表里混进一个不匹配的项，看起来就像"过滤完只剩选中的那个"
         if(!keyword){
-          const selected = this.findOption(this.value)
-          if(selected && !this.contains(list,selected.code)){
-            list.push(selected)
-          }
+          this.selectedOptions().forEach(selected=>{
+            if(!this.contains(list,selected.code)){
+              list.push(selected)
+            }
+          })
         }
         this.options = list
       }).catch(e=>{
@@ -264,7 +278,20 @@ export default {
         || (o.name || '').toLowerCase().indexOf(keyword) !== -1
     },
     /**
-     * 查询群号对应的群名/头像，用于外部赋值的群号回显
+     * 当前已选中的群，用于无过滤值时候选里补齐名称/头像
+     */
+    selectedOptions(){
+      return this.toList(this.value).map(e=>this.findOption(e)).filter(Boolean)
+    },
+    /**
+     * 外部直接赋值(回显、重置)时解析群名/头像；多选逐个解析
+     */
+    resolveValues(value){
+      const list = this.multiple ? this.toList(value) : [value]
+      list.forEach(e=>this.resolveValue(e))
+    },
+    /**
+     * 查询单个群号对应的群名/头像
      * 查不到(机器人未加群或被删除)时不处理，el-select会直接展示群号
      */
     resolveValue(value){
@@ -309,11 +336,30 @@ export default {
       }
     },
     handleChange(v){
+      if(this.multiple){
+        const values = (Array.isArray(v) ? v : [])
+          .map(e=>this.normalizeValue(e))
+          .filter(e=>e !== '')
+        this.$emit('input',values)
+        this.$emit('change',values,values.map(e=>this.findOption(e)).filter(Boolean))
+        // 选中的群不在候选中时补一次名称解析
+        values.forEach(e=>this.resolveValue(e))
+        return
+      }
       const value = this.normalizeValue(v)
       this.$emit('input',value)
       this.$emit('change',value,this.findOption(value))
       // 选中的群不在候选中时补一次名称解析
       this.resolveValue(value)
+    },
+    /**
+     * 值统一成数组：多选时外部传数组，单选/外部解析时传单值
+     */
+    toList(value){
+      if(Array.isArray(value)){
+        return value
+      }
+      return value === '' || value === null || value === undefined ? [] : [value]
     },
     /**
      * 选中候选时群号是数字，手动输入时是字符串，这里统一成数字，保证查询参数类型一致

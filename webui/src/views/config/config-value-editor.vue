@@ -67,6 +67,15 @@
       </el-option>
     </el-select>
 
+    <!-- 群号选择器：候选由群列表接口远程搜索，单选/多选 -->
+    <group-select v-else-if="type === 'GROUP'"
+                  v-model="groupModel"
+                  class="value-input"
+                  :multiple="multi"
+                  :allow-create="control.allowCustom"
+                  placeholder="输入群号或群名">
+    </group-select>
+
     <!-- 复选组（多个值，逗号拼接） -->
     <el-checkbox-group v-else-if="type === 'CHECKBOX' && multi"
                        v-model="listModel"
@@ -149,9 +158,11 @@
 <script>
 import {controlOf, controlTypeOf, isMultiControl, optionsOf, probeKindOf, splitList, supportsProbe} from '@/util/config-item'
 import {probeJmLines} from '@/api/jmcomic'
+import GroupSelect from '@/components/select/group-select.vue'
 
 export default {
   name: 'ConfigValueEditor',
+  components: {GroupSelect},
   props: {
     /** 配置项行：只读，用来取控件元数据与值类型 */
     row: {
@@ -228,6 +239,19 @@ export default {
       },
       set(list) {
         this.$emit('change', (list || []).join(','))
+      }
+    },
+    /** 群号选择器的 v-model：多选走数组 <-> 逗号分隔字符串，单选直接写值 */
+    groupModel: {
+      get() {
+        return this.multi ? splitList(this.value) : this.value
+      },
+      set(value) {
+        if (this.multi) {
+          this.$emit('change', (value || []).join(','))
+          return
+        }
+        this.$emit('change', value === null || value === undefined ? '' : String(value))
       }
     }
   },

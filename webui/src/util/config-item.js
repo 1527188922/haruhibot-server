@@ -13,17 +13,17 @@ export function controlOf(row) {
 }
 
 /**
- * 控件类型（SWITCH / SELECT / CHECKBOX / RADIO / INPUT）。
+ * 控件类型（SWITCH / SELECT / GROUP / CHECKBOX / RADIO / INPUT）。
  * 与值类型解耦：同一个值类型可以配不同控件，前端只认这份元数据
  */
 export function controlTypeOf(row) {
   return controlOf(row).type
 }
 
-/** 是否多值控件（多选下拉 / 复选组） */
+/** 是否多值控件（多选下拉 / 多选群选择器 / 复选组） */
 export function isMultiControl(row) {
   const control = controlOf(row)
-  return (control.type === 'SELECT' || control.type === 'CHECKBOX') && control.multiple === true
+  return (control.type === 'SELECT' || control.type === 'GROUP' || control.type === 'CHECKBOX') && control.multiple === true
 }
 
 /**

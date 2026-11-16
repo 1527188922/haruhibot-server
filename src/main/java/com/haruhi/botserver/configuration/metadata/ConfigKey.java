@@ -81,7 +81,7 @@ public enum ConfigKey {
     BOT_SUPERUSERS(ConfigFile.BOT, "bot.superusers", ConfigType.LIST, "1527188922", true,
             "机器人超级管理员qq号，多个用逗号分割", 30),
     BOT_ACCESS_GROUP(ConfigFile.BOT, "bot.access_groups", ConfigType.LIST, "", true,
-            "可使用机器人的群号，多个用逗号分开，留空表示所有群都可使用", 40),
+            "可使用机器人的群号，多个用逗号分开，留空表示所有群都可使用", 40, ControlMeta.groupSelect(true)),
     BOT_UPLOAD_FILE_PARALLEL(ConfigFile.BOT, "bot.upload_file.parallel", ConfigType.BOOL, "true", true,
             "上传私聊/群文件时是否并发发送请求，false为排队发送", 50),
     BOT_SWITCH_DISABLE_GROUP(ConfigFile.BOT, "bot.switch.disable_group", ConfigType.BOOL, "false", true,
