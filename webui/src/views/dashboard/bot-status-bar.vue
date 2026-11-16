@@ -3,43 +3,51 @@
     <div class="status-row">
       <div class="status-main">
         <span class="status-dot" :class="statusDotClass"></span>
-        <span class="status-name">Bot 反向 WebSocket</span>
+        <span class="status-name">Bot 接入</span>
+        <span class="status-sub">反向 WebSocket</span>
         <el-tag v-if="loaded" effect="dark" size="mini" :type="running ? 'success' : 'danger'">
-          {{ running ? '运行中' : '已停止' }}
+          {{ running ? '接入中' : '已关闭' }}
         </el-tag>
         <span class="status-divider"></span>
         <span class="status-meta">连接数 <b>{{ connectionText }}</b></span>
         <span class="status-meta">控制台实时通道 <b :class="wsStatusClass">{{ wsStatusText }}</b></span>
       </div>
       <div class="status-actions">
-        <el-button size="mini" icon="el-icon-refresh" :loading="loading" @click="loadInfo">刷新</el-button>
-        <el-button
-          size="mini"
-          type="success"
-          plain
-          icon="el-icon-video-play"
-          :disabled="running"
-          :loading="operating === 'start'"
-          @click="start"
-        >启动</el-button>
-        <el-button
-          size="mini"
-          type="warning"
-          plain
-          icon="el-icon-refresh-right"
-          :disabled="!running"
-          :loading="operating === 'restart'"
-          @click="restart"
-        >重启</el-button>
-        <el-button
-          size="mini"
-          type="danger"
-          plain
-          icon="el-icon-switch-button"
-          :disabled="!running"
-          :loading="operating === 'stop'"
-          @click="stop"
-        >停止</el-button>
+        <div class="access-control">
+          <el-switch
+            :value="accessEnabled"
+            :disabled="!loaded || !!operating"
+            active-color="#67c23a"
+            inactive-color="#c0c4cc"
+            @change="handleAccessChange"
+          ></el-switch>
+          <i v-if="operating === 'start' || operating === 'stop'" class="el-icon-loading access-loading"></i>
+          <el-tooltip content="仅控制反向 WebSocket 接入，Bot 进程不受影响" placement="top">
+            <span class="access-state" :class="{ 'is-on': running }">{{ accessStateText }}</span>
+          </el-tooltip>
+          <el-tooltip content="刷新接入状态" placement="top">
+            <el-button
+              type="text"
+              size="mini"
+              icon="el-icon-refresh"
+              :disabled="!!operating"
+              :loading="loading"
+              @click="loadInfo"
+            ></el-button>
+          </el-tooltip>
+        </div>
+        <span class="action-divider"></span>
+        <el-tooltip content="重启 Bot 程序，WebUI 会短暂断开" placement="top">
+          <el-button
+            type="text"
+            size="mini"
+            class="restart-btn"
+            icon="el-icon-refresh-right"
+            :disabled="!!operating"
+            :loading="operating === 'restart'"
+            @click="restart"
+          >重启程序</el-button>
+        </el-tooltip>
       </div>
     </div>
     <div class="status-row status-row--detail">
@@ -72,6 +80,7 @@ export default {
       loaded: false,
       operating: '',
       info: {},
+      accessEnabled: false,
       tokenVisible: false,
       wsStatus: this.$ws.getStatus(),
       wsStatusOff: null,
@@ -89,6 +98,11 @@ export default {
     connectionText() {
       if (!this.loaded) return '—'
       return `${this.info.connections == null ? 0 : this.info.connections} / ${this.info.maxConnections == null ? 0 : this.info.maxConnections}`
+    },
+    accessStateText() {
+      if (!this.loaded) return '未知'
+      if (this.operating === 'start' || this.operating === 'stop') return '切换中...'
+      return this.running ? '已开启' : '已关闭'
     },
     tokenText() {
       if (!this.loaded) return '—'
@@ -138,6 +152,7 @@ export default {
           }
           this.info = data || {}
           this.loaded = true
+          this.accessEnabled = !!this.info.running
         })
         .catch(() => {
           // 异常已由 http 拦截器统一提示，这里只吞掉 rejection
@@ -146,39 +161,49 @@ export default {
           this.loading = false
         })
     },
-    start() {
-      this.operate('1', '启动')
-    },
-    stop() {
-      this.$confirm('确认停止 Bot WebSocket 服务？将清空并断开所有 Bot 连接。', '提示', {
-        confirmButtonText: '确定',
+    handleAccessChange(value) {
+      if (value) {
+        this.accessEnabled = true
+        this.operate('1')
+        return
+      }
+      this.$confirm('关闭后 NapCat 将无法连接，Bot 不会响应消息，但进程不会退出。确认关闭接入？', '关闭 Bot 接入', {
+        confirmButtonText: '确认关闭',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.operate('2', '停止')
-      }).catch(() => {})
+        this.accessEnabled = false
+        this.operate('2')
+      }).catch(() => {
+        this.accessEnabled = this.running
+      })
     },
-    operate(command, actionName) {
+    operate(command) {
       if (this.operating) return
-      this.operating = actionName === '启动' ? 'start' : 'stop'
+      const actionName = command === '1' ? '开启接入' : '关闭接入'
+      this.operating = command === '1' ? 'start' : 'stop'
       botWsOperation(command)
         .then(({ data: { data, code, message } }) => {
           if (code !== 200) {
             this.$message.error(message)
+            this.accessEnabled = this.running
             return
           }
           this.info = data || this.info
           this.loaded = true
+          this.accessEnabled = !!this.info.running
           this.$message.success(message || `${actionName}成功`)
         })
-        .catch(() => {})
+        .catch(() => {
+          this.accessEnabled = this.running
+        })
         .finally(() => {
           this.operating = ''
         })
     },
     restart() {
-      this.$confirm('确认重启 Bot 程序？WebUI 可能会短暂断开连接。', '提示', {
-        confirmButtonText: '确定',
+      this.$confirm('将重启整个 Bot 程序进程，WebUI 可能会短暂断开连接。确认继续？', '重启 Bot 程序', {
+        confirmButtonText: '确认重启',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
@@ -284,6 +309,58 @@ export default {
   font-size: 15px;
   font-weight: 600;
   color: #303133;
+}
+
+.status-sub {
+  font-size: 12px;
+  color: #909399;
+}
+
+.access-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  ::v-deep .el-button--text {
+    color: #909399;
+    font-size: 12px;
+
+    &:hover,
+    &:focus {
+      color: #409eff;
+    }
+  }
+}
+
+.access-state {
+  font-size: 12px;
+  color: #909399;
+  cursor: default;
+
+  &.is-on {
+    color: #67c23a;
+  }
+}
+
+.access-loading {
+  font-size: 12px;
+  color: #909399;
+}
+
+.restart-btn {
+  color: #606266;
+  font-size: 12px;
+
+  &:hover,
+  &:focus {
+    color: #e6a23c;
+  }
+}
+
+.action-divider {
+  width: 1px;
+  height: 14px;
+  background: #e4e7ed;
 }
 
 .status-divider {
