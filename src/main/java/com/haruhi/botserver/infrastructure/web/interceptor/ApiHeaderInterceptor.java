@@ -76,8 +76,8 @@ public class ApiHeaderInterceptor implements HandlerInterceptor {
         fillHttpMdc(request, handlerMethod, userName);
 
         if (StringUtils.isBlank(userName)) {
-            log.error("非法请求api=[{}] IP=[{}] Authorization：{}",
-                    request.getRequestURI(), request.getRemoteAddr(), authorization);
+//            log.error("非法请求api=[{}] IP=[{}] Authorization：{}",
+//                    request.getRequestURI(), request.getRemoteAddr(), authorization);
 
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setStatus(HttpStatus.UNAUTHORIZED.value());

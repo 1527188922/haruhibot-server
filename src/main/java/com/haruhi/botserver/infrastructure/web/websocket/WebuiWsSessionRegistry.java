@@ -37,15 +37,15 @@ public class WebuiWsSessionRegistry {
         WebSocketSession decorated = new ConcurrentWebSocketSessionDecorator(
                 session, SEND_TIME_LIMIT_MILLIS, BUFFER_SIZE_LIMIT_BYTES);
         sessions.put(session.getId(), new WebuiSession(session.getId(), username, decorated));
-        log.info("webui websocket 连接建立 sessionId:{} user:{} 当前连接数:{}",
-                session.getId(), username, sessions.size());
+//        log.info("webui websocket 连接建立 sessionId:{} user:{} 当前连接数:{}",
+//                session.getId(), username, sessions.size());
     }
 
     public void remove(String sessionId) {
         WebuiSession removed = sessions.remove(sessionId);
         if (removed != null) {
-            log.info("webui websocket 连接关闭 sessionId:{} user:{} 当前连接数:{}",
-                    sessionId, removed.username, sessions.size());
+//            log.info("webui websocket 连接关闭 sessionId:{} user:{} 当前连接数:{}",
+//                    sessionId, removed.username, sessions.size());
         }
     }
 

@@ -4,7 +4,7 @@
       <span class="card-title">最近日志</span>
       <span class="log-head-right">
         <el-tag size="mini" :type="stateTagType">{{ stateText }}</el-tag>
-        <router-link to="/log-monitor" class="card-link">查看全部</router-link>
+        <router-link to="/system/log-monitor" class="card-link">查看全部</router-link>
       </span>
     </div>
 

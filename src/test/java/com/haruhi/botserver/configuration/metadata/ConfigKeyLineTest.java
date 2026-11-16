@@ -44,8 +44,8 @@ class ConfigKeyLineTest {
         assertEquals(probe, control.getProbe(), "测速类型要写进控件元数据，前端才能回传");
         assertEquals(optionCount, control.getOptions().size(), "候选项数量必须与线路清单一致");
         assertEquals(defaultHost, key.getDefaultValue());
-        assertEquals(defaultHost, control.getOptions().get(0).getValue(), "默认线路排第一");
+        assertEquals(defaultHost, control.getOptions().get(0).value(), "默认线路排第一");
         // 显示名里带域名，用户只看下拉也能分辨线路
-        assertTrue(control.getOptions().get(0).getLabel().contains(defaultHost));
+        assertTrue(control.getOptions().get(0).label().contains(defaultHost));
     }
 }

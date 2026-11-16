@@ -172,17 +172,10 @@ public final class ControlMeta {
 
     /**
      * 候选项
+     *
+     * @param value 保存到配置文件里的值
+     * @param label 前端展示名
      */
-    @Getter
-    public static final class Option {
-        /** 保存到配置文件里的值 */
-        private final String value;
-        /** 前端展示名 */
-        private final String label;
-
-        public Option(String value, String label) {
-            this.value = value;
-            this.label = label;
-        }
+        public record Option(String value, String label) {
     }
 }

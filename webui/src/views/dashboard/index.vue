@@ -120,8 +120,8 @@ export default {
         { label: 'JM 漫画', path: '/jmcomic', icon: 'el-icon-picture-outline' },
         { label: 'B站订阅', path: '/bilibili-subscribe', icon: 'el-icon-video-camera' },
         { label: 'B站视频', path: '/bilibili-video', icon: 'el-icon-film' },
-        { label: '配置管理', path: '/config', icon: 'el-icon-setting' },
-        { label: '日志监控', path: '/log-monitor', icon: 'el-icon-monitor' }
+        { label: '配置管理', path: '/system/config', icon: 'el-icon-setting' },
+        { label: '日志监控', path: '/system/log-monitor', icon: 'el-icon-monitor' }
       ]
     }
   },

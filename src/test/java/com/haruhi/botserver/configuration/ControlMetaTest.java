@@ -73,15 +73,15 @@ class ControlMetaTest {
     void 候选项按值冒号显示名解析() {
         List<ControlMeta.Option> options = ControlMeta.radio("0:自动判断,1:强制跳过下载,B").getOptions();
         assertEquals(3, options.size());
-        assertEquals("0", options.get(0).getValue());
-        assertEquals("自动判断", options.get(0).getLabel());
-        assertEquals("B", options.get(2).getValue());
-        assertEquals("B", options.get(2).getLabel(), "不写显示名时显示名=值");
+        assertEquals("0", options.get(0).value());
+        assertEquals("自动判断", options.get(0).label());
+        assertEquals("B", options.get(2).value());
+        assertEquals("B", options.get(2).label(), "不写显示名时显示名=值");
 
         assertTrue(ControlMeta.select(null).getOptions().isEmpty());
         assertTrue(ControlMeta.select("  ").getOptions().isEmpty());
         // 显示名为空时回落到值
-        assertEquals("x", ControlMeta.select("x:").getOptions().get(0).getLabel());
+        assertEquals("x", ControlMeta.select("x:").getOptions().get(0).label());
     }
 
     @Test
