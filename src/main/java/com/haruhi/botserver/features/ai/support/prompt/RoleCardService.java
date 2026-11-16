@@ -71,6 +71,13 @@ public class RoleCardService {
         }
     }
 
+    /**
+     * 清空 mtime 缓存，供 WebUI「重新扫描」使用。
+     */
+    public void clearCache() {
+        cache.clear();
+    }
+
     public List<String> listRoleNames() {
         Path dir = roleDir();
         if (!Files.isDirectory(dir)) {

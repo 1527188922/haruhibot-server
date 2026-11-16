@@ -306,6 +306,52 @@ const release = [{
     },
     children: []
 }, {
+    label: 'AI 聊天',
+    path: '/ai',
+    icon: 'el-icon-chat-dot-round',
+    iconBgColor: randomColor(),
+    children: [{
+        label: 'AI 概览',
+        path: '/ai/overview',
+        icon: 'el-icon-data-analysis',
+        iconBgColor: randomColor(),
+        component: 'views/ai/overview/index',
+        meta: {
+            keepAlive: true
+        },
+        children: []
+    }, {
+        label: '会话管理',
+        path: '/ai/session',
+        icon: 'el-icon-chat-line-round',
+        iconBgColor: randomColor(),
+        component: 'views/ai/session/index',
+        meta: {
+            keepAlive: true
+        },
+        children: []
+    }, {
+        label: '角色卡',
+        path: '/ai/role',
+        icon: 'el-icon-user',
+        iconBgColor: randomColor(),
+        component: 'views/ai/role/index',
+        meta: {
+            keepAlive: true
+        },
+        children: []
+    }, {
+        label: '提示词预览',
+        path: '/ai/prompt',
+        icon: 'el-icon-magic-stick',
+        iconBgColor: randomColor(),
+        component: 'views/ai/prompt/index',
+        meta: {
+            keepAlive: true
+        },
+        children: []
+    }]
+}, {
     label: '系统管理',
     path: '/system',
     icon: 'el-icon-setting',
