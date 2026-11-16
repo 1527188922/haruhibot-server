@@ -191,7 +191,7 @@ public enum ConfigKey {
             "最多向 AI 展示多少个表情名称", 263),
 
     DS_CHAT_GROUP_WHITELIST(ConfigFile.AI, "ds.chat.group.whitelist", ConfigType.LIST, "", true,
-            "启用 DeepSeek 聊天的群号白名单，逗号分隔；留空=所有群都不启用", 300),
+            "启用 DeepSeek 聊天的群号白名单，逗号分隔；留空=所有群都不启用", 300, ControlMeta.groupSelect(true)),
     DS_CHAT_GROUP_TRIGGER_AT(ConfigFile.AI, "ds.chat.group.trigger.at", ConfigType.BOOL, "true", true,
             "群里被 @ 机器人时触发", 310),
     DS_CHAT_GROUP_TRIGGER_REPLY(ConfigFile.AI, "ds.chat.group.trigger.reply", ConfigType.BOOL, "true", true,
