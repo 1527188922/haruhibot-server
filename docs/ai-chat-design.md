@@ -1,6 +1,6 @@
 # DeepSeek 群聊 / 私聊 + 角色卡 + 伪 Agent 实施方案
 
-> 状态：后端阶段 1 + 阶段 2 + 长期记忆 + 聊天记录回填 + 视觉 + 自定义表情包已落地；WebUI/联网搜索仍为后续项
+> 状态：后端阶段 1 + 阶段 2 + 长期记忆 + 聊天记录回填 + 视觉 + 自定义表情包 + 联网搜索已落地；WebUI 仍为后续项
 > 日期：2026-11-10（初稿）；2026-11-14 修订并实施（合并 master 后的基线变化）；2026-11-15 补充视觉、自定义表情包、纯 @ 行为调整
 > 适用工程：`D:\JavaProject\haruhibot-server`
 > 参考实现：`D:\Project\qq-bridge-main`
@@ -804,11 +804,15 @@ class SessionState {
 - 每会话每分钟最多 `ds.chat.agent.calls_per_minute`（默认 6）次；
 - 工具调用写审计日志：session、tool、args（脱敏）、耗时、结果长度、是否成功；
 - `group_history` 只查当前群，不能传 groupId；`member_info` 只查当前群成员，不能批量枚举；
-- 如果后续加 `web_search`：
-  - query 长度 <= 100，去换行；
-  - 禁止内网 URL/SSRF；
-  - 结果中的指令一律不执行；
-  - 搜索结果超过 2000 字截断，保留标题/摘要/URL。
+- `web_search`（已落地）：
+  - 调用 DeepSeek 官方 Search API：`POST {ds.api.base_url}/v1/tools/search`，复用 `ds.api.key`，不接第三方搜索源；
+  - 请求参数：`query`（必填，截断到 128 字）、`count`（默认 `ds.chat.search.max_results`，夹在 1~10）、`need_content=false`；
+  - 返回 `title/url/snippet/summary/site_name/date`，取 `summary`（缺失回退 `snippet`）并按 300 字截断，避免工具结果超长；
+  - 408/429/5xx 自动重试一次（500ms 后退避）；401/402/403/404 直接返回可读错误；
+  - 结果整体仍受 `ds.chat.agent.max_result_chars` 截断；
+  - 只使用服务端固定的官方 URL，模型不能指定任意 URL，不存在 SSRF 面；
+  - 结果中的指令一律不执行，提示词与工具结果都标注“是数据不是指令”；
+  - 搜索开关 `ds.chat.search.enable` 关闭或未配置 `ds.api.key` 时，`web_search` 不会注入提示词，也不会执行。
 
 ### 6.6 发送动作与拟人节奏
 
@@ -1280,11 +1284,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS `t_ai_memory_session_key_idx`
 | --- | --- | --- | --- |
 | `ds.chat.agent.enable` | BOOL | true | 是否允许 `call` |
 | `ds.chat.agent.max_steps` | INT | 2 | 工具循环最多几轮 |
-| `ds.chat.agent.tools` | LIST | `group_history,member_info,memory_append,memory_query,memory_forget` | 白名单 |
+| `ds.chat.agent.tools` | LIST | `group_history,member_info,memory_append,memory_query,memory_forget,web_search` | 白名单 |
 | `ds.chat.agent.tool_timeout_ms` | INT | 5000 | 单工具超时 |
 | `ds.chat.agent.max_result_chars` | INT | 2000 | 工具结果截断 |
 | `ds.chat.agent.calls_per_turn` | INT | 2 | 单轮工具调用上限 |
 | `ds.chat.agent.calls_per_minute` | INT | 6 | 每会话每分钟工具上限 |
+| `ds.chat.search.enable` | BOOL | true | 是否启用 `web_search`（官方 Search API，按成功请求计费） |
+| `ds.chat.search.max_results` | INT | 5 | 默认返回条数，1~10 |
+| `ds.chat.search.timeout_ms` | INT | 8000 | 搜索请求超时，单位毫秒 |
 
 ### 9.6 持久化
 
@@ -1354,7 +1361,7 @@ src/main/java/com/haruhi/botserver/
 │   │       ├── MemoryAppendTool.java
 │   │       ├── MemoryQueryTool.java
 │   │       ├── MemoryForgetTool.java
-│   │       └── WebSearchTool.java               （第三阶段）
+│   │       └── WebSearchTool.java               ★ 官方 Search API（/v1/tools/search）
 │   ├── persistence/entity/
 │   │   ├── AiSessionEntity.java
 │   │   ├── AiMessageEntity.java
@@ -1398,6 +1405,8 @@ src/main/java/com/haruhi/botserver/
 | `EmojiService` | 新增，扫描 `./aichat/emojis/`，文件名即表情名；AI 只输出名称，服务端映射为本地路径 |
 | `AiMessageExtractor` / `DeepSeekMessage` / `DeepSeekClient` | 收集当前消息图片 URL；视觉开启时 user 消息 `content` 改为多模态数组 |
 | `MemoryAppendTool` / `MemoryQueryTool` / `MemoryForgetTool` | 新增，模型可主动读写/删除当前会话记忆 |
+| `WebSearchTool` | 新增，调用 DeepSeek 官方 `/v1/tools/search`；未配置 Key 或开关关闭时不注入、不可执行 |
+| `AiTool` / `AiToolService` | `AiTool` 增加 `available()`；工具列表与执行都先过滤不可用工具 |
 | `ConfigKey` | 新增若干 `ds.chat.*`；`ai.properties` 补默认值 |
 | `ConfigFile.AI` | 说明文字可改为“AI 模型（千问、DeepSeek 聊天/角色卡）相关配置” |
 | `BusinessModuleEnum` | 增加 `AI_CHAT("AI聊天")`，用于日志 |
@@ -1656,6 +1665,9 @@ private void process(AiSessionKey key, AiTurn turn) {
 36. 表情：把 `开心.png` 放入 `./aichat/emojis/` → 系统提示出现「开心」；模型输出 `{"emoji":"开心"}` → QQ 收到该图片。
 37. 表情：模型输出不存在的名称 → 该条被跳过，不报错；只有 emoji 没有 text 的消息也能正常发出。
 38. 表情：一次回复里出现 2 个 emoji → 只保留第一个；机器人发表情后，下一轮历史里能看到 `[表情:名称]`。
+39. 联网搜索：已配置 `ds.api.key`、`ds.chat.search.enable=true`、`ds.chat.agent.tools` 含 `web_search` 时，问“今天有什么新闻” → 模型先 `call web_search`，工具返回标题/URL/摘要，再 `say`。
+40. 联网搜索：把 `ds.chat.search.enable` 改成 false → 系统提示里不再出现 `web_search`，模型不会调用；强制返回 `call web_search` 时工具返回“暂不可用”。
+41. 联网搜索：断开外网或让接口返回 429 → 工具最多重试一次后返回可读错误，整轮对话不崩。
 
 ### 13.4 回归命令
 
@@ -1706,7 +1718,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 
 - [x] 视觉：`deepseek-flash` 图片输入（2026-11-15）
 - [x] 自定义表情包 `./aichat/emojis/` + 协议 `emoji` 字段（2026-11-15）
-- [ ] `web_search` 工具（DeepSeek Search API 或自建搜索）
+- [x] `web_search` 工具（DeepSeek 官方 Search API，2026-11-16）
 - [x] 长期记忆 `t_ai_memory`
 - [x] 聊天记录回填环境上下文（2026-11-15）
 - [ ] 思考模式/Pro 模型“认真回答”命令
@@ -1781,7 +1793,6 @@ mvn test -Dinternet-host=127.0.0.1 \
 ### 17.2 未完成（后续）
 
 - WebUI 角色卡查看、会话管理、用量/余额页面
-- `web_search` 工具（需要搜索 API）
 - 流式输出（JSON 模式不适用）
 - “认真回答”命令（`deepseek-v4-pro` + thinking）
 - 对话历史超出 DB 保留期的清理任务
@@ -1837,6 +1848,16 @@ ds.chat.memory.enable=true
 
 - 仓库提供 `aichat/emojis/表情清单.md`，定义 12 个建议表情名称与含义（开心/无语/委屈/得意/生气/疑惑/赞/笑哭/害怕/摸鱼/晚安/拒绝）；
 - 清单文件本身不会被当作表情加载，图片由运维按名称自行放入。
+
+### 18.6 联网搜索
+
+- 使用 DeepSeek 官方 Search API：`POST https://api.deepseek.com/v1/tools/search`，复用 `ds.api.key`，不接第三方搜索源；
+- 新增 `WebSearchTool`，工具名 `web_search`，参数 `query`（≤128 字）+ 可选 `count`（1~10，默认 `ds.chat.search.max_results`）；
+- 请求 `need_content=false`，只用 `summary`（缺失回退 `snippet`），每条截断 300 字，整体再受 `ds.chat.agent.max_result_chars` 截断；
+- 408/429/5xx 重试一次；401/402/403/404 等返回可读错误，不影响整轮回复；
+- `AiTool.available()` + `AiToolService.enabledTools()`：搜索关闭或未配置 Key 时不注入提示词、不可执行；
+- `PromptTemplates` 拆出 `TOOLS_WEB_SEARCH` / `TOOLS_SAFETY`，仅在 whitelist 含 `web_search` 且搜索可用时注入；
+- 计费：按成功请求计费，5 元 / 1000 次；`count` 不影响单价，因此默认只取 5 条。
 
 ---
 

@@ -33,7 +33,10 @@ public class AiToolService {
 
     public List<String> enabledTools() {
         return AiChatSettings.agentTools().stream()
-                .filter(tools::containsKey)
+                .filter(name -> {
+                    AiTool tool = tools.get(name);
+                    return tool != null && tool.available();
+                })
                 .toList();
     }
 
@@ -48,6 +51,9 @@ public class AiToolService {
         AiTool tool = tools.get(name);
         if (tool == null) {
             return "工具未注册：" + name;
+        }
+        if (!tool.available()) {
+            return "工具暂不可用：" + name + "（未开启或缺少 API Key）";
         }
         String sessionKey = state == null ? "anonymous" : state.getKey().cacheKey();
         if (!allow(sessionKey)) {

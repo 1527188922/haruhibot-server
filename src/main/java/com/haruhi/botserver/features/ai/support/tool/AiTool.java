@@ -11,5 +11,12 @@ public interface AiTool {
 
     String name();
 
+    /**
+     * 是否具备执行条件（例如联网搜索需要 API Key）；不可用的工具不会注入提示词。
+     */
+    default boolean available() {
+        return true;
+    }
+
     String execute(Bot bot, AiSessionState state, JSONObject args) throws Exception;
 }

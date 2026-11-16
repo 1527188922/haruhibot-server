@@ -49,6 +49,10 @@ public class PromptAssembler {
         system.append(PromptTemplates.PROTOCOL).append('\n');
         if (AiChatSettings.agentEnabled() && !AiChatSettings.agentTools().isEmpty()) {
             system.append(PromptTemplates.TOOLS).append('\n');
+            if (AiChatSettings.agentTools().contains("web_search") && AiChatSettings.searchAvailable()) {
+                system.append(PromptTemplates.TOOLS_WEB_SEARCH).append('\n');
+            }
+            system.append(PromptTemplates.TOOLS_SAFETY).append('\n');
         }
         String emojiNames = emojiService.namesForPrompt(AiChatSettings.emojiMaxList());
         if (StringUtils.isNotBlank(emojiNames)) {

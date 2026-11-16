@@ -274,6 +274,29 @@ public final class AiChatSettings {
         return Math.max(1, Configs.getInt(ConfigKey.DS_CHAT_AGENT_CALLS_PER_MINUTE, 6));
     }
 
+    public static boolean searchEnabled() {
+        return Configs.getBool(ConfigKey.DS_CHAT_SEARCH_ENABLE, true);
+    }
+
+    /**
+     * 搜索开关打开且 DeepSeek API Key 已配置时才向模型暴露 web_search。
+     */
+    public static boolean searchAvailable() {
+        if (!searchEnabled()) {
+            return false;
+        }
+        String apiKey = Configs.getStr(ConfigKey.DEEP_SEEK_API_KEY, "");
+        return apiKey != null && !apiKey.isBlank();
+    }
+
+    public static int searchMaxResults() {
+        return Math.max(1, Math.min(10, Configs.getInt(ConfigKey.DS_CHAT_SEARCH_MAX_RESULTS, 5)));
+    }
+
+    public static long searchTimeoutMillis() {
+        return Math.max(1000, Configs.getInt(ConfigKey.DS_CHAT_SEARCH_TIMEOUT_MS, 8000));
+    }
+
     // ==================== 持久化/余额 ====================
 
     public static boolean persistenceEnabled() {
