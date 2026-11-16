@@ -34,7 +34,7 @@ export default {
   },
   //配置菜单的属性
   menu: {
-    iconDefault: 'icon-caidan',
+    iconDefault: 'el-icon-menu',
     label: 'label',
     path: 'path',
     icon: 'icon',

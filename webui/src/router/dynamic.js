@@ -222,7 +222,7 @@ const release = [{
     label: "聊天记录",
     path: '/chat-record',
     component: 'views/chat-record/index',
-    icon: 'icon-caidan',
+    icon: 'el-icon-chat-dot-round',
     iconBgColor: randomColor(),
     meta: {
         i18n: 'chat-record',
@@ -233,7 +233,7 @@ const release = [{
     label: "好友列表",
     path: '/friend-list',
     component: 'views/friend-list/index',
-    icon: 'icon-caidan',
+    icon: 'el-icon-user',
     iconBgColor: randomColor(),
     meta: {
         // i18n: 'friend-list',
@@ -244,7 +244,7 @@ const release = [{
     label: "群聊查询",
     path: '/group-list',
     component: 'views/group-list/index',
-    icon: 'icon-caidan',
+    icon: 'el-icon-s-custom',
     iconBgColor: randomColor(),
     meta: {
         // i18n: 'group-list',
@@ -255,7 +255,7 @@ const release = [{
     label: "群词条",
     path: '/word-strip',
     component: 'views/word-strip/index',
-    icon: 'icon-caidan',
+    icon: 'el-icon-collection-tag',
     iconBgColor: randomColor(),
     meta: {
         // i18n: 'word-strip',
@@ -266,7 +266,7 @@ const release = [{
     label: "字典数据",
     path: '/dict',
     component: 'views/dict-list/index',
-    icon: 'icon-caidan',
+    icon: 'el-icon-notebook-2',
     iconBgColor: randomColor(),
     meta: {
         // i18n: 'dict',
@@ -277,7 +277,7 @@ const release = [{
     label: "JM漫画",
     path: '/jmcomic',
     component: 'views/jmcomic/index',
-    icon: 'icon-caidan',
+    icon: 'el-icon-picture',
     iconBgColor: randomColor(),
     meta: {
         keepAlive: true
@@ -287,7 +287,7 @@ const release = [{
     label: "BILIBILI订阅",
     path: '/bilibili-subscribe',
     component: 'views/bilibili-subscribe/index',
-    icon: 'icon-caidan',
+    icon: 'el-icon-bell',
     iconBgColor: randomColor(),
     meta: {
         // i18n: 'bilibili-subscribe',
@@ -298,7 +298,7 @@ const release = [{
     label: "BILIBILI视频",
     path: '/bilibili-video',
     component: 'views/bilibili-video/index',
-    icon: 'icon-caidan',
+    icon: 'el-icon-video-play',
     iconBgColor: randomColor(),
     meta: {
         // i18n: 'bilibili-video',
@@ -308,10 +308,12 @@ const release = [{
 }, {
     label: '系统管理',
     path: '/system',
+    icon: 'el-icon-setting',
     iconBgColor: randomColor(),
     children: [{
         label: '配置管理',
         path: '/config',
+        icon: 'el-icon-s-tools',
         iconBgColor: randomColor(),
         component: 'views/config/index',
         meta: {
@@ -321,24 +323,28 @@ const release = [{
     }, {
         label: '服务器文件',
         path: '/file',
+        icon: 'el-icon-folder-opened',
         iconBgColor: randomColor(),
         component: 'views/system/file/index',
         children: []
     }, {
             label: '数据库管理',
             path: '/database-manage',
+            icon: 'el-icon-coin',
             iconBgColor: randomColor(),
             component: 'views/system/database-manage/index',
             children: []
     }, {
         label: '系统日志',
         path: '/logs',
+        icon: 'el-icon-document',
         iconBgColor: randomColor(),
         component: 'views/system/log-list/index',
         children: []
     }, {
         label: '日志监控',
         path: '/log-monitor',
+        icon: 'el-icon-monitor',
         iconBgColor: randomColor(),
         component: 'views/system/log-monitor/index',
         children: []
@@ -348,7 +354,7 @@ const release = [{
     ,{
         label: "外部页面",
         path: '/out',
-        icon: 'icon-caidan',
+        icon: 'el-icon-link',
         iconBgColor: randomColor(),
         meta: {
             i18n: 'out',
@@ -357,7 +363,7 @@ const release = [{
             label: "go-cqhttp",
             path: 'go-cqhttp',
             href: 'https://docs.go-cqhttp.org',
-            icon: 'icon-caidan',
+            icon: 'el-icon-link',
             iconBgColor: randomColor(),
             meta: {
                 target: '_blank',
@@ -367,7 +373,7 @@ const release = [{
             label: "NapCat",
             path: 'nap-cat',
             href: 'https://napneko.github.io',
-            icon: 'icon-caidan',
+            icon: 'el-icon-link',
             iconBgColor: randomColor(),
             meta: {
                 target: '_blank',
