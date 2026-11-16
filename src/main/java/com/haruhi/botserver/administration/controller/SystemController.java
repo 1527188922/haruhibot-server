@@ -56,6 +56,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 @RestController
@@ -256,6 +259,13 @@ public class SystemController {
     public HttpResp<Map<String, Object>> systemUsage() {
         Map<String, Object> data = new HashMap<>();
         data.put("timestamp", System.currentTimeMillis());
+        double gb = 1024D * 1024D * 1024D;
+        Runtime runtime = Runtime.getRuntime();
+        data.put("jvmMemUsed", Math.round((runtime.totalMemory() - runtime.freeMemory()) / gb * 100) / 100.0);
+        data.put("jvmMemMax", Math.round(runtime.maxMemory() / gb * 100) / 100.0);
+        data.put("osName", System.getProperty("os.name"));
+        data.put("osVersion", System.getProperty("os.version"));
+        data.put("cpuCores", runtime.availableProcessors());
         try {
             java.lang.management.OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
             if (osBean instanceof OperatingSystemMXBean systemBean) {
@@ -266,13 +276,24 @@ public class SystemController {
                 long totalMemory = systemBean.getTotalMemorySize();
                 long freeMemory = systemBean.getFreeMemorySize();
                 if (totalMemory > 0) {
-                    double gb = 1024D * 1024D * 1024D;
                     data.put("memTotal", Math.round(totalMemory / gb * 100) / 100.0);
                     data.put("memUsed", Math.round((totalMemory - freeMemory) / gb * 100) / 100.0);
                 }
             }
         } catch (Exception e) {
             log.warn("获取系统资源占用异常", e);
+        }
+        try {
+            FileStore fileStore = Files.getFileStore(Paths.get(System.getProperty("user.dir")));
+            long diskTotal = fileStore.getTotalSpace();
+            long diskUsable = fileStore.getUsableSpace();
+            if (diskTotal > 0) {
+                long diskUsed = Math.max(0, diskTotal - diskUsable);
+                data.put("diskTotal", Math.round(diskTotal / gb * 100) / 100.0);
+                data.put("diskUsed", Math.round(diskUsed / gb * 100) / 100.0);
+            }
+        } catch (Exception e) {
+            log.warn("获取磁盘占用异常", e);
         }
         return HttpResp.success(data);
     }

@@ -24,7 +24,7 @@
 <script>
 import { createLogSSEClient } from '@/api/log'
 
-const MAX_LOGS = 6
+const MAX_LOGS = 10
 
 export default {
   name: 'RecentLogCard',

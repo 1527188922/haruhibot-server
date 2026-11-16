@@ -84,7 +84,7 @@ export const botWsOperation = (command) => request({
 })
 
 /**
- * 系统CPU、内存占用
+ * 系统CPU、内存、磁盘占用及系统信息
  * @returns {AxiosPromise}
  */
 export const systemUsage = () => request({
