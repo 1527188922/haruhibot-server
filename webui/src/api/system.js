@@ -82,3 +82,12 @@ export const botWsOperation = (command) => request({
     url: `${baseUrl}/sys/botws/opt?command=${command}`,
     method: 'post'
 })
+
+/**
+ * 系统CPU、内存占用
+ * @returns {AxiosPromise}
+ */
+export const systemUsage = () => request({
+    url: baseUrl + '/sys/system/usage',
+    method: 'get'
+})

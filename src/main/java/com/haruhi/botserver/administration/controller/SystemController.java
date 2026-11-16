@@ -39,6 +39,8 @@ import com.haruhi.botserver.bot.session.Bot;
 import com.haruhi.botserver.bot.session.BotContainer;
 import com.haruhi.botserver.integration.onebot.websocket.BotWsHandler;
 import lombok.extern.slf4j.Slf4j;
+import com.sun.management.OperatingSystemMXBean;
+import java.lang.management.ManagementFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -245,6 +247,34 @@ public class SystemController {
     public HttpResp<BotWebSocketInfo> botWebSocketInfo() {
 
         return HttpResp.success(systemService.getBotWebSocketInfo());
+    }
+
+    /**
+     * 系统CPU、内存占用
+     */
+    @GetMapping("/system/usage")
+    public HttpResp<Map<String, Object>> systemUsage() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("timestamp", System.currentTimeMillis());
+        try {
+            java.lang.management.OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            if (osBean instanceof OperatingSystemMXBean systemBean) {
+                double cpuLoad = systemBean.getCpuLoad();
+                if (cpuLoad >= 0 && !Double.isNaN(cpuLoad)) {
+                    data.put("cpuUsage", Math.round(cpuLoad * 1000) / 10.0);
+                }
+                long totalMemory = systemBean.getTotalMemorySize();
+                long freeMemory = systemBean.getFreeMemorySize();
+                if (totalMemory > 0) {
+                    double gb = 1024D * 1024D * 1024D;
+                    data.put("memTotal", Math.round(totalMemory / gb * 100) / 100.0);
+                    data.put("memUsed", Math.round((totalMemory - freeMemory) / gb * 100) / 100.0);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("获取系统资源占用异常", e);
+        }
+        return HttpResp.success(data);
     }
 
     /**

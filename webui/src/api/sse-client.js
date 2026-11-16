@@ -150,6 +150,12 @@ export default class SSEClient {
                 processChunk();
             } catch (error) {
                 this.reader = null;
+
+                // 主动关闭时 abort/cancel 会抛出 AbortError，不应上报错误，也不应重连
+                if (this.isClosed || error.name === 'AbortError') {
+                    return;
+                }
+
                 this.options.onError(error);
 
                 if (!this.isClosed) {
@@ -280,7 +286,16 @@ export default class SSEClient {
 
         // 取消读取器
         if (this.reader) {
-            this.reader.cancel();
+            // 流可能已被 abort，reader.cancel() 会返回 rejected Promise，
+            // 不捕获会以 AbortError 冒泡成全局未处理异常
+            try {
+                const cancelPromise = this.reader.cancel();
+                if (cancelPromise && typeof cancelPromise.catch === 'function') {
+                    cancelPromise.catch(() => {});
+                }
+            } catch (e) {
+                // 忽略：关闭阶段的取消异常不应影响后续流程
+            }
         }
 
         // 清除重连定时器

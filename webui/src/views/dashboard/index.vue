@@ -58,18 +58,21 @@
 
       <recent-log-card></recent-log-card>
 
-      <el-card class="dash-card dashboard-card" shadow="never">
-        <div class="card-head">
-          <span class="card-title">快捷入口</span>
-        </div>
-        <div class="quick-grid">
-          <router-link v-for="entry in quickEntries" :key="entry.path" :to="entry.path" class="quick-item">
-            <i :class="entry.icon"></i>
-            <span>{{ entry.label }}</span>
-          </router-link>
-        </div>
-      </el-card>
+      <resource-usage-card></resource-usage-card>
     </div>
+
+    <el-card class="dash-card dashboard-card quick-card" shadow="never">
+      <div class="card-head">
+        <span class="card-title">快捷入口</span>
+        <span class="card-extra">常用功能</span>
+      </div>
+      <div class="quick-grid">
+        <router-link v-for="entry in quickEntries" :key="entry.path" :to="entry.path" class="quick-item">
+          <i :class="entry.icon"></i>
+          <span>{{ entry.label }}</span>
+        </router-link>
+      </div>
+    </el-card>
   </div>
 </template>
 
@@ -77,6 +80,7 @@
 import BotStatusBar from './bot-status-bar.vue'
 import RealtimeTaskCard from './realtime-task-card.vue'
 import RecentLogCard from './recent-log-card.vue'
+import ResourceUsageCard from './resource-usage-card.vue'
 import { botList } from '@/api/system'
 import { search as searchGroup } from '@/api/group'
 import { search as searchFriend } from '@/api/friend'
@@ -88,7 +92,8 @@ export default {
   components: {
     BotStatusBar,
     RealtimeTaskCard,
-    RecentLogCard
+    RecentLogCard,
+    ResourceUsageCard
   },
   data() {
     return {
@@ -486,9 +491,13 @@ export default {
   }
 }
 
+.quick-card {
+  margin-top: 12px;
+}
+
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -521,6 +530,10 @@ export default {
 @media (max-width: 1200px) {
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

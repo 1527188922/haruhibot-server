@@ -76,6 +76,8 @@ module.exports = {
   devServer: {
     open: true,
     hot: true,
+    // compression 中间件会压缩并缓冲 text/event-stream，导致浏览器端 SSE（/api/sys/log/tail）收不到任何数据
+    compress: false,
     host: '127.0.0.1',
     port: 8091,
     client: {
