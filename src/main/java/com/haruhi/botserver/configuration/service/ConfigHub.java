@@ -514,6 +514,10 @@ public class ConfigHub {
      * 其次按最长前缀分组（如 {@code bot.ws}），最后用最后一段兜底
      */
     private static String displayName(ConfigKey key) {
+        String custom = key.getDisplayName();
+        if (StringUtils.isNotBlank(custom)) {
+            return custom;
+        }
         String full = key.getKey();
         int firstDot = full.indexOf('.');
         if (firstDot > 0) {
