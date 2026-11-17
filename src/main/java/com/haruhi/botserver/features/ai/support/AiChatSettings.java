@@ -69,7 +69,7 @@ public final class AiChatSettings {
     }
 
     public static String defaultRole() {
-        return Configs.getStr(ConfigKey.DS_CHAT_ROLE, "春日酱");
+        return Configs.getStr(ConfigKey.DS_CHAT_ROLE);
     }
 
     public static int roleMaxChars() {

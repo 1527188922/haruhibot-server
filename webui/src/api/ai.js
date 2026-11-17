@@ -87,6 +87,46 @@ export const roleRescan = () => request({
 });
 
 /**
+ * 角色卡结构化编辑数据
+ * @param data {name}
+ */
+export const roleDetail = (data) => request({
+    url: baseUrl + '/ai/role/detail',
+    method: 'post',
+    data
+});
+
+/**
+ * 保存 / 新建 / 预览角色卡
+ * @param data {originalName, name, triggers, sections, baseMtime, baseHash, dryRun}
+ */
+export const roleSave = (data) => request({
+    url: baseUrl + '/ai/role/save',
+    method: 'post',
+    data
+});
+
+/**
+ * 复制角色卡
+ * @param data {sourceName, targetName, overwrite}
+ */
+export const roleCopy = (data) => request({
+    url: baseUrl + '/ai/role/copy',
+    method: 'post',
+    data
+});
+
+/**
+ * 角色名检查 / 复制建议名
+ * @param data {name, originalName, sourceName}
+ */
+export const roleNameCheck = (data) => request({
+    url: baseUrl + '/ai/role/nameCheck',
+    method: 'post',
+    data
+});
+
+/**
  * 暂停 / 恢复会话
  * @param data {id, status: active|paused}
  */

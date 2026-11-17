@@ -111,4 +111,16 @@ export default [{
     component: () =>
       import( /* webpackChunkName: "views" */ '@/views/util/detail.vue'),
   }]
+}, {
+  path: '/ai/role/edit',
+  component: Layout,
+  children: [{
+    path: '',
+    name: '角色卡编辑',
+    meta: {
+      activeMenu: '/ai/role'
+    },
+    component: () =>
+      import( /* webpackChunkName: "views" */ '@/views/ai/role/edit.vue')
+  }]
 }]

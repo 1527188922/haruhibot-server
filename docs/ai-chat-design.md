@@ -1527,12 +1527,17 @@ private void process(AiSessionKey key, AiTurn turn) {
 
 ## 11. WebUI（第二阶段）
 
-### 11.1 角色卡查看（只读）
+### 11.1 角色卡查看与结构化编辑
 
-- 角色卡只从 `./aichat/roles/*.md` 加载，WebUI 不提供在线新建/编辑/删除；
-- 列表：文件名、字符数、更新时间、是否被会话使用；
-- 预览：按模式过滤后的小节、最终 system 片段、估算 token、Lint 警告；
-- 提供“重新扫描目录”按钮；修改角色卡直接编辑目录里的文件。
+- 角色卡仍以 `./aichat/roles/*.md` 为唯一真源，WebUI 不提供整文件原始编辑；
+- 列表：文件名、字符数、更新时间、显式使用会话数、Lint 警告；
+- 预览：按模式过滤后的小节、最终 system 片段、估算 token；
+- 结构化编辑：按 `##` 章节拆分，每个章节由标题 + 若干行组成；支持默认章节、自定义章节、排序、注入条件（总是 / 有工具 / 有视觉）；
+- 新建：输入角色名与触发词，保存时由后端拼接 Markdown；
+- 复制：按字节复制现有角色卡到新名字，默认 `{源角色}-副本`，冲突时自动递增；
+- 另存为：编辑页把当前内容保存为新角色，源文件不变；
+- 保存：UTF-8、临时文件 + 原子替换、mtime/hash 冲突检测、`.backups` 保留最近 10 份；
+- 提供“重新扫描目录”按钮；修改后清理 `RoleCardService` 缓存，立即生效。
 
 ### 11.2 会话管理
 
@@ -1858,6 +1863,18 @@ ds.chat.memory.enable=true
 - `AiTool.available()` + `AiToolService.enabledTools()`：搜索关闭或未配置 Key 时不注入提示词、不可执行；
 - `PromptTemplates` 拆出 `TOOLS_WEB_SEARCH` / `TOOLS_SAFETY`，仅在 whitelist 含 `web_search` 且搜索可用时注入；
 - 计费：按成功请求计费，5 元 / 1000 次；`count` 不影响单价，因此默认只取 5 条。
+
+### 18.7 角色卡结构化编辑与复制（2026-11-17）
+
+- `RoleCardService` 新增 `definition` / `save` / `copy` / `nameAvailable` / `suggestCopyName`；
+- 解析现有角色卡为章节：`##` 为章节，`###` 及以下标题、列表保留为行；`触发词：` 行单独解析；顶部 `#` 标题由编辑器重建；
+- 保存时按 `# 角色卡：名称` + `触发词：` + 各章节拼接；`mode=tools/vision` 写为 `〔有工具〕/〔有视觉〕`；
+- 校验：角色名 1~30 字符且不含路径字符；章节 ≤20、标题 ≤40、单行 ≤500、触发词 ≤10 个；过滤后内容不得超过 `ds.chat.role.max_chars`；
+- 复制按字节复制，保留原文件格式；默认名 `{源角色}-副本`，冲突自动递增；
+- 写入：临时文件 + 原子替换；覆盖前备份到 `aichat/roles/.backups/`，每个角色保留最近 10 份；
+- 冲突：保存时比对 `baseHash`（优先）或 `baseMtime`，外部修改过则拒绝覆盖；
+- 接口：`/ai/role/detail`、`/ai/role/save`（支持 `dryRun` 预览）、`/ai/role/copy`、`/ai/role/nameCheck`；
+- 前端：角色列表增加「新建 / 编辑 / 复制」，新增隐藏路由 `/ai/role/edit`，按章节卡片编辑并提供预览、另存为。
 
 ---
 

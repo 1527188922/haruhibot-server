@@ -164,7 +164,7 @@ public enum ConfigKey {
             "注入模型的历史轮数上限", 200, "历史轮数上限"),
     DS_CHAT_HISTORY_MAX_INPUT_TOKENS(ConfigFile.AI, "ds.chat.history.max_input_tokens", ConfigType.INT, "12000", true,
             "输入 token 预算，超出后裁剪最旧历史", 210, "输入 Token 预算"),
-    DS_CHAT_ROLE(ConfigFile.AI, "ds.chat.role", ConfigType.STRING, "春日酱", true,
+    DS_CHAT_ROLE(ConfigFile.AI, "ds.chat.role", ConfigType.STRING, "小鲸鱼", true,
             "全局默认角色卡文件名（不含 .md）；留空=无角色", 220, "默认角色"),
     DS_CHAT_ROLE_MAX_CHARS(ConfigFile.AI, "ds.chat.role.max_chars", ConfigType.INT, "6000", true,
             "角色卡注入字符上限", 230, "角色卡字数上限"),

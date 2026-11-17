@@ -6,8 +6,14 @@ import com.haruhi.botserver.features.ai.model.admin.AiIdReq;
 import com.haruhi.botserver.features.ai.model.admin.AiOverviewResp;
 import com.haruhi.botserver.features.ai.model.admin.AiPromptPreviewReq;
 import com.haruhi.botserver.features.ai.model.admin.AiPromptPreviewResp;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleCopyReq;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleDetailResp;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleNameCheckReq;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleNameCheckResp;
 import com.haruhi.botserver.features.ai.model.admin.AiRolePreviewReq;
 import com.haruhi.botserver.features.ai.model.admin.AiRolePreviewResp;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleSaveReq;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleSaveResp;
 import com.haruhi.botserver.features.ai.model.admin.AiRoleView;
 import com.haruhi.botserver.features.ai.model.admin.AiSessionDetailResp;
 import com.haruhi.botserver.features.ai.model.admin.AiSessionQueryReq;
@@ -84,6 +90,34 @@ public class AiAdminController {
     @PostMapping("/role/rescan")
     public HttpResp<List<AiRoleView>> roleRescan() {
         return HttpResp.success(aiAdminService.roleRescan());
+    }
+
+    @PostMapping("/role/detail")
+    public HttpResp<AiRoleDetailResp> roleDetail(@RequestBody AiRolePreviewReq request) {
+        return HttpResp.success(aiAdminService.roleDetail(request.getName()));
+    }
+
+    @PostMapping("/role/save")
+    public HttpResp<AiRoleSaveResp> roleSave(@RequestBody AiRoleSaveReq request) {
+        try {
+            return HttpResp.success(aiAdminService.roleSave(request));
+        } catch (BusinessException e) {
+            return HttpResp.fail(e.getErrorMsg(), null);
+        }
+    }
+
+    @PostMapping("/role/copy")
+    public HttpResp<AiRoleDetailResp> roleCopy(@RequestBody AiRoleCopyReq request) {
+        try {
+            return HttpResp.success(aiAdminService.roleCopy(request));
+        } catch (BusinessException e) {
+            return HttpResp.fail(e.getErrorMsg(), null);
+        }
+    }
+
+    @PostMapping("/role/nameCheck")
+    public HttpResp<AiRoleNameCheckResp> roleNameCheck(@RequestBody AiRoleNameCheckReq request) {
+        return HttpResp.success(aiAdminService.roleNameCheck(request));
     }
 
     @PostMapping("/session/status")

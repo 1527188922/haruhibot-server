@@ -17,7 +17,14 @@ import com.haruhi.botserver.features.ai.model.AiTurn;
 import com.haruhi.botserver.features.ai.model.admin.AiOverviewResp;
 import com.haruhi.botserver.features.ai.model.admin.AiPromptPreviewReq;
 import com.haruhi.botserver.features.ai.model.admin.AiPromptPreviewResp;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleCopyReq;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleDetailResp;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleNameCheckReq;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleNameCheckResp;
 import com.haruhi.botserver.features.ai.model.admin.AiRolePreviewResp;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleSaveReq;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleSaveResp;
+import com.haruhi.botserver.features.ai.model.admin.AiRoleSection;
 import com.haruhi.botserver.features.ai.model.admin.AiRoleView;
 import com.haruhi.botserver.features.ai.model.admin.AiSessionDetailResp;
 import com.haruhi.botserver.features.ai.model.admin.AiSessionQueryReq;
@@ -235,6 +242,74 @@ public class AiAdminService {
     public List<AiRoleView> roleRescan() {
         roleCardService.clearCache();
         return roleList();
+    }
+
+    public AiRoleDetailResp roleDetail(String name) {
+        return toDetail(roleCardService.definition(name));
+    }
+
+    public AiRoleSaveResp roleSave(AiRoleSaveReq request) {
+        List<RoleCardService.RoleSection> sections = request.getSections() == null
+                ? List.of()
+                : request.getSections().stream()
+                .filter(Objects::nonNull)
+                .map(section -> new RoleCardService.RoleSection(
+                        section.getTitle(), section.getMode(), section.getLines()))
+                .toList();
+        RoleCardService.RoleSaveResult result = roleCardService.save(new RoleCardService.RoleSaveCommand(
+                request.getOriginalName(), request.getName(), request.getTriggers(), sections,
+                request.getBaseMtime(), request.getBaseHash(), request.isDryRun()));
+
+        AiRoleSaveResp resp = new AiRoleSaveResp();
+        resp.setSaved(result.saved());
+        resp.setDetail(toDetail(result.definition()));
+        resp.setRenderedMarkdown(result.renderedMarkdown());
+        resp.setFilteredContent(result.filteredContent());
+        resp.setWarnings(new ArrayList<>(result.warnings()));
+        resp.setEstimatedTokens(result.estimatedTokens());
+        return resp;
+    }
+
+    public AiRoleDetailResp roleCopy(AiRoleCopyReq request) {
+        return toDetail(roleCardService.copy(request.getSourceName(), request.getTargetName(), request.isOverwrite()));
+    }
+
+    public AiRoleNameCheckResp roleNameCheck(AiRoleNameCheckReq request) {
+        AiRoleNameCheckResp resp = new AiRoleNameCheckResp();
+        if (StringUtils.isNotBlank(request.getSourceName())) {
+            String suggested = roleCardService.suggestCopyName(request.getSourceName());
+            resp.setSuggested(suggested);
+            resp.setAvailable(roleCardService.nameAvailable(suggested, null));
+            resp.setMessage(resp.isAvailable() ? "" : "建议名不可用，请手动修改");
+            return resp;
+        }
+        boolean available = roleCardService.nameAvailable(request.getName(), request.getOriginalName());
+        resp.setAvailable(available);
+        resp.setMessage(available ? "" : "角色名不可用或已存在");
+        return resp;
+    }
+
+    private AiRoleDetailResp toDetail(RoleCardService.RoleDefinition definition) {
+        if (definition == null) {
+            return null;
+        }
+        AiRoleDetailResp resp = new AiRoleDetailResp();
+        resp.setName(definition.name());
+        resp.setFileName(definition.fileName());
+        resp.setTriggers(new ArrayList<>(definition.triggers()));
+        resp.setChars(definition.chars());
+        resp.setMaxChars(definition.maxChars());
+        resp.setMtime(definition.mtime());
+        resp.setHash(definition.hash());
+        resp.setWarnings(new ArrayList<>(definition.warnings()));
+        for (RoleCardService.RoleSection section : definition.sections()) {
+            AiRoleSection item = new AiRoleSection();
+            item.setTitle(section.title());
+            item.setMode(section.mode());
+            item.setLines(new ArrayList<>(section.lines()));
+            resp.getSections().add(item);
+        }
+        return resp;
     }
 
     // ==================== P1：会话操作 ====================
