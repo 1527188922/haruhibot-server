@@ -50,7 +50,16 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="targetId" label="目标" min-width="140"></el-table-column>
+        <el-table-column label="目标" min-width="170">
+          <template slot-scope="{row}">
+            <div class="target-cell">
+              <el-avatar :size="28" :src="sessionAvatar(row)" class="target-avatar">
+                <i :class="row.scene === 'group' ? 'el-icon-chat-dot-round' : 'el-icon-user-solid'"></i>
+              </el-avatar>
+              <span class="target-id">{{ row.targetId }}</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="角色" min-width="120">
           <template slot-scope="{row}">{{ row.roleName || '默认角色' }}</template>
         </el-table-column>
@@ -87,17 +96,22 @@
       <div v-loading="detailLoading" class="drawer-body">
         <template v-if="detail">
           <div class="drawer-header">
-            <div>
-              <div class="drawer-title">
-                {{ sceneText(detail.session.scene) }} {{ detail.session.targetId }}
-                <el-tag size="mini" :type="detail.session.status === 'paused' ? 'info' : 'success'" effect="plain">
-                  {{ detail.session.status === 'paused' ? '已暂停' : '运行中' }}
-                </el-tag>
-              </div>
-              <div class="drawer-sub">
-                实际角色：{{ detail.effectiveRole || '无角色' }} ·
-                会话角色：{{ detail.session.roleName || '默认' }} ·
-                最后活跃：{{ detail.session.lastActiveAt || '-' }}
+            <div class="drawer-title-wrap">
+              <el-avatar :size="42" :src="sessionAvatar(detail.session)" class="drawer-avatar">
+                <i :class="detail.session.scene === 'group' ? 'el-icon-chat-dot-round' : 'el-icon-user-solid'"></i>
+              </el-avatar>
+              <div>
+                <div class="drawer-title">
+                  {{ sceneText(detail.session.scene) }} {{ detail.session.targetId }}
+                  <el-tag size="mini" :type="detail.session.status === 'paused' ? 'info' : 'success'" effect="plain">
+                    {{ detail.session.status === 'paused' ? '已暂停' : '运行中' }}
+                  </el-tag>
+                </div>
+                <div class="drawer-sub">
+                  实际角色：{{ detail.effectiveRole || '无角色' }} ·
+                  会话角色：{{ detail.session.roleName || '默认' }} ·
+                  最后活跃：{{ detail.session.lastActiveAt || '-' }}
+                </div>
               </div>
             </div>
             <div class="drawer-actions">
@@ -149,11 +163,16 @@
               <div v-if="!messages.length" class="empty-tip">暂无对话记录</div>
               <div v-for="msg in messages" :key="msg.id" class="chat-row"
                    :class="msg.role === 'assistant' ? 'is-bot' : 'is-user'">
-                <div class="chat-meta">
-                  {{ msg.role === 'assistant' ? '你' : (msg.speakerName || msg.speakerId || '用户') }}
-                  <span class="chat-time">{{ msg.createdAt }}</span>
+                <el-avatar :size="34" :src="messageAvatar(msg)" class="chat-avatar">
+                  <i :class="msg.role === 'assistant' ? 'el-icon-service' : 'el-icon-user-solid'"></i>
+                </el-avatar>
+                <div class="chat-main">
+                  <div class="chat-meta">
+                    {{ msg.role === 'assistant' ? '你' : (msg.speakerName || msg.speakerId || '用户') }}
+                  </div>
+                  <div class="chat-bubble">{{ msg.content }}</div>
+                  <div class="chat-time">{{ msg.createdAt }}</div>
                 </div>
-                <div class="chat-bubble">{{ msg.content }}</div>
               </div>
             </el-tab-pane>
 
@@ -222,6 +241,7 @@ import {
   sessionReset,
   roleList
 } from '@/api/ai';
+import { sessionAvatarUrl, userAvatarUrl } from '@/util/avatar';
 
 export default {
   name: 'AiSession',
@@ -404,6 +424,23 @@ export default {
         this.actionLoading = false;
       });
     },
+    sessionAvatar(session) {
+      if (!session) {
+        return '';
+      }
+      return sessionAvatarUrl(session.scene, session.targetId);
+    },
+    messageAvatar(msg) {
+      if (msg.role === 'assistant') {
+        const session = this.detail ? this.detail.session : null;
+        return userAvatarUrl(session ? session.selfId : null);
+      }
+      if (msg.speakerId) {
+        return userAvatarUrl(msg.speakerId);
+      }
+      const session = this.detail ? this.detail.session : null;
+      return session && session.scene === 'private' ? userAvatarUrl(session.targetId) : '';
+    },
     sceneText(scene) {
       return scene === 'group' ? '群聊' : '私聊';
     }
@@ -445,6 +482,22 @@ export default {
     text-align: right;
   }
 
+  .target-cell {
+    display: flex;
+    align-items: center;
+  }
+
+  .target-avatar {
+    flex-shrink: 0;
+    margin-right: 8px;
+    color: #909399;
+    background: #f0f2f5;
+  }
+
+  .target-id {
+    color: #303133;
+  }
+
   .drawer-body {
     min-height: 100%;
     padding: 20px;
@@ -457,6 +510,18 @@ export default {
     justify-content: space-between;
     padding-bottom: 16px;
     border-bottom: 1px solid #ebeef5;
+  }
+
+  .drawer-title-wrap {
+    display: flex;
+    align-items: center;
+  }
+
+  .drawer-avatar {
+    flex-shrink: 0;
+    margin-right: 12px;
+    color: #909399;
+    background: #f0f2f5;
   }
 
   .drawer-title {
@@ -521,31 +586,49 @@ export default {
   }
 
   .chat-row {
-    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
 
     &.is-user {
-      text-align: right;
-    }
-
-    &.is-bot {
-      text-align: left;
+      flex-direction: row-reverse;
     }
   }
 
+  .chat-avatar {
+    flex-shrink: 0;
+    color: #909399;
+    background: #f0f2f5;
+  }
+
+  .chat-main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 72%;
+  }
+
+  .chat-row.is-user .chat-main {
+    align-items: flex-end;
+    text-align: right;
+  }
+
   .chat-meta {
+    margin-bottom: 4px;
     font-size: 12px;
     color: #909399;
   }
 
   .chat-time {
-    margin-left: 8px;
+    margin-top: 4px;
+    font-size: 11px;
     color: #c0c4cc;
   }
 
   .chat-bubble {
     display: inline-block;
-    max-width: 78%;
-    margin-top: 4px;
+    max-width: 100%;
     padding: 8px 12px;
     border-radius: 8px;
     font-size: 13px;
@@ -568,6 +651,10 @@ export default {
   @media (max-width: 768px) {
     .summary-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .chat-main {
+      max-width: 78%;
     }
   }
 }
