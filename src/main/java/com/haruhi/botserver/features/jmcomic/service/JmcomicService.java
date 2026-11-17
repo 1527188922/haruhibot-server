@@ -1500,6 +1500,10 @@ public class JmcomicService {
                 return BaseResp.fail("解析响应结果异常：" + e.getMessage());
             }
 
+            if (Objects.equals("[]", encryptedData)) {
+                return BaseResp.fail("未搜索到：JM" + aid);
+            }
+
             String data = decryptData(ts, encryptedData);
             Album album = JSONObject.parseObject(data, Album.class);
 
@@ -1865,7 +1869,18 @@ public class JmcomicService {
 //        test1();
 //        test2();
 //        test4();
-        test5();
+//        test5();
+        test6();
+    }
+
+    public static void test6(){
+        JmcomicService jmcomicService = new JmcomicService();
+        try {
+            BaseResp<Album> albumBaseResp = jmcomicService.requestAlbum("1672854", null);
+            System.out.println(albumBaseResp);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void test5(){
