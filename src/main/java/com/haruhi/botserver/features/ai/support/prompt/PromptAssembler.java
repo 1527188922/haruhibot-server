@@ -41,6 +41,8 @@ public class PromptAssembler {
 
     public AiPrompt assemble(AiSessionState state, List<AiTurn> turns, List<AiAmbientMessage> ambient) {
         AiSessionKey key = state.getKey();
+        AiTurn currentTurn = turns == null || turns.isEmpty() ? null : turns.get(0);
+        AiIncoming current = currentTurn == null ? null : currentTurn.getIncoming();
         RoleCardService.RoleCard role = roleCardService.resolve(
                 state.roleName(), key.targetId(), key.targetId(), key.group());
 
@@ -51,6 +53,12 @@ public class PromptAssembler {
             system.append(PromptTemplates.TOOLS).append('\n');
             if (AiChatSettings.agentTools().contains("web_search") && AiChatSettings.searchAvailable()) {
                 system.append(PromptTemplates.TOOLS_WEB_SEARCH).append('\n');
+            }
+            if (AiChatSettings.agentTools().contains("reply_message")
+                    && current != null
+                    && StringUtils.isNotBlank(current.getReplyMessageId())
+                    && (!key.group() || currentTurn.isDirect())) {
+                system.append(PromptTemplates.TOOLS_REPLY).append('\n');
             }
             system.append(PromptTemplates.TOOLS_SAFETY).append('\n');
         }
@@ -85,7 +93,6 @@ public class PromptAssembler {
         List<AiAmbientMessage> filteredAmbient = filterAmbient(ambient, history);
         List<AiMemoryEntity> memories = memoryService.list(state, AiChatSettings.memoryInjectMax());
         String context = contextBlock(key, turns, filteredAmbient, memories);
-        AiIncoming current = turns.isEmpty() ? null : turns.get(0).getIncoming();
         if (current != null && AiChatSettings.visionEnabled() && !current.getImageUrls().isEmpty()) {
             prompt.add(DeepSeekMessage.userWithImages(context, current.getImageUrls()));
         } else {

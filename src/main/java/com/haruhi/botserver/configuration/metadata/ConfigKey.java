@@ -258,7 +258,7 @@ public enum ConfigKey {
             "是否允许模型通过 JSON call 调用白名单工具", 700, "工具调用"),
     DS_CHAT_AGENT_MAX_STEPS(ConfigFile.AI, "ds.chat.agent.max_steps", ConfigType.INT, "2", true,
             "一轮内最多工具调用轮数", 710, "工具轮数上限"),
-    DS_CHAT_AGENT_TOOLS(ConfigFile.AI, "ds.chat.agent.tools", ConfigType.LIST, "group_history,member_info,memory_append,memory_query,memory_forget,web_search", true,
+    DS_CHAT_AGENT_TOOLS(ConfigFile.AI, "ds.chat.agent.tools", ConfigType.LIST, "group_history,member_info,memory_append,memory_query,memory_forget,web_search,reply_message", true,
             "可调用工具白名单，逗号分隔", 720, "工具白名单"),
     DS_CHAT_AGENT_TOOL_TIMEOUT_MS(ConfigFile.AI, "ds.chat.agent.tool_timeout_ms", ConfigType.INT, "5000", true,
             "单个工具执行超时，单位毫秒", 730, "工具超时(毫秒)"),

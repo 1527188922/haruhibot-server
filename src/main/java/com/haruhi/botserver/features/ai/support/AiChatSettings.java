@@ -255,7 +255,7 @@ public final class AiChatSettings {
 
     public static List<String> agentTools() {
         return Configs.getList(ConfigKey.DS_CHAT_AGENT_TOOLS, String.class,
-                List.of("group_history", "member_info"));
+                List.of("group_history", "member_info", "reply_message"));
     }
 
     public static long toolTimeoutMillis() {

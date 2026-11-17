@@ -51,7 +51,10 @@ public final class AiMessageExtractor {
         return incoming;
     }
 
-    private static String buildText(Message message) {
+    /**
+     * 把 OneBot 消息段转成模型可读文本；供入站消息和引用消息工具复用。
+     */
+    public static String buildText(Message message) {
         if (message.getMessage() == null || message.getMessage().isEmpty()) {
             return StringUtils.defaultString(message.getRawMessage());
         }

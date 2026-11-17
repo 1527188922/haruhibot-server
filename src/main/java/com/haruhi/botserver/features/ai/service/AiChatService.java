@@ -219,27 +219,32 @@ public class AiChatService {
         }
 
         int steps = 0;
-        while (reply.isCall() && steps < AiChatSettings.agentMaxSteps()
-                && toolCalls < AiChatSettings.toolCallsPerTurn()) {
-            steps++;
-            toolCalls++;
-            String result = toolService.execute(turn.getBot(), state, reply.getCall());
-            if (StringUtils.isBlank(result)) {
-                result = "工具没有返回内容。";
-            }
-            prompt.addToolResult(StringUtils.defaultString(response.getContent()), result);
-            try {
-                response = callModel(key, prompt, null);
-            } catch (Exception e) {
-                log.error("AI工具后调用模型失败: {}", key.cacheKey(), e);
-                break;
-            }
-            reply = AiReplyParser.parse(response.getContent());
-            if (reply.getType() == AiReply.Type.INVALID) {
-                prompt.add(DeepSeekMessage.user(PromptTemplates.REPAIR));
-                response = callModel(key, prompt, null);
+        state.setToolContext(incoming.getReplyMessageId(), turn.isDirect());
+        try {
+            while (reply.isCall() && steps < AiChatSettings.agentMaxSteps()
+                    && toolCalls < AiChatSettings.toolCallsPerTurn()) {
+                steps++;
+                toolCalls++;
+                String result = toolService.execute(turn.getBot(), state, reply.getCall());
+                if (StringUtils.isBlank(result)) {
+                    result = "工具没有返回内容。";
+                }
+                prompt.addToolResult(StringUtils.defaultString(response.getContent()), result);
+                try {
+                    response = callModel(key, prompt, null);
+                } catch (Exception e) {
+                    log.error("AI工具后调用模型失败: {}", key.cacheKey(), e);
+                    break;
+                }
                 reply = AiReplyParser.parse(response.getContent());
+                if (reply.getType() == AiReply.Type.INVALID) {
+                    prompt.add(DeepSeekMessage.user(PromptTemplates.REPAIR));
+                    response = callModel(key, prompt, null);
+                    reply = AiReplyParser.parse(response.getContent());
+                }
             }
+        } finally {
+            state.clearToolContext();
         }
 
         if (reply.isCall()) {

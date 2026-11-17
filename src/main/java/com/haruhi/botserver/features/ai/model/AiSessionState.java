@@ -19,6 +19,11 @@ public class AiSessionState {
     private volatile long generation;
     private volatile long lastActiveAt = System.currentTimeMillis();
 
+    /** 仅在一次工具循环期间有效：当前消息引用的消息 ID */
+    private volatile String currentReplyMessageId;
+    /** 仅在一次工具循环期间有效：当前消息是否直接触发（@、提及、引用机器人等） */
+    private volatile boolean currentDirect;
+
     public AiSessionState(AiSessionKey key) {
         this.key = key;
     }
@@ -41,5 +46,15 @@ public class AiSessionState {
 
     public void touch() {
         lastActiveAt = System.currentTimeMillis();
+    }
+
+    public void setToolContext(String replyMessageId, boolean direct) {
+        this.currentReplyMessageId = replyMessageId;
+        this.currentDirect = direct;
+    }
+
+    public void clearToolContext() {
+        this.currentReplyMessageId = null;
+        this.currentDirect = false;
     }
 }

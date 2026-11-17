@@ -782,6 +782,7 @@ class SessionState {
 | `memory_query` | 群/私聊 | `{"limit": 1..20}` | 查看当前会话的长期记忆 |
 | `memory_forget` | 群/私聊 | `{"key":"..."}` | 删除一条长期记忆 |
 | `web_search` | 群/私聊 | `{"query": "<=100字"}` | 可选，需搜索 API；结果只作参考 |
+| `reply_message` | 群/私聊 | 无 | 读取当前消息引用的那条消息；群聊仅在回复且 @/提及机器人等直接触发时注入并执行 |
 
 **不做**：shell、文件、数据库、配置、发消息、改角色、群管理、跨群查询、任意 URL 抓取。
 
@@ -1284,7 +1285,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS `t_ai_memory_session_key_idx`
 | --- | --- | --- | --- |
 | `ds.chat.agent.enable` | BOOL | true | 是否允许 `call` |
 | `ds.chat.agent.max_steps` | INT | 2 | 工具循环最多几轮 |
-| `ds.chat.agent.tools` | LIST | `group_history,member_info,memory_append,memory_query,memory_forget,web_search` | 白名单 |
+| `ds.chat.agent.tools` | LIST | `group_history,member_info,memory_append,memory_query,memory_forget,web_search,reply_message` | 白名单 |
 | `ds.chat.agent.tool_timeout_ms` | INT | 5000 | 单工具超时 |
 | `ds.chat.agent.max_result_chars` | INT | 2000 | 工具结果截断 |
 | `ds.chat.agent.calls_per_turn` | INT | 2 | 单轮工具调用上限 |
