@@ -114,7 +114,7 @@
       </div>
     </el-drawer>
 
-    <el-dialog title="复制角色卡" :visible.sync="copyDialogVisible" width="460px">
+    <el-dialog title="复制角色卡" :visible.sync="copyDialogVisible" :fullscreen="isMobile" width="460px">
       <el-form label-width="90px" size="small">
         <el-form-item label="源角色">
           <span>{{ copySource }}</span>
@@ -132,14 +132,32 @@
         <el-button size="small" type="primary" :loading="copyLoading" @click="confirmCopy">复制</el-button>
       </div>
     </el-dialog>
+
+    <el-drawer :visible.sync="editorVisible"
+               :size="isMobile ? '100%' : '60%'"
+               direction="rtl"
+               :with-header="false"
+               :before-close="beforeEditorClose"
+               custom-class="role-editor-drawer">
+      <ai-role-editor v-if="editorVisible"
+                      ref="roleEditor"
+                      :key="editorKey"
+                      :role-name="editorRoleName"
+                      @request-close="closeEditorWithConfirm"
+                      @saved="onEditorSaved" />
+    </el-drawer>
   </div>
 </template>
 
 <script>
 import { roleList, rolePreview, roleRescan, roleCopy, roleNameCheck } from '@/api/ai';
+import AiRoleEditor from './edit.vue';
 
 export default {
   name: 'AiRole',
+  components: {
+    AiRoleEditor
+  },
   data() {
     return {
       loading: false,
@@ -153,8 +171,23 @@ export default {
       copyTarget: '',
       copyAndEdit: false,
       copyLoading: false,
-      copyMessage: ''
+      copyMessage: '',
+      editorVisible: false,
+      editorRoleName: '',
+      editorKey: 0,
+      windowWidth: window.innerWidth
     };
+  },
+  computed: {
+    isMobile() {
+      return this.windowWidth <= 768;
+    }
+  },
+  mounted() {
+    window.addEventListener('resize', this.onWindowResize);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onWindowResize);
   },
   created() {
     this.load();
@@ -203,10 +236,51 @@ export default {
       });
     },
     createRole() {
-      this.$router.push('/ai/role/edit');
+      this.openEditor('');
     },
     editRole(row) {
-      this.$router.push({ path: '/ai/role/edit', query: { name: row.name } });
+      this.openEditor(row.name);
+    },
+    openEditor(name) {
+      this.editorRoleName = name || '';
+      this.editorKey += 1;
+      this.editorVisible = true;
+    },
+    onWindowResize() {
+      this.windowWidth = window.innerWidth;
+    },
+    closeEditorWithConfirm() {
+      const editor = this.$refs.roleEditor;
+      if (!editor || !editor.isDirty()) {
+        this.editorVisible = false;
+        return;
+      }
+      this.$confirm('当前有未保存的修改，确定关闭？', '提示', {
+        confirmButtonText: '关闭',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.editorVisible = false;
+      }).catch(() => {
+      });
+    },
+    beforeEditorClose(done) {
+      const editor = this.$refs.roleEditor;
+      if (!editor || !editor.isDirty()) {
+        return done();
+      }
+      this.$confirm('当前有未保存的修改，确定关闭？', '提示', {
+        confirmButtonText: '关闭',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => done()).catch(() => {
+      });
+    },
+    onEditorSaved(detail) {
+      if (detail && detail.name) {
+        this.editorRoleName = detail.name;
+      }
+      this.load();
     },
     openCopy(row) {
       this.copySource = row.name;
@@ -246,7 +320,7 @@ export default {
         this.copyDialogVisible = false;
         this.load();
         if (this.copyAndEdit) {
-          this.$router.push({ path: '/ai/role/edit', query: { name: detail.name || target } });
+          this.openEditor(detail.name || target);
         }
       }).catch((e) => {
         this.copyMessage = (e && e.message) || '复制失败';
@@ -499,5 +573,11 @@ export default {
       grid-template-columns: 1fr;
     }
   }
+}
+</style>
+
+<style lang="scss">
+.role-editor-drawer .el-drawer__body {
+  padding: 0;
 }
 </style>

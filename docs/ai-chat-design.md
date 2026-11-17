@@ -1874,7 +1874,7 @@ ds.chat.memory.enable=true
 - 写入：临时文件 + 原子替换；覆盖前备份到 `aichat/roles/.backups/`，每个角色保留最近 10 份；
 - 冲突：保存时比对 `baseHash`（优先）或 `baseMtime`，外部修改过则拒绝覆盖；
 - 接口：`/ai/role/detail`、`/ai/role/save`（支持 `dryRun` 预览）、`/ai/role/copy`、`/ai/role/nameCheck`；
-- 前端：角色列表增加「新建 / 编辑 / 复制」，新增隐藏路由 `/ai/role/edit`，按章节卡片编辑并提供预览、另存为。
+- 前端：角色列表增加「新建 / 编辑 / 复制」；编辑使用列表内抽屉，桌面占 60% 宽度、移动端全屏；按章节卡片编辑并提供预览、另存为。
 
 ---
 

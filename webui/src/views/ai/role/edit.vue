@@ -1,6 +1,5 @@
 <template>
-  <div class="ai-role-edit">
-    <basic-container v-loading="pageLoading">
+  <div v-loading="pageLoading" class="ai-role-edit">
       <div class="page-header">
         <div>
           <div class="page-title">{{ isEdit ? '编辑角色卡' : '新建角色卡' }}</div>
@@ -9,7 +8,7 @@
           </div>
         </div>
         <div class="page-actions">
-          <el-button size="small" @click="goBack">返回</el-button>
+          <el-button size="small" @click="requestClose">关闭</el-button>
           <el-button size="small" icon="el-icon-view" :loading="previewLoading" @click="preview">预览</el-button>
           <el-button v-if="isEdit" size="small" @click="openSaveAs">另存为新角色</el-button>
           <el-button size="small" type="primary" :loading="saving" :disabled="!canSave" @click="save">
@@ -103,12 +102,11 @@
       </div>
 
       <div class="footer-bar">
-        <el-button @click="goBack">取消</el-button>
+        <el-button @click="requestClose">取消</el-button>
         <el-button type="primary" :loading="saving" :disabled="!canSave" @click="save">保存</el-button>
       </div>
-    </basic-container>
 
-    <el-dialog title="预览" :visible.sync="previewVisible" width="760px">
+    <el-dialog title="预览" :visible.sync="previewVisible" :fullscreen="isMobile" width="760px">
       <el-tabs v-model="previewTab">
         <el-tab-pane label="过滤后内容" name="filtered">
           <pre class="preview-content">{{ previewData.filteredContent }}</pre>
@@ -129,7 +127,7 @@
       </div>
     </el-dialog>
 
-    <el-dialog title="另存为新角色" :visible.sync="saveAsVisible" width="440px">
+    <el-dialog title="另存为新角色" :visible.sync="saveAsVisible" :fullscreen="isMobile" width="440px">
       <el-form label-width="90px" size="small">
         <el-form-item label="新角色名">
           <el-input v-model="saveAsName" maxlength="30" placeholder="1~30 字符"></el-input>
@@ -173,6 +171,12 @@ function defaultSections() {
 
 export default {
   name: 'AiRoleEdit',
+  props: {
+    roleName: {
+      type: String,
+      default: ''
+    }
+  },
   data() {
     return {
       pageLoading: false,
@@ -198,10 +202,14 @@ export default {
       previewData: {},
       saveAsVisible: false,
       saveAsName: '',
-      saveAsMessage: ''
+      saveAsMessage: '',
+      windowWidth: window.innerWidth
     };
   },
   computed: {
+    isMobile() {
+      return this.windowWidth <= 768;
+    },
     isEdit() {
       return !!this.form.originalName;
     },
@@ -237,24 +245,22 @@ export default {
     }
   },
   created() {
-    const name = this.$route.query.name;
-    if (name) {
-      this.load(name);
+    if (this.roleName) {
+      this.load(this.roleName);
     } else {
       this.initNew();
     }
   },
-  beforeRouteLeave(to, from, next) {
-    if (this.saving || this.saveAsLoading || !this.isDirty()) {
-      return next();
-    }
-    this.$confirm('当前有未保存的修改，确定离开？', '提示', {
-      confirmButtonText: '离开',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }).then(() => next()).catch(() => next(false));
+  mounted() {
+    window.addEventListener('resize', this.onWindowResize);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onWindowResize);
   },
   methods: {
+    onWindowResize() {
+      this.windowWidth = window.innerWidth;
+    },
     load(name) {
       this.pageLoading = true;
       roleDetail({ name }).then((res) => {
@@ -266,7 +272,7 @@ export default {
         const data = body.data;
         if (!data) {
           this.$message.error('角色卡不存在：' + name);
-          this.$router.replace('/ai/role');
+          this.requestClose();
           return;
         }
         this.form = {
@@ -404,7 +410,6 @@ export default {
       if (!detail) {
         return;
       }
-      const changedName = this.form.originalName !== detail.name;
       this.form.originalName = detail.name;
       this.form.name = detail.name;
       this.form.triggers = detail.triggers || [];
@@ -421,9 +426,7 @@ export default {
       this.maxChars = detail.maxChars || this.maxChars;
       this.initialSnapshot = this.snapshot();
       this.$message.success(data.saved ? '角色卡已保存' : '角色卡已更新');
-      if (changedName) {
-        this.$router.replace({ path: '/ai/role/edit', query: { name: detail.name } });
-      }
+      this.$emit('saved', detail);
     },
     buildPayload(dryRun) {
       return {
@@ -452,6 +455,9 @@ export default {
       });
     },
     isDirty() {
+      if (this.pageLoading) {
+        return false;
+      }
       return this.snapshot() !== this.initialSnapshot;
     },
     addTrigger() {
@@ -517,8 +523,8 @@ export default {
     updateLine(section, index, value) {
       this.$set(section.lines, index, value);
     },
-    goBack() {
-      this.$router.push('/ai/role');
+    requestClose() {
+      this.$emit('request-close');
     },
     body(res) {
       return res && res.data ? res.data : {};
@@ -529,6 +535,10 @@ export default {
 
 <style lang="scss" scoped>
 .ai-role-edit {
+  min-height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+
   .page-header {
     display: flex;
     align-items: flex-start;
@@ -711,6 +721,8 @@ export default {
   }
 
   @media (max-width: 768px) {
+    padding: 16px;
+
     .page-header {
       flex-direction: column;
     }
