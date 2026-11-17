@@ -100,7 +100,17 @@
                 最后活跃：{{ detail.session.lastActiveAt || '-' }}
               </div>
             </div>
-            <el-button size="small" @click="drawer = false">关闭</el-button>
+            <div class="drawer-actions">
+              <el-button size="small"
+                         :type="detail.session.status === 'paused' ? 'success' : 'warning'"
+                         :loading="actionLoading"
+                         @click="toggleStatus">
+                {{ detail.session.status === 'paused' ? '恢复' : '暂停' }}
+              </el-button>
+              <el-button size="small" @click="openRoleDialog">切换角色</el-button>
+              <el-button size="small" type="danger" plain :loading="actionLoading" @click="resetSession">重置</el-button>
+              <el-button size="small" @click="drawer = false">关闭</el-button>
+            </div>
           </div>
 
           <div class="summary-grid">
@@ -184,11 +194,34 @@
         <div v-else class="empty-tip">没有找到会话</div>
       </div>
     </el-drawer>
+
+    <el-dialog title="切换角色" :visible.sync="roleDialogVisible" width="420px">
+      <el-select v-model="selectedRole" clearable placeholder="恢复默认解析（群映射 / 全局默认）" style="width: 100%">
+        <el-option v-for="role in roleOptions" :key="role.name" :label="role.name" :value="role.name"></el-option>
+      </el-select>
+      <div class="dialog-tip">
+        只影响当前会话；留空表示按「会话 > 群/私聊映射 > 全局默认」重新解析。
+      </div>
+      <div slot="footer">
+        <el-button size="small" @click="roleDialogVisible = false">取消</el-button>
+        <el-button size="small" type="primary" :loading="actionLoading" @click="saveRole">保存</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { sessionSearch, sessionDetail, sessionMessages, sessionMemories, sessionUsage } from '@/api/ai';
+import {
+  sessionSearch,
+  sessionDetail,
+  sessionMessages,
+  sessionMemories,
+  sessionUsage,
+  sessionStatus,
+  sessionRole,
+  sessionReset,
+  roleList
+} from '@/api/ai';
 
 export default {
   name: 'AiSession',
@@ -213,7 +246,11 @@ export default {
       activeTab: 'messages',
       messages: [],
       memories: [],
-      usage: []
+      usage: [],
+      actionLoading: false,
+      roleDialogVisible: false,
+      roleOptions: [],
+      selectedRole: ''
     };
   },
   created() {
@@ -293,6 +330,80 @@ export default {
       }
       return body.data;
     },
+    toggleStatus() {
+      if (!this.detail) {
+        return;
+      }
+      const next = this.detail.session.status === 'paused' ? 'active' : 'paused';
+      this.actionLoading = true;
+      sessionStatus({ id: this.detail.session.id, status: next }).then((res) => {
+        this.detail = this.unwrap(res);
+        this.$message.success(next === 'paused' ? '已暂停当前会话' : '已恢复当前会话');
+        this.load();
+      }).catch((e) => {
+        this.$message.error((e && e.message) || '操作失败');
+      }).finally(() => {
+        this.actionLoading = false;
+      });
+    },
+    openRoleDialog() {
+      if (!this.detail) {
+        return;
+      }
+      this.selectedRole = this.detail.session.roleName || '';
+      this.roleDialogVisible = true;
+      if (this.roleOptions.length) {
+        return;
+      }
+      roleList().then((res) => {
+        this.roleOptions = this.unwrap(res) || [];
+      }).catch(() => {
+        this.$message.error('加载角色卡失败');
+      });
+    },
+    saveRole() {
+      if (!this.detail) {
+        return;
+      }
+      this.actionLoading = true;
+      sessionRole({
+        id: this.detail.session.id,
+        roleName: this.selectedRole || ''
+      }).then((res) => {
+        this.detail = this.unwrap(res);
+        this.roleDialogVisible = false;
+        this.$message.success('角色已切换');
+        this.load();
+      }).catch((e) => {
+        this.$message.error((e && e.message) || '切换角色失败');
+      }).finally(() => {
+        this.actionLoading = false;
+      });
+    },
+    resetSession() {
+      if (!this.detail) {
+        return;
+      }
+      this.$confirm('将清空当前会话的全部历史消息，且不可恢复，是否继续？', '重置会话', {
+        confirmButtonText: '重置',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.actionLoading = true;
+        return sessionReset({ id: this.detail.session.id }).then((res) => {
+          this.detail = this.unwrap(res);
+          this.messages = [];
+          this.$message.success('会话已重置');
+          this.load();
+        });
+      }).catch((e) => {
+        if (e !== 'cancel') {
+          this.$message.error((e && e.message) || '重置失败');
+        }
+      }).finally(() => {
+        this.actionLoading = false;
+      });
+    },
     sceneText(scene) {
       return scene === 'group' ? '群聊' : '私聊';
     }
@@ -357,6 +468,19 @@ export default {
   .drawer-sub {
     margin-top: 6px;
     font-size: 12px;
+    color: #909399;
+  }
+
+  .drawer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .dialog-tip {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.6;
     color: #909399;
   }
 

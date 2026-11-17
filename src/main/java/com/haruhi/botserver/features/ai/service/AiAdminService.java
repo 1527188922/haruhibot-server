@@ -7,13 +7,23 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.haruhi.botserver.features.ai.client.deepseek.DeepSeekBalanceResponse;
 import com.haruhi.botserver.features.ai.client.deepseek.DeepSeekClient;
 import com.haruhi.botserver.features.ai.client.deepseek.DeepSeekMessage;
+import com.haruhi.botserver.features.ai.model.AiAmbientMessage;
+import com.haruhi.botserver.features.ai.model.AiIncoming;
 import com.haruhi.botserver.features.ai.model.AiPrompt;
+import com.haruhi.botserver.features.ai.model.AiScene;
+import com.haruhi.botserver.features.ai.model.AiSessionKey;
+import com.haruhi.botserver.features.ai.model.AiSessionState;
+import com.haruhi.botserver.features.ai.model.AiTurn;
 import com.haruhi.botserver.features.ai.model.admin.AiOverviewResp;
+import com.haruhi.botserver.features.ai.model.admin.AiPromptPreviewReq;
+import com.haruhi.botserver.features.ai.model.admin.AiPromptPreviewResp;
 import com.haruhi.botserver.features.ai.model.admin.AiRolePreviewResp;
 import com.haruhi.botserver.features.ai.model.admin.AiRoleView;
 import com.haruhi.botserver.features.ai.model.admin.AiSessionDetailResp;
 import com.haruhi.botserver.features.ai.model.admin.AiSessionQueryReq;
 import com.haruhi.botserver.features.ai.model.admin.AiSessionView;
+import com.haruhi.botserver.features.ai.model.admin.AiUsageBreakdownResp;
+import com.haruhi.botserver.features.ai.model.admin.AiUsageTrendResp;
 import com.haruhi.botserver.features.ai.persistence.entity.AiMemoryEntity;
 import com.haruhi.botserver.features.ai.persistence.entity.AiMessageEntity;
 import com.haruhi.botserver.features.ai.persistence.entity.AiSessionEntity;
@@ -24,7 +34,9 @@ import com.haruhi.botserver.features.ai.persistence.mapper.AiSessionMapper;
 import com.haruhi.botserver.features.ai.persistence.mapper.AiUsageMapper;
 import com.haruhi.botserver.features.ai.support.AiChatSettings;
 import com.haruhi.botserver.features.ai.support.EmojiService;
+import com.haruhi.botserver.features.ai.support.prompt.PromptAssembler;
 import com.haruhi.botserver.features.ai.support.prompt.RoleCardService;
+import com.haruhi.botserver.shared.error.BusinessException;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -34,6 +46,8 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,14 +57,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * WebUI AI 管理只读查询（P0）。
+ * WebUI AI 管理查询与操作。
  */
 @Service
 @Slf4j
 public class AiAdminService {
+
+    private static final Pattern SECTION_PATTERN = Pattern.compile(
+            "^【(安全与权限|输出协议|可用工具|可用表情|当前场景|角色卡)[^】]*】",
+            Pattern.MULTILINE);
 
     private final AiSessionMapper sessionMapper;
     private final AiMessageMapper messageMapper;
@@ -59,6 +79,8 @@ public class AiAdminService {
     private final RoleCardService roleCardService;
     private final EmojiService emojiService;
     private final DeepSeekClient deepSeekClient;
+    private final AiSessionService sessionService;
+    private final PromptAssembler promptAssembler;
 
     public AiAdminService(AiSessionMapper sessionMapper,
                           AiMessageMapper messageMapper,
@@ -66,7 +88,9 @@ public class AiAdminService {
                           AiMemoryMapper memoryMapper,
                           RoleCardService roleCardService,
                           EmojiService emojiService,
-                          DeepSeekClient deepSeekClient) {
+                          DeepSeekClient deepSeekClient,
+                          AiSessionService sessionService,
+                          PromptAssembler promptAssembler) {
         this.sessionMapper = sessionMapper;
         this.messageMapper = messageMapper;
         this.usageMapper = usageMapper;
@@ -74,6 +98,8 @@ public class AiAdminService {
         this.roleCardService = roleCardService;
         this.emojiService = emojiService;
         this.deepSeekClient = deepSeekClient;
+        this.sessionService = sessionService;
+        this.promptAssembler = promptAssembler;
     }
 
     public AiOverviewResp overview() {
@@ -209,6 +235,274 @@ public class AiAdminService {
     public List<AiRoleView> roleRescan() {
         roleCardService.clearCache();
         return roleList();
+    }
+
+    // ==================== P1：会话操作 ====================
+
+    public AiSessionDetailResp updateStatus(Long id, String status) {
+        String normalized = StringUtils.trimToEmpty(status).toLowerCase(Locale.ROOT);
+        if (!"active".equals(normalized) && !"paused".equals(normalized)) {
+            throw new BusinessException("状态只能是 active 或 paused");
+        }
+        AiSessionEntity entity = requireSession(id);
+        AiSessionState state = sessionService.load(sessionKey(entity));
+        sessionService.updateStatus(state, normalized);
+        return detail(id);
+    }
+
+    public AiSessionDetailResp updateRole(Long id, String roleName) {
+        String name = StringUtils.trimToNull(roleName);
+        RoleCardService.RoleCard card = null;
+        if (name != null) {
+            card = roleCardService.load(name);
+            if (card == null) {
+                throw new BusinessException("角色不存在：" + name);
+            }
+        }
+        AiSessionEntity entity = requireSession(id);
+        AiSessionState state = sessionService.load(sessionKey(entity));
+        sessionService.updateRole(state, card == null ? null : card.name());
+        return detail(id);
+    }
+
+    public AiSessionDetailResp resetSession(Long id) {
+        AiSessionEntity entity = requireSession(id);
+        AiSessionState state = sessionService.load(sessionKey(entity));
+        sessionService.reset(state);
+        return detail(id);
+    }
+
+    private AiSessionEntity requireSession(Long id) {
+        if (id == null) {
+            throw new BusinessException("缺少会话 id");
+        }
+        AiSessionEntity entity = sessionMapper.selectById(id);
+        if (entity == null) {
+            throw new BusinessException("会话不存在：" + id);
+        }
+        return entity;
+    }
+
+    private AiSessionKey sessionKey(AiSessionEntity entity) {
+        AiScene scene = AiScene.of(entity.getScene());
+        return new AiSessionKey(entity.getSelfId(), scene == null ? AiScene.GROUP : scene, entity.getTargetId());
+    }
+
+    // ==================== P1：用量趋势与分布 ====================
+
+    public AiUsageTrendResp trend(Integer days) {
+        int range = normalizeDays(days);
+        LocalDate startDate = LocalDate.now().minusDays(range - 1L);
+        QueryWrapper<AiUsageEntity> wrapper = new QueryWrapper<>();
+        wrapper.select("substr(created_at,1,10) AS day",
+                        "COUNT(*) AS requests",
+                        "COALESCE(SUM(prompt_tokens),0) AS prompt_tokens",
+                        "COALESCE(SUM(completion_tokens),0) AS completion_tokens",
+                        "COALESCE(SUM(total_tokens),0) AS total_tokens",
+                        "COALESCE(SUM(cache_hit_tokens),0) AS cache_hit_tokens",
+                        "COALESCE(SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END),0) AS failures",
+                        "COALESCE(AVG(latency_ms),0) AS avg_latency_ms")
+                .ge("created_at", startDate.format(DateTimeFormatter.ISO_LOCAL_DATE) + " 00:00:00")
+                .last("GROUP BY substr(created_at,1,10) ORDER BY day");
+
+        Map<String, AiUsageTrendResp.Point> byDate = new HashMap<>();
+        for (Map<String, Object> row : usageMapper.selectMaps(wrapper)) {
+            AiUsageTrendResp.Point point = new AiUsageTrendResp.Point();
+            point.setDate(mapString(row, "day"));
+            point.setRequests(mapLong(row, "requests"));
+            point.setPromptTokens(mapLong(row, "prompt_tokens"));
+            point.setCompletionTokens(mapLong(row, "completion_tokens"));
+            point.setTotalTokens(mapLong(row, "total_tokens"));
+            point.setCacheHitTokens(mapLong(row, "cache_hit_tokens"));
+            point.setFailures(mapLong(row, "failures"));
+            point.setAvgLatencyMs(mapDouble(row, "avg_latency_ms"));
+            if (point.getDate() != null) {
+                byDate.put(point.getDate(), point);
+            }
+        }
+
+        AiUsageTrendResp resp = new AiUsageTrendResp();
+        for (int i = 0; i < range; i++) {
+            String date = startDate.plusDays(i).format(DateTimeFormatter.ISO_LOCAL_DATE);
+            AiUsageTrendResp.Point point = byDate.get(date);
+            if (point == null) {
+                point = new AiUsageTrendResp.Point();
+                point.setDate(date);
+            }
+            resp.getPoints().add(point);
+        }
+        return resp;
+    }
+
+    public AiUsageBreakdownResp breakdown(Integer days) {
+        int range = normalizeDays(days);
+        String start = startOfDaysAgo(range - 1);
+        AiUsageBreakdownResp resp = new AiUsageBreakdownResp();
+        resp.setByScene(usageMapper.aggregateByScene(start).stream()
+                .map(row -> toItem(row, mapString(row, "scene"), sceneLabel(mapString(row, "scene"))))
+                .toList());
+        resp.setByGroup(usageMapper.aggregateByGroup(start).stream()
+                .map(row -> {
+                    String groupId = mapString(row, "target_id");
+                    return toItem(row, groupId, StringUtils.isBlank(groupId) ? "未知群" : "群 " + groupId);
+                })
+                .toList());
+
+        QueryWrapper<AiUsageEntity> wrapper = new QueryWrapper<>();
+        wrapper.select("model",
+                        "COUNT(*) AS requests",
+                        "COALESCE(SUM(total_tokens),0) AS tokens",
+                        "COALESCE(SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END),0) AS failures")
+                .ge("created_at", start)
+                .groupBy("model")
+                .orderByDesc("tokens");
+        resp.setByModel(usageMapper.selectMaps(wrapper).stream()
+                .map(row -> {
+                    String model = mapString(row, "model");
+                    return toItem(row, model, StringUtils.defaultIfBlank(model, "未知模型"));
+                })
+                .toList());
+        return resp;
+    }
+
+    private AiUsageBreakdownResp.Item toItem(Map<String, Object> row, String key, String label) {
+        AiUsageBreakdownResp.Item item = new AiUsageBreakdownResp.Item();
+        item.setKey(key);
+        item.setLabel(label);
+        item.setRequests(mapLong(row, "requests"));
+        item.setTokens(mapLong(row, "tokens"));
+        item.setFailures(mapLong(row, "failures"));
+        return item;
+    }
+
+    private String sceneLabel(String scene) {
+        return "private".equalsIgnoreCase(scene) ? "私聊" : "群聊";
+    }
+
+    // ==================== P1：提示词预览 ====================
+
+    public AiPromptPreviewResp promptPreview(AiPromptPreviewReq request) {
+        if (request == null || StringUtils.isBlank(request.getText())) {
+            throw new BusinessException("模拟消息不能为空");
+        }
+        AiScene scene = AiScene.of(request.getScene());
+        if (scene == null) {
+            scene = AiScene.GROUP;
+        }
+        long selfId = request.getSelfId() == null ? 0L : request.getSelfId();
+        long targetId = request.getTargetId() == null ? 0L : request.getTargetId();
+        AiSessionKey key = new AiSessionKey(selfId, scene, targetId);
+        AiSessionState state = new AiSessionState(key);
+        AiSessionEntity entity = new AiSessionEntity();
+        entity.setSelfId(selfId);
+        entity.setScene(scene.getCode());
+        entity.setTargetId(targetId);
+        entity.setRoleName(StringUtils.trimToNull(request.getRoleName()));
+        entity.setStatus("active");
+        state.setEntity(entity);
+
+        AiIncoming incoming = new AiIncoming();
+        incoming.setKey(key);
+        incoming.setUserId(request.getUserId() == null ? 10001L : request.getUserId());
+        incoming.setUserName(StringUtils.defaultIfBlank(request.getUserName(), "预览用户"));
+        incoming.setText(request.getText());
+        incoming.setRawMessage(request.getText());
+        incoming.setMessageId("preview");
+        incoming.setTimestamp(System.currentTimeMillis());
+
+        AiTurn turn = new AiTurn();
+        turn.setIncoming(incoming);
+        turn.setDirect(true);
+        turn.setNotBefore(System.currentTimeMillis());
+        turn.setDeadline(System.currentTimeMillis() + 1000L);
+
+        AiPrompt prompt = promptAssembler.assemble(state, List.of(turn), parseAmbient(request.getAmbientText()));
+        AiPromptPreviewResp resp = new AiPromptPreviewResp();
+        resp.setSystem(prompt.getSystem());
+        resp.setSections(splitSections(prompt.getSystem()));
+        for (DeepSeekMessage message : prompt.getMessages()) {
+            AiPromptPreviewResp.Message item = new AiPromptPreviewResp.Message();
+            item.setRole(message.getRole());
+            item.setContent(message.getContent());
+            item.setName(message.getName());
+            item.setImageUrls(message.getImageUrls());
+            resp.getMessages().add(item);
+        }
+        resp.setEstimatedTokens(prompt.getEstimatedTokens());
+        resp.setBudget(AiChatSettings.historyMaxInputTokens());
+        resp.setVisionEnabled(AiChatSettings.visionEnabled());
+        return resp;
+    }
+
+    private List<AiAmbientMessage> parseAmbient(String text) {
+        if (StringUtils.isBlank(text)) {
+            return List.of();
+        }
+        List<AiAmbientMessage> result = new ArrayList<>();
+        long timestamp = System.currentTimeMillis();
+        int index = 0;
+        for (String line : text.split("\\r?\\n")) {
+            if (StringUtils.isBlank(line)) {
+                continue;
+            }
+            String content = line.trim();
+            String speaker = "群友";
+            int ascii = content.indexOf(':');
+            int chinese = content.indexOf('：');
+            int separator = ascii >= 0 && (chinese < 0 || ascii < chinese) ? ascii : chinese;
+            if (separator > 0) {
+                speaker = content.substring(0, separator).trim();
+                content = content.substring(separator + 1).trim();
+            }
+            if (StringUtils.isNotBlank(content)) {
+                result.add(new AiAmbientMessage("preview-" + index++, 0L, speaker, content, timestamp));
+            }
+        }
+        return result;
+    }
+
+    private List<AiPromptPreviewResp.Section> splitSections(String system) {
+        List<AiPromptPreviewResp.Section> sections = new ArrayList<>();
+        if (StringUtils.isBlank(system)) {
+            return sections;
+        }
+        Matcher matcher = SECTION_PATTERN.matcher(system);
+        List<Integer> starts = new ArrayList<>();
+        List<String> titles = new ArrayList<>();
+        while (matcher.find()) {
+            starts.add(matcher.start());
+            titles.add(matcher.group(1));
+        }
+        if (starts.isEmpty()) {
+            sections.add(section("System", system));
+            return sections;
+        }
+        if (starts.get(0) > 0) {
+            sections.add(section("前言", system.substring(0, starts.get(0))));
+        }
+        for (int i = 0; i < starts.size(); i++) {
+            int end = i + 1 < starts.size() ? starts.get(i + 1) : system.length();
+            sections.add(section(titles.get(i), system.substring(starts.get(i), end)));
+        }
+        return sections;
+    }
+
+    private AiPromptPreviewResp.Section section(String title, String content) {
+        AiPromptPreviewResp.Section section = new AiPromptPreviewResp.Section();
+        section.setTitle(title);
+        section.setContent(content == null ? "" : content.trim());
+        return section;
+    }
+
+    private int normalizeDays(Integer days) {
+        if (days == null || days <= 0) {
+            return 7;
+        }
+        return Math.min(days, 90);
+    }
+
+    private String startOfDaysAgo(int daysAgo) {
+        return LocalDate.now().minusDays(daysAgo).format(DateTimeFormatter.ISO_LOCAL_DATE) + " 00:00:00";
     }
 
     // ==================== 概览 ====================

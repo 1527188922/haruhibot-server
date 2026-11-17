@@ -85,3 +85,65 @@ export const roleRescan = () => request({
     url: baseUrl + '/ai/role/rescan',
     method: 'post'
 });
+
+/**
+ * 暂停 / 恢复会话
+ * @param data {id, status: active|paused}
+ */
+export const sessionStatus = (data) => request({
+    url: baseUrl + '/ai/session/status',
+    method: 'post',
+    data
+});
+
+/**
+ * 切换会话角色；roleName 为空表示恢复默认解析
+ * @param data {id, roleName}
+ */
+export const sessionRole = (data) => request({
+    url: baseUrl + '/ai/session/role',
+    method: 'post',
+    data
+});
+
+/**
+ * 重置会话历史
+ * @param data {id}
+ */
+export const sessionReset = (data) => request({
+    url: baseUrl + '/ai/session/reset',
+    method: 'post',
+    data
+});
+
+/**
+ * 用量趋势
+ * @param data {days}
+ */
+export const usageTrend = (data) => request({
+    url: baseUrl + '/ai/usage/trend',
+    method: 'post',
+    data
+});
+
+/**
+ * 用量分布
+ * @param data {days}
+ */
+export const usageBreakdown = (data) => request({
+    url: baseUrl + '/ai/usage/breakdown',
+    method: 'post',
+    data
+});
+
+/**
+ * 提示词预览
+ * @param data {selfId, scene, targetId, roleName, userName, userId, text, ambientText}
+ */
+export const promptPreview = (data) => request({
+    url: baseUrl + '/ai/prompt/preview',
+    method: 'post',
+    data,
+    timeout: 30 * 1000
+});
+

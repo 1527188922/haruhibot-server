@@ -6,7 +6,7 @@
           <div class="page-title">AI 概览</div>
           <div class="page-desc">今日用量、运行状态与账户余额</div>
         </div>
-        <el-button size="small" icon="el-icon-refresh" :loading="loading" @click="load">刷新</el-button>
+        <el-button size="small" icon="el-icon-refresh" :loading="loading || usageLoading" @click="refresh">刷新</el-button>
       </div>
 
       <el-alert v-if="!runtime.enabled"
@@ -97,6 +97,85 @@
       </el-row>
 
       <div class="panel">
+        <div class="panel-title">每日限额</div>
+        <div class="limit-row">
+          <el-progress :percentage="dailyPercent"
+                       :status="dailyStatus"
+                       :stroke-width="12"
+                       class="limit-progress"></el-progress>
+          <div class="limit-text">{{ limitProgressText }}</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-toolbar">
+          <div class="panel-title">用量趋势</div>
+          <el-radio-group v-model="rangeDays" size="mini" @change="loadUsage">
+            <el-radio-button :label="1">今日</el-radio-button>
+            <el-radio-button :label="7">7 天</el-radio-button>
+            <el-radio-button :label="30">30 天</el-radio-button>
+          </el-radio-group>
+        </div>
+        <el-table v-loading="usageLoading" :data="trend.points" size="small" border stripe max-height="360">
+          <el-table-column prop="date" label="日期" width="120"></el-table-column>
+          <el-table-column prop="requests" label="请求" width="80" align="center"></el-table-column>
+          <el-table-column label="Token" min-width="200">
+            <template slot-scope="{row}">
+              <div class="bar-cell">
+                <span class="bar-value">{{ row.totalTokens }}</span>
+                <div class="bar">
+                  <div class="bar-inner" :style="{ width: tokenPercent(row) }"></div>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="promptTokens" label="输入" width="90" align="center"></el-table-column>
+          <el-table-column prop="completionTokens" label="输出" width="90" align="center"></el-table-column>
+          <el-table-column prop="cacheHitTokens" label="缓存命中" width="100" align="center"></el-table-column>
+          <el-table-column prop="failures" label="失败" width="70" align="center"></el-table-column>
+          <el-table-column label="平均延迟" width="100" align="center">
+            <template slot-scope="{row}">{{ (row.avgLatencyMs || 0).toFixed(0) }} ms</template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <el-row :gutter="16">
+        <el-col :xs="24" :sm="24" :md="8">
+          <div class="panel">
+            <div class="panel-title">按场景</div>
+            <el-table v-loading="usageLoading" :data="breakdown.byScene" size="small" border stripe>
+              <el-table-column prop="label" label="场景" min-width="70"></el-table-column>
+              <el-table-column prop="requests" label="请求" width="70" align="center"></el-table-column>
+              <el-table-column prop="tokens" label="Token" width="100" align="center"></el-table-column>
+              <el-table-column prop="failures" label="失败" width="60" align="center"></el-table-column>
+            </el-table>
+          </div>
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="8">
+          <div class="panel">
+            <div class="panel-title">按模型</div>
+            <el-table v-loading="usageLoading" :data="breakdown.byModel" size="small" border stripe>
+              <el-table-column prop="label" label="模型" min-width="130"></el-table-column>
+              <el-table-column prop="requests" label="请求" width="70" align="center"></el-table-column>
+              <el-table-column prop="tokens" label="Token" width="100" align="center"></el-table-column>
+              <el-table-column prop="failures" label="失败" width="60" align="center"></el-table-column>
+            </el-table>
+          </div>
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="8">
+          <div class="panel">
+            <div class="panel-title">按群 Top 10</div>
+            <el-table v-loading="usageLoading" :data="breakdown.byGroup" size="small" border stripe>
+              <el-table-column prop="label" label="群" min-width="110"></el-table-column>
+              <el-table-column prop="requests" label="请求" width="70" align="center"></el-table-column>
+              <el-table-column prop="tokens" label="Token" width="100" align="center"></el-table-column>
+              <el-table-column prop="failures" label="失败" width="60" align="center"></el-table-column>
+            </el-table>
+          </div>
+        </el-col>
+      </el-row>
+
+      <div class="panel">
         <div class="panel-title">今日用量明细</div>
         <el-table :data="usageRows" size="small" border stripe>
           <el-table-column prop="label" label="指标" min-width="160"></el-table-column>
@@ -109,17 +188,27 @@
 </template>
 
 <script>
-import { overview } from '@/api/ai';
+import { overview, usageTrend, usageBreakdown } from '@/api/ai';
 
 export default {
   name: 'AiOverview',
   data() {
     return {
       loading: false,
+      usageLoading: false,
+      rangeDays: 7,
       data: {
         today: {},
         runtime: {},
         balance: {}
+      },
+      trend: {
+        points: []
+      },
+      breakdown: {
+        byScene: [],
+        byModel: [],
+        byGroup: []
       }
     };
   },
@@ -152,6 +241,31 @@ export default {
       const limit = Number(this.runtime.dailyTokenLimit || 0);
       return limit > 0 ? limit.toLocaleString() : '不限';
     },
+    dailyPercent() {
+      const limit = Number(this.runtime.dailyTokenLimit || 0);
+      const used = Number(this.today.totalTokens || 0);
+      if (!limit) {
+        return 0;
+      }
+      return Math.min(100, Math.round((used * 1000) / limit) / 10);
+    },
+    dailyStatus() {
+      if (!Number(this.runtime.dailyTokenLimit || 0)) {
+        return '';
+      }
+      if (this.dailyPercent >= 100) {
+        return 'exception';
+      }
+      return this.dailyPercent >= 80 ? 'warning' : '';
+    },
+    limitProgressText() {
+      const used = Number(this.today.totalTokens || 0).toLocaleString();
+      const limit = Number(this.runtime.dailyTokenLimit || 0);
+      return limit > 0 ? used + ' / ' + limit.toLocaleString() : used + '（不限）';
+    },
+    maxTrendTokens() {
+      return Math.max(1, ...this.trend.points.map(point => Number(point.totalTokens || 0)));
+    },
     balanceText() {
       if (this.balance.error) {
         return '查询失败';
@@ -177,8 +291,13 @@ export default {
   },
   created() {
     this.load();
+    this.loadUsage();
   },
   methods: {
+    refresh() {
+      this.load();
+      this.loadUsage();
+    },
     load() {
       this.loading = true;
       overview().then(({ data: { code, message, data } }) => {
@@ -191,6 +310,31 @@ export default {
       }).finally(() => {
         this.loading = false;
       });
+    },
+    loadUsage() {
+      this.usageLoading = true;
+      Promise.all([
+        usageTrend({ days: this.rangeDays }),
+        usageBreakdown({ days: this.rangeDays })
+      ]).then(([trendRes, breakdownRes]) => {
+        this.trend = this.unwrap(trendRes) || { points: [] };
+        this.breakdown = this.unwrap(breakdownRes) || { byScene: [], byModel: [], byGroup: [] };
+      }).catch(() => {
+        this.$message.error('加载用量统计失败');
+      }).finally(() => {
+        this.usageLoading = false;
+      });
+    },
+    unwrap(res) {
+      const body = res && res.data ? res.data : {};
+      if (body.code !== 200) {
+        throw new Error(body.message || '接口返回失败');
+      }
+      return body.data;
+    },
+    tokenPercent(row) {
+      const value = Number(row.totalTokens || 0);
+      return Math.min(100, Math.round((value * 1000) / this.maxTrendTokens) / 10) + '%';
     }
   }
 };
@@ -272,6 +416,61 @@ export default {
     font-size: 14px;
     font-weight: 600;
     color: #303133;
+  }
+
+  .panel-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+
+    .panel-title {
+      margin-bottom: 0;
+    }
+  }
+
+  .limit-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .limit-progress {
+    flex: 1;
+    margin-right: 16px;
+  }
+
+  .limit-text {
+    min-width: 150px;
+    text-align: right;
+    font-size: 12px;
+    color: #606266;
+  }
+
+  .bar-cell {
+    display: flex;
+    align-items: center;
+  }
+
+  .bar-value {
+    width: 80px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #606266;
+  }
+
+  .bar {
+    flex: 1;
+    height: 8px;
+    overflow: hidden;
+    background: #f0f2f5;
+    border-radius: 4px;
+  }
+
+  .bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, #79bbff, #409eff);
+    border-radius: 4px;
+    transition: width 0.3s;
   }
 
   .tag-list {
