@@ -114,7 +114,7 @@
       </div>
     </el-drawer>
 
-    <el-dialog title="复制角色卡" :visible.sync="copyDialogVisible" :fullscreen="isMobile" width="460px">
+    <el-dialog title="复制角色卡" :visible.sync="copyDialogVisible" :fullscreen="isMobile" append-to-body width="460px">
       <el-form label-width="90px" size="small">
         <el-form-item label="源角色">
           <span>{{ copySource }}</span>
@@ -138,6 +138,7 @@
                direction="rtl"
                :with-header="false"
                :before-close="beforeEditorClose"
+               append-to-body
                custom-class="role-editor-drawer">
       <ai-role-editor v-if="editorVisible"
                       ref="roleEditor"
@@ -579,5 +580,7 @@ export default {
 <style lang="scss">
 .role-editor-drawer .el-drawer__body {
   padding: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 </style>

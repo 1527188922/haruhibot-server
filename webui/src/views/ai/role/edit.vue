@@ -106,7 +106,7 @@
         <el-button type="primary" :loading="saving" :disabled="!canSave" @click="save">保存</el-button>
       </div>
 
-    <el-dialog title="预览" :visible.sync="previewVisible" :fullscreen="isMobile" width="760px">
+    <el-dialog title="预览" :visible.sync="previewVisible" :fullscreen="isMobile" append-to-body width="760px">
       <el-tabs v-model="previewTab">
         <el-tab-pane label="过滤后内容" name="filtered">
           <pre class="preview-content">{{ previewData.filteredContent }}</pre>
@@ -127,7 +127,7 @@
       </div>
     </el-dialog>
 
-    <el-dialog title="另存为新角色" :visible.sync="saveAsVisible" :fullscreen="isMobile" width="440px">
+    <el-dialog title="另存为新角色" :visible.sync="saveAsVisible" :fullscreen="isMobile" append-to-body width="440px">
       <el-form label-width="90px" size="small">
         <el-form-item label="新角色名">
           <el-input v-model="saveAsName" maxlength="30" placeholder="1~30 字符"></el-input>
@@ -535,8 +535,10 @@ export default {
 
 <style lang="scss" scoped>
 .ai-role-edit {
-  min-height: 100%;
+  height: 100%;
   padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
 
   .page-header {
