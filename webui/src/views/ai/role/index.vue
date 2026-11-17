@@ -17,34 +17,49 @@
         </div>
       </div>
 
-      <el-table v-loading="loading" :data="rows" size="small" border stripe>
-        <el-table-column prop="name" label="角色名" min-width="140"></el-table-column>
-        <el-table-column prop="fileName" label="文件名" min-width="150"></el-table-column>
-        <el-table-column prop="chars" label="字符数" width="90" align="center"></el-table-column>
-        <el-table-column label="触发词" min-width="220">
-          <template slot-scope="{row}">
+      <div v-loading="loading" class="role-grid">
+        <div v-for="row in rows" :key="row.name" class="role-card">
+          <div class="role-card__head">
+            <div class="role-card__identity">
+              <div class="role-card__avatar">{{ row.name ? row.name.charAt(0) : '?' }}</div>
+              <div class="role-card__title-wrap">
+                <div class="role-card__name">{{ row.name }}</div>
+                <div class="role-card__file">{{ row.fileName }}</div>
+              </div>
+            </div>
+            <el-tag size="mini"
+                    :type="row.warnings && row.warnings.length ? 'warning' : 'success'"
+                    effect="plain">
+              {{ row.warnings && row.warnings.length ? row.warnings.length + ' 警告' : '正常' }}
+            </el-tag>
+          </div>
+
+          <div class="role-card__meta">
+            <span>{{ row.chars }} 字符</span>
+            <span>{{ row.usedBySessions }} 个会话使用</span>
+          </div>
+
+          <div class="role-card__triggers">
             <el-tag v-for="word in row.triggerWords" :key="word" size="mini" effect="plain" class="word-tag">
               {{ word }}
             </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="usedBySessions" label="显式使用会话" width="120" align="center"></el-table-column>
-        <el-table-column prop="updatedAtText" label="更新时间" min-width="160"></el-table-column>
-        <el-table-column label="警告" width="90" align="center">
-          <template slot-scope="{row}">
-            <el-tag size="mini" :type="row.warnings && row.warnings.length ? 'warning' : 'success'" effect="plain">
-              {{ row.warnings ? row.warnings.length : 0 }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="170" align="center" fixed="right">
-          <template slot-scope="{row}">
-            <el-button size="mini" type="text" @click="open(row)">预览</el-button>
-            <el-button size="mini" type="text" @click="editRole(row)">编辑</el-button>
-            <el-button size="mini" type="text" @click="openCopy(row)">复制</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+            <span v-if="!row.triggerWords || !row.triggerWords.length" class="muted">无触发词</span>
+          </div>
+
+          <div class="role-card__footer">
+            <span class="role-card__time">{{ row.updatedAtText || '-' }}</span>
+            <div class="role-card__actions">
+              <el-button size="mini" type="text" @click="open(row)">预览</el-button>
+              <el-button size="mini" type="text" @click="editRole(row)">编辑</el-button>
+              <el-button size="mini" type="text" @click="openCopy(row)">复制</el-button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!loading && !rows.length" class="empty-tip">
+          暂无角色卡，点击右上角「新建角色卡」开始。
+        </div>
+      </div>
 
       <div class="table-tip">
         提示：这里显示的是按当前工具 / 视觉开关过滤后的角色卡内容；字符数与最终注入量一致。
@@ -270,6 +285,113 @@ export default {
     }
   }
 
+  .role-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    min-height: 80px;
+  }
+
+  .role-card {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #ebeef5;
+    border-radius: 8px;
+    transition: box-shadow 0.2s, transform 0.2s;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  .role-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .role-card__identity {
+    display: flex;
+    min-width: 0;
+    margin-right: 10px;
+  }
+
+  .role-card__avatar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin-right: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #79bbff, #409eff);
+    border-radius: 10px;
+  }
+
+  .role-card__title-wrap {
+    min-width: 0;
+  }
+
+  .role-card__name {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #303133;
+    word-break: break-all;
+  }
+
+  .role-card__file {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #909399;
+    word-break: break-all;
+  }
+
+  .role-card__meta {
+    display: flex;
+    gap: 16px;
+    margin: 14px 0 10px;
+    font-size: 12px;
+    color: #606266;
+  }
+
+  .role-card__triggers {
+    flex: 1;
+    min-height: 28px;
+  }
+
+  .role-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #f2f3f5;
+  }
+
+  .role-card__time {
+    font-size: 12px;
+    color: #a8abb2;
+  }
+
+  .role-card__actions {
+    flex-shrink: 0;
+  }
+
+  .role-card__actions .el-button + .el-button {
+    margin-left: 4px;
+  }
+
+  .role-grid .empty-tip {
+    grid-column: 1 / -1;
+  }
+
   .word-tag {
     margin: 0 6px 4px 0;
   }
@@ -370,6 +492,12 @@ export default {
     text-align: center;
     font-size: 13px;
     color: #909399;
+  }
+
+  @media (max-width: 768px) {
+    .role-grid {
+      grid-template-columns: 1fr;
+    }
   }
 }
 </style>

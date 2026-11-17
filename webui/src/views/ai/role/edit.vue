@@ -54,16 +54,6 @@
         </el-form>
       </div>
 
-      <div class="section-toolbar">
-        <div class="section-toolbar__title">章节</div>
-        <div>
-          <el-select v-model="newSectionTitle" size="small" clearable placeholder="选择默认章节" style="width: 180px">
-            <el-option v-for="title in defaultTitles" :key="title" :label="title" :value="title"></el-option>
-          </el-select>
-          <el-button size="small" icon="el-icon-plus" @click="addSection">添加章节</el-button>
-        </div>
-      </div>
-
       <div v-for="(section, sIndex) in form.sections" :key="section.id" class="section-card">
         <div class="section-head">
           <el-input v-model="section.title"
@@ -97,6 +87,19 @@
         </div>
 
         <el-button size="mini" icon="el-icon-plus" @click="addLine(section)">追加一行</el-button>
+      </div>
+
+      <div class="section-add">
+        <div class="section-add__hint">添加章节</div>
+        <div class="section-add__form">
+          <el-autocomplete v-model="newSectionTitle"
+                           :fetch-suggestions="querySectionTitles"
+                           size="small"
+                           clearable
+                           placeholder="输入章节名，或从建议中选择"
+                           class="section-add__input"></el-autocomplete>
+          <el-button size="small" type="primary" plain icon="el-icon-plus" @click="addSection">添加章节</el-button>
+        </div>
       </div>
 
       <div class="footer-bar">
@@ -475,6 +478,19 @@ export default {
       this.form.sections.push(newSection(title, ['']));
       this.newSectionTitle = '';
     },
+    querySectionTitles(queryString, callback) {
+      const keyword = (queryString || '').trim();
+      const existing = new Set(
+        this.form.sections
+          .map(section => (section.title || '').trim())
+          .filter(Boolean)
+      );
+      const suggestions = this.defaultTitles
+        .filter(title => !existing.has(title))
+        .filter(title => !keyword || title.indexOf(keyword) >= 0)
+        .map(title => ({ value: title }));
+      callback(suggestions);
+    },
     removeSection(index) {
       this.form.sections.splice(index, 1);
     },
@@ -581,17 +597,30 @@ export default {
     line-height: 1.8;
   }
 
-  .section-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
+  .section-add {
+    margin: 4px 0 16px;
+    padding: 16px;
+    background: #fff;
+    border: 1px dashed #dcdfe6;
+    border-radius: 6px;
   }
 
-  .section-toolbar__title {
+  .section-add__hint {
+    margin-bottom: 10px;
     font-size: 14px;
     font-weight: 600;
     color: #303133;
+  }
+
+  .section-add__form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-add__input {
+    width: 280px;
   }
 
   .section-card {
