@@ -3,8 +3,10 @@ package com.haruhi.botserver.features.reply.handler;
 import com.haruhi.botserver.bot.handler.IGroupMessageHandler;
 
 import com.haruhi.botserver.bot.handler.HandlerWeightEnum;
+import com.haruhi.botserver.features.ai.service.AiScopeService;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.bot.session.Bot;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -14,7 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class OneMoreHandler implements IGroupMessageHandler {
+
+    private final AiScopeService aiScopeService;
 
     @Override
     public int weight() {
@@ -35,6 +40,10 @@ public class OneMoreHandler implements IGroupMessageHandler {
 
     @Override
     public boolean onGroup(Bot bot, Message message) {
+        if (aiScopeService.enabled(message)) {
+            return false;
+        }
+
         handle(bot, message);
         return false;
     }

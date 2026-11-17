@@ -38,11 +38,11 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 @Component
-public class AiChatHandler implements IAllMessageHandler {
+public class QingyunkeChatHandler implements IAllMessageHandler {
 
     private final AiScopeService aiScopeService;
 
-    public AiChatHandler(AiScopeService aiScopeService) {
+    public QingyunkeChatHandler(AiScopeService aiScopeService) {
         this.aiScopeService = aiScopeService;
     }
 
