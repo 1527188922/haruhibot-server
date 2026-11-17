@@ -1,7 +1,7 @@
 # DeepSeek 聊天提示词与角色卡（可直接使用）
 
 > 配套方案：`docs/ai-chat-design.md`
-> 状态：后端已落地；本文件中的文本可直接作为 `PromptAssembler` 的模板和 `./aichat/roles/*.md` 的初始内容（仓库根目录已提供三张示例卡）。
+> 状态：后端已落地；本文件中的文本可直接作为 `PromptAssembler` 的模板和 `src/main/resources/aichat/roles/*.md` 的初始内容（默认资源已提供三张示例卡，构建时复制到 `target/classes/aichat/roles`）。
 > 2026-11-15：协议层新增 `emoji` 字段与【可用表情】段；纯 @ 无文字改为由模型自行判断；视觉开启时当前消息的图片以多模态内容传入。
 > master 合并（2026-11-14）不改变提示词内容；角色卡顶部的 `触发词：` 行仍由 `RoleCardService` 解析并在注入前剥离。
 > 占位符用 `{{...}}` 表示，由 Java 在 assembly 时替换。
@@ -27,7 +27,7 @@
 {{上下文模板}}
 ```
 
-建议在 `PromptAssembler` 里用常量加载，不要把提示词散落在 Java 字符串里。角色卡只从运行目录 `./aichat/roles/*.md` 加载，文件名（去掉 `.md`）即角色名；不建表、不从 classpath 导入。
+建议在 `PromptAssembler` 里用常量加载，不要把提示词散落在 Java 字符串里。角色卡默认资源在 `src/main/resources/aichat/roles/*.md`，运行期只从程序目录 `aichat/roles/*.md` 加载；开发环境程序目录是 `target/classes`，即 `target/classes/aichat/roles/*.md`，打包后为程序目录下的 `aichat/roles/`。文件名（去掉 `.md`）即角色名；不建表，运行期不写源码资源。
 
 ---
 
@@ -141,7 +141,7 @@ JSON 结构：
 
 ### 2.3 表情包段（条件注入）
 
-仅当 `ds.chat.emoji.enable=true` 且 `./aichat/emojis/` 下存在图片时追加。名称列表由 `EmojiService` 扫描目录得到，文件名（去扩展名）即名称，最多列 `ds.chat.emoji.max_list` 个。
+仅当 `ds.chat.emoji.enable=true` 且程序目录 `aichat/emojis/` 下存在图片时追加（开发环境为 `target/classes/aichat/emojis/`）。名称列表由 `EmojiService` 扫描目录得到，文件名（去扩展名）即名称，最多列 `ds.chat.emoji.max_list` 个。
 
 ```text
 【可用表情】
@@ -279,7 +279,7 @@ JSON 结构：
 
 > 角色卡只写“你是谁、怎么说话”，不写工具用法、分条方式、沉默方式。
 > 角色卡顶部用一行 `触发词：词1,词2` 声明被提及词；该行只用于触发判断，加载时会被剥离，不注入模型。未声明时默认使用角色名（文件名）。
-> 下面三张卡可以手工保存到 `./aichat/roles/`，文件名分别为 `春日酱.md`、`小鲸鱼.md`、`傲娇助手.md`；程序不会自动导入。
+> 下面三张卡的默认资源位于 `src/main/resources/aichat/roles/`，Maven 构建时复制到 `target/classes/aichat/roles/`；程序运行时从程序目录读取，开发环境即 `target/classes/aichat/roles/`。
 > 字符数按中文字符粗算，均低于 6000 字符上限。
 
 ### 5.1 春日酱（默认，与本项目 `SysConstants.DEFAULT_NAME` 一致）
@@ -516,7 +516,7 @@ JSON 结构：
 | `qq_mark_read` / `qq_set_wake_config` | 删除 | 没有潜水/唤醒配置；用 `silent` 替代 |
 | `qq_memory_*` | 删除 | 已用 `memory` 字段 + `memory_append/query/forget` 工具替代 |
 | `qq_slang_*` 黑话学习 | 删除 | 第二阶段可选 |
-| `qq_list_stickers` / `qq_send_sticker` / 斗图 | 删除 | 角色卡不写工具用法；本项目的表情包走 `./aichat/emojis/` + `emoji` 字段 |
+| `qq_list_stickers` / `qq_send_sticker` / 斗图 | 删除 | 角色卡不写工具用法；本项目的表情包走程序目录 `aichat/emojis/` + `emoji` 字段 |
 | `qq_send_voice` / 语音库 | 删除 | 本期不支持语音 |
 | `qq_get_forward_msg` / 合并转发 | 删除 | 本期不支持合并转发 |
 | `qq_send_poke` / 拍一拍 | 删除 | 本期不支持拍一拍 |
@@ -547,7 +547,7 @@ JSON 结构：
 | 唤醒 | `qq_set_wake_config` | Handler 触发策略 + 限流 |
 | 记忆 | `qq_memory_*` | `t_ai_memory` + `memory` 字段 + `memory_*` 工具 |
 | 角色注入 | 每条消息由桥接注入 | 每条请求 system 注入，有缓存 |
-| 角色存储 | `roles/*.md` | `./aichat/roles/*.md`（文件名即角色名） |
+| 角色存储 | `roles/*.md` | 运行目录 `aichat/roles/*.md`（默认资源 `src/main/resources/aichat/roles`；开发环境 `target/classes/aichat/roles`），文件名即角色名 |
 | 工具 | MCP 白名单 | JSON 工具白名单（本期 2 个） |
 
 ---

@@ -5,6 +5,7 @@ import com.haruhi.botserver.features.ai.client.deepseek.DeepSeekMessage;
 import com.haruhi.botserver.features.ai.model.AiPrompt;
 import com.haruhi.botserver.features.ai.support.AiChatSettings;
 import com.haruhi.botserver.shared.error.BusinessException;
+import com.haruhi.botserver.shared.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -33,7 +34,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * 角色卡加载：只读程序目录下的 ./aichat/roles/*.md。
+ * 角色卡加载与结构化编辑：运行期只读写程序目录下的 aichat/roles/*.md。
+ * 开发环境程序目录是 target/classes，默认资源来自 src/main/resources/aichat/roles。
  */
 @Component
 @Slf4j
@@ -51,40 +53,15 @@ public class RoleCardService {
     private static final int MAX_TRIGGER_CHARS = 20;
 
     private final Map<String, CachedRole> cache = new ConcurrentHashMap<>();
-    private volatile boolean devFallbackLogged;
 
     public Path roleDir() {
-        Path primary = Paths.get(Configs.baseDir(), "aichat", "roles").toAbsolutePath().normalize();
-        if (hasRoles(primary)) {
-            return primary;
-        }
-        // 开发环境 Configs.baseDir() 往往是 target/classes；仓库根目录的 aichat/roles 作为兜底
-        Path devFallback = Paths.get("aichat", "roles").toAbsolutePath().normalize();
-        if (!primary.equals(devFallback) && hasRoles(devFallback)) {
-            if (!devFallbackLogged) {
-                devFallbackLogged = true;
-                log.info("使用开发目录角色卡: {}", devFallback);
-            }
-            return devFallback;
-        }
+        Path dir = Paths.get(FileUtil.getAiChatRoleDir(Configs.baseDir())).toAbsolutePath().normalize();
         try {
-            Files.createDirectories(primary);
+            Files.createDirectories(dir);
         } catch (IOException e) {
-            log.warn("创建角色卡目录失败: {}", primary, e);
+            log.warn("创建角色卡目录失败: {}", dir, e);
         }
-        return primary;
-    }
-
-    private boolean hasRoles(Path dir) {
-        if (!Files.isDirectory(dir)) {
-            return false;
-        }
-        try (Stream<Path> stream = Files.list(dir)) {
-            return stream.anyMatch(path -> Files.isRegularFile(path)
-                    && path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".md"));
-        } catch (IOException e) {
-            return false;
-        }
+        return dir;
     }
 
     /**
@@ -125,7 +102,7 @@ public class RoleCardService {
         if (normalized.isBlank()) {
             return null;
         }
-        Path direct = roleDir().resolve(normalized + ".md");
+        Path direct = Paths.get(FileUtil.getAiChatRoleFile(Configs.baseDir(), normalized)).toAbsolutePath().normalize();
         if (Files.isRegularFile(direct)) {
             return loadFile(normalized);
         }
@@ -154,7 +131,7 @@ public class RoleCardService {
     }
 
     private RoleCard loadFile(String roleName) {
-        Path file = roleDir().resolve(roleName + ".md");
+        Path file = Paths.get(FileUtil.getAiChatRoleFile(Configs.baseDir(), roleName)).toAbsolutePath().normalize();
         try {
             if (!Files.isRegularFile(file)) {
                 return null;
@@ -252,7 +229,7 @@ public class RoleCardService {
             definition = new RoleDefinition(name, name + ".md", triggers, sections,
                     filtered.length(), max, mtime, hash, warnings);
         } else {
-            Path target = file != null ? file : roleDir().resolve(name + ".md");
+            Path target = file != null ? file : Paths.get(FileUtil.getAiChatRoleFile(Configs.baseDir(), name)).toAbsolutePath().normalize();
             try {
                 writeAtomic(target, markdown, file != null);
             } catch (IOException e) {
@@ -285,7 +262,7 @@ public class RoleCardService {
         if (existing != null && !overwrite) {
             throw new BusinessException("角色已存在：" + target);
         }
-        Path targetFile = existing != null ? existing : roleDir().resolve(target + ".md");
+        Path targetFile = existing != null ? existing : Paths.get(FileUtil.getAiChatRoleFile(Configs.baseDir(), target)).toAbsolutePath().normalize();
         try {
             Files.createDirectories(roleDir());
             Path temp = Files.createTempFile(roleDir(), ".role-copy-", ".tmp");
@@ -410,13 +387,13 @@ public class RoleCardService {
         if (!validName(normalized)) {
             return null;
         }
-        Path direct = roleDir().resolve(normalized + ".md");
+        Path direct = Paths.get(FileUtil.getAiChatRoleFile(Configs.baseDir(), normalized)).toAbsolutePath().normalize();
         if (Files.isRegularFile(direct)) {
             return direct;
         }
         for (String roleName : listRoleNames()) {
             if (roleName.equalsIgnoreCase(normalized)) {
-                return roleDir().resolve(roleName + ".md");
+                return Paths.get(FileUtil.getAiChatRoleFile(Configs.baseDir(), roleName)).toAbsolutePath().normalize();
             }
         }
         return null;
@@ -601,7 +578,7 @@ public class RoleCardService {
     }
 
     private void backup(Path file) throws IOException {
-        Path backupDir = roleDir().resolve(".backups");
+        Path backupDir = Paths.get(FileUtil.getAiChatRoleBackupDir(Configs.baseDir())).toAbsolutePath().normalize();
         Files.createDirectories(backupDir);
         String base = fileNameWithoutExt(file);
         Path target = backupDir.resolve(base + "-" + System.currentTimeMillis() + ".md");

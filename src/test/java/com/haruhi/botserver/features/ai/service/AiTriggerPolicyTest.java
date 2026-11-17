@@ -31,6 +31,8 @@ class AiTriggerPolicyTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        Files.createDirectories(dir.resolve("config"));
+        Files.writeString(dir.resolve("config/ai.properties"), "ds.chat.role=春日酱\n");
         Configs.useConfigDirForTest(dir.toString());
         Path roles = dir.resolve("aichat/roles");
         Files.createDirectories(roles);

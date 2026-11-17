@@ -186,7 +186,7 @@ public enum ConfigKey {
     DS_CHAT_VISION_ENABLE(ConfigFile.AI, "ds.chat.vision.enable", ConfigType.BOOL, "false", true,
             "是否把图片传给 deepseek-flash 做视觉理解；关闭时只发 [图片] 占位", 260, "图片理解"),
     DS_CHAT_EMOJI_ENABLE(ConfigFile.AI, "ds.chat.emoji.enable", ConfigType.BOOL, "true", true,
-            "是否允许 AI 从 aichat/emojis 目录中选择表情发送", 262, "表情包"),
+            "是否允许 AI 从运行目录 aichat/emojis 中选择表情发送", 262, "表情包"),
     DS_CHAT_EMOJI_MAX_LIST(ConfigFile.AI, "ds.chat.emoji.max_list", ConfigType.INT, "50", true,
             "最多向 AI 展示多少个表情名称", 263, "表情数量上限"),
 

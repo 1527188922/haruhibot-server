@@ -1,6 +1,7 @@
 package com.haruhi.botserver.features.ai.support;
 
 import com.haruhi.botserver.configuration.service.Configs;
+import com.haruhi.botserver.shared.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * 表情包目录：./aichat/emojis/。文件名（去扩展名）就是表情名，AI 只能按名字选择，不能指定路径。
+ * 表情包目录：程序目录下的 aichat/emojis/。文件名（去扩展名）就是表情名，AI 只能按名字选择，不能指定路径。
+ * 开发环境程序目录是 target/classes，默认资源来自 src/main/resources/aichat/emojis。
  */
 @Component
 @Slf4j
@@ -34,30 +36,18 @@ public class EmojiService {
     private volatile Map<String, Emoji> cache = Map.of();
     private volatile long cachedDirMtime = Long.MIN_VALUE;
     private volatile long lastScanAt;
-    private volatile boolean devFallbackLogged;
 
     public record Emoji(String name, Path path) {
     }
 
     public Path emojiDir() {
-        Path primary = Paths.get(Configs.baseDir(), "aichat", "emojis").toAbsolutePath().normalize();
-        if (hasEmojis(primary)) {
-            return primary;
-        }
-        Path devFallback = Paths.get("aichat", "emojis").toAbsolutePath().normalize();
-        if (!primary.equals(devFallback) && hasEmojis(devFallback)) {
-            if (!devFallbackLogged) {
-                devFallbackLogged = true;
-                log.info("使用开发目录表情包: {}", devFallback);
-            }
-            return devFallback;
-        }
+        Path dir = Paths.get(FileUtil.getAiChatEmojiDir(Configs.baseDir())).toAbsolutePath().normalize();
         try {
-            Files.createDirectories(primary);
+            Files.createDirectories(dir);
         } catch (IOException e) {
-            log.warn("创建表情包目录失败: {}", primary, e);
+            log.warn("创建表情包目录失败: {}", dir, e);
         }
-        return primary;
+        return dir;
     }
 
     public List<Emoji> list() {
@@ -150,17 +140,6 @@ public class EmojiService {
         }
         try {
             return Files.size(file) <= MAX_FILE_BYTES;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    private boolean hasEmojis(Path dir) {
-        if (!Files.isDirectory(dir)) {
-            return false;
-        }
-        try (Stream<Path> stream = Files.list(dir)) {
-            return stream.anyMatch(this::isEmojiFile);
         } catch (IOException e) {
             return false;
         }

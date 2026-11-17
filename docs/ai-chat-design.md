@@ -28,7 +28,7 @@
    - 协议层（JSON 输出协议，替代 qq-bridge 的“仿真提示词/工具协议”）
    - 场景层（群聊 / 私聊）
    - 角色卡层（只写“你是谁、怎么说话”，不写工具用法，直接移植 qq-bridge 的人格卡并去掉 `qq_*`/`mcp__*`/表情包/语音/记忆等工具内容）
-   - 角色卡以 Markdown 文件放在运行目录 `./aichat/roles/`，文件名即角色名，只从该目录加载；不建表、不从 classpath 导入；支持 qq-bridge 风格的“按模式注入”小节标记。
+   - 角色卡默认资源放在 `src/main/resources/aichat/roles/`，构建时复制到 `target/classes/aichat/roles/`；运行期只从程序目录 `aichat/roles/`（开发环境即 `target/classes/aichat/roles/`）加载，文件名即角色名；不建表，运行期不写源码资源；支持 qq-bridge 风格的“按模式注入”小节标记。
 4. **伪 Agent 用 JSON 协议实现，不用当前 SDK 的 function calling**：
    - 模型只输出一个 JSON：`{"type":"say|call|silent", ...}`。
    - `say` 支持一次多条、每条带 `delay_ms`，实现“分条 + 间隔发送”的拟人效果。
@@ -140,7 +140,7 @@ qq-bridge 是“DSH agent 接入 QQ”的项目，提示词分两层：
 
 1. 群聊：每个群一个会话；私聊：每个用户一个会话；重启后会话可恢复。
 2. 所有未命中功能命令的消息都能进入 AI 对话链路；群聊默认“进入上下文但不一定回复”，被叫到时回复。
-3. 角色卡：放在 `./aichat/roles/*.md`，文件名即角色名，可增删文件、可切换；直接移植 qq-bridge 的人格卡并做“去工具化”适配。
+3. 角色卡：默认资源在 `src/main/resources/aichat/roles/*.md`，运行期从程序目录 `aichat/roles/*.md` 加载（开发环境 `target/classes/aichat/roles`），文件名即角色名，可增删文件、可切换；直接移植 qq-bridge 的人格卡并做“去工具化”适配。
 4. 伪 Agent：模型通过 JSON 决定“发一条/发多条/间隔多久/沉默/调用工具”，Java 解析并执行。
 5. 拟人：分条、间隔、短句、引用/@、群聊不刷屏、私聊不客服腔。
 6. 安全：无本地工具、无管理权限、工具白名单、CQ 注入防护、提示词注入防护、成本上限。
@@ -437,7 +437,7 @@ class SessionState {
 | `ds help` | 超级管理员 | 列出可用命令（短文本） |
 | `ds reset` | 超级管理员 | 清空当前会话历史（内存 + DB 消息），保留用量 |
 | `ds status` | 超级管理员 | 显示会话 ID、角色、历史条数、今日 token、是否暂停，并实时查询官方余额 |
-| `ds role list` | 超级管理员 | 列出 `./aichat/roles/` 中的角色卡 |
+| `ds role list` | 超级管理员 | 列出 `aichat/roles/` 中的角色卡 |
 | `ds role <名称>` | 超级管理员 | 切换当前会话角色；名称大小写不敏感、`.md` 可省略；不存在则报错并列出可用角色 |
 | `ds on` / `ds off` | 超级管理员 | 恢复/暂停当前会话（`t_ai_session.status`）；`off` 期间不排队、不补发 |
 
@@ -574,9 +574,9 @@ class SessionState {
 
 #### 本项目的适配
 
-- 存储：运行目录 `./aichat/roles/*.md`，**只从该目录加载**；文件名（去掉 `.md`）就是角色名；
-- 路径解析：`Paths.get(Configs.baseDir(), "aichat", "roles")`，`Configs.baseDir()` 就是程序目录（测试可用 `Configs.useConfigDirForTest` 覆盖）；不要用 `System.getProperty("user.dir")`，IDE/服务启动目录可能不同；开发环境该目录为空时会回退到工作目录下的 `aichat/roles`，仅用于 IDE 调试，生产以程序目录为准；
-- 不建角色表、不从 classpath 导入；启动时目录不存在则创建，目录为空时记录 warn 并按“无角色”运行；
+- 存储：默认资源放在 `src/main/resources/aichat/roles/*.md`；运行期只从程序目录 `aichat/roles/*.md` 加载。开发环境程序目录是 `target/classes`，即 `target/classes/aichat/roles/*.md`；打包后是程序目录下的 `aichat/roles`。文件名（去掉 `.md`）就是角色名；
+- 路径解析：统一由 `FileUtil.getAiChatDir(...)` / `getAiChatRoleDir(...)` / `getAiChatRoleFile(...)` / `getAiChatRoleBackupDir(...)` / `getAiChatEmojiDir(...)` 提供，服务层传入 `Configs.baseDir()`；`Configs.baseDir()` 在开发环境返回 `target/classes`，打包后返回程序目录（测试可用 `Configs.useConfigDirForTest` 覆盖）；不要用 `System.getProperty("user.dir")`，IDE/服务启动目录可能不同；不再回退到 `src/main/resources` 或仓库根目录，避免运行期编辑默认资源；
+- 不建角色表；启动时目录不存在则创建，目录为空时记录 warn 并按“无角色”运行；`src/main/resources/aichat` 只作为 Maven 复制到 `target/classes` 的默认资源，运行期修改不会写回源码目录；
 - 加载：只允许目录内的 `*.md`，拒绝路径分隔符和 `..`；按文件 `mtime` 缓存，文件修改后下一轮生效；
 - 角色选择按会话独立：每个群、每个私聊用户各自一份 `role_name`，可以指向不同角色卡；
   优先级：会话 `role_name`（`ds role` 设置） > 按目标配置（`ds.chat.group.roles` / `ds.chat.private.roles`） > 全局 `ds.chat.role` > 无角色；文件不存在时回退下一级；
@@ -596,7 +596,7 @@ class SessionState {
 
 #### 示例角色卡
 
-文档提供三份示例，部署时手工保存到 `./aichat/roles/`（文件名即角色名）。程序不会自动写入目录；目录为空时按“无角色”运行。
+默认资源位于 `src/main/resources/aichat/roles/`，Maven 构建时复制到 `target/classes/aichat/roles/`；程序运行时从程序目录读取，开发环境即 `target/classes/aichat/roles/`，打包后为程序目录下的 `aichat/roles/`。目录为空时按“无角色”运行。
 
 | 名称 | 来源 | 说明 |
 | --- | --- | --- |
@@ -844,7 +844,7 @@ class SessionState {
      - 需要同时兼容群/私聊时：`bot.sendMessage(userId, groupId, messageType, holders)`；
      - `holders` 由 `MessageHolder.instanceText` + 可选的 `instanceReply` / `instanceAt` / `instanceFace` 组成；
      - 纯文本字符串重载 `bot.sendMessage(..., text, true)` 只作为兜底；AI 正常路径统一走 holder 列表，避免 CQ 解析和字符串转义问题；
-   - `MessageHolder.instanceFace(id, repeat)` 是 master 新增能力，但协议不暴露 `face_id`；表情包走本地图片：`EmojiService` 把 AI 给的名称映射为 `./aichat/emojis/` 下的文件，再用 `MessageHolder.instanceImage` 发送；
+   - `MessageHolder.instanceFace(id, repeat)` 是 master 新增能力，但协议不暴露 `face_id`；表情包走本地图片：`EmojiService` 把 AI 给的名称映射为 `aichat/emojis/` 下的文件，再用 `MessageHolder.instanceImage` 发送；
    - 需要拿到机器人发出的 `messageId`（用于“引用机器人消息”精确判断）时，改用 `sendSyncMessage(..., 3000)`；它会阻塞等 echo，本期不依赖，避免每条消息多等一次往返；
    - QQ 单条长度建议 <= 300 字（配置），超过切分。
 4. **落库**：
@@ -1223,7 +1223,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS `t_ai_memory_session_key_idx`
 | `ds.chat.dedupe_ttl_seconds` | INT | `300` | 是 | 消息去重 TTL |
 | `ds.chat.ignore_user_ids` | LIST | `` | 是 | 不触发 AI 的 QQ 黑名单（其他机器人/不想理的人） |
 | `ds.chat.vision.enable` | BOOL | false | 是 | 是否把当前消息的图片传给模型（仅 `deepseek-flash` 生效） |
-| `ds.chat.emoji.enable` | BOOL | true | 是 | 是否启用 `./aichat/emojis/` 自定义表情包 |
+| `ds.chat.emoji.enable` | BOOL | true | 是 | 是否启用 `aichat/emojis/` 自定义表情包 |
 | `ds.chat.emoji.max_list` | INT | `50` | 是 | 注入系统提示词的表情名称上限，0 按 50 处理 |
 | `ds.chat.balance.refresh_minutes` | INT | `10` | 是 | 官方余额刷新间隔，0=不自动刷新 |
 
@@ -1349,9 +1349,9 @@ src/main/java/com/haruhi/botserver/
 │   │   └── AiUsageService.java                   （用量目前由 AiSessionService 记录）
 │   ├── support/
 │   │   ├── AiMessageExtractor.java              ★ 消息→文本/占位/引用/atOnly/图片 URL
-│   │   ├── EmojiService.java                    ★ ./aichat/emojis 扫描与名称映射
+│   │   ├── EmojiService.java                    ★ aichat/emojis 扫描与名称映射
 │   │   ├── prompt/PromptAssembler.java          ★ 四层提示词 + 长期记忆注入
-│   │   ├── prompt/RoleCardService.java          ★ 从 ./aichat/roles 加载/过滤/Lint
+│   │   ├── prompt/RoleCardService.java          ★ 从 aichat/roles 加载/过滤/Lint
 │   │   ├── protocol/AiReplyParser.java          ★ JSON 解析/修复
 │   │   ├── protocol/AiReplySanitizer.java       ★ 文本清洗
 │   │   └── tool/
@@ -1382,7 +1382,7 @@ src/main/java/com/haruhi/botserver/
     └── mapper/infrastructure/persistence/SqliteDatabaseInitMapper.xml + 建表 SQL
 ```
 
-角色卡不放在 `resources`，也不打包：运行目录 `./aichat/roles/*.md`，由运维手工维护。
+角色卡默认资源放在 `src/main/resources/aichat/roles`，构建时复制到 `target/classes/aichat/roles`，打包时由 assembly 输出到程序目录 `/aichat`；运行期只读写程序目录下的 `aichat`，不回写源码资源。
 
 ### 10.1 关键改动
 
@@ -1399,10 +1399,10 @@ src/main/java/com/haruhi/botserver/
 | `Bot` 发送 API | 使用 master 新增的 `sendGroupMessage(groupId, List)` / `sendPrivateMessage(userId, List)` / `sendMessage(..., List)`；`MessageHolder` 支持 `text/reply/at/face` |
 | `Bot.sendSyncRequest` | master `53c9c4e` 改为 future + 断连快速失败；`member_info` 工具按异常直接返回失败 |
 | `OpenAiServiceHolder` | 保持不变；新链路用 `DeepSeekClient`；后续可把旧引用清掉 |
-| `RoleCardService` | 只从 `./aichat/roles/*.md` 加载；不做 DB、不做写入 |
+| `RoleCardService` | 运行期从程序目录 `aichat/roles/*.md` 加载；支持 WebUI 结构化编辑写入；不做 DB |
 | `DeepSeekClient` | 增加 `getBalance()`，调用官方 `/user/balance` |
 | `AiMemoryService` | 新增，`t_ai_memory` 读写/去重/上限；`PromptAssembler` 注入最近记忆 |
-| `EmojiService` | 新增，扫描 `./aichat/emojis/`，文件名即表情名；AI 只输出名称，服务端映射为本地路径 |
+| `EmojiService` | 新增，扫描 `aichat/emojis/`，文件名即表情名；AI 只输出名称，服务端映射为本地路径 |
 | `AiMessageExtractor` / `DeepSeekMessage` / `DeepSeekClient` | 收集当前消息图片 URL；视觉开启时 user 消息 `content` 改为多模态数组 |
 | `MemoryAppendTool` / `MemoryQueryTool` / `MemoryForgetTool` | 新增，模型可主动读写/删除当前会话记忆 |
 | `WebSearchTool` | 新增，调用 DeepSeek 官方 `/v1/tools/search`；未配置 Key 或开关关闭时不注入、不可执行 |
@@ -1529,7 +1529,7 @@ private void process(AiSessionKey key, AiTurn turn) {
 
 ### 11.1 角色卡查看与结构化编辑
 
-- 角色卡仍以 `./aichat/roles/*.md` 为唯一真源，WebUI 不提供整文件原始编辑；
+- 角色卡运行期以程序目录 `aichat/roles/*.md` 为唯一真源（开发环境 `target/classes/aichat/roles/`）；默认资源在 `src/main/resources/aichat/roles/`，运行期不直接编辑源码资源；WebUI 不提供整文件原始编辑；
 - 列表：文件名、字符数、更新时间、显式使用会话数、Lint 警告；
 - 预览：按模式过滤后的小节、最终 system 片段、估算 token；
 - 结构化编辑：按 `##` 章节拆分，每个章节由标题 + 若干行组成；支持默认章节、自定义章节、排序、注入条件（总是 / 有工具 / 有视觉）；
@@ -1624,7 +1624,7 @@ private void process(AiSessionKey key, AiTurn turn) {
 
 - Spring 上下文加载新 Mapper/建表；
 - SQLite 建表幂等；
-- `./aichat/roles` 目录扫描、文件修改生效、目录缺失自动创建；
+- `aichat/roles` 目录扫描、文件修改生效、目录缺失自动创建；
 - 会话持久化后重新加载；
 - Dispatcher 权重顺序（W_180 自定义回复优先于 W_170 AI；AI 启用范围内 W_160 跳过，W_870 仅超管进入）；
 - master 合并后回归：`EventRouter` 的虚拟线程分发不变；`DebounceSupport` 仍只接 `NoticeDispatcher`，AI 不修改 `MessageDispatcher` 的全量 Handler 行为；
@@ -1667,7 +1667,7 @@ private void process(AiSessionKey key, AiTurn turn) {
 33. 机器人断连后触发 `member_info` 工具 → 快速失败并回退为“查询失败”，不等待 30 秒。
 34. 同一条 WS 消息重复推送（相同 messageId）→ `DebounceSupport` 拦截，只处理一次。
 35. 视觉：`ds.chat.vision.enable=true` 且模型为 `deepseek-flash`，@机器人 发图 + 问题 → 模型能描述图片内容；切到 `deepseek-v4-pro` 后同一消息只看到 `[图片]` 占位。
-36. 表情：把 `开心.png` 放入 `./aichat/emojis/` → 系统提示出现「开心」；模型输出 `{"emoji":"开心"}` → QQ 收到该图片。
+36. 表情：把 `开心.png` 放入 `aichat/emojis/` → 系统提示出现「开心」；模型输出 `{"emoji":"开心"}` → QQ 收到该图片。
 37. 表情：模型输出不存在的名称 → 该条被跳过，不报错；只有 emoji 没有 text 的消息也能正常发出。
 38. 表情：一次回复里出现 2 个 emoji → 只保留第一个；机器人发表情后，下一轮历史里能看到 `[表情:名称]`。
 39. 联网搜索：已配置 `ds.api.key`、`ds.chat.search.enable=true`、`ds.chat.agent.tools` 含 `web_search` 时，问“今天有什么新闻” → 模型先 `call web_search`，工具返回标题/URL/摘要，再 `say`。
@@ -1697,7 +1697,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 - [x] `AiSessionKey` / `AiSessionService`（内存 + 会话/消息 2 张表；usage 表阶段 2）
 - [x] `AiReplyParser` / `AiReplySanitizer`
 - [x] `PromptAssembler` + 安全层/协议层/场景层
-- [x] `RoleCardService` + `./aichat/roles/*.md` 目录加载
+- [x] `RoleCardService` + `aichat/roles/*.md` 目录加载
 - [x] `AiTriggerPolicy`（私聊 + 群触发/随机 + 等待窗口）
 - [x] `AiChatService` / `AiSendService`
 - [x] `DeepSeekChatHandler(W_170)`（实现 `IDebounceable<Message>`，复用 `DebounceSupport` 做 messageId 去重）
@@ -1722,7 +1722,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 ### 阶段 3：增强（可选）
 
 - [x] 视觉：`deepseek-flash` 图片输入（2026-11-15）
-- [x] 自定义表情包 `./aichat/emojis/` + 协议 `emoji` 字段（2026-11-15）
+- [x] 自定义表情包 `aichat/emojis/` + 协议 `emoji` 字段（2026-11-15）
 - [x] `web_search` 工具（DeepSeek 官方 Search API，2026-11-16）
 - [x] 长期记忆 `t_ai_memory`
 - [x] 聊天记录回填环境上下文（2026-11-15）
@@ -1747,7 +1747,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 | 模型名变更 | 请求失败 | 配置化 + 启动校验 + 文档提示 |
 | 多机器人/多群并发 | 429/串会话 | 会话键 + 全局信号量 + 退避 |
 | SQLite 写放大 | 性能 | 只存干净 transcript + 每会话上限 + 异步写 |
-| 角色卡带工具说明 | 模型胡言 | Lint + 示例卡去工具化 + 只从 `./aichat/roles/*.md` 加载 |
+| 角色卡带工具说明 | 模型胡言 | Lint + 示例卡去工具化 + 只从 `aichat/roles/*.md` 加载 |
 | 误用 `DebounceSupport` | 连发消息被丢弃，无法合并 | 只用它做 messageId 精确去重；合并走 `AiChatService.SessionQueue` |
 | `EventRouter` 已是虚拟线程 | 再套一层异步/线程池浪费 | Handler 只入队；会话 worker 复用 `ThreadPoolUtil`，不额外造池 |
 
@@ -1784,7 +1784,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 - 数据库：`t_ai_session` / `t_ai_message` / `t_ai_usage`，启动自动建表
 - 客户端：`DeepSeekClient`（JSON 模式、thinking、reasoning_effort、user_id、重试、超时、官方余额）
 - 协议：`AiReplyParser` / `AiReplySanitizer`（say/call/silent、代码块、CQ/Markdown 清洗、超长切分）
-- 提示词：四层 `PromptAssembler` + `RoleCardService`（`./aichat/roles/*.md`、触发词、模式小节、Lint）
+- 提示词：四层 `PromptAssembler` + `RoleCardService`（`aichat/roles/*.md`、触发词、模式小节、Lint）
 - 会话：`AiSessionService`（内存缓存 + SQLite 持久化 + 角色/暂停/重置/用量）
 - 触发：`AiTriggerPolicy`（@/引用/角色触发词/语境判定/前缀/补充词/随机）+ `AiScopeService`（群白名单/私聊开关）
 - 队列：`AiChatService`（会话串行、提及等待、连发合并、每日 token 限制、工具循环）
@@ -1792,7 +1792,7 @@ mvn test -Dinternet-host=127.0.0.1 \
 - Handler：`DeepSeekChatHandler(W_170)`、`DeepSeekCommandHandler(W_870)`、`AiContextCollectorHandler(W_998)`；`AiChatHandler` 增加启用范围判断
 - 工具：`group_history`（SQLite 最近群聊）、`member_info`（群成员信息）、`memory_append` / `memory_query` / `memory_forget`
 - 长期记忆：`t_ai_memory` + `AiMemoryService`，协议 `memory` 自动保存、`forget` 删除、每轮注入最近记忆
-- 角色卡：仓库根目录 `aichat/roles/` 提供春日酱/小鲸鱼/傲娇助手，打包时随 `aichat` 目录发布
+- 角色卡：默认资源在 `src/main/resources/aichat/roles/`，运行期从程序目录 `aichat/roles/`（开发环境 `target/classes/aichat/roles`）读取，提供春日酱/小鲸鱼/傲娇助手示例；打包时由 assembly 输出到程序目录 `/aichat`
 - 测试：解析/清洗/角色卡/消息提取/触发/客户端/ChatService/命令 Handler/记忆/配置/Spring 集成
 
 ### 17.2 未完成（后续）
@@ -1830,7 +1830,7 @@ ds.chat.memory.enable=true
 
 ### 18.2 自定义表情包
 
-- 目录：运行目录 `./aichat/emojis/`；开发环境该目录没有图片时回退到仓库根目录 `aichat/emojis/`；
+- 目录：默认资源在 `src/main/resources/aichat/emojis/`，运行期只扫描程序目录 `aichat/emojis/`；开发环境程序目录是 `target/classes`，即 `target/classes/aichat/emojis/`，不再回退到仓库根目录；
 - 命名：文件名去扩展名即名称，中英文均可，大小写不敏感；支持 `png/jpg/jpeg/gif/webp`，单文件 ≤5MB；隐藏文件跳过；
 - 扫描：`EmojiService` 2 秒节流 + 目录 mtime 变化才重扫，运行中加图无需重启；重名保留先扫到的并 warn；
 - 协议：`messages[]` 新增可选 `emoji` 字段；`text` 与 `emoji` 至少一个；一次回复最多 1 个表情；未知名称丢弃；
@@ -1851,7 +1851,7 @@ ds.chat.memory.enable=true
 
 ### 18.5 表情清单
 
-- 仓库提供 `aichat/emojis/表情清单.md`，定义 12 个建议表情名称与含义（开心/无语/委屈/得意/生气/疑惑/赞/笑哭/害怕/摸鱼/晚安/拒绝）；
+- 默认资源提供 `src/main/resources/aichat/emojis/表情清单.md`，定义 12 个建议表情名称与含义（开心/无语/委屈/得意/生气/疑惑/赞/笑哭/害怕/摸鱼/晚安/拒绝）；构建后位于 `target/classes/aichat/emojis/`；
 - 清单文件本身不会被当作表情加载，图片由运维按名称自行放入。
 
 ### 18.6 联网搜索
@@ -1882,7 +1882,7 @@ ds.chat.memory.enable=true
 
 | qq-bridge | 本项目 | 说明 |
 | --- | --- | --- |
-| `roles/<name>.md` 人格卡 | `./aichat/roles/*.md` | 文件名即角色名，只写人设，不写工具 |
+| `roles/<name>.md` 人格卡 | `aichat/roles/*.md` | 文件名即角色名，只写人设，不写工具 |
 | `persona.prefix` 仿真提示词 | 安全层 + 协议层 + 场景层 | 静态 system 前缀 |
 | 一代空格分条 | `messages[]` + `delay_ms` | 更可控 |
 | `[SILENT]` | `{"type":"silent"}` | 结构化 |
@@ -1891,7 +1891,7 @@ ds.chat.memory.enable=true
 | `atUserId` | `at` | 只允许本群出现过的 QQ |
 | `qq_get_unread_messages` | `group_history` 工具 | 只查当前群 |
 | `qq_memory_append` | `memory` 字段 + `memory_append` 工具 + `t_ai_memory` | 已落地 |
-| `qq_list_stickers` / 表情包 | 本地表情包 `./aichat/emojis/` + 协议 `emoji` 字段，文件名即名称 | 已落地；不支持 QQ 收藏表情与 `face_id` |
+| `qq_list_stickers` / 表情包 | 本地表情包 `aichat/emojis/` + 协议 `emoji` 字段，文件名即名称 | 已落地；不支持 QQ 收藏表情与 `face_id` |
 | `qq_send_voice` / 语音 | 不支持 | 第二阶段 |
 | `qq_get_forward_msg` / 合并转发 | 不支持 | 第二阶段 |
 | `qq_send_poke` / 拍一拍 | 不支持 | 第二阶段 |

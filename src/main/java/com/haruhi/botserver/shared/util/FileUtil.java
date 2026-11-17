@@ -44,6 +44,11 @@ public class FileUtil {
     public static final String DIR_TEMPLATES = "templates";
 
     public static final String DIR_CUSTOM_REPLY = "customReply";
+
+    public static final String DIR_AI_CHAT = "aichat";
+    public static final String DIR_AI_ROLES = "roles";
+    public static final String DIR_AI_EMOJIS = "emojis";
+    public static final String DIR_AI_ROLE_BACKUP = ".backups";
     
     public static final String FILE_NAME_HUAQ_TEMPLATE = "huaQTemplate.gif";
     public static final String FILE_NAME_JUMP_TEMPLATE = "jumpTemplate.gif";
@@ -501,6 +506,70 @@ public class FileUtil {
     
     public static String getCustomReplyDir(){
         return getAppDir() + File.separator + DIR_CUSTOM_REPLY;
+    }
+
+    /**
+     * AI 聊天资源根目录
+     * /apps/haruhibotServer/aichat
+     * 开发环境为 target/classes/aichat
+     */
+    public static String getAiChatDir() {
+        return getAiChatDir(getAppDir());
+    }
+
+    /**
+     * 指定程序目录下的 AI 聊天资源根目录，便于测试覆盖 baseDir
+     */
+    public static String getAiChatDir(String baseDir) {
+        return baseDir + File.separator + DIR_AI_CHAT;
+    }
+
+    /**
+     * 角色卡目录
+     * /apps/haruhibotServer/aichat/roles
+     */
+    public static String getAiChatRoleDir() {
+        return getAiChatRoleDir(getAppDir());
+    }
+
+    public static String getAiChatRoleDir(String baseDir) {
+        return getAiChatDir(baseDir) + File.separator + DIR_AI_ROLES;
+    }
+
+    /**
+     * 角色卡文件
+     * /apps/haruhibotServer/aichat/roles/春日酱.md
+     */
+    public static String getAiChatRoleFile(String roleName) {
+        return getAiChatRoleFile(getAppDir(), roleName);
+    }
+
+    public static String getAiChatRoleFile(String baseDir, String roleName) {
+        return getAiChatRoleDir(baseDir) + File.separator + roleName + ".md";
+    }
+
+    /**
+     * 角色卡自动备份目录
+     * /apps/haruhibotServer/aichat/roles/.backups
+     */
+    public static String getAiChatRoleBackupDir() {
+        return getAiChatRoleBackupDir(getAppDir());
+    }
+
+    public static String getAiChatRoleBackupDir(String baseDir) {
+        return getAiChatRoleDir(baseDir) + File.separator + DIR_AI_ROLE_BACKUP;
+    }
+
+    /**
+     * 表情包目录
+     * /apps/haruhibotServer/aichat/emojis
+     */
+    public static String getAiChatEmojiDir() {
+        return getAiChatEmojiDir(getAppDir());
+    }
+
+    public static String getAiChatEmojiDir(String baseDir) {
+        return getAiChatDir(baseDir) + File.separator + DIR_AI_EMOJIS;
     }
 
 

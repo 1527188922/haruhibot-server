@@ -5,7 +5,7 @@
         <div>
           <div class="page-title">角色卡</div>
           <div class="page-desc">
-            按章节结构化编辑，保存后写入程序目录 <code>aichat/roles/*.md</code>；文件名即角色名。
+            按章节结构化编辑，保存后写入运行目录 <code>aichat/roles/*.md</code>；文件名即角色名。
           </div>
         </div>
         <div>
