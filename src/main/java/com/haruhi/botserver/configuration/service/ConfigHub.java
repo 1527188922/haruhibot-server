@@ -20,7 +20,6 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -475,7 +474,7 @@ public class ConfigHub {
         ConfigItem item = new ConfigItem();
         item.setKey(key.getKey());
         item.setName(key.name());
-        item.setDisplayName(displayName(key));
+        item.setDisplayName(key.getDisplayName());
         item.setType(key.getType());
         item.setControl(key.getControl());
         // 敏感配置不下发明文：前端展示掩码，用户输入新值才会覆盖
@@ -505,111 +504,5 @@ public class ConfigHub {
             return "****";
         }
         return "****" + value.substring(value.length() - SECRET_VISIBLE_LENGTH);
-    }
-
-    /**
-     * 从key推导中文名，避免每个配置项都要手写
-     * <p>
-     * 优先匹配"去掉第一段后的完整后缀"（如 {@code agefans.url}），
-     * 其次按最长前缀分组（如 {@code bot.ws}），最后用最后一段兜底
-     */
-    private static String displayName(ConfigKey key) {
-        String custom = key.getDisplayName();
-        if (StringUtils.isNotBlank(custom)) {
-            return custom;
-        }
-        String full = key.getKey();
-        int firstDot = full.indexOf('.');
-        if (firstDot > 0) {
-            String suffix = full.substring(firstDot + 1);
-            String word = WORD_MAP.get(suffix);
-            if (word != null) {
-                return word;
-            }
-        }
-        for (String prefix : PREFIXES_BY_LENGTH_DESC) {
-            if (full.startsWith(prefix + ".")) {
-                String tail = full.substring(prefix.length() + 1);
-                String tailName = WORD_MAP.getOrDefault(tail, tail);
-                return PREFIX_MAP.get(prefix) + tailName;
-            }
-        }
-        int lastDot = full.lastIndexOf('.');
-        String tail = lastDot < 0 ? full : full.substring(lastDot + 1);
-        return WORD_MAP.getOrDefault(tail, tail);
-    }
-
-    private static final Map<String, String> WORD_MAP = new HashMap<>();
-    private static final Map<String, String> PREFIX_MAP = new HashMap<>();
-    /** 前缀按长度降序，保证最长前缀优先匹配 */
-    private static final List<String> PREFIXES_BY_LENGTH_DESC = new ArrayList<>();
-
-    static {
-        WORD_MAP.put("username", "账号");
-        WORD_MAP.put("password", "密码");
-        WORD_MAP.put("max", "最大数量");
-        WORD_MAP.put("expire", "过期时长");
-        WORD_MAP.put("secret", "密钥");
-        WORD_MAP.put("grace", "宽限时长");
-        WORD_MAP.put("enabled", "开关");
-        WORD_MAP.put("sessdata", "SESSDATA");
-        WORD_MAP.put("ticket", "ticket");
-        WORD_MAP.put("duration_limit", "时长限制");
-        WORD_MAP.put("apikey", "API KEY");
-        WORD_MAP.put("baseurl", "接口地址");
-        WORD_MAP.put("timeout", "超时时长");
-        WORD_MAP.put("zip", "zip解压密码");
-        WORD_MAP.put("pdf", "pdf密码");
-        WORD_MAP.put("threads", "下载线程数");
-        WORD_MAP.put("name_max_length", "名称最大长度");
-        WORD_MAP.put("api_domain", "API域名");
-        WORD_MAP.put("image_mode", "结果图片模式");
-        WORD_MAP.put("limit", "条数上限");
-        WORD_MAP.put("enable", "开启");
-        WORD_MAP.put("cron", "cron表达式");
-        WORD_MAP.put("port", "http端口");
-        WORD_MAP.put("access_token", "连接认证token");
-        WORD_MAP.put("superusers", "超级管理员");
-        WORD_MAP.put("max_connections", "最大连接数");
-        WORD_MAP.put("access_groups", "可访问群");
-        WORD_MAP.put("parallel", "并发发送");
-        WORD_MAP.put("same-machine-qqclient", "qq客户端同机部署");
-        WORD_MAP.put("internet-host", "对外ip或域名");
-        WORD_MAP.put("disable_group", "禁用所有群功能");
-        WORD_MAP.put("qingyunke_chat", "青云可聊天");
-        WORD_MAP.put("search_image_allow_group", "群聊识图");
-        WORD_MAP.put("search_bt_allow_group", "群聊bt搜索");
-        WORD_MAP.put("group_increase", "加群提示");
-        WORD_MAP.put("group_decrease", "离群提示");
-        WORD_MAP.put("raw_compress", "聊天记录压缩存储");
-        WORD_MAP.put("bt_search", "磁力搜索站点地址");
-        WORD_MAP.put("btbtla_search", "bt影视搜索站点地址");
-        WORD_MAP.put("parallel.enabled", "允许多JM并发");
-        WORD_MAP.put("saucenao.baseurl", "SauceNao识图接口地址");
-        WORD_MAP.put("saucenao.apikey", "SauceNao识图API KEY");
-        WORD_MAP.put("agefans.url", "agefans站点地址");
-
-        PREFIX_MAP.put("login", "登录");
-        PREFIX_MAP.put("druid", "Druid");
-        PREFIX_MAP.put("druid.monitor.url", "Druid URL监控");
-        PREFIX_MAP.put("druid.monitor.spring", "Druid Spring监控");
-        PREFIX_MAP.put("job.downloadPixiv", "Pixiv下载任务");
-        PREFIX_MAP.put("job.bilibiliLive", "B站直播推送任务");
-        PREFIX_MAP.put("bilibili.cookies", "B站cookie");
-        PREFIX_MAP.put("bilibili.upload_video", "B站上传视频");
-        PREFIX_MAP.put("bilibili.download_video", "B站下载视频");
-        PREFIX_MAP.put("bot.upload_file", "机器人上传文件");
-        PREFIX_MAP.put("bot.switch", "机器人功能开关");
-        PREFIX_MAP.put("bot.ws", "Websocket");
-        PREFIX_MAP.put("searchimg.saucenao", "SauceNao识图");
-        PREFIX_MAP.put("searchimg.agefans", "Agefans");
-        PREFIX_MAP.put("ds.api", "DeepSeek");
-        PREFIX_MAP.put("jm", "JM");
-        PREFIX_MAP.put("url_conf", "站点地址");
-        PREFIX_MAP.put("db.chat_extend", "聊天记录");
-        PREFIX_MAP.put("server", "服务端");
-
-        PREFIXES_BY_LENGTH_DESC.addAll(PREFIX_MAP.keySet());
-        PREFIXES_BY_LENGTH_DESC.sort((a, b) -> Integer.compare(b.length(), a.length()));
     }
 }

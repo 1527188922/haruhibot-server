@@ -29,105 +29,106 @@ public enum ConfigKey {
 
     // ============================ WebUI ============================
     WEBUI_LOGIN_USERNAME(ConfigFile.WEBUI, "login.username", ConfigType.STRING, "haruhi", false,
-            "WebUI登录账号", 10),
+            "WebUI登录账号", 10, "WebUI登录账号"),
     WEBUI_LOGIN_PASSWORD(ConfigFile.WEBUI, "login.password", ConfigType.SECRET, "123123", false,
-            "WebUI登录密码，同时也是druid监控台账号密码", 20),
+            "WebUI登录密码，同时也是druid监控台账号密码", 20, "WebUI登录密码"),
     WEBUI_SESSION_MAX(ConfigFile.WEBUI, "login.session.max", ConfigType.INT, "6", false,
-            "内存中token最大数量", 30),
+            "内存中token最大数量", 30, "登录会话上限"),
     WEBUI_LOGIN_EXPIRE(ConfigFile.WEBUI, "login.expire", ConfigType.INT, "30", false,
-            "内存token过期时长，单位分钟", 40),
+            "内存token过期时长，单位分钟", 40, "登录过期时长(分钟)"),
     WEBUI_JWT_EXPIRE(ConfigFile.WEBUI, "login.jwt.expire", ConfigType.INT, "24", false,
-            "JWT有效时长，单位小时", 50),
+            "JWT有效时长，单位小时", 50, "JWT有效时长(小时)"),
     WEBUI_JWT_SECRET(ConfigFile.WEBUI, "login.jwt.secret", ConfigType.SECRET,
             "QBgu5c4xfA4_6Ky8A_QnO_XW238-YD7Y6EH7HQKAyM8OiCNbn6xCcN-5BaZGysxA", false,
-            "JWT签名密钥，留空会导致启动失败", 60),
+            "JWT签名密钥，留空会导致启动失败", 60, "JWT签名密钥"),
     WEBUI_JWT_GRACE(ConfigFile.WEBUI, "login.jwt.grace", ConfigType.INT, "30", false,
-            "JWT宽限时长，目前无用", 70),
+            "JWT宽限时长，目前无用", 70, "JWT宽限时长"),
     WEBUI_DRUID_ENABLED(ConfigFile.WEBUI, "druid.enabled", ConfigType.BOOL, "false", false,
-            "是否开启druid监控台，需重启", 80),
+            "是否开启druid监控台，需重启", 80, "Druid监控台开关"),
     WEBUI_DRUID_MONITOR_URL_ENABLED(ConfigFile.WEBUI, "druid.monitor.url.enabled", ConfigType.BOOL, "false", false,
-            "是否开启druid的URL监控，需重启", 90),
+            "是否开启druid的URL监控，需重启", 90, "Druid URL监控开关"),
     WEBUI_DRUID_MONITOR_URL_SESSION_ENABLED(ConfigFile.WEBUI, "druid.monitor.url.session.enabled", ConfigType.BOOL, "false", false,
-            "druid的URL监控是否统计session，需重启", 100),
+            "druid的URL监控是否统计session，需重启", 100, "Druid URL监控统计session"),
     WEBUI_DRUID_MONITOR_SPRING_ENABLED(ConfigFile.WEBUI, "druid.monitor.spring.enabled", ConfigType.BOOL, "false", false,
-            "是否开启druid的Spring监控，需重启", 110),
+            "是否开启druid的Spring监控，需重启", 110, "Druid Spring监控开关"),
 
     // ============================ 应用主配置（application.yml） ============================
     SERVER_PORT(ConfigFile.APPLICATION, "server.port", ConfigType.INT, "8090", false,
-            "http服务端口，可在配置管理页修改，修改后需重启", 10),
+            "http服务端口，可在配置管理页修改，修改后需重启", 10, "http服务端口"),
     LOGGING_LEVEL(ConfigFile.APPLICATION, "logging.level.com.haruhi.botserver", ConfigType.STRING, "info", false,
             "本项目自身的日志级别（TRACE/DEBUG/INFO/WARN/ERROR），修改后需重启", 20,
-            ControlMeta.select("TRACE,DEBUG,INFO,WARN,ERROR")),
+            ControlMeta.select("TRACE,DEBUG,INFO,WARN,ERROR"), "日志级别"),
     INTERNET_HOST(ConfigFile.APPLICATION, "internet-host", ConfigType.STRING, "", true,
-            "本服务对外访问的ip或域名，留空自动探测；用于拼接图片url", 30),
+            "本服务对外访问的ip或域名，留空自动探测；用于拼接图片url", 30, "对外ip或域名"),
     SAME_MACHINE_QQCLIENT(ConfigFile.APPLICATION, "same-machine-qqclient", ConfigType.BOOL, "true", true,
-            "qq客户端是否与本服务在同一台机器，true时图片/语音使用file://本地路径发送", 40),
+            "qq客户端是否与本服务在同一台机器，true时图片/语音使用file://本地路径发送", 40, "qq客户端同机部署"),
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD_MODE(ConfigFile.APPLICATION, "playwright.skip-browser-download-mode", ConfigType.INT, "0", true,
             "浏览器下载模式 0自动判断（正常优先，失败降级为跳过下载）1强制跳过下载直接使用系统浏览器 2强制使用playwright下载的浏览器；改完下次截图生效", 50,
-            ControlMeta.radio("0:自动判断,1:强制跳过下载（用系统浏览器）,2:使用playwright下载的浏览器")),
+            ControlMeta.radio("0:自动判断,1:强制跳过下载（用系统浏览器）,2:使用playwright下载的浏览器"), "浏览器下载模式"),
 
 
     // ============================ 定时任务 ============================
     JOB_DOWNLOAD_PIXIV_ENABLE(ConfigFile.JOB, "job.downloadPixiv.enable", ConfigType.BOOL, "false", true,
-            "是否开启pixiv下载任务", 10),
+            "是否开启pixiv下载任务", 10, "Pixiv下载任务开关"),
     JOB_DOWNLOAD_PIXIV_CRON(ConfigFile.JOB, "job.downloadPixiv.cron", ConfigType.STRING, "0/15 * 0-7 * * ? *", true,
-            "pixiv下载任务cron表达式", 20),
+            "pixiv下载任务cron表达式", 20, "Pixiv下载任务cron表达式"),
     JOB_BILIBILI_LIVE_ENABLE(ConfigFile.JOB, "job.bilibiliLive.enable", ConfigType.BOOL, "false", true,
-            "是否开启b站直播推送任务", 30),
+            "是否开启b站直播推送任务", 30, "B站直播推送任务开关"),
     JOB_BILIBILI_LIVE_CRON(ConfigFile.JOB, "job.bilibiliLive.cron", ConfigType.STRING, "0/30 * * * * ?", true,
-            "b站直播状态检测cron表达式", 40),
+            "b站直播状态检测cron表达式", 40, "B站直播推送任务cron表达式"),
 
     // ============================ 机器人 ============================
     BOT_SUPERUSERS(ConfigFile.BOT, "bot.superusers", ConfigType.LIST, "1527188922", true,
-            "机器人超级管理员qq号，多个用逗号分割", 30),
+            "机器人超级管理员qq号，多个用逗号分割", 30, "超级管理员"),
     BOT_ACCESS_GROUP(ConfigFile.BOT, "bot.access_groups", ConfigType.LIST, "", true,
-            "可使用机器人的群号，多个用逗号分开，留空表示所有群都可使用", 40, ControlMeta.groupSelect(true)),
+            "可使用机器人的群号，多个用逗号分开，留空表示所有群都可使用", 40, ControlMeta.groupSelect(true), "可访问群"),
     BOT_UPLOAD_FILE_PARALLEL(ConfigFile.BOT, "bot.upload_file.parallel", ConfigType.BOOL, "true", true,
-            "上传私聊/群文件时是否并发发送请求，false为排队发送", 50),
+            "上传私聊/群文件时是否并发发送请求，false为排队发送", 50, "上传文件并发发送"),
     BOT_SWITCH_DISABLE_GROUP(ConfigFile.BOT, "bot.switch.disable_group", ConfigType.BOOL, "false", true,
-            "是否禁用所有群功能（仍保留聊天记录），true为禁用", 60),
+            "是否禁用所有群功能（仍保留聊天记录），true为禁用", 60, "禁用所有群功能"),
     BOT_SWITCH_QINGYUNKE_CHAT(ConfigFile.BOT, "bot.switch.qingyunke_chat", ConfigType.BOOL, "true", true,
-            "是否启用青云可聊天api，任何命令都未触发时会调用", 70),
+            "是否启用青云可聊天api，任何命令都未触发时会调用", 70, "青云客聊天"),
     BOT_SWITCH_SEARCH_IMAGE_ALLOW_GROUP(ConfigFile.BOT, "bot.switch.search_image_allow_group", ConfigType.BOOL, "true", true,
-            "是否允许群聊中使用识图功能", 80),
+            "是否允许群聊中使用识图功能", 80, "群聊识图"),
     BOT_SWITCH_SEARCH_BT_ALLOW_GROUP(ConfigFile.BOT, "bot.switch.search_bt_allow_group", ConfigType.BOOL, "false", true,
-            "是否允许群聊中使用bt搜索功能", 90),
+            "是否允许群聊中使用bt搜索功能", 90, "群聊bt搜索"),
     BOT_SWITCH_GROUP_INCREASE(ConfigFile.BOT, "bot.switch.group_increase", ConfigType.BOOL, "true", true,
-            "是否开启加群提示", 100),
+            "是否开启加群提示", 100, "加群提示"),
     BOT_SWITCH_GROUP_DECREASE(ConfigFile.BOT, "bot.switch.group_decrease", ConfigType.BOOL, "true", true,
-            "是否开启群成员离群提示", 110),
+            "是否开启群成员离群提示", 110, "离群提示"),
 
     // ============================ WebSocket ============================
     WS_ACCESS_TOKEN(ConfigFile.WEBSOCKET, "bot.ws.access_token", ConfigType.SECRET, "", true,
-            "机器人Websocket服务建立连接时的认证token，留空表示无需认证", 10),
+            "机器人Websocket服务建立连接时的认证token，留空表示无需认证", 10, "连接认证token"),
     WS_MAX_CONNECTIONS(ConfigFile.WEBSOCKET, "bot.ws.max_connections", ConfigType.INT, "5", true,
-            "机器人Websocket服务最大连接数，小于0无限制，0表示禁止连接（改成0不会断开已有连接）", 20),
+            "机器人Websocket服务最大连接数，小于0无限制，0表示禁止连接（改成0不会断开已有连接）", 20, "最大连接数"),
 
     // ============================ 识图 ============================
     SEARCH_IMG_SAUCENAO_BASEURL(ConfigFile.SEARCH_IMG, "searchimg.saucenao.baseurl", ConfigType.STRING,
             "https://saucenao.com/search.php", true,
-            "saucenao识图接口地址", 10),
+            "saucenao识图接口地址", 10, "SauceNao识图接口地址"),
     SEARCH_IMG_SAUCENAO_APIKEY(ConfigFile.SEARCH_IMG, "searchimg.saucenao.apikey", ConfigType.SECRET, "", true,
-            "saucenao识图接口认证key，从 https://saucenao.com 获取", 20),
+            "saucenao识图接口认证key，从 https://saucenao.com 获取", 20, "SauceNao识图API KEY"),
 
     // ============================ B站 ============================
     BILIBILI_COOKIES_RAW(ConfigFile.BILIBILI, "bilibili.cookies.raw", ConfigType.SECRET, "", true,
             "整条b站cookie（浏览器F12 -> Network -> 任意b站接口 -> Request Headers 里的 Cookie 整段复制）。" +
                     "配置后覆盖下面的sessdata登录态来源，风控概率最低；留空则用下面几项自动拼装。" +
-                    "其中的bili_ticket会被忽略，统一使用程序自动生成并定期刷新的那一份", 5),
+                    "其中的bili_ticket会被忽略，统一使用程序自动生成并定期刷新的那一份", 5, "B站cookie(整条)"),
     BILIBILI_COOKIES_SESSDATA(ConfigFile.BILIBILI, "bilibili.cookies.sessdata", ConfigType.SECRET, "", true,
-            "b站cookie中的SESSDATA，用于解析b站视频等需要调用b站api的功能（已配置bilibili.cookies.raw时无需配置）", 10),
+            "b站cookie中的SESSDATA，用于解析b站视频等需要调用b站api的功能（已配置bilibili.cookies.raw时无需配置）", 10,
+            "B站cookie SESSDATA"),
     // 保存接口响应 raw
     BILIBILI_COOKIES_TICKET(ConfigFile.BILIBILI, "bilibili.cookies.ticket", ConfigType.STRING, "", true,
-            "请求b站接口自动获取，非必要，可减小风控概率", 30),
+            "请求b站接口自动获取，非必要，可减小风控概率", 30, "B站cookie bili_ticket"),
     BILIBILI_COOKIES_BUVID3(ConfigFile.BILIBILI, "bilibili.cookies.buvid3", ConfigType.STRING, "", true,
-            "b站设备标识buvid3，程序首次请求b站接口时自动获取并写入，不要手工修改", 31),
+            "b站设备标识buvid3，程序首次请求b站接口时自动获取并写入，不要手工修改", 31, "B站cookie buvid3"),
     BILIBILI_COOKIES_BUVID4(ConfigFile.BILIBILI, "bilibili.cookies.buvid4", ConfigType.STRING, "", true,
-            "b站设备标识buvid4，程序首次请求b站接口时自动获取并写入，不要手工修改", 32),
+            "b站设备标识buvid4，程序首次请求b站接口时自动获取并写入，不要手工修改", 32, "B站cookie buvid4"),
     BILIBILI_UPLOAD_VIDEO_DURATION_LIMIT(ConfigFile.BILIBILI, "bilibili.upload_video.duration_limit", ConfigType.INT, "600", true,
-            "上传b站视频时长限制，单位秒", 40),
+            "上传b站视频时长限制，单位秒", 40, "B站上传视频时长限制(秒)"),
     BILIBILI_DOWNLOAD_VIDEO_DURATION_LIMIT(ConfigFile.BILIBILI, "bilibili.download_video.duration_limit", ConfigType.INT, "600", true,
-            "下载b站视频时长限制，单位秒", 50),
+            "下载b站视频时长限制，单位秒", 50, "B站下载视频时长限制(秒)"),
 
     // ============================ AI ============================
     QIANWEN_API_KEY(ConfigFile.AI, "qianwen.api_key", ConfigType.SECRET, "", true,
@@ -287,99 +288,100 @@ public enum ConfigKey {
     // ============================ JM漫画 ============================
     // 下面三项默认值与 JmcomicService.JM_DEFAULT_PASSWORD / DEFAULT_API_DOMAIN 保持一致
     JM_PASSWORD_ZIP(ConfigFile.JM, "jm.password.zip", ConfigType.STRING, "1234", true,
-            "jm本子zip包解压密码。注意：修改密码不会改变已存在的zip包密码，仅影响后续生成的zip包", 10),
+            "jm本子zip包解压密码。注意：修改密码不会改变已存在的zip包密码，仅影响后续生成的zip包", 10, "zip解压密码"),
     JM_PASSWORD_PDF(ConfigFile.JM, "jm.password.pdf", ConfigType.STRING, "1234", true,
-            "jm本子pdf保护密码。注意：修改密码不会改变已存在的pdf文件密码，仅影响后续生成的pdf", 20),
+            "jm本子pdf保护密码。注意：修改密码不会改变已存在的pdf文件密码，仅影响后续生成的pdf", 20, "pdf密码"),
     JM_DOWNLOAD_THREADS(ConfigFile.JM, "jm.download.threads", ConfigType.INT, "0", true,
-            "下载本子时线程数量，未配置、0或小于0则等于CPU逻辑核心数量", 30),
+            "下载本子时线程数量，未配置、0或小于0则等于CPU逻辑核心数量", 30, "下载线程数"),
     JM_OPERATION_PARALLEL_ENABLED(ConfigFile.JM, "jm.operation.parallel.enabled", ConfigType.BOOL, "false", true,
-            "JM漫画操作是否允许不同JM ID并发执行，true表示开启并发执行", 40),
+            "JM漫画操作是否允许不同JM ID并发执行，true表示开启并发执行", 40, "允许多JM并发"),
     JM_ALBUM_NAME_MAX_LENGTH(ConfigFile.JM, "jm.album.name_max_length", ConfigType.INT, "150", true,
-            "jm本子文件夹名称的最大长度（bytes.length而非字符个数，不含_JM{id}后缀），本子名会作为文件夹名使用，需小于255", 50),
+            "jm本子文件夹名称的最大长度（bytes.length而非字符个数，不含_JM{id}后缀），本子名会作为文件夹名使用，需小于255", 50,
+            "本子文件夹名最大长度"),
     JM_API_DOMAIN(ConfigFile.JM, "jm.api_domain", ConfigType.STRING, JmLineCatalog.DEFAULT_API_HOST, true,
             "JM API域名（本子详情/搜索/章节清单走的线路）。候选项来自 JM 线路清单，可点「测速」看各线路延迟后选最快的",
-            60, ControlMeta.selectWithProbe(JmLineCatalog.Kind.API.code(), JmLineCatalog.apiControlOptions())),
+            60, ControlMeta.selectWithProbe(JmLineCatalog.Kind.API.code(), JmLineCatalog.apiControlOptions()), "API域名"),
     JM_IMAGE_DOMAIN(ConfigFile.JM, "jm.image_domain", ConfigType.STRING, JmLineCatalog.DEFAULT_IMAGE_HOST, true,
             "JM 图片域名（章节图片与封面走的图片CDN）。候选项来自 JM 线路清单，可点「测速」看各图源延迟后选最快的",
-            65, ControlMeta.selectWithProbe(JmLineCatalog.Kind.IMAGE.code(), JmLineCatalog.imageControlOptions())),
+            65, ControlMeta.selectWithProbe(JmLineCatalog.Kind.IMAGE.code(), JmLineCatalog.imageControlOptions()), "图片域名"),
     JM_SEARCH_RESULT_IMAGE_MODE(ConfigFile.JM, "jm.search_result.image_mode", ConfigType.BOOL, "false", true,
-            "JM搜索结果是否以图片方式发送，true表示以图片发送搜索结果，false表示合并转发消息发送", 70),
+            "JM搜索结果是否以图片方式发送，true表示以图片发送搜索结果，false表示合并转发消息发送", 70, "搜索结果以图片发送"),
     JM_SEARCH_RESULT_LIMIT(ConfigFile.JM, "jm.search_result.limit", ConfigType.INT, "12", true,
-            "JM搜索结果返回条数上限；无效或小于等于0时：仅发送12条结果", 80),
+            "JM搜索结果返回条数上限；无效或小于等于0时：仅发送12条结果", 80, "搜索结果条数上限"),
     JM_SEARCH_HISTORY_LIMIT(ConfigFile.JM, "jm.search.history.limit", ConfigType.INT, "20", true,
-            "JM在线搜索历史保存条数，超出后自动删除最旧的记录；无效或小于等于0时不保存历史", 90),
+            "JM在线搜索历史保存条数，超出后自动删除最旧的记录；无效或小于等于0时不保存历史", 90, "搜索历史保存条数"),
     JM_REQUEST_ALBUM_RETRY(ConfigFile.JM, "jm.request.album.retry", ConfigType.INT, "0", true,
-            "请求本子详情(/album)接口遇到网络超时最大重试次数，0=不重试", 100),
+            "请求本子详情(/album)接口遇到网络超时最大重试次数，0=不重试", 100, "本子详情重试次数"),
     JM_REQUEST_SEARCH_RETRY(ConfigFile.JM, "jm.request.search.retry", ConfigType.INT, "0", true,
-            "JM搜索(/search)接口遇到网络超时最大重试次数，0=不重试", 110),
+            "JM搜索(/search)接口遇到网络超时最大重试次数，0=不重试", 110, "搜索接口重试次数"),
     JM_REQUEST_CHAPTER_RETRY(ConfigFile.JM, "jm.request.chapter.retry", ConfigType.INT, "0", true,
-            "请求章节详情(/chapter)接口遇到网络超时最大重试次数，0=不重试", 120),
+            "请求章节详情(/chapter)接口遇到网络超时最大重试次数，0=不重试", 120, "章节详情重试次数"),
     JM_IMAGE_ENCRYPT_ENABLED(ConfigFile.JM, "jm.image.encrypt.enabled", ConfigType.BOOL, "true", true,
-            "JM漫画图片和封面是否加密保存到本地服务器，true=加密；仅影响新下载的文件，历史明文图片仍可正常读取", 130),
+            "JM漫画图片和封面是否加密保存到本地服务器，true=加密；仅影响新下载的文件，历史明文图片仍可正常读取", 130, "图片加密开关"),
     JM_IMAGE_ENCRYPT_PREFIX_KB(ConfigFile.JM, "jm.image.encrypt.prefix.kb", ConfigType.INT, "32", true,
-            "JM图片加密字节数（KB）：0=整图加密，大于0=仅加密文件前N KB；仅影响新下载的文件", 140),
+            "JM图片加密字节数（KB）：0=整图加密，大于0=仅加密文件前N KB；仅影响新下载的文件", 140, "图片加密前缀(KB)"),
     JM_IMAGE_COMPRESS_ENABLED(ConfigFile.JM, "jm.image.compress.enabled", ConfigType.BOOL, "true", true,
             "JM漫画图片解扰后是否重新压缩：true=有损WebP q85 / PDF内嵌JPEG q90，false=无损WebP q100 / PDF无损内嵌。只影响需要解扰的webp；未加扰章节与jpg/gif原图按站点原始字节保存（不重编码）",
-            150),
+            150, "图片压缩开关"),
 
     // ============================ 站点地址 ============================
     // ThirdPartyURL 中的地址常量已迁移到这里，除 identimg（识图，见 searchimg.properties）外
     URL_CONF_AGEFANS(ConfigFile.URL, "url_conf.agefans", ConfigType.STRING, "https://www.agemys.vip", true,
-            "agefans网站地址，用于今日新番功能，末尾不需斜杠。备用：https://www.age.tv https://www.agemys.net", 10),
+            "agefans网站地址，用于今日新番功能，末尾不需斜杠。备用：https://www.age.tv https://www.agemys.net", 10, "agefans站点地址"),
     URL_CONF_BT_SEARCH(ConfigFile.URL, "url_conf.bt_search", ConfigType.STRING, "http://www.eclzz.bio", true,
-            "磁力搜索网站地址，用于bt搜索功能，末尾不需斜杠", 20),
+            "磁力搜索网站地址，用于bt搜索功能，末尾不需斜杠", 20, "磁力搜索站点地址"),
     URL_CONF_BTBTLA_SEARCH(ConfigFile.URL, "url_conf.btbtla_search", ConfigType.STRING, "https://www.btbtla.com", true,
-            "bt影视搜索站点地址", 30),
+            "bt影视搜索站点地址", 30, "bt影视搜索站点地址"),
     URL_CONF_QINGYUNKE_AI_CHAT(ConfigFile.URL, "url_conf.qingyunke_ai_chat", ConfigType.STRING,
-            "http://api.qingyunke.com/api.php", true, "青云客ai聊天接口", 40),
+            "http://api.qingyunke.com/api.php", true, "青云客ai聊天接口", 40, "青云客ai聊天接口"),
     URL_CONF_BILIBILI_BULLET_CHAR(ConfigFile.URL, "url_conf.bilibili_bullet_char", ConfigType.STRING,
-            "https://api.bilibili.com/x/v1/dm/list.so", true, "b站获取弹幕接口", 50),
+            "https://api.bilibili.com/x/v1/dm/list.so", true, "b站获取弹幕接口", 50, "b站获取弹幕接口"),
     URL_CONF_BILIBILI_PLAYER_CID(ConfigFile.URL, "url_conf.bilibili_player_cid", ConfigType.STRING,
-            "https://api.bilibili.com/x/player/pagelist", true, "b站获取cid接口", 60),
+            "https://api.bilibili.com/x/player/pagelist", true, "b站获取cid接口", 60, "b站获取cid接口"),
     URL_CONF_BILIBILI_LIVE_STATUS(ConfigFile.URL, "url_conf.bilibili_live_status", ConfigType.STRING,
             "https://api.live.bilibili.com/room/v1/Room/get_status_info_by_uids", true,
-            "b站根据uid批量获取直播间状态接口", 70),
+            "b站根据uid批量获取直播间状态接口", 70, "b站直播状态接口"),
     URL_CONF_LOLICON(ConfigFile.URL, "url_conf.lolicon", ConfigType.STRING, "https://api.lolicon.app/setu/v2", true,
-            "lolicon图片接口，用于pixiv下载任务", 80),
+            "lolicon图片接口，用于pixiv下载任务", 80, "lolicon图片接口"),
     URL_CONF_WHATS_LINK(ConfigFile.URL, "url_conf.whats_link", ConfigType.STRING,
-            "https://whatslink.info/api/v1/link", true, "磁力链接预览接口", 90),
+            "https://whatslink.info/api/v1/link", true, "磁力链接预览接口", 90, "磁力链接预览接口"),
     URL_CONF_NEWS_163(ConfigFile.URL, "url_conf.news_163", ConfigType.STRING,
-            "http://c.m.163.com/nc/article/headline/T1348647853363/0-40.html", true, "网易新闻头条接口", 100),
+            "http://c.m.163.com/nc/article/headline/T1348647853363/0-40.html", true, "网易新闻头条接口", 100, "网易新闻头条接口"),
     URL_CONF_NETEASE_SEARCH_MUSIC(ConfigFile.URL, "url_conf.netease_search_music", ConfigType.STRING,
-            "http://music.163.com/weapi/cloudsearch/get/web", true, "网易云搜索歌曲接口", 110),
+            "http://music.163.com/weapi/cloudsearch/get/web", true, "网易云搜索歌曲接口", 110, "网易云搜索歌曲接口"),
 
     // ============================ 数据库 ============================
     // 数据源配置的真源。application*.yml 里的 spring.datasource 会被
     // SqliteDataSourceInitAspect 用这里的值覆盖（见该类注释）
     DATABASE_URL(ConfigFile.DATABASE, "spring.datasource.dynamic.datasource.master.url", ConfigType.STRING,
             "jdbc:sqlite::resource:data/haruhibot_server.db?journal_mode=WAL&synchronous=NORMAL", false,
-            "sqlite数据库jdbc url，支持绝对路径，修改后需重启", 10),
+            "sqlite数据库jdbc url，支持绝对路径，修改后需重启", 10, "数据库连接URL"),
     DATABASE_DRIVER_CLASS_NAME(ConfigFile.DATABASE,
             "spring.datasource.dynamic.datasource.master.driver-class-name",
-            ConfigType.STRING, "org.sqlite.JDBC", false, "数据库驱动类名，修改后需重启", 20),
+            ConfigType.STRING, "org.sqlite.JDBC", false, "数据库驱动类名，修改后需重启", 20, "数据库驱动类名"),
     DATABASE_DRUID_VALIDATION_QUERY(ConfigFile.DATABASE,
             "spring.datasource.dynamic.datasource.master.druid.validation-query", ConfigType.STRING, "SELECT 1", false,
-            "druid连接校验语句，修改后需重启", 30),
+            "druid连接校验语句，修改后需重启", 30, "Druid连接校验语句"),
     DATABASE_DRUID_FILTERS(ConfigFile.DATABASE,
             "spring.datasource.dynamic.datasource.master.druid.filters", ConfigType.STRING, "stat", false,
             "druid过滤器（可多选，保存时逗号拼接），修改后需重启", 40,
-            ControlMeta.checkboxGroup("stat,wall,log4j,slf4j")),
+            ControlMeta.checkboxGroup("stat,wall,log4j,slf4j"), "Druid过滤器"),
     DATABASE_DRUID_TEST_ON_BORROW(ConfigFile.DATABASE,
             "spring.datasource.dynamic.datasource.master.druid.test-on-borrow", ConfigType.BOOL, "false", false,
-            "druid取连接时是否校验，修改后需重启", 50),
+            "druid取连接时是否校验，修改后需重启", 50, "Druid取连接校验"),
     DATABASE_DRUID_TEST_ON_RETURN(ConfigFile.DATABASE,
             "spring.datasource.dynamic.datasource.master.druid.test-on-return", ConfigType.BOOL, "false", false,
-            "druid归还连接时是否校验，修改后需重启", 60),
+            "druid归还连接时是否校验，修改后需重启", 60, "Druid归还连接校验"),
     DATABASE_DRUID_POOL_PREPARED_STATEMENTS(ConfigFile.DATABASE,
             "spring.datasource.dynamic.datasource.master.druid.pool-prepared-statements", ConfigType.BOOL, "false",
-            false, "druid是否缓存PreparedStatement，修改后需重启", 70),
+            false, "druid是否缓存PreparedStatement，修改后需重启", 70, "Druid缓存PreparedStatement"),
     DATABASE_DRUID_MAX_ACTIVE(ConfigFile.DATABASE,
             "spring.datasource.dynamic.datasource.master.druid.max-active", ConfigType.INT, "5", false,
-            "druid最大连接数，修改后需重启", 80),
+            "druid最大连接数，修改后需重启", 80, "Druid最大连接数"),
 
     // ============================ 聊天记录 ============================
     CHAT_RECORD_RAW_COMPRESS(ConfigFile.CHAT_RECORD, "db.chat_extend.raw_compress", ConfigType.BOOL, "true", true,
-            "是否对聊天记录扩展表raw消息压缩存储", 10),
+            "是否对聊天记录扩展表raw消息压缩存储", 10, "聊天记录压缩存储"),
     ;
     /** 所属文件 */
     private final ConfigFile file;
@@ -397,29 +399,21 @@ public enum ConfigKey {
     private final int sort;
     /** 前端控件元数据（不声明时按值类型取默认控件） */
     private final ControlMeta control;
-    /** 前端展示名；null 时由 ConfigHub 按 key 自动推导 */
+    /** 前端展示名 */
     private final String displayName;
 
-    ConfigKey(ConfigFile file, String key, ConfigType type, String defaultValue, boolean hot, String remark, int sort) {
-        this(file, key, type, defaultValue, hot, remark, sort, null, null);
-    }
-
     /**
-     * @param control 前端控件；传 null 表示按值类型取默认控件（BOOL→开关、LIST→多选下拉、其余→输入框）
-     */
-    ConfigKey(ConfigFile file, String key, ConfigType type, String defaultValue, boolean hot, String remark,
-              int sort, ControlMeta control) {
-        this(file, key, type, defaultValue, hot, remark, sort, control, null);
-    }
-
-    /**
-     * @param displayName 前端展示名；需要精确控制文案时传入，null 时自动推导
+     * @param displayName 前端展示名，必填
      */
     ConfigKey(ConfigFile file, String key, ConfigType type, String defaultValue, boolean hot, String remark,
               int sort, String displayName) {
         this(file, key, type, defaultValue, hot, remark, sort, null, displayName);
     }
 
+    /**
+     * @param control     前端控件；传 null 表示按值类型取默认控件（BOOL→开关、LIST→多选下拉、其余→输入框）
+     * @param displayName 前端展示名，必填
+     */
     ConfigKey(ConfigFile file, String key, ConfigType type, String defaultValue, boolean hot, String remark,
               int sort, ControlMeta control, String displayName) {
         this.file = file;
