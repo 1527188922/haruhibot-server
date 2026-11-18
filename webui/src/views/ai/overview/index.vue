@@ -164,9 +164,24 @@
         </el-col>
         <el-col :xs="24" :sm="24" :md="8">
           <div class="panel">
-            <div class="panel-title">按群 Top 10</div>
-            <el-table v-loading="usageLoading" :data="breakdown.byGroup" size="small" border stripe>
-              <el-table-column prop="label" label="群" min-width="110"></el-table-column>
+            <div class="panel-toolbar">
+              <div class="panel-title">{{ rankScene === 'group' ? '按群 Top 10' : '私聊 Top 10' }}</div>
+              <el-radio-group v-model="rankScene" size="mini">
+                <el-radio-button label="group">群聊</el-radio-button>
+                <el-radio-button label="private">私聊</el-radio-button>
+              </el-radio-group>
+            </div>
+            <el-table v-loading="usageLoading" :data="rankList" size="small" border stripe>
+              <el-table-column :label="rankScene === 'group' ? '群' : '用户'" min-width="120">
+                <template slot-scope="{row}">
+                  <div class="rank-target">
+                    <el-avatar :size="24" :src="rankAvatar(row)" class="rank-avatar">
+                      <i :class="rankScene === 'group' ? 'el-icon-chat-dot-round' : 'el-icon-user-solid'"></i>
+                    </el-avatar>
+                    <span class="rank-label">{{ row.key || row.label }}</span>
+                  </div>
+                </template>
+              </el-table-column>
               <el-table-column prop="requests" label="请求" width="70" align="center"></el-table-column>
               <el-table-column prop="tokens" label="Token" width="100" align="center"></el-table-column>
               <el-table-column prop="failures" label="失败" width="60" align="center"></el-table-column>
@@ -189,6 +204,7 @@
 
 <script>
 import { overview, usageTrend, usageBreakdown } from '@/api/ai';
+import { sessionAvatarUrl } from '@/util/avatar';
 
 export default {
   name: 'AiOverview',
@@ -197,6 +213,7 @@ export default {
       loading: false,
       usageLoading: false,
       rangeDays: 7,
+      rankScene: 'group',
       data: {
         today: {},
         runtime: {},
@@ -208,7 +225,8 @@ export default {
       breakdown: {
         byScene: [],
         byModel: [],
-        byGroup: []
+        byGroup: [],
+        byPrivate: []
       }
     };
   },
@@ -287,6 +305,10 @@ export default {
         { label: '失败次数', value: this.today.failures || 0, remark: '解析失败、超时、限流等' },
         { label: '平均延迟', value: (Number(this.today.avgLatencyMs || 0)).toFixed(0) + ' ms', remark: '从发起请求到收到响应' }
       ];
+    },
+    rankList() {
+      const list = this.rankScene === 'group' ? this.breakdown.byGroup : this.breakdown.byPrivate;
+      return list || [];
     }
   },
   created() {
@@ -318,7 +340,7 @@ export default {
         usageBreakdown({ days: this.rangeDays })
       ]).then(([trendRes, breakdownRes]) => {
         this.trend = this.unwrap(trendRes) || { points: [] };
-        this.breakdown = this.unwrap(breakdownRes) || { byScene: [], byModel: [], byGroup: [] };
+        this.breakdown = this.unwrap(breakdownRes) || { byScene: [], byModel: [], byGroup: [], byPrivate: [] };
       }).catch(() => {
         this.$message.error('加载用量统计失败');
       }).finally(() => {
@@ -335,6 +357,9 @@ export default {
     tokenPercent(row) {
       const value = Number(row.totalTokens || 0);
       return Math.min(100, Math.round((value * 1000) / this.maxTrendTokens) / 10) + '%';
+    },
+    rankAvatar(row) {
+      return sessionAvatarUrl(this.rankScene, row.key);
     }
   }
 };
@@ -477,6 +502,21 @@ export default {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .rank-target {
+    display: flex;
+    align-items: center;
+  }
+
+  .rank-avatar {
+    margin-right: 8px;
+    flex-shrink: 0;
+    background: #f0f2f5;
+  }
+
+  .rank-label {
+    color: #606266;
   }
 
   .balance-row {

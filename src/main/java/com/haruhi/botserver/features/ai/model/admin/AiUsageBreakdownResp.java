@@ -14,6 +14,7 @@ public class AiUsageBreakdownResp {
     private List<Item> byScene = new ArrayList<>();
     private List<Item> byModel = new ArrayList<>();
     private List<Item> byGroup = new ArrayList<>();
+    private List<Item> byPrivate = new ArrayList<>();
 
     @Data
     public static class Item {

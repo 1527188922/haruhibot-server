@@ -422,6 +422,12 @@ public class AiAdminService {
                     return toItem(row, groupId, StringUtils.isBlank(groupId) ? "未知群" : "群 " + groupId);
                 })
                 .toList());
+        resp.setByPrivate(usageMapper.aggregateByPrivate(start).stream()
+                .map(row -> {
+                    String userId = mapString(row, "target_id");
+                    return toItem(row, userId, StringUtils.isBlank(userId) ? "未知用户" : "用户 " + userId);
+                })
+                .toList());
 
         QueryWrapper<AiUsageEntity> wrapper = new QueryWrapper<>();
         wrapper.select("model",
