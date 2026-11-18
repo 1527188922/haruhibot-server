@@ -64,7 +64,8 @@ public class AiContextService {
                     incoming.getUserId(),
                     incoming.getUserName(),
                     incoming.getText(),
-                    incoming.getTimestamp()));
+                    incoming.getTimestamp(),
+                    incoming.getReplyMessageId()));
             int max = Math.max(4, AiChatSettings.ambientSize() * 2);
             while (buffer.messages.size() > max) {
                 buffer.messages.removeFirst();

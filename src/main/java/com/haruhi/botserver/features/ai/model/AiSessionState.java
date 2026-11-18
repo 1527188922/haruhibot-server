@@ -19,6 +19,11 @@ public class AiSessionState {
     private volatile long generation;
     private volatile long lastActiveAt = System.currentTimeMillis();
 
+    /** 当前状态：由 PromptAssembler 每 5~10 轮轮换一次，仅内存保存 */
+    private volatile String mood;
+    /** 当前状态还能持续几轮 */
+    private volatile int moodTurns;
+
     /** 仅在一次工具循环期间有效：当前消息引用的消息 ID */
     private volatile String currentReplyMessageId;
     /** 仅在一次工具循环期间有效：当前消息是否直接触发（@、提及、引用机器人等） */
