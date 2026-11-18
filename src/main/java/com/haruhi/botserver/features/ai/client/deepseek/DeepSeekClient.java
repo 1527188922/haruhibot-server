@@ -7,6 +7,8 @@ import com.haruhi.botserver.configuration.service.ConfigApplier;
 import com.haruhi.botserver.configuration.service.ConfigChange;
 import com.haruhi.botserver.configuration.service.Configs;
 import com.haruhi.botserver.features.ai.support.AiChatSettings;
+import com.haruhi.botserver.infrastructure.logging.DbLog;
+import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -78,7 +80,9 @@ public class DeepSeekClient implements ConfigApplier {
                     break;
                 }
                 long sleep = 500L * (1L << attempt) + ThreadLocalRandom.current().nextLong(250);
-                log.warn("DeepSeek请求失败({}),{}ms后重试 {}/{}", e.getMessage(), sleep, attempt + 1, retry);
+                DbLog.warn(BusinessModuleEnum.AI_CHAT,
+                        "DeepSeek请求失败({}),{}ms后重试 {}/{} status:{} code:{}",
+                        e.getMessage(), sleep, attempt + 1, retry, e.getStatusCode(), e.getErrorCode());
                 try {
                     Thread.sleep(sleep);
                 } catch (InterruptedException interrupted) {
@@ -87,12 +91,19 @@ public class DeepSeekClient implements ConfigApplier {
                 }
             }
         }
-        throw last == null ? new DeepSeekApiException("DeepSeek请求失败", null) : last;
+        if (last == null) {
+            DbLog.error(BusinessModuleEnum.AI_CHAT, "DeepSeek请求失败，无可用异常信息");
+            throw new DeepSeekApiException("DeepSeek请求失败", null);
+        }
+        DbLog.error(BusinessModuleEnum.AI_CHAT, "DeepSeek请求最终失败 status:{} type:{} code:{} message:{}",
+                last.getStatusCode(), last.getErrorType(), last.getErrorCode(), last.getMessage());
+        throw last;
     }
 
     private DeepSeekChatResponse doChat(List<DeepSeekMessage> messages, String userId, Integer maxTokenOverride) {
         String apiKey = Configs.getStr(ConfigKey.DEEP_SEEK_API_KEY, "");
         if (StringUtils.isBlank(apiKey)) {
+            DbLog.error(BusinessModuleEnum.AI_CHAT, "DeepSeek API Key 未配置，无法调用聊天接口");
             throw new DeepSeekApiException(401, "authentication", "missing_api_key", "DeepSeek API Key 未配置");
         }
 
@@ -161,12 +172,15 @@ public class DeepSeekClient implements ConfigApplier {
         try (Response response = client().newCall(request).execute()) {
             String responseBody = readBody(response);
             if (!response.isSuccessful()) {
+                DbLog.error(BusinessModuleEnum.AI_CHAT, "DeepSeek聊天接口返回异常 status:{} body:{}",
+                        response.code(), snippet(responseBody));
                 throw parseError(response.code(), responseBody);
             }
             return parseChat(responseBody);
         } catch (DeepSeekApiException e) {
             throw e;
         } catch (IOException e) {
+            DbLog.error(BusinessModuleEnum.AI_CHAT, "DeepSeek聊天请求网络异常 url:{}", request.url(), e);
             throw new DeepSeekApiException("DeepSeek网络异常: " + e.getMessage(), e);
         }
     }
@@ -177,6 +191,7 @@ public class DeepSeekClient implements ConfigApplier {
     public DeepSeekBalanceResponse getBalance() {
         String apiKey = Configs.getStr(ConfigKey.DEEP_SEEK_API_KEY, "");
         if (StringUtils.isBlank(apiKey)) {
+            DbLog.error(BusinessModuleEnum.AI_CHAT, "DeepSeek API Key 未配置，无法查询余额");
             throw new DeepSeekApiException(401, "authentication", "missing_api_key", "DeepSeek API Key 未配置");
         }
         Request request = new Request.Builder()
@@ -187,12 +202,15 @@ public class DeepSeekClient implements ConfigApplier {
         try (Response response = client().newCall(request).execute()) {
             String body = readBody(response);
             if (!response.isSuccessful()) {
+                DbLog.error(BusinessModuleEnum.AI_CHAT, "DeepSeek余额接口返回异常 status:{} body:{}",
+                        response.code(), snippet(body));
                 throw parseError(response.code(), body);
             }
             return parseBalance(body);
         } catch (DeepSeekApiException e) {
             throw e;
         } catch (IOException e) {
+            DbLog.error(BusinessModuleEnum.AI_CHAT, "DeepSeek余额接口网络异常", e);
             throw new DeepSeekApiException("DeepSeek余额接口异常: " + e.getMessage(), e);
         }
     }
@@ -202,10 +220,12 @@ public class DeepSeekClient implements ConfigApplier {
         try {
             root = JSONObject.parseObject(body);
         } catch (Exception e) {
+            DbLog.warn(BusinessModuleEnum.AI_CHAT, "DeepSeek响应不是合法JSON body:{}", snippet(body));
             throw new DeepSeekApiException(200, "parse", "invalid_json", "DeepSeek响应不是合法JSON");
         }
         JSONArray choices = root.getJSONArray("choices");
         if (choices == null || choices.isEmpty()) {
+            DbLog.warn(BusinessModuleEnum.AI_CHAT, "DeepSeek响应没有choices body:{}", snippet(body));
             throw new DeepSeekApiException(200, "parse", "empty_choices", "DeepSeek响应没有choices");
         }
         JSONObject choice = choices.getJSONObject(0);
@@ -276,6 +296,14 @@ public class DeepSeekClient implements ConfigApplier {
         String text = body.string();
         // 非流式请求等待期间服务端可能持续返回空行
         return text == null ? "" : text.trim();
+    }
+
+    private String snippet(String body) {
+        if (StringUtils.isBlank(body)) {
+            return "";
+        }
+        String text = body.replaceAll("\\s+", " ").trim();
+        return text.length() <= 500 ? text : text.substring(0, 500) + "…";
     }
 
     private OkHttpClient client() {

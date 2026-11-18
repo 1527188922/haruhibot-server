@@ -11,8 +11,9 @@ import com.haruhi.botserver.features.ai.persistence.mapper.AiMessageMapper;
 import com.haruhi.botserver.features.ai.persistence.mapper.AiSessionMapper;
 import com.haruhi.botserver.features.ai.persistence.mapper.AiUsageMapper;
 import com.haruhi.botserver.features.ai.support.AiChatSettings;
+import com.haruhi.botserver.infrastructure.logging.DbLog;
+import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import com.haruhi.botserver.shared.util.DateTimeUtil;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -27,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * 队列与 worker 在 AiChatService 中，避免会话存储和编排互相依赖。
  */
 @Service
-@Slf4j
 public class AiSessionService {
 
     private final Map<AiSessionKey, AiSessionState> cache = new ConcurrentHashMap<>();
@@ -116,7 +116,7 @@ public class AiSessionService {
             messages.sort(Comparator.comparing(AiMessageEntity::getId));
             state.getHistory().addAll(messages);
         } catch (Exception e) {
-            log.error("加载AI会话失败: {}", key.cacheKey(), e);
+            DbLog.error(BusinessModuleEnum.AI_CHAT, "加载AI会话失败，回退为临时会话 key:{}", key.cacheKey(), e);
             AiSessionEntity transientEntity = new AiSessionEntity();
             transientEntity.setSelfId(key.selfId());
             transientEntity.setScene(key.scene().getCode());
@@ -156,7 +156,7 @@ public class AiSessionService {
                 touchEntity(state);
                 trim(state);
             } catch (Exception e) {
-                log.error("写入AI消息失败: session={}", sessionId, e);
+                DbLog.error(BusinessModuleEnum.AI_CHAT, "写入AI消息失败 session:{} role:{}", sessionId, role, e);
                 state.getHistory().add(message);
             }
         } else {
@@ -175,7 +175,7 @@ public class AiSessionService {
         try {
             sessionMapper.updateById(entity);
         } catch (Exception e) {
-            log.debug("更新AI会话活跃时间失败: {}", entity.getId(), e);
+            DbLog.debug(BusinessModuleEnum.AI_CHAT, "更新AI会话活跃时间失败 session:{}", entity.getId(), e);
         }
     }
 
@@ -187,7 +187,7 @@ public class AiSessionService {
                 try {
                     messageMapper.deleteById(oldest.getId());
                 } catch (Exception e) {
-                    log.warn("删除过期AI消息失败: {}", oldest.getId(), e);
+                    DbLog.warn(BusinessModuleEnum.AI_CHAT, "删除过期AI消息失败 messageId:{}", oldest.getId(), e);
                 }
             }
         }
@@ -203,7 +203,8 @@ public class AiSessionService {
             try {
                 sessionMapper.updateById(state.getEntity());
             } catch (Exception e) {
-                log.warn("更新AI会话角色失败: {}", state.getEntity().getId(), e);
+                DbLog.warn(BusinessModuleEnum.AI_CHAT, "更新AI会话角色失败 session:{} role:{}",
+                        state.getEntity().getId(), roleName, e);
             }
         }
     }
@@ -218,7 +219,8 @@ public class AiSessionService {
             try {
                 sessionMapper.updateById(state.getEntity());
             } catch (Exception e) {
-                log.warn("更新AI会话状态失败: {}", state.getEntity().getId(), e);
+                DbLog.warn(BusinessModuleEnum.AI_CHAT, "更新AI会话状态失败 session:{} status:{}",
+                        state.getEntity().getId(), status, e);
             }
         }
     }
@@ -231,7 +233,7 @@ public class AiSessionService {
                 messageMapper.delete(new LambdaQueryWrapper<AiMessageEntity>()
                         .eq(AiMessageEntity::getSessionId, state.getEntity().getId()));
             } catch (Exception e) {
-                log.error("清空AI会话消息失败: {}", state.getEntity().getId(), e);
+                DbLog.error(BusinessModuleEnum.AI_CHAT, "清空AI会话消息失败 session:{}", state.getEntity().getId(), e);
             }
         }
     }
@@ -257,7 +259,8 @@ public class AiSessionService {
         try {
             usageMapper.insert(usage);
         } catch (Exception e) {
-            log.warn("写入AI用量失败", e);
+            DbLog.warn(BusinessModuleEnum.AI_CHAT, "写入AI用量失败 session:{} model:{}",
+                    usage.getSessionId(), model, e);
         }
     }
 
@@ -272,6 +275,8 @@ public class AiSessionService {
                             DateTimeUtil.dateTimeFormat(DateTimeUtil.getStartOfDay(new Date()), DateTimeUtil.PatternEnum.yyyyMMddHHmmss)));
             return list.stream().mapToLong(item -> item.getTotalTokens() == null ? 0 : item.getTotalTokens()).sum();
         } catch (Exception e) {
+            DbLog.warn(BusinessModuleEnum.AI_CHAT, "查询AI今日token失败 session:{}",
+                    state.getEntity() == null ? null : state.getEntity().getId(), e);
             return 0;
         }
     }

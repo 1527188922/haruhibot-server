@@ -19,7 +19,8 @@ import com.haruhi.botserver.features.ai.support.prompt.PromptTemplates;
 import com.haruhi.botserver.features.ai.support.protocol.AiReplyParser;
 import com.haruhi.botserver.features.ai.support.protocol.AiReplySanitizer;
 import com.haruhi.botserver.infrastructure.concurrent.ThreadPoolUtil;
-import lombok.extern.slf4j.Slf4j;
+import com.haruhi.botserver.infrastructure.logging.DbLog;
+import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +37,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * AI 对话编排：会话队列、合并等待、模型调用、JSON 协议、工具循环、发送。
  */
 @Service
-@Slf4j
 public class AiChatService {
 
     private final Map<AiSessionKey, SessionQueue> queues = new ConcurrentHashMap<>();
@@ -71,6 +71,8 @@ public class AiChatService {
 
     public void enqueue(AiSessionKey key, AiTurn turn) {
         if (key == null || turn == null || turn.getIncoming() == null) {
+            DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI入队参数不完整，已丢弃 key:{} turnNull:{} incomingNull:{}",
+                    key, turn == null, turn == null || turn.getIncoming() == null);
             return;
         }
         long now = System.currentTimeMillis();
@@ -93,7 +95,8 @@ public class AiChatService {
                     // 太多待处理：丢弃最旧的一轮，避免无限堆积（不跨用户合并）
                     AiTurn dropped = queue.pending.pollFirst();
                     if (dropped != null) {
-                        log.warn("AI会话队列积压，丢弃最旧一轮: {}", key.cacheKey());
+                        DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI会话队列积压，丢弃最旧一轮 key:{} userId:{}",
+                                key.cacheKey(), dropped.userId());
                     }
                 }
             }
@@ -103,7 +106,14 @@ public class AiChatService {
             }
         }
         if (submit) {
-            ThreadPoolUtil.getHandleCommandPool().execute(() -> work(key, queue));
+            try {
+                ThreadPoolUtil.getHandleCommandPool().execute(() -> work(key, queue));
+            } catch (Exception e) {
+                synchronized (queue) {
+                    queue.running.set(false);
+                }
+                DbLog.error(BusinessModuleEnum.AI_CHAT, "AI会话worker提交失败 key:{}", key.cacheKey(), e);
+            }
         }
     }
 
@@ -161,16 +171,21 @@ public class AiChatService {
                 try {
                     process(key, turn);
                 } catch (Exception e) {
-                    log.error("处理AI会话轮次异常: {}", key.cacheKey(), e);
+                    DbLog.error(BusinessModuleEnum.AI_CHAT, "处理AI会话轮次异常 key:{}", key.cacheKey(), e);
                 }
             }
         } catch (Exception e) {
-            log.error("AI会话worker异常: {}", key.cacheKey(), e);
+            DbLog.error(BusinessModuleEnum.AI_CHAT, "AI会话worker异常 key:{}", key.cacheKey(), e);
         } finally {
             synchronized (queue) {
                 queue.running.set(false);
                 if (!queue.pending.isEmpty() && queue.running.compareAndSet(false, true)) {
-                    ThreadPoolUtil.getHandleCommandPool().execute(() -> work(key, queue));
+                    try {
+                        ThreadPoolUtil.getHandleCommandPool().execute(() -> work(key, queue));
+                    } catch (Exception e) {
+                        queue.running.set(false);
+                        DbLog.error(BusinessModuleEnum.AI_CHAT, "AI会话worker重新提交失败 key:{}", key.cacheKey(), e);
+                    }
                 }
             }
         }
@@ -178,11 +193,17 @@ public class AiChatService {
 
     private void process(AiSessionKey key, AiTurn turn) {
         if (isOverDailyLimit()) {
-            log.warn("AI每日token限额已到，跳过本轮: {}", key.cacheKey());
+            DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI每日token限额已到，跳过本轮 key:{} limit:{} used:{}",
+                    key.cacheKey(), AiChatSettings.dailyTokenLimit(), dailyTokens.get());
             return;
         }
         AiSessionState state = sessionService.load(key);
-        if (state.paused() || turn.getBot() == null) {
+        if (state.paused()) {
+            DbLog.debug(BusinessModuleEnum.AI_CHAT, "AI会话已暂停，丢弃本轮 key:{}", key.cacheKey());
+            return;
+        }
+        if (turn.getBot() == null) {
+            DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI轮次缺少机器人连接，丢弃本轮 key:{}", key.cacheKey());
             return;
         }
         long generation = state.generation();
@@ -198,7 +219,8 @@ public class AiChatService {
         try {
             response = callModel(key, prompt, null);
         } catch (Exception e) {
-            log.error("AI模型调用失败: {}", key.cacheKey(), e);
+            DbLog.error(BusinessModuleEnum.AI_CHAT, "AI模型调用失败 key:{} model:{} elapsed:{}ms",
+                    key.cacheKey(), AiChatSettings.model(), System.currentTimeMillis() - start, e);
             sessionService.appendUser(state, incoming);
             sessionService.recordUsage(state, AiChatSettings.model(), 0, 0, 0, 0,
                     (int) (System.currentTimeMillis() - start), 0, false, e.getClass().getSimpleName());
@@ -216,6 +238,11 @@ public class AiChatService {
             prompt.add(DeepSeekMessage.user(PromptTemplates.REPAIR));
             response = callModel(key, prompt, null);
             reply = AiReplyParser.parse(response.getContent());
+            if (reply.getType() == AiReply.Type.INVALID) {
+                DbLog.warn(BusinessModuleEnum.AI_CHAT,
+                        "AI模型输出协议解析失败 key:{} error:{} finishReason:{} content:{}",
+                        key.cacheKey(), reply.getError(), response.getFinishReason(), snippet(response.getContent()));
+            }
         }
 
         int steps = 0;
@@ -233,7 +260,8 @@ public class AiChatService {
                 try {
                     response = callModel(key, prompt, null);
                 } catch (Exception e) {
-                    log.error("AI工具后调用模型失败: {}", key.cacheKey(), e);
+                    DbLog.error(BusinessModuleEnum.AI_CHAT, "AI工具后调用模型失败 key:{} tool:{} steps:{}",
+                            key.cacheKey(), reply.getCall().getName(), steps, e);
                     break;
                 }
                 reply = AiReplyParser.parse(response.getContent());
@@ -248,18 +276,22 @@ public class AiChatService {
         }
 
         if (reply.isCall()) {
+            DbLog.warn(BusinessModuleEnum.AI_CHAT,
+                    "AI工具循环达到上限，强制收尾 key:{} steps:{} toolCalls:{} maxSteps:{} maxToolCalls:{} tool:{}",
+                    key.cacheKey(), steps, toolCalls, AiChatSettings.agentMaxSteps(),
+                    AiChatSettings.toolCallsPerTurn(), reply.getCall().getName());
             prompt.add(DeepSeekMessage.user("不要再调用工具了，请直接输出最终 JSON（type=say 或 silent）。"));
             try {
                 response = callModel(key, prompt, null);
                 reply = AiReplyParser.parse(response.getContent());
             } catch (Exception e) {
-                log.warn("AI强制收尾调用失败: {}", key.cacheKey(), e);
+                DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI强制收尾调用失败 key:{}", key.cacheKey(), e);
                 reply = AiReply.silent();
             }
         }
 
         if (state.generation() != generation) {
-            log.debug("AI会话已被重置，丢弃本轮结果: {}", key.cacheKey());
+            DbLog.debug(BusinessModuleEnum.AI_CHAT, "AI会话已被重置，丢弃本轮结果 key:{}", key.cacheKey());
             return;
         }
 
@@ -272,6 +304,10 @@ public class AiChatService {
         List<AiReplyMessage> messages = List.of();
         if (reply.isSay()) {
             messages = AiReplySanitizer.clean(reply.getMessages(), key);
+            if (messages.isEmpty()) {
+                DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI回复内容清洗后为空，未发送 key:{} rawCount:{}",
+                        key.cacheKey(), reply.getMessages() == null ? 0 : reply.getMessages().size());
+            }
         }
         if (!messages.isEmpty()) {
             sendService.send(turn.getBot(), state, key, messages, incoming, ambient);
@@ -281,6 +317,9 @@ public class AiChatService {
                 AiReplyMessage message = new AiReplyMessage();
                 message.setText(fallback);
                 sendService.send(turn.getBot(), state, key, List.of(message), incoming, ambient);
+            } else {
+                DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI回复无效且无可用兜底文本，未发送 key:{} error:{} content:{}",
+                        key.cacheKey(), reply.getError(), snippet(response.getContent()));
             }
         }
 
@@ -298,8 +337,13 @@ public class AiChatService {
             DeepSeekChatResponse response = deepSeekClient.chat(prompt.getMessages(),
                     DeepSeekClient.hashUserKey(key.cacheKey()), maxTokens);
             if ("length".equalsIgnoreCase(response.getFinishReason())) {
+                DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI输出被截断(finish_reason=length)，扩大maxTokens重试 key:{}",
+                        key.cacheKey());
                 response = deepSeekClient.chat(prompt.getMessages(),
                         DeepSeekClient.hashUserKey(key.cacheKey()), Math.min(4096, AiChatSettings.maxTokens() * 2));
+                if ("length".equalsIgnoreCase(response.getFinishReason())) {
+                    DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI输出二次重试后仍被截断 key:{}", key.cacheKey());
+                }
             }
             return response;
         } finally {
@@ -316,10 +360,19 @@ public class AiChatService {
                 return;
             }
             if (System.currentTimeMillis() >= deadline) {
+                DbLog.warn(BusinessModuleEnum.AI_CHAT, "AI并发等待超时 limit:{} active:{}", limit, current);
                 throw new IllegalStateException("AI并发等待超时");
             }
             sleep(50);
         }
+    }
+
+    private String snippet(String content) {
+        if (StringUtils.isBlank(content)) {
+            return "";
+        }
+        String text = content.replaceAll("\\s+", " ").trim();
+        return text.length() <= 200 ? text : text.substring(0, 200) + "…";
     }
 
     private String fallbackText(String content) {

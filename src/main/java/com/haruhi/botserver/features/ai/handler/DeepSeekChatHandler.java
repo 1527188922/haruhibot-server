@@ -15,8 +15,9 @@ import com.haruhi.botserver.features.ai.service.AiSessionService;
 import com.haruhi.botserver.features.ai.service.AiTriggerPolicy;
 import com.haruhi.botserver.features.ai.support.AiChatSettings;
 import com.haruhi.botserver.features.ai.support.AiMessageExtractor;
+import com.haruhi.botserver.infrastructure.logging.DbLog;
 import com.haruhi.botserver.integration.onebot.model.Message;
-import lombok.extern.slf4j.Slf4j;
+import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Component;
  * 事件去重由 MessageDispatcher 统一入口通过 IDebounceable 完成，本类不再自行判定。
  */
 @Component
-@Slf4j
 public class DeepSeekChatHandler implements IAllMessageHandler, IDebounceable<Message> {
 
     private final AiScopeService scopeService;
@@ -70,28 +70,34 @@ public class DeepSeekChatHandler implements IAllMessageHandler, IDebounceable<Me
 
     @Override
     public boolean onMessage(Bot bot, Message message) {
-        if (!scopeService.enabled(message) || message.isSelfMsg()) {
-            return false;
-        }
-        AiIncoming incoming = AiMessageExtractor.extract(message);
-        if (incoming.getUserId() > 0 && AiChatSettings.ignoreUserIds().contains(incoming.getUserId())) {
-            return false;
-        }
-        AiSessionKey key = incoming.getKey();
-        if (sessionService.isCachedPaused(key)) {
-            return true;
-        }
-        AiTriggerDecision decision = triggerPolicy.decide(bot, message, incoming);
+        try {
+            if (!scopeService.enabled(message) || message.isSelfMsg()) {
+                return false;
+            }
+            AiIncoming incoming = AiMessageExtractor.extract(message);
+            if (incoming.getUserId() > 0 && AiChatSettings.ignoreUserIds().contains(incoming.getUserId())) {
+                return false;
+            }
+            AiSessionKey key = incoming.getKey();
+            if (sessionService.isCachedPaused(key)) {
+                return true;
+            }
+            AiTriggerDecision decision = triggerPolicy.decide(bot, message, incoming);
 
-        if (incoming.isAtOnly()) {
-            chatService.enqueue(key, turn(bot, incoming, decision, true));
+            if (incoming.isAtOnly()) {
+                chatService.enqueue(key, turn(bot, incoming, decision, true));
+                return true;
+            }
+            if (!decision.triggered()) {
+                return false;
+            }
+            chatService.enqueue(key, turn(bot, incoming, decision, decision.direct()));
             return true;
-        }
-        if (!decision.triggered()) {
+        } catch (Exception e) {
+            DbLog.error(BusinessModuleEnum.AI_CHAT, "AI聊天入口处理异常 msgId:{}",
+                    message == null ? null : message.getMessageId(), e);
             return false;
         }
-        chatService.enqueue(key, turn(bot, incoming, decision, decision.direct()));
-        return true;
     }
 
     private AiTurn turn(Bot bot, AiIncoming incoming, AiTriggerDecision decision, boolean direct) {

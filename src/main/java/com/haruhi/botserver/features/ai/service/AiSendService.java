@@ -8,8 +8,9 @@ import com.haruhi.botserver.features.ai.model.AiSessionKey;
 import com.haruhi.botserver.features.ai.model.AiSessionState;
 import com.haruhi.botserver.features.ai.support.AiChatSettings;
 import com.haruhi.botserver.features.ai.support.EmojiService;
+import com.haruhi.botserver.infrastructure.logging.DbLog;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
-import lombok.extern.slf4j.Slf4j;
+import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +24,6 @@ import java.util.concurrent.ThreadLocalRandom;
  * 分条/延迟/引用/@ 发送，并把 assistant 气泡逐条落库。
  */
 @Service
-@Slf4j
 public class AiSendService {
 
     private final AiSessionService sessionService;
@@ -42,7 +42,7 @@ public class AiSendService {
             return;
         }
         if (current != null && !rateLimiter.allow(key, current)) {
-            log.debug("AI发送被限流: {}", key.cacheKey());
+            DbLog.debug(BusinessModuleEnum.AI_CHAT, "AI发送被限流 key:{} userId:{}", key.cacheKey(), current.getUserId());
             return;
         }
         long generation = state.generation();
@@ -80,7 +80,8 @@ public class AiSendService {
         for (int i = 0; i < count; i++) {
             AiReplyMessage message = messages.get(i);
             if (!bot.isOnline() || state.generation() != generation) {
-                log.debug("机器人离线或会话已重置，中止剩余AI消息");
+                DbLog.debug(BusinessModuleEnum.AI_CHAT, "机器人离线或会话已重置，中止剩余AI消息 key:{} online:{}",
+                        key.cacheKey(), bot.isOnline());
                 return;
             }
             int delay = i == 0 ? AiChatSettings.messageFirstDelayMillis() : message.getDelayMs();
@@ -95,7 +96,8 @@ public class AiSendService {
                 }
             }
             if (!bot.isOnline() || state.generation() != generation) {
-                log.debug("机器人离线或会话已重置，中止剩余AI消息");
+                DbLog.debug(BusinessModuleEnum.AI_CHAT, "机器人离线或会话已重置，中止剩余AI消息 key:{} online:{}",
+                        key.cacheKey(), bot.isOnline());
                 return;
             }
 
@@ -116,6 +118,7 @@ public class AiSendService {
                 holders.add(MessageHolder.instanceImage(emoji.path().toString().replace('\\', '/')));
             }
             if (holders.isEmpty()) {
+                DbLog.debug(BusinessModuleEnum.AI_CHAT, "AI消息组装后为空，跳过 index:{} key:{}", i, key.cacheKey());
                 continue;
             }
 
@@ -127,7 +130,8 @@ public class AiSendService {
                 }
                 sessionService.appendAssistant(state, historyText(message, emoji));
             } catch (Exception e) {
-                log.error("发送AI消息失败: session={}, text={}", key.cacheKey(), message.getText(), e);
+                DbLog.error(BusinessModuleEnum.AI_CHAT, "发送AI消息失败 key:{} index:{} text:{}",
+                        key.cacheKey(), i, StringUtils.defaultString(message.getText()), e);
                 return;
             }
         }
