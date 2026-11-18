@@ -67,26 +67,35 @@ public final class AiReplySanitizer {
                 result.add(item);
                 continue;
             }
-            boolean first = true;
             for (String part : split(text, maxChars)) {
                 if (result.size() >= maxCount) {
                     break;
                 }
                 AiReplyMessage item = new AiReplyMessage();
                 item.setText(part);
-                item.setEmoji(first ? emoji : null);
-                if (first && StringUtils.isNotBlank(emoji)) {
-                    emojiUsed = true;
-                }
                 item.setDelayMs(message.getDelayMs());
                 item.setReplyTo(message.getReplyTo());
                 item.setAt(message.getAt());
                 result.add(item);
                 previous = part;
-                first = false;
+            }
+            if (StringUtils.isNotBlank(emoji)) {
+                emojiUsed = true;
+                // 协议要求文字与表情分开，这里兜底把同一条里的表情拆成独立消息，排在文字之后
+                appendEmoji(result, emoji, maxCount);
             }
         }
         return result;
+    }
+
+    private static void appendEmoji(List<AiReplyMessage> result, String emoji, int maxCount) {
+        if (result.size() >= maxCount) {
+            return;
+        }
+        AiReplyMessage item = new AiReplyMessage();
+        item.setEmoji(emoji);
+        item.setDelayMs(0);
+        result.add(item);
     }
 
     public static String cleanText(String raw) {

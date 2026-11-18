@@ -515,11 +515,11 @@ class SessionState {
 
 - 每次只输出一个 JSON 对象，不能有 JSON 以外的文字，不能包 ```json 代码块；
 - `type` 只能是 `say` / `call` / `silent`；
-- `say.messages[]`：每条一句完整的话（或只带一个 `emoji`），1~30 字，一次最多 4 条，默认 1~2 条；
+- `say.messages[]`：每条一句完整的话，或只带一个 `emoji`（两者互斥，不能写在同一项里），1~30 字，一次最多 4 条，默认 1~2 条；
 - `delay_ms`：0~5000，模拟真人“想到一句补一句”；
 - `reply_to`：引用某条消息的 `message_id`；
 - `at`：@ 某个 QQ（必须是消息里出现过的、本群的人）；
-- `emoji`：可选，表情包名称；只能取系统提示里列出的名称，不能写文件路径；可与 `text` 同时出现，也可单独出现；一次回复最多 1 个；
+- `emoji`：可选，表情包名称；只能取系统提示里列出的名称，不能写文件路径；必须单独占一条消息，禁止与 `text` 出现同一项；一次回复最多 1 个；
 - `call`：调用一个白名单工具，Java 执行后把结果回灌，再让模型 `say`/`silent`；
 - `silent`：这次不说话，只在群聊且没人问你时使用；
 - `memory`：可选，对象；key 最长 30 字、value 最长 200 字，记录称呼/喜好/约定/进行中的话题，落库到 `t_ai_memory`；`forget` 数组可删除旧记忆；不记录隐私/密钥/联系方式。
@@ -704,7 +704,7 @@ class SessionState {
 
 - 这是“语义校验用的 schema”，不直接作为 `response_format` 的 JSON Schema 传给 API（DeepSeek 的 `response_format` 目前只接受 `json_object`，不接受 `json_schema`）；
 - 校验时对额外字段宽容（忽略），对关键字段严格；
-- `say` 必须有非空 `messages`；每条至少要有非空的 `text` 或 `emoji`；`call` 必须有白名单工具；`silent` 不应有 `messages`。
+- `say` 必须有非空 `messages`；每条至少要有非空的 `text` 或 `emoji`（协议要求两者互斥，同时出现时由程序拆成文字、表情两条发送）；`call` 必须有白名单工具；`silent` 不应有 `messages`。
 
 ### 6.3 一轮完整时序
 
@@ -1670,7 +1670,7 @@ private void process(AiSessionKey key, AiTurn turn) {
 35. 视觉：`ds.chat.vision.enable=true` 且模型为 `deepseek-flash`，@机器人 发图 + 问题 → 模型能描述图片内容；切到 `deepseek-v4-pro` 后同一消息只看到 `[图片]` 占位。
 36. 表情：把 `开心.png` 放入 `aichat/emojis/` → 系统提示出现「开心」；模型输出 `{"emoji":"开心"}` → QQ 收到该图片。
 37. 表情：模型输出不存在的名称 → 该条被跳过，不报错；只有 emoji 没有 text 的消息也能正常发出。
-38. 表情：一次回复里出现 2 个 emoji → 只保留第一个；机器人发表情后，下一轮历史里能看到 `[表情:名称]`。
+38. 表情：模型把 `text` 和 `emoji` 写在同一条消息里 → 程序自动拆成“文字一条、表情一条”先后发出；一次回复里出现 2 个 emoji → 只保留第一个；机器人发表情后，下一轮历史里能看到 `[表情:名称]`。
 39. 联网搜索：已配置 `ds.api.key`、`ds.chat.search.enable=true`、`ds.chat.agent.tools` 含 `web_search` 时，问“今天有什么新闻” → 模型先 `call web_search`，工具返回标题/URL/摘要，再 `say`。
 40. 联网搜索：把 `ds.chat.search.enable` 改成 false → 系统提示里不再出现 `web_search`，模型不会调用；强制返回 `call web_search` 时工具返回“暂不可用”。
 41. 联网搜索：断开外网或让接口返回 429 → 工具最多重试一次后返回可读错误，整轮对话不崩。
@@ -1834,7 +1834,7 @@ ds.chat.memory.enable=true
 - 目录：默认资源在 `src/main/resources/aichat/emojis/`，运行期只扫描程序目录 `aichat/emojis/`；开发环境程序目录是 `target/classes`，即 `target/classes/aichat/emojis/`，不再回退到仓库根目录；
 - 命名：文件名去扩展名即名称，中英文均可，大小写不敏感；支持 `png/jpg/jpeg/gif/webp`，单文件 ≤5MB；隐藏文件跳过；
 - 扫描：`EmojiService` 2 秒节流 + 目录 mtime 变化才重扫，运行中加图无需重启；重名保留先扫到的并 warn；
-- 协议：`messages[]` 新增可选 `emoji` 字段；`text` 与 `emoji` 至少一个；一次回复最多 1 个表情；未知名称丢弃；
+- 协议：`messages[]` 新增可选 `emoji` 字段；`text` 与 `emoji` 互斥，一条消息只能是文字或表情；一次回复最多 1 个表情；未知名称丢弃；模型仍把两者写在同一项时，`AiReplySanitizer` 自动拆成文字、表情两条消息；
 - 提示词：`PromptTemplates.EMOJI` + 名称列表（`ds.chat.emoji.max_list`）注入 system；
 - 发送：`AiSendService` 用 `EmojiService.find` 把名称映射为本地路径，再由 `MessageHolder.instanceImage` 发送（Windows 反斜杠替换为 `/`）；
 - 历史：机器人发表情时记录为 `[表情:名称]`；

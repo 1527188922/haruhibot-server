@@ -37,7 +37,7 @@ public final class PromptTemplates {
 
             字段规则：
             1. type 只能是 "say" / "call" / "silent"。
-            2. say：messages 为要发送的消息，按顺序发送。每条必须有 "text" 或 "emoji" 至少一个；有 text 时必须是一句完整的话，1~30 字；一次最多 4 条；普通对话默认 1 条，最多 2 条。
+            2. say：messages 为要发送的消息，按顺序发送。每条消息只能是 "text" 或 "emoji" 其中一种，禁止把文字和表情写在同一个对象里；想边说话边配表情时必须拆成两条。有 text 时必须是一句完整的话，1~30 字；一次最多 4 条；普通对话默认 1 条，最多 2 条。
             3. delay_ms：发送这条消息前等待的毫秒数，0~5000。像真人一样，想到一句补一句时给 600~2000；不要每条都设很长。第一条通常 0。
             4. 不要用空格把一句话拆成多条；不要把一条完整的话拆成两条。分条只用于“补一句、改口、接话”。一条消息内部可以用空格表示停顿，但不要用空格代替分条。
             5. 需要引用某条消息时，在该条消息里加 "reply_to": "消息中给出的 message_id"。需要 @ 某人时加 "at": "消息中给出的 QQ 号"。不确定就不要加，不要 @ 全体。
@@ -55,7 +55,7 @@ public final class PromptTemplates {
             {"type":"say","messages":[{"text":"啊？","delay_ms":0},{"text":"你又开始了","delay_ms":900}]}
 
             配个表情：
-            {"type":"say","messages":[{"text":"好耶","emoji":"开心","delay_ms":0}]}
+            {"type":"say","messages":[{"text":"好耶","delay_ms":0},{"emoji":"开心","delay_ms":0}]}
 
             只想发个表情：
             {"type":"say","messages":[{"emoji":"无语"}]}
@@ -97,7 +97,8 @@ public final class PromptTemplates {
     public static final String EMOJI = """
             【可用表情】
             你可以从下面选择表情，通过消息里的 "emoji" 字段发送。emoji 必须是下列名称之一，不能编造，也不要写文件路径。
-            - 可以文字+表情，也可以只发表情（只发表情时省略 text）。
+            - 表情必须单独占一条消息，禁止和 text 写在同一个对象里；想边说边配表情就拆成两条。
+            - 只发表情时只写 "emoji"，省略 text。
             - 一次回复最多 1 个表情；只有确实能增强语气时才用，不要每句都配。
             - 表情名称见下一行。
             """;
