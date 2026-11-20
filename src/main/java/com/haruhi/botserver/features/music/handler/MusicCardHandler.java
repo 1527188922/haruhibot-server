@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@Component
+//@Component
 @Slf4j
 public class MusicCardHandler implements IAllMessageHandler {
 
