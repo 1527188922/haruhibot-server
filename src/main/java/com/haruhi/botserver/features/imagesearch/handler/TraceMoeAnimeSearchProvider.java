@@ -13,6 +13,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class TraceMoeAnimeSearchProvider implements ImageSearchProvider {
+
+    private static final double MIN_SIMILARITY = 80D;
 
     private final PicImageSearchFactory picImageSearchFactory;
 
@@ -40,9 +43,16 @@ public class TraceMoeAnimeSearchProvider implements ImageSearchProvider {
             bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText(String.valueOf(error)));
             return;
         }
-        List<SearchItem> result = searchResponse.getRaw();
+        List<SearchItem> result = new ArrayList<>(searchResponse.getRaw());
         if (CollectionUtils.isEmpty(result)) {
-            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText("未搜索到结果"));
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
+                    MessageHolder.instanceText("trace.moe：未搜索到结果"));
+            return;
+        }
+        result.removeIf(item -> item.getSimilarity() < MIN_SIMILARITY);
+        if (CollectionUtils.isEmpty(result)) {
+            bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
+                    MessageHolder.instanceText(MessageFormat.format("trace.moe：没有相似度达到{0}%的搜索结果", MIN_SIMILARITY)));
             return;
         }
         bot.sendForwardMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), resultToForwardMsgItems(bot, message, result));

@@ -1,9 +1,11 @@
 package com.haruhi.botserver.features.imagesearch.handler;
 
+import com.haruhi.botserver.infrastructure.logging.DbLog;
 import com.haruhi.botserver.integration.onebot.model.Message;
 import com.haruhi.botserver.integration.onebot.model.MessageHolder;
 import com.haruhi.botserver.bot.handler.IAllMessageHandler;
 import com.haruhi.botserver.bot.session.Bot;
+import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -72,7 +74,7 @@ public abstract class AbstractImageSearchMessageHandler implements IAllMessageHa
             try {
                 provider.search(bot, message, match.getReplyMessage(), match.getImageUrl());
             } catch (Exception e) {
-                log.error("{}{} provider:{}", errorPrefix(), match.getImageUrl(), provider.type(), e);
+                DbLog.error(BusinessModuleEnum.IMAGE_SEARCH,"{}{} provider:{}", errorPrefix(), match.getImageUrl(), provider.type(), e);
                 bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
                         MessageHolder.instanceText(provider.type() + " " + errorPrefix() + e.getMessage()));
             }

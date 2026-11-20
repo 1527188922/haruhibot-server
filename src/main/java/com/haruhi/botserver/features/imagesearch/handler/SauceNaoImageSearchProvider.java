@@ -24,9 +24,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * 提供SauceNao识图
+ */
 @Slf4j
 @Component
 public class SauceNaoImageSearchProvider implements ImageSearchProvider {
+
+    private static final double MIN_SIMILARITY = 70D;
 
     private final PicImageSearchFactory picImageSearchFactory;
 
@@ -50,6 +55,12 @@ public class SauceNaoImageSearchProvider implements ImageSearchProvider {
             List<SearchItem> resultList = new ArrayList<>(searchResponse.getRaw());
             if (CollectionUtils.isEmpty(resultList)) {
                 bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(), MessageHolder.instanceText("SauceNao：未搜索到结果"));
+                return;
+            }
+            resultList.removeIf(item -> item.getSimilarity() < MIN_SIMILARITY);
+            if (CollectionUtils.isEmpty(resultList)) {
+                bot.sendMessage(message.getUserId(), message.getGroupId(), message.getMessageType(),
+                        MessageHolder.instanceText(MessageFormat.format("SauceNao：没有相似度达到{0}%的搜索结果", MIN_SIMILARITY)));
                 return;
             }
             resultList.sort(Comparator.comparingDouble(SearchItem::getSimilarity).reversed());
