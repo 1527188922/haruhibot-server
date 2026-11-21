@@ -31,6 +31,7 @@ public enum ConfigFile {
     BOT("bot.properties", "机器人", "机器人自身行为：超级管理员、功能开关、访问控制", 30),
     WEBSOCKET("websocket.properties", "WebSocket", "机器人Websocket服务的认证token与连接数限制", 30),
     SEARCH_IMG("searchimg.properties", "识图", "识图引擎地址与key", 30),
+    NEWS("news.properties", "新闻", "每日新闻图片接口地址与token", 30),
     BILIBILI("bilibili.properties", "B站", "b站cookie、上传下载限制", 30),
     AI("ai.properties", "AI", "AI模型（千问、DeepSeek 聊天/角色卡）相关配置", 30),
     JM("jm.properties", "JM漫画", "JM漫画下载、搜索相关配置", 30),

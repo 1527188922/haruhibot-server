@@ -110,6 +110,19 @@ public enum ConfigKey {
     SEARCH_IMG_SAUCENAO_APIKEY(ConfigFile.SEARCH_IMG, "searchimg.saucenao.apikey", ConfigType.SECRET, "", true,
             "saucenao识图接口认证key，从 https://saucenao.com 获取", 20, "SauceNao识图API KEY"),
 
+    // ============================ 新闻 ============================
+    NEWS_UAPIS_URL(ConfigFile.NEWS, "news.uapis.url", ConfigType.STRING,
+            "https://uapis.cn/api/v1/daily/news-image", true,
+            "uapis新闻图片接口，接口直接返回图片，请求时自动追加时间戳参数", 10, "uapis新闻图片接口"),
+    NEWS_60S_URL(ConfigFile.NEWS, "news.60s.url", ConfigType.STRING,
+            "https://60s-static.viki.moe/images/{date}.png", true,
+            "60秒读懂世界图片接口，{date}会替换为yyyy-MM-dd格式的当天日期", 20, "60秒新闻图片接口"),
+    NEWS_ALAPI_URL(ConfigFile.NEWS, "news.alapi.url", ConfigType.STRING,
+            "https://v3.alapi.cn/api/zaobao", true,
+            "alapi早报接口，format固定json，取响应中的data.image字段", 30, "alapi早报接口"),
+    NEWS_ALAPI_TOKEN(ConfigFile.NEWS, "news.alapi.token", ConfigType.SECRET, "yOomUPkcTEVY9nMT", true,
+            "alapi早报接口token，申请免费token地址：https://www.alapi.cn/api/67/introduction 100次/天", 40, "alapi早报token"),
+
     // ============================ B站 ============================
     BILIBILI_COOKIES_RAW(ConfigFile.BILIBILI, "bilibili.cookies.raw", ConfigType.SECRET, "", true,
             "整条b站cookie（浏览器F12 -> Network -> 任意b站接口 -> Request Headers 里的 Cookie 整段复制）。" +

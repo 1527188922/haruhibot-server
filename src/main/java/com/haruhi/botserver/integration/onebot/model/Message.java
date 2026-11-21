@@ -63,7 +63,8 @@ public class Message extends BaseEvent implements Serializable {
 
     public boolean isReplyMsg(){
         if(!CollectionUtils.isEmpty(this.message)){
-            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(MessageHolderTypeEnum.reply.name());
+            return this.message.stream().map(MessageHolder::getType).toList()
+                    .contains(MessageHolderTypeEnum.reply.name());
         }
         return false;
     }
@@ -94,7 +95,10 @@ public class Message extends BaseEvent implements Serializable {
 
     public boolean isMsg(MessageHolderTypeEnum holderTypeEnum){
         if(!CollectionUtils.isEmpty(this.message)){
-            return this.message.stream().map(MessageHolder::getType).collect(Collectors.toList()).contains(holderTypeEnum.name());
+            return this.message.stream()
+                    .map(MessageHolder::getType)
+                    .toList()
+                    .contains(holderTypeEnum.name());
         }
         return false;
     }
@@ -103,7 +107,9 @@ public class Message extends BaseEvent implements Serializable {
         if(CollectionUtils.isEmpty(this.message)){
             return false;
         }
-        List<MessageHolder> collect = this.message.stream().filter(e -> !holderTypeEnum.name().equals(e.getType())).collect(Collectors.toList());
+        List<MessageHolder> collect = this.message.stream()
+                .filter(e -> !holderTypeEnum.name().equals(e.getType()))
+                .toList();
         return CollectionUtils.isEmpty(collect);
     }
 
