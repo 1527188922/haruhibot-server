@@ -120,7 +120,7 @@ public enum ConfigKey {
     NEWS_ALAPI_URL(ConfigFile.NEWS, "news.alapi.url", ConfigType.STRING,
             "https://v3.alapi.cn/api/zaobao", true,
             "alapi早报接口，format固定json，取响应中的data.image字段", 30, "alapi早报接口"),
-    NEWS_ALAPI_TOKEN(ConfigFile.NEWS, "news.alapi.token", ConfigType.SECRET, "yOomUPkcTEVY9nMT", true,
+    NEWS_ALAPI_TOKEN(ConfigFile.NEWS, "news.alapi.token", ConfigType.SECRET, "", true,
             "alapi早报接口token，申请免费token地址：https://www.alapi.cn/api/67/introduction 100次/天", 40, "alapi早报token"),
 
     // ============================ B站 ============================
