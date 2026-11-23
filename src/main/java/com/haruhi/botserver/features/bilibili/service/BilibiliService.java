@@ -6,6 +6,7 @@ import com.haruhi.botserver.configuration.service.Configs;
 import cn.hutool.http.*;
 import cn.hutool.core.io.StreamProgress;
 import cn.hutool.crypto.digest.DigestUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.haruhi.botserver.shared.constant.BusinessModuleEnum;
@@ -350,14 +351,25 @@ public class BilibiliService {
                 DbLog.error(BusinessModuleEnum.BILIBILI,"请求b站直播状态接口失败 url:{} status:{} body:{}",url,response.getStatus(),respBody);
                 return null;
             }
-            BilibiliBaseResp<Map<String, LiveStatusInfo>> resp = JSONObject.parseObject(respBody, new TypeReference<BilibiliBaseResp<Map<String, LiveStatusInfo>>>(){});
-            if (resp == null || !resp.isSuccess() || resp.getData() == null) {
+            JSONObject root = JSONObject.parseObject(respBody);
+            if (root == null || !Integer.valueOf(BilibiliBaseResp.SUCCESS_CODE).equals(root.getInteger("code"))) {
                 log.error("b站直播状态接口响应异常 url:{} body:{}",url,respBody);
                 return null;
             }
+            Object data = root.get("data");
+            // 接口查询不到任何主播时 data 返回的是空数组而不是对象，这里按空结果处理，避免解析异常
+            if (data instanceof JSONArray) {
+                DbLog.debug(BusinessModuleEnum.BILIBILI,"b站直播状态接口无数据 url:{} body:{}",url,respBody);
+                return Collections.emptyMap();
+            }
+            if (!(data instanceof JSONObject)) {
+                log.error("b站直播状态接口响应异常 url:{} body:{}",url,respBody);
+                return null;
+            }
+            Map<String, LiveStatusInfo> dataMap = ((JSONObject) data).toJavaObject(new TypeReference<Map<String, LiveStatusInfo>>(){});
             DbLog.debug(BusinessModuleEnum.BILIBILI,"b站直播状态接口响应 url:{} body:{}",url,respBody);
-            Map<Long, LiveStatusInfo> result = new HashMap<>(resp.getData().size());
-            for (Map.Entry<String, LiveStatusInfo> entry : resp.getData().entrySet()) {
+            Map<Long, LiveStatusInfo> result = new HashMap<>(dataMap.size());
+            for (Map.Entry<String, LiveStatusInfo> entry : dataMap.entrySet()) {
                 try {
                     result.put(Long.parseLong(entry.getKey()), entry.getValue());
                 }catch (NumberFormatException e){

@@ -105,6 +105,11 @@ public class BilibiliLiveJob extends AbstractJob {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
+        // 没有任何机器人在线时不检测
+        if (BotContainer.getConnections() == 0) {
+            log.debug("没有在线的机器人，跳过b站直播状态检测");
+            return;
+        }
         List<BilibiliSubscribeSqlite> subscribes = bilibiliSubscribeSqliteService.listEnabled(BilibiliSubscribeTypeEnum.LIVE.getType());
         if (CollectionUtils.isEmpty(subscribes)) {
             return;
