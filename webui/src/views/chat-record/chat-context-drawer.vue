@@ -65,37 +65,7 @@
             </span>
           </template>
 
-          <template v-else>
-            <div class="message-item" :id="'msg-' + item.id"  v-for="item in messageList" :key="item.id">
-              <!-- 别人消息：左 -->
-              <el-row v-if="item.userId !== v.selfId"  class="row-other" type="flex"  justify="start">
-                <el-col :span="3" class="other-avatar-col">
-                  <el-avatar :src="item.userAvatarUrl"></el-avatar>
-                </el-col>
-                <el-col :span="18">
-                  <div class="nick">{{ item.card || item.nickname }}（{{ item.userId }}）</div>
-                  <div class="bubble other-bubble" :class="item.id === v.id ? 'key-message' : null">{{ item.content }}</div>
-                  <div class="alignment alignment-other">
-                    <span>{{ item.time }}</span>
-                  </div>
-                </el-col>
-              </el-row>
-
-              <!-- 自己消息：右 -->
-              <el-row v-else  class="row-self" type="flex"  justify="end">
-                <el-col :span="18" class="text-right">
-                  <div class="nick">{{ item.card || item.nickname }}（{{ item.userId }}）</div>
-                  <div class="bubble self-bubble" :class="item.id === v.id ? 'key-message' : null">{{ item.content }}</div>
-                  <div class="alignment alignment-self">
-                    <span>{{ item.time }}</span>
-                  </div>
-                </el-col>
-                <el-col :span="3" class="self-avatar-col">
-                  <el-avatar :src="item.userAvatarUrl"></el-avatar>
-                </el-col>
-              </el-row>
-            </div>
-          </template>
+          <chat-message-list v-else :messages="messageList" :highlight-id="highlightMessageId"/>
 
         </div>
       </div>
@@ -106,10 +76,12 @@
 import {deepClone} from "@/util/util";
 import {messageContext} from "@/api/chat-record";
 import MultiCell from "@/components/multi-cell.vue";
+import ChatMessageList from "@/components/chat/chat-message-list.vue";
 export default {
   name:'chat-context-drawer',
   components:{
-    MultiCell
+    MultiCell,
+    ChatMessageList
   },
   data(){
     return{
@@ -144,6 +116,10 @@ export default {
     },
     drawerSize(){
       return this.isMobileView ? '92%' : '680px'
+    },
+    // 需要高亮定位的消息id
+    highlightMessageId(){
+      return this.v ? this.v.id : null
     }
   },
   methods:{
@@ -285,68 +261,6 @@ export default {
       }
       .err-resp{
         color: #ec3636;
-      }
-    }
-
-    .message-item {
-      margin-bottom: 18px;
-    }
-
-    .nick {
-      font-size: 12px;
-      color: #999;
-      margin-bottom: 4px;
-    }
-
-    .bubble {
-      display: inline-block;
-      padding: 8px 12px;
-      border-radius: 8px;
-      max-width: 85%;
-      word-break: break-all;
-      font-size: 14px;
-      white-space: pre-wrap;
-    }
-
-    .other-bubble {
-      background: #ffffff;
-    }
-
-    .self-bubble {
-      background: #428dff;
-      color: #fff;
-      text-align: left;
-    }
-    .other-avatar-col{
-      width: 45px;
-    }
-    .self-avatar-col{
-      width: 45px;
-      //text-align: left;
-    }
-    .row-self{
-      text-align: right;
-    }
-    .key-message{
-      background-color: #e6a23c;
-    }
-    .alignment {
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-      color: #999999;
-
-    }
-    .alignment-self{
-      padding-right: 8px;
-      span{
-        margin-left: 10px;
-      }
-    }
-    .alignment-other{
-      padding-left: 8px;
-      span{
-        margin-right: 10px;
       }
     }
 
