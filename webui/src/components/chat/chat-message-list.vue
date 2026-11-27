@@ -12,7 +12,7 @@
             <template v-else>{{ item.userId }}</template>
           </div>
           <div class="bubble other-bubble" :class="[isPlainImageMessage(item, index) ? 'bubble-plain' : null, isHighlight(item) ? 'key-message' : null]">
-            <cq-content :content="item.content" @image-error="handleImageError(item, index)"/>
+            <cq-content :content="item.content" :preview-list="previewData.urls" :preview-offset="previewData.offsets[index] || 0" @image-error="handleImageError(item, index)"/>
           </div>
           <div class="alignment alignment-other" v-if="item.time">
             <span>{{ item.time }}</span>
@@ -28,7 +28,7 @@
             <template v-else>{{ item.userId }}</template>
           </div>
           <div class="bubble self-bubble" :class="[isPlainImageMessage(item, index) ? 'bubble-plain' : null, isHighlight(item) ? 'key-message' : null]">
-            <cq-content :content="item.content" @image-error="handleImageError(item, index)"/>
+            <cq-content :content="item.content" :preview-list="previewData.urls" :preview-offset="previewData.offsets[index] || 0" @image-error="handleImageError(item, index)"/>
           </div>
           <div class="alignment alignment-self" v-if="item.time">
             <span>{{ item.time }}</span>
@@ -43,7 +43,7 @@
 </template>
 <script>
 import CqContent from '@/components/chat/cq-content'
-import { isSingleImageContent } from '@/util/cq'
+import { isSingleImageContent, parseCqContent } from '@/util/cq'
 
 /**
  * 左右区分的聊天消息列表（纯展示）
@@ -74,6 +74,22 @@ export default {
   watch: {
     messages () {
       this.imageErrorMap = {}
+    }
+  },
+  computed: {
+    // 汇总当前消息列表中的全部图片（按出现顺序），供图片预览左右切换
+    previewData () {
+      const urls = []
+      const offsets = []
+      this.messages.forEach(item => {
+        offsets.push(urls.length)
+        parseCqContent(item.content).forEach(seg => {
+          if (seg.type === 'image') {
+            urls.push(seg.url)
+          }
+        })
+      })
+      return { urls, offsets }
     }
   },
   methods: {

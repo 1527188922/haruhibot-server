@@ -8,6 +8,16 @@ export default {
     content: {
       type: String,
       default: ''
+    },
+    //当前消息列表中的全部图片，用于点击图片后左右切换
+    previewList: {
+      type: Array,
+      default: () => []
+    },
+    //当前消息的图片在 previewList 中的起始下标
+    previewOffset: {
+      type: Number,
+      default: 0
     }
   },
   computed: {
@@ -18,17 +28,26 @@ export default {
   },
   // 使用渲染函数而不是模板：模板中的换行/缩进会在 pre-wrap 下变成多余空白，导致原文空格被撑宽
   render (h) {
+    let imageIndex = 0
     const children = this.segments.map((seg, index) => {
       if (seg.type === 'text') {
         return h('span', { key: 't' + index }, seg.text)
       }
       if (seg.type === 'image') {
+        const hasPreviewList = this.previewList && this.previewList.length > 0
+        const previewSrcList = hasPreviewList ? this.previewList : [seg.url]
+        const initialIndex = hasPreviewList ? this.previewOffset + imageIndex : 0
+        imageIndex++
         return h('el-image', {
           key: 'i' + index,
           class: 'cq-image',
           attrs: {
             src: seg.url,
             referrerpolicy: 'no-referrer'
+          },
+          props: {
+            previewSrcList,
+            initialIndex
           },
           on: {
             error: () => this.$emit('image-error', seg)
@@ -78,11 +97,9 @@ export default {
       border-radius: 4px;
     }
   }
-  // 占位标签颜色由当前主题色动态指定（内联 style），不加内外边距，保证与原消息的空格宽度一致
+  // 占位标签颜色由当前主题色动态指定（内联 style），不加内外边距和背景，保证与原消息的空格宽度一致
   .cq-tag {
     color: #409EFF;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 2px;
   }
 }
 </style>

@@ -11,24 +11,24 @@
 
 
       <el-row class="opt-row">
-          <span class="num">
-            前<el-input-number :step-strictly="true" size="mini"
-                               :controls="false"
-                               v-model="offset.offset1"
-                               :min="0" :max="250"
-                               @change="handleNumChange($event,'offset1')"
-                               controls-position="right"></el-input-number>条
-          </span>
-        <el-divider direction="vertical"></el-divider>
-        <span class="num">
-            后<el-input-number :step-strictly="true" size="mini"
-                               :controls="false"
-                               v-model="offset.offset2"
-                               :min="0" :max="250"
-                               @change="handleNumChange($event,'offset2')"
-                               controls-position="right"></el-input-number>条
-          </span>
-        <el-divider direction="vertical"></el-divider>
+<!--          <span class="num">-->
+<!--            前<el-input-number :step-strictly="true" size="mini"-->
+<!--                               :controls="false"-->
+<!--                               v-model="offset.offset1"-->
+<!--                               :min="0" :max="250"-->
+<!--                               @change="handleNumChange($event,'offset1')"-->
+<!--                               controls-position="right"></el-input-number>条-->
+<!--          </span>-->
+<!--        <el-divider direction="vertical"></el-divider>-->
+<!--        <span class="num">-->
+<!--            后<el-input-number :step-strictly="true" size="mini"-->
+<!--                               :controls="false"-->
+<!--                               v-model="offset.offset2"-->
+<!--                               :min="0" :max="250"-->
+<!--                               @change="handleNumChange($event,'offset2')"-->
+<!--                               controls-position="right"></el-input-number>条-->
+<!--          </span>-->
+<!--        <el-divider direction="vertical"></el-divider>-->
         <el-button type="text" :disabled="loading"  title="刷新" @click="queryMessageList(false, true)">
           <i v-if="loading" class="el-icon-loading" style="font-size: 20px"></i>
           <i v-else class="el-icon-refresh" style="font-size: 20px"></i>
@@ -58,7 +58,7 @@
 
 
       <div class="chat-wrap" v-loading="loading">
-        <div id="ChatWindow" class="chat-window" ref="chatWindow">
+        <div id="ChatWindow" class="chat-window" ref="chatWindow" @scroll="handleScroll" @wheel.passive="handleWheel">
           <template v-if="errMsg">
             <span class="err-resp">
               {{ errMsg }}
@@ -90,6 +90,10 @@ export default {
       v:null,
       messageList:[],
       errMsg:null,
+      // 是否还有更早的消息可加载（更新消息可能随时产生，不做永久性标记）
+      hasMoreBefore:false,
+      // 上次检查更新消息的时间，避免在底部反复请求
+      lastAfterCheckTime:0,
       offset:{
         offset1:50,
         offset2:50,
@@ -105,6 +109,18 @@ export default {
   },
   mounted() {
 
+  },
+  // 页面支持 keep-alive，离开时移除全局键盘监听，避免在其他页面触发抽屉滚动
+  activated() {
+    if (this.visible) {
+      document.addEventListener('keydown', this.handleKeydown)
+    }
+  },
+  deactivated() {
+    document.removeEventListener('keydown', this.handleKeydown)
+  },
+  beforeDestroy() {
+    document.removeEventListener('keydown', this.handleKeydown)
   },
   computed:{
     isGroupMsg(){
@@ -174,11 +190,15 @@ export default {
     },
     open(v){
       this.visible = true
+      this.lastAfterCheckTime = 0
+      document.removeEventListener('keydown', this.handleKeydown)
+      document.addEventListener('keydown', this.handleKeydown)
       this.$nextTick(()=>{
         this.v = deepClone(v)
         this.queryMessageList(true, false)
       })
     },
+    // 按当前“前/后”偏移量查询上下文（打开抽屉、刷新、修改偏移量后使用）
     queryMessageList(positioning = true, smooth = true){
       this.loading = true
       messageContext({
@@ -188,20 +208,171 @@ export default {
       }).then(({data:{data,code,message}})=>{
         this.errMsg = code === 200 ? null : message
         this.messageList = data
+        this.updateLoadMoreState()
       }).finally(()=>{
         this.loading = false
 
-        if (positioning && this.v && this.messageList && this.messageList.length > 0) {
-          this.scrollToMessage(this.v.id, smooth)
-        }
+        this.$nextTick(() => {
+          if (positioning && this.v && this.messageList && this.messageList.length > 0) {
+            this.scrollToMessage(this.v.id, smooth)
+          }
+        })
       })
     },
+    // 根据当前窗口内消息条数与查询偏移量，推算是否还有更早的消息
+    updateLoadMoreState(){
+      const list = this.messageList
+      if (!this.v || !list || list.length === 0) {
+        this.hasMoreBefore = false
+        return
+      }
+      const keyIndex = list.findIndex(item => item.id === this.v.id)
+      if (keyIndex < 0) {
+        this.hasMoreBefore = false
+        return
+      }
+      // 返回条数达到请求偏移量，说明该方向可能还有更多消息
+      this.hasMoreBefore = keyIndex >= this.offset.offset1
+    },
+    // 滚动到顶部/底部时自动加载更早/更新的消息
+    handleScroll(){
+      if (this.loading) return
+      const container = this.$refs.chatWindow
+      if (!container) return
+      const {scrollTop, scrollHeight, clientHeight} = container
+      if (scrollTop <= 0) {
+        this.loadMore('before')
+      } else if (scrollTop + clientHeight >= scrollHeight - 1) {
+        this.loadMore('after')
+      }
+    },
+    // 已经处于底部时继续向下滚动不会产生 scroll 事件，这里用 wheel 补充触发检查
+    handleWheel(e){
+      const container = this.$refs.chatWindow
+      if (!container) return
+      const atTop = container.scrollTop <= 0
+      const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 1
+      if (atTop && e.deltaY < 0) {
+        this.loadMore('before')
+      } else if (atBottom && e.deltaY > 0) {
+        this.loadMore('after')
+      }
+    },
+    // 以当前列表首/尾消息为基准，每次向对应方向再加载 50 条（不受单次接口 500 条上限影响）
+    loadMore(direction){
+      if (this.loading || !this.v) return
+      if (direction === 'before') {
+        if (!this.hasMoreBefore) return
+      } else {
+        // 新消息可能随时产生，底部每次滚动都重新检查，只做频率限制
+        const now = Date.now()
+        if (now - this.lastAfterCheckTime < 1000) return
+        this.lastAfterCheckTime = now
+      }
+      const list = this.messageList
+      if (!list || list.length === 0) return
+      const boundary = direction === 'before' ? list[0] : list[list.length - 1]
+      if (!boundary || boundary.id === null || boundary.id === undefined) return
+
+      const container = this.$refs.chatWindow
+      const keepPosition = direction === 'before' && container
+      const prevScrollHeight = keepPosition ? container.scrollHeight : 0
+      const prevScrollTop = keepPosition ? container.scrollTop : 0
+
+      this.loading = true
+      messageContext({
+        ...this.v,
+        id: boundary.id,
+        offset1: direction === 'before' ? -50 : 0,
+        offset2: direction === 'before' ? 0 : 50
+      }).then(({data:{data,code,message}})=>{
+        if (code !== 200) {
+          this.$message.error(message)
+          if (direction === 'before') {
+            this.hasMoreBefore = false
+          }
+          return
+        }
+        const records = data || []
+        const keyIndex = records.findIndex(item => item.id === boundary.id)
+        if (keyIndex < 0) {
+          if (direction === 'before') {
+            this.hasMoreBefore = false
+          }
+          return
+        }
+        const existingIds = new Set(list.map(item => item.id))
+        const newItems = records.filter(item => !existingIds.has(item.id))
+
+        if (direction === 'before') {
+          // 返回不足 50 条或没有新增数据，说明已经到最早
+          this.hasMoreBefore = keyIndex >= 50 && newItems.length > 0
+        }
+        if (newItems.length === 0) return
+        this.messageList = direction === 'before' ? newItems.concat(list) : list.concat(newItems)
+      }).finally(()=>{
+        this.loading = false
+
+        this.$nextTick(() => {
+          if (keepPosition) {
+            container.scrollTop = container.scrollHeight - (prevScrollHeight - prevScrollTop)
+          }
+        })
+      })
+    },
+    // 键盘翻页：Home/End/PgUp/PgDn/上下方向键
+    handleKeydown(e){
+      if (!this.visible) return
+      const target = e.target
+      const tagName = target && target.tagName ? target.tagName : ''
+      if (['INPUT', 'TEXTAREA', 'SELECT'].indexOf(tagName) >= 0 || (target && target.isContentEditable)) return
+      // 图片预览打开时，方向键交给预览组件控制左右切换
+      if (document.querySelector('.el-image-viewer__wrapper')) return
+      const container = this.$refs.chatWindow
+      if (!container) return
+
+      const page = Math.max(container.clientHeight * 0.9, 100)
+      switch (e.key) {
+        case 'Home':
+          container.scrollTop = 0
+          break
+        case 'End':
+          container.scrollTop = container.scrollHeight
+          break
+        case 'PageUp':
+          container.scrollTop -= page
+          break
+        case 'PageDown':
+          container.scrollTop += page
+          break
+        case 'ArrowUp':
+          container.scrollTop -= 40
+          break
+        case 'ArrowDown':
+          container.scrollTop += 40
+          break
+        default:
+          return
+      }
+      e.preventDefault()
+      const atTop = container.scrollTop <= 0
+      const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 1
+      // 按按键方向触发对应侧加载；内容不足一屏时上下边界会同时成立，不能用 handleScroll 判断
+      if (['End', 'PageDown', 'ArrowDown'].indexOf(e.key) >= 0) {
+        if (atBottom) this.loadMore('after')
+      } else if (atTop) {
+        this.loadMore('before')
+      }
+    },
     closed(){
+      document.removeEventListener('keydown', this.handleKeydown)
       this.v = null
       this.offset.offset1 = 50
       this.offset.offset2 = 50
       this.messageList = []
       this.errMsg = null
+      this.hasMoreBefore = false
+      this.lastAfterCheckTime = 0
     }
   }
 }
