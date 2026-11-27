@@ -72,8 +72,16 @@ export default {
     }
   },
   watch: {
-    messages () {
-      this.imageErrorMap = {}
+    messages (list) {
+      // 消息数组会被增量加载整体替换，保留仍在列表中的图片失败状态，避免气泡回退成无气泡
+      const next = {}
+      ;(list || []).forEach((item, index) => {
+        const key = this.messageKey(item, index)
+        if (this.imageErrorMap[key]) {
+          next[key] = true
+        }
+      })
+      this.imageErrorMap = next
     }
   },
   computed: {

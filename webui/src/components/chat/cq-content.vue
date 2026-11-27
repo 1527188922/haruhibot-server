@@ -20,10 +20,27 @@ export default {
       default: 0
     }
   },
+  data () {
+    return {
+      //记录加载失败的图片片段下标，失败后直接渲染占位文本，不再保留图片组件
+      imageErrorMap: {}
+    }
+  },
   computed: {
     ...mapGetters(['colorName']),
     segments () {
       return parseCqContent(this.content)
+    }
+  },
+  watch: {
+    content () {
+      this.imageErrorMap = {}
+    }
+  },
+  methods: {
+    handleImageError (index, seg) {
+      this.$set(this.imageErrorMap, index, true)
+      this.$emit('image-error', seg)
     }
   },
   // 使用渲染函数而不是模板：模板中的换行/缩进会在 pre-wrap 下变成多余空白，导致原文空格被撑宽
@@ -38,6 +55,15 @@ export default {
         const previewSrcList = hasPreviewList ? this.previewList : [seg.url]
         const initialIndex = hasPreviewList ? this.previewOffset + imageIndex : 0
         imageIndex++
+        // 加载失败的图片直接渲染占位文本，避免图片组件错误态下尺寸异常
+        if (this.imageErrorMap[index]) {
+          return h('span', {
+            key: 'i' + index,
+            class: 'cq-tag',
+            style: { color: this.colorName },
+            attrs: { title: seg.raw }
+          }, '[图片]')
+        }
         return h('el-image', {
           key: 'i' + index,
           class: 'cq-image',
@@ -50,7 +76,7 @@ export default {
             initialIndex
           },
           on: {
-            error: () => this.$emit('image-error', seg)
+            error: () => this.handleImageError(index, seg)
           }
         }, [
           h('span', {
