@@ -327,7 +327,7 @@ export default {
       const tagName = target && target.tagName ? target.tagName : ''
       if (['INPUT', 'TEXTAREA', 'SELECT'].indexOf(tagName) >= 0 || (target && target.isContentEditable)) return
       // 图片预览打开时，方向键交给预览组件控制左右切换
-      if (document.querySelector('.el-image-viewer__wrapper')) return
+      if (document.querySelector('.el-image-viewer__wrapper') || document.querySelector('.chat-image-viewer')) return
       const container = this.$refs.chatWindow
       if (!container) return
 

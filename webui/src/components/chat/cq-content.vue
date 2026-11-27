@@ -9,12 +9,7 @@ export default {
       type: String,
       default: ''
     },
-    //当前消息列表中的全部图片，用于点击图片后左右切换
-    previewList: {
-      type: Array,
-      default: () => []
-    },
-    //当前消息的图片在 previewList 中的起始下标
+    //当前消息的图片在预览列表中的起始下标
     previewOffset: {
       type: Number,
       default: 0
@@ -51,9 +46,7 @@ export default {
         return h('span', { key: 't' + index }, seg.text)
       }
       if (seg.type === 'image') {
-        const hasPreviewList = this.previewList && this.previewList.length > 0
-        const previewSrcList = hasPreviewList ? this.previewList : [seg.url]
-        const initialIndex = hasPreviewList ? this.previewOffset + imageIndex : 0
+        const previewIndex = this.previewOffset + imageIndex
         imageIndex++
         // 加载失败的图片直接渲染占位文本，避免图片组件错误态下尺寸异常
         if (this.imageErrorMap[index]) {
@@ -71,12 +64,9 @@ export default {
             src: seg.url,
             referrerpolicy: 'no-referrer'
           },
-          props: {
-            previewSrcList,
-            initialIndex
-          },
           on: {
-            error: () => this.handleImageError(index, seg)
+            error: () => this.handleImageError(index, seg),
+            click: () => this.$emit('image-preview', previewIndex)
           }
         }, [
           h('span', {
@@ -108,6 +98,7 @@ export default {
     max-width: 200px;
     max-height: 200px;
     margin: 2px;
+    cursor: zoom-in;
     // 覆盖 el-image 默认的 100% 宽高，按图片原始比例展示并限制最大尺寸
     ::v-deep .el-image__inner {
       display: block;

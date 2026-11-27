@@ -12,7 +12,7 @@
             <template v-else>{{ item.userId }}</template>
           </div>
           <div class="bubble other-bubble" :class="[isPlainImageMessage(item, index) ? 'bubble-plain' : null, isHighlight(item) ? 'key-message' : null]">
-            <cq-content :content="item.content" :preview-list="previewData.urls" :preview-offset="previewData.offsets[index] || 0" @image-error="handleImageError(item, index)"/>
+            <cq-content :content="item.content" :preview-offset="previewData.offsets[index] || 0" @image-error="handleImageError(item, index)" @image-preview="openImagePreview"/>
           </div>
           <div class="alignment alignment-other" v-if="item.time">
             <span>{{ item.time }}</span>
@@ -28,7 +28,7 @@
             <template v-else>{{ item.userId }}</template>
           </div>
           <div class="bubble self-bubble" :class="[isPlainImageMessage(item, index) ? 'bubble-plain' : null, isHighlight(item) ? 'key-message' : null]">
-            <cq-content :content="item.content" :preview-list="previewData.urls" :preview-offset="previewData.offsets[index] || 0" @image-error="handleImageError(item, index)"/>
+            <cq-content :content="item.content" :preview-offset="previewData.offsets[index] || 0" @image-error="handleImageError(item, index)" @image-preview="openImagePreview"/>
           </div>
           <div class="alignment alignment-self" v-if="item.time">
             <span>{{ item.time }}</span>
@@ -39,10 +39,12 @@
         </el-col>
       </el-row>
     </div>
+    <chat-image-viewer v-if="viewerVisible" :url-list="viewerList" :initial-index="viewerIndex" @close="viewerVisible = false"/>
   </div>
 </template>
 <script>
 import CqContent from '@/components/chat/cq-content'
+import ChatImageViewer from '@/components/chat/chat-image-viewer'
 import { isSingleImageContent, parseCqContent } from '@/util/cq'
 
 /**
@@ -52,7 +54,8 @@ import { isSingleImageContent, parseCqContent } from '@/util/cq'
 export default {
   name: 'ChatMessageList',
   components: {
-    CqContent
+    CqContent,
+    ChatImageViewer
   },
   props: {
     messages: {
@@ -68,7 +71,11 @@ export default {
   data () {
     return {
       //记录图片加载失败的消息，单图消息失败时需要回退成气泡占位
-      imageErrorMap: {}
+      imageErrorMap: {},
+      //图片预览
+      viewerVisible: false,
+      viewerIndex: 0,
+      viewerList: []
     }
   },
   watch: {
@@ -113,6 +120,12 @@ export default {
     },
     handleImageError (item, index) {
       this.$set(this.imageErrorMap, this.messageKey(item, index), true)
+    },
+    //打开图片预览，冻结当前已加载消息的图片列表，避免预览过程中列表变化导致序号错乱
+    openImagePreview (index) {
+      this.viewerList = this.previewData.urls.slice()
+      this.viewerIndex = index
+      this.viewerVisible = true
     }
   }
 }
