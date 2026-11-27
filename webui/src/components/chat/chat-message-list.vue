@@ -1,6 +1,6 @@
 <template>
   <div class="chat-message-list">
-    <div class="message-item" :id="'msg-' + item.id" v-for="item in messages" :key="item.id">
+    <div class="message-item" :id="'msg-' + item.id" v-for="(item, index) in messages" :key="item.id">
       <!-- 别人消息：左 -->
       <el-row v-if="item.userId !== item.selfId" class="row-other" type="flex" justify="start">
         <el-col :span="3" class="other-avatar-col">
@@ -11,8 +11,8 @@
             <template v-if="item.card || item.nickname">{{ item.card || item.nickname }}（{{ item.userId }}）</template>
             <template v-else>{{ item.userId }}</template>
           </div>
-          <div class="bubble other-bubble" :class="isHighlight(item) ? 'key-message' : null">
-            <cq-content :content="item.content"/>
+          <div class="bubble other-bubble" :class="[isPlainImageMessage(item, index) ? 'bubble-plain' : null, isHighlight(item) ? 'key-message' : null]">
+            <cq-content :content="item.content" @image-error="handleImageError(item, index)"/>
           </div>
           <div class="alignment alignment-other" v-if="item.time">
             <span>{{ item.time }}</span>
@@ -27,8 +27,8 @@
             <template v-if="item.card || item.nickname">{{ item.card || item.nickname }}（{{ item.userId }}）</template>
             <template v-else>{{ item.userId }}</template>
           </div>
-          <div class="bubble self-bubble" :class="isHighlight(item) ? 'key-message' : null">
-            <cq-content :content="item.content"/>
+          <div class="bubble self-bubble" :class="[isPlainImageMessage(item, index) ? 'bubble-plain' : null, isHighlight(item) ? 'key-message' : null]">
+            <cq-content :content="item.content" @image-error="handleImageError(item, index)"/>
           </div>
           <div class="alignment alignment-self" v-if="item.time">
             <span>{{ item.time }}</span>
@@ -43,6 +43,7 @@
 </template>
 <script>
 import CqContent from '@/components/chat/cq-content'
+import { isSingleImageContent } from '@/util/cq'
 
 /**
  * 左右区分的聊天消息列表（纯展示）
@@ -64,9 +65,30 @@ export default {
       default: null
     }
   },
+  data () {
+    return {
+      //记录图片加载失败的消息，单图消息失败时需要回退成气泡占位
+      imageErrorMap: {}
+    }
+  },
+  watch: {
+    messages () {
+      this.imageErrorMap = {}
+    }
+  },
   methods: {
+    messageKey (item, index) {
+      return item.id !== null && item.id !== undefined ? item.id : 'index-' + index
+    },
     isHighlight (item) {
       return this.highlightId !== null && this.highlightId !== undefined && item.id === this.highlightId
+    },
+    //单图且加载成功时不展示气泡，直接展示图片
+    isPlainImageMessage (item, index) {
+      return isSingleImageContent(item.content) && !this.imageErrorMap[this.messageKey(item, index)]
+    },
+    handleImageError (item, index) {
+      this.$set(this.imageErrorMap, this.messageKey(item, index), true)
     }
   }
 }
@@ -90,7 +112,7 @@ export default {
     max-width: 85%;
     word-break: break-all;
     font-size: 14px;
-    white-space: pre-wrap;
+    // 这里不能使用 pre-wrap：模板换行会被当作文本渲染，原文空格由内容层 .cq-content 保留
   }
 
   .other-bubble {
@@ -113,6 +135,19 @@ export default {
   }
   .key-message{
     background-color: #e6a23c;
+  }
+  // 单图消息不展示气泡，图片直接呈现
+  .bubble-plain{
+    padding: 0;
+    background: transparent;
+    ::v-deep .cq-image{
+      margin: 0;
+    }
+  }
+  // 单图消息被定位高亮时，用描边代替气泡背景
+  .bubble-plain.key-message ::v-deep .cq-image{
+    box-shadow: 0 0 0 2px #e6a23c;
+    border-radius: 4px;
   }
   .alignment {
     align-items: center;

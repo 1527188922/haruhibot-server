@@ -97,22 +97,22 @@ function resolveFaceText (attrs) {
   return '[表情]'
 }
 
-function toSegment (type, attrs) {
+function toSegment (type, attrs, raw) {
   switch (type) {
     case 'image':
     case 'mface': {
       const url = normalizeUrl(attrs.url)
       if (url) {
-        return { type: 'image', url }
+        return { type: 'image', url, raw }
       }
-      return { type: 'tag', text: type === 'image' ? '[图片]' : '[表情]' }
+      return { type: 'tag', text: type === 'image' ? '[图片]' : '[表情]', raw }
     }
     case 'at':
-      return { type: 'tag', text: resolveAtText(attrs) }
+      return { type: 'tag', text: resolveAtText(attrs), raw }
     case 'face':
-      return { type: 'tag', text: resolveFaceText(attrs) }
+      return { type: 'tag', text: resolveFaceText(attrs), raw }
     default:
-      return { type: 'tag', text: TYPE_LABELS[type] || '[消息]' }
+      return { type: 'tag', text: TYPE_LABELS[type] || '[消息]', raw }
   }
 }
 
@@ -150,11 +150,19 @@ export function parseCqContent (content) {
     if (match.index > lastIndex) {
       pushText(segments, decodeCqEntities(raw.slice(lastIndex, match.index)))
     }
-    segments.push(toSegment(match[1], parseAttrs(match[2])))
+    segments.push(toSegment(match[1], parseAttrs(match[2]), match[0]))
     lastIndex = match.index + match[0].length
   }
   if (lastIndex < raw.length) {
     pushText(segments, decodeCqEntities(raw.slice(lastIndex)))
   }
   return segments
+}
+
+/**
+ * 判断消息是否只包含一张图片（单图消息不需要气泡）
+ */
+export function isSingleImageContent (content) {
+  const segments = parseCqContent(content)
+  return segments.length === 1 && segments[0].type === 'image'
 }

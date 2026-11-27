@@ -315,7 +315,7 @@ export default {
     max-width: 85% !important;
     word-break: break-all !important;
     font-size: 14px !important;
-    white-space: pre-wrap !important;
+    white-space: normal !important;
     line-height: 1.4 !important;
   }
 
@@ -329,6 +329,12 @@ export default {
     background: #428dff !important;
     color: #fff !important;
     text-align: left !important;
+  }
+
+  /* 单图消息打印时同样不展示气泡 */
+  #ChatWindow .bubble-plain {
+    padding: 0 !important;
+    background: transparent !important;
   }
   #ChatWindow .other-avatar-col{
     width: 45px;

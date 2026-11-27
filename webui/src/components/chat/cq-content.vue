@@ -1,22 +1,7 @@
-<template>
-  <span class="cq-content">
-    <template v-for="(seg, index) in segments">
-      <span v-if="seg.type === 'text'" :key="'t' + index">
-        {{ seg.text }}
-      </span>
-      <el-image v-else-if="seg.type === 'image'" :key="'i' + index" class="cq-image" :src="seg.url" referrerpolicy="no-referrer">
-        <span slot="error" class="cq-tag">[图片]</span>
-      </el-image>
-      <span v-else :key="'g' + index" class="cq-tag">
-        {{ seg.text }}
-      </span>
-    </template>
-  </span>
-</template>
 <script>
+import { mapGetters } from 'vuex'
 import { parseCqContent } from '@/util/cq'
 
-// 片段之间不能出现换行空白（模板已写成单行），否则气泡的 pre-wrap 会在图文之间渲染出多余空格
 export default {
   name: 'CqContent',
   props: {
@@ -26,14 +11,52 @@ export default {
     }
   },
   computed: {
+    ...mapGetters(['colorName']),
     segments () {
       return parseCqContent(this.content)
     }
+  },
+  // 使用渲染函数而不是模板：模板中的换行/缩进会在 pre-wrap 下变成多余空白，导致原文空格被撑宽
+  render (h) {
+    const children = this.segments.map((seg, index) => {
+      if (seg.type === 'text') {
+        return h('span', { key: 't' + index }, seg.text)
+      }
+      if (seg.type === 'image') {
+        return h('el-image', {
+          key: 'i' + index,
+          class: 'cq-image',
+          attrs: {
+            src: seg.url,
+            referrerpolicy: 'no-referrer'
+          },
+          on: {
+            error: () => this.$emit('image-error', seg)
+          }
+        }, [
+          h('span', {
+            slot: 'error',
+            class: 'cq-tag',
+            style: { color: this.colorName },
+            attrs: { title: seg.raw }
+          }, '[图片]')
+        ])
+      }
+      return h('span', {
+        key: 'g' + index,
+        class: 'cq-tag',
+        style: { color: this.colorName },
+        attrs: { title: seg.raw }
+      }, seg.text)
+    })
+    return h('span', { class: 'cq-content' }, children)
   }
 }
 </script>
 <style scoped lang="scss">
 .cq-content {
+  // 只在内容层保留原消息的空格与换行，气泡本身不再使用 pre-wrap
+  white-space: pre-wrap;
   .cq-image {
     display: inline-block;
     vertical-align: bottom;
@@ -55,13 +78,11 @@ export default {
       border-radius: 4px;
     }
   }
-  // 占位标签统一主题色；加浅色底保证在蓝色自己气泡上也清晰可见
+  // 占位标签颜色由当前主题色动态指定（内联 style），不加内外边距，保证与原消息的空格宽度一致
   .cq-tag {
     color: #409EFF;
     background: rgba(255, 255, 255, 0.9);
-    border-radius: 4px;
-    padding: 0 3px;
-    margin: 0 1px;
+    border-radius: 2px;
   }
 }
 </style>
